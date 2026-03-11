@@ -11,12 +11,11 @@ class StudentDashboardScreen extends StatelessWidget {
     final now = DateTime.now();
     final dateStr = intl.DateFormat('MMM dd, EEEE').format(now);
     final hour = now.hour;
-    final greeting =
-        hour < 12
-            ? 'Good morning'
-            : hour < 17
-            ? 'Good afternoon'
-            : 'Good evening';
+    final greeting = hour < 12
+        ? 'Good morning'
+        : hour < 17
+        ? 'Good afternoon'
+        : 'Good evening';
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
@@ -59,11 +58,32 @@ class StudentDashboardScreen extends StatelessWidget {
               // Stats Row
               const Row(
                 children: [
-                  Expanded(child: _StatChip(icon: Icons.local_fire_department, iconColor: Colors.green, value: '12', label: 'Day Streak')),
+                  Expanded(
+                    child: _StatChip(
+                      icon: Icons.local_fire_department,
+                      iconColor: Colors.green,
+                      value: '12',
+                      label: 'Day Streak',
+                    ),
+                  ),
                   SizedBox(width: 10),
-                  Expanded(child: _StatChip(icon: Icons.star_rounded, iconColor: Colors.amber, value: '850', label: 'Total XP')),
+                  Expanded(
+                    child: _StatChip(
+                      icon: Icons.star_rounded,
+                      iconColor: Colors.amber,
+                      value: '850',
+                      label: 'Total XP',
+                    ),
+                  ),
                   SizedBox(width: 10),
-                  Expanded(child: _StatChip(icon: Icons.emoji_events_rounded, iconColor: AppColors.primary, value: 'Lvl 5', label: 'Scholar')),
+                  Expanded(
+                    child: _StatChip(
+                      icon: Icons.emoji_events_rounded,
+                      iconColor: AppColors.primary,
+                      value: 'Lvl 5',
+                      label: 'Scholar',
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 28),
@@ -84,10 +104,7 @@ class StudentDashboardScreen extends StatelessWidget {
                     onPressed: () {},
                     child: const Text(
                       'View Calendar',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 13,
-                      ),
+                      style: TextStyle(color: AppColors.primary, fontSize: 13),
                     ),
                   ),
                 ],
@@ -114,10 +131,26 @@ class StudentDashboardScreen extends StatelessWidget {
                 crossAxisSpacing: 12,
                 childAspectRatio: 2.8,
                 children: const [
-                  _QuickActionTile(icon: Icons.quiz_rounded, label: 'Quizzes', color: AppColors.primary),
-                  _QuickActionTile(icon: Icons.menu_book_rounded, label: 'Resources', color: Colors.orange),
-                  _QuickActionTile(icon: Icons.chat_rounded, label: 'Chat', color: Colors.green),
-                  _QuickActionTile(icon: Icons.bar_chart_rounded, label: 'Grades', color: Colors.purple),
+                  _QuickActionTile(
+                    icon: Icons.quiz_rounded,
+                    label: 'Quizzes',
+                    color: AppColors.primary,
+                  ),
+                  _QuickActionTile(
+                    icon: Icons.menu_book_rounded,
+                    label: 'Resources',
+                    color: Colors.orange,
+                  ),
+                  _QuickActionTile(
+                    icon: Icons.chat_rounded,
+                    label: 'Chat',
+                    color: Colors.green,
+                  ),
+                  _QuickActionTile(
+                    icon: Icons.bar_chart_rounded,
+                    label: 'Grades',
+                    color: Colors.purple,
+                  ),
                 ],
               ),
               const SizedBox(height: 28),
@@ -144,10 +177,7 @@ class StudentDashboardScreen extends StatelessWidget {
                     },
                     child: const Text(
                       'See All',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 13,
-                      ),
+                      style: TextStyle(color: AppColors.primary, fontSize: 13),
                     ),
                   ),
                 ],
@@ -262,7 +292,11 @@ class _NextUpCard extends StatelessWidget {
               color: Colors.red.shade50,
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.quiz_rounded, color: Colors.red.shade400, size: 22),
+            child: Icon(
+              Icons.quiz_rounded,
+              color: Colors.red.shade400,
+              size: 22,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -303,10 +337,7 @@ class _NextUpCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   'Chapter 4: Thermodynamics',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                 ),
                 const SizedBox(height: 10),
                 Row(
@@ -321,8 +352,14 @@ class _NextUpCard extends StatelessWidget {
                             left: i * 18.0,
                             child: CircleAvatar(
                               radius: 12,
-                              backgroundColor: i == 0 ? Colors.orange : Colors.teal,
-                              child: const Icon(Icons.person, size: 14, color: Colors.white),
+                              backgroundColor: i == 0
+                                  ? Colors.orange
+                                  : Colors.teal,
+                              child: const Icon(
+                                Icons.person,
+                                size: 14,
+                                color: Colors.white,
+                              ),
                             ),
                           );
                         }),
@@ -357,7 +394,11 @@ class _NextUpCard extends StatelessWidget {
                             ),
                           ),
                           SizedBox(width: 4),
-                          Icon(Icons.arrow_forward, color: Colors.white, size: 14),
+                          Icon(
+                            Icons.arrow_forward,
+                            color: Colors.white,
+                            size: 14,
+                          ),
                         ],
                       ),
                     ),

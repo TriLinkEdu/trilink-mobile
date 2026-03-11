@@ -255,9 +255,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: () {
                           // TODO: Continue offline
                         },
-                        style: TextButton.styleFrom(
-                          padding: EdgeInsets.zero,
-                        ),
+                        style: TextButton.styleFrom(padding: EdgeInsets.zero),
                         child: Text(
                           'Continue offline',
                           style: TextStyle(

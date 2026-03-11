@@ -30,7 +30,10 @@ class StudentGradesScreen extends StatelessWidget {
                   ),
                   IconButton(
                     onPressed: () {},
-                    icon: const Icon(Icons.more_horiz, color: AppColors.textPrimary),
+                    icon: const Icon(
+                      Icons.more_horiz,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ],
               ),
@@ -238,10 +241,9 @@ class _SubjectGradeRow extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color:
-                  isHighlighted
-                      ? Colors.white.withAlpha(40)
-                      : iconBgColor.withAlpha(20),
+              color: isHighlighted
+                  ? Colors.white.withAlpha(40)
+                  : iconBgColor.withAlpha(20),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
@@ -268,10 +270,9 @@ class _SubjectGradeRow extends StatelessWidget {
                   detail,
                   style: TextStyle(
                     fontSize: 11,
-                    color:
-                        isHighlighted
-                            ? Colors.white.withAlpha(180)
-                            : Colors.grey.shade500,
+                    color: isHighlighted
+                        ? Colors.white.withAlpha(180)
+                        : Colors.grey.shade500,
                   ),
                 ),
               ],
@@ -297,24 +298,22 @@ class _SubjectGradeRow extends StatelessWidget {
                         ? Icons.trending_up_rounded
                         : Icons.trending_down_rounded,
                     size: 14,
-                    color:
-                        isHighlighted
-                            ? Colors.white.withAlpha(180)
-                            : isPositive
-                            ? Colors.green
-                            : Colors.red,
+                    color: isHighlighted
+                        ? Colors.white.withAlpha(180)
+                        : isPositive
+                        ? Colors.green
+                        : Colors.red,
                   ),
                   const SizedBox(width: 2),
                   Text(
                     change,
                     style: TextStyle(
                       fontSize: 11,
-                      color:
-                          isHighlighted
-                              ? Colors.white.withAlpha(180)
-                              : isPositive
-                              ? Colors.green
-                              : Colors.red,
+                      color: isHighlighted
+                          ? Colors.white.withAlpha(180)
+                          : isPositive
+                          ? Colors.green
+                          : Colors.red,
                     ),
                   ),
                 ],

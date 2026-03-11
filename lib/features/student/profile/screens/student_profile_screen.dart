@@ -204,8 +204,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                           label: 'Dark Mode',
                           trailing: Switch(
                             value: _darkMode,
-                            onChanged: (v) =>
-                                setState(() => _darkMode = v),
+                            onChanged: (v) => setState(() => _darkMode = v),
                             activeColor: AppColors.primary,
                           ),
                         ),
@@ -386,11 +385,7 @@ class _SettingsRow extends StatelessWidget {
           ),
           if (trailing != null) trailing!,
           if (showChevron)
-            Icon(
-              Icons.chevron_right,
-              size: 20,
-              color: Colors.grey.shade400,
-            ),
+            Icon(Icons.chevron_right, size: 20, color: Colors.grey.shade400),
         ],
       ),
     );

@@ -30,7 +30,10 @@ class StudentAttendanceScreen extends StatelessWidget {
                   ),
                   IconButton(
                     onPressed: () {},
-                    icon: const Icon(Icons.more_vert, color: AppColors.textPrimary),
+                    icon: const Icon(
+                      Icons.more_vert,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ],
               ),
@@ -211,11 +214,7 @@ class StudentAttendanceScreen extends StatelessWidget {
     );
   }
 
-  static List<_DotStatus> _generateDots(
-    int present,
-    int absent,
-    int late,
-  ) {
+  static List<_DotStatus> _generateDots(int present, int absent, int late) {
     final dots = <_DotStatus>[];
     for (int i = 0; i < present; i++) {
       dots.add(_DotStatus.present);
@@ -376,10 +375,7 @@ class _SubjectAttendanceRow extends StatelessWidget {
               return Container(
                 width: 12,
                 height: 12,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
               );
             }).toList(),
           ),
@@ -402,10 +398,7 @@ class _LegendItem extends StatelessWidget {
         Container(
           width: 10,
           height: 10,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 4),
         Text(

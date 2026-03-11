@@ -72,14 +72,12 @@ class _StudentAnnouncementsScreenState
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color:
-                              isSelected ? AppColors.primary : Colors.white,
+                          color: isSelected ? AppColors.primary : Colors.white,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color:
-                                isSelected
-                                    ? AppColors.primary
-                                    : Colors.grey.shade300,
+                            color: isSelected
+                                ? AppColors.primary
+                                : Colors.grey.shade300,
                           ),
                         ),
                         child: Text(
@@ -87,7 +85,9 @@ class _StudentAnnouncementsScreenState
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
-                            color: isSelected ? Colors.white : Colors.grey.shade600,
+                            color: isSelected
+                                ? Colors.white
+                                : Colors.grey.shade600,
                           ),
                         ),
                       ),
@@ -280,10 +280,7 @@ class _AnnouncementItem extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                 ),
                 const SizedBox(height: 6),
                 Text(
