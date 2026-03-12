@@ -92,8 +92,11 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                               color: AppColors.primary.withAlpha(30),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.shield_rounded,
-                                size: 16, color: AppColors.primary),
+                            child: const Icon(
+                              Icons.shield_rounded,
+                              size: 16,
+                              color: AppColors.primary,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -112,8 +115,11 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                                         ),
                                       ),
                                     ),
-                                    Icon(Icons.close,
-                                        size: 18, color: Colors.grey.shade400),
+                                    Icon(
+                                      Icons.close,
+                                      size: 18,
+                                      color: Colors.grey.shade400,
+                                    ),
                                   ],
                                 ),
                                 const SizedBox(height: 4),
@@ -154,15 +160,19 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                         child: DropdownButton<String>(
                           value: _selectedSubject,
                           isExpanded: true,
-                          icon: Icon(Icons.keyboard_arrow_down_rounded,
-                              color: Colors.grey.shade500),
+                          icon: Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: Colors.grey.shade500,
+                          ),
                           style: const TextStyle(
                             fontSize: 14,
                             color: AppColors.textPrimary,
                           ),
                           items: _subjects
-                              .map((s) =>
-                                  DropdownMenuItem(value: s, child: Text(s)))
+                              .map(
+                                (s) =>
+                                    DropdownMenuItem(value: s, child: Text(s)),
+                              )
                               .toList(),
                           onChanged: (v) {
                             if (v != null) setState(() => _selectedSubject = v);
@@ -257,8 +267,11 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                           color: Colors.grey.shade400,
                           fontSize: 13,
                         ),
-                        suffixIcon: Icon(Icons.thumb_up_outlined,
-                            color: Colors.grey.shade300, size: 20),
+                        suffixIcon: Icon(
+                          Icons.thumb_up_outlined,
+                          color: Colors.grey.shade300,
+                          size: 20,
+                        ),
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
@@ -272,7 +285,9 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: const BorderSide(
-                              color: AppColors.primary, width: 1.5),
+                            color: AppColors.primary,
+                            width: 1.5,
+                          ),
                         ),
                         contentPadding: const EdgeInsets.all(14),
                       ),
@@ -311,7 +326,9 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: const BorderSide(
-                              color: AppColors.primary, width: 1.5),
+                            color: AppColors.primary,
+                            width: 1.5,
+                          ),
                         ),
                         contentPadding: const EdgeInsets.all(14),
                       ),
@@ -460,8 +477,7 @@ class _RecentFeedbackItem extends StatelessWidget {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: statusColor.withAlpha(25),
                   borderRadius: BorderRadius.circular(6),

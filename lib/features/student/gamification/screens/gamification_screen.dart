@@ -29,8 +29,10 @@ class GamificationScreen extends StatelessWidget {
                   ),
                   IconButton(
                     onPressed: () {},
-                    icon: const Icon(Icons.settings_outlined,
-                        color: AppColors.primary),
+                    icon: const Icon(
+                      Icons.settings_outlined,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ],
               ),
@@ -215,8 +217,11 @@ class GamificationScreen extends StatelessWidget {
                         ),
                         Row(
                           children: [
-                            Icon(Icons.swap_vert_rounded,
-                                size: 16, color: Colors.grey.shade500),
+                            Icon(
+                              Icons.swap_vert_rounded,
+                              size: 16,
+                              color: Colors.grey.shade500,
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               'Weekly',
@@ -373,10 +378,7 @@ class _QuickQuizTile extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   '$questions Questions  •  $xp XP',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey.shade500,
-                  ),
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                 ),
               ],
             ),
@@ -391,8 +393,10 @@ class _QuickQuizTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               elevation: 0,
-              textStyle:
-                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              textStyle: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             child: const Text('Start'),
           ),
@@ -484,10 +488,7 @@ class _LeaderboardRow extends StatelessWidget {
                 ),
                 Text(
                   classLabel,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey.shade500,
-                  ),
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                 ),
               ],
             ),

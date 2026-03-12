@@ -281,10 +281,7 @@ class _StatBox extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: 11,
-            color: Colors.white.withAlpha(180),
-          ),
+          style: TextStyle(fontSize: 11, color: Colors.white.withAlpha(180)),
         ),
         const SizedBox(height: 4),
         Text(
@@ -356,10 +353,7 @@ class _GradeBar extends StatelessWidget {
           child: Text(
             '$count',
             textAlign: TextAlign.right,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade500,
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
           ),
         ),
       ],
@@ -418,10 +412,7 @@ class _AssessmentRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   date,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey.shade500,
-                  ),
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                 ),
               ],
             ),

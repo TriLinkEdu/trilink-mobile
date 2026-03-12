@@ -75,8 +75,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
-                            color:
-                                isSelected ? Colors.white : Colors.grey.shade600,
+                            color: isSelected
+                                ? Colors.white
+                                : Colors.grey.shade600,
                           ),
                         ),
                       ),
@@ -146,7 +147,11 @@ class _LearningPathTab extends StatelessWidget {
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    Icon(Icons.auto_awesome, size: 16, color: AppColors.primary),
+                    Icon(
+                      Icons.auto_awesome,
+                      size: 16,
+                      color: AppColors.primary,
+                    ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
@@ -212,8 +217,11 @@ class _LearningPathTab extends StatelessWidget {
                 CircleAvatar(
                   radius: 16,
                   backgroundColor: AppColors.primary.withAlpha(25),
-                  child: const Icon(Icons.lightbulb_outline,
-                      size: 18, color: AppColors.primary),
+                  child: const Icon(
+                    Icons.lightbulb_outline,
+                    size: 18,
+                    color: AppColors.primary,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -276,7 +284,9 @@ class _PathItem extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isActive ? AppColors.primary.withAlpha(60) : Colors.grey.shade200,
+          color: isActive
+              ? AppColors.primary.withAlpha(60)
+              : Colors.grey.shade200,
         ),
         boxShadow: [
           BoxShadow(
@@ -339,8 +349,9 @@ class _PathItem extends StatelessWidget {
                 value: progress,
                 minHeight: 5,
                 backgroundColor: AppColors.primary.withAlpha(30),
-                valueColor:
-                    const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                  AppColors.primary,
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -360,9 +371,13 @@ class _PathItem extends StatelessWidget {
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('Continue',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 14)),
+                    Text(
+                      'Continue',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
                     SizedBox(width: 4),
                     Icon(Icons.play_arrow_rounded, size: 18),
                   ],
@@ -383,9 +398,10 @@ class _PathItem extends StatelessWidget {
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
-                child: const Text('Start',
-                    style:
-                        TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+                child: const Text(
+                  'Start',
+                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                ),
               ),
             ),
           ],
