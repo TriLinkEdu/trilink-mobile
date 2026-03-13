@@ -25,17 +25,25 @@ class RouteNames {
   // Teacher
   static const String teacherDashboard = '/teacher/dashboard';
   static const String teacherAttendance = '/teacher/attendance';
+  static const String teacherMarkAttendance = '/teacher/attendance/mark';
   static const String teacherAnnouncements = '/teacher/announcements';
+  static const String teacherCreateAnnouncement = '/teacher/announcements/create';
   static const String teacherExams = '/teacher/exams';
   static const String teacherCreateExam = '/teacher/exams/create';
   static const String teacherExamBank = '/teacher/exams/bank';
+  static const String teacherLiveExam = '/teacher/exams/live';
   static const String teacherNotifications = '/teacher/notifications';
-  static const String teacherStudentPage = '/teacher/student';
+  static const String teacherStudentList = '/teacher/students';
+  static const String teacherStudentAnalytics = '/teacher/student/analytics';
   static const String teacherCalendar = '/teacher/calendar';
+  static const String teacherMessages = '/teacher/messages';
   static const String teacherSettings = '/teacher/settings';
 
   // Parent
+  static const String parentHome = '/parent/home';
+  static const String parentDashboard = '/parent/dashboard';
   static const String parentAttendance = '/parent/attendance';
+  static const String parentResults = '/parent/results';
   static const String parentStudentInfo = '/parent/student-info';
   static const String parentChat = '/parent/chat';
   static const String parentProfile = '/parent/profile';
