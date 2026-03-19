@@ -57,7 +57,8 @@ class _StudentAnnouncementsScreenState
             ),
 
             // Filter chips
-            Padding(
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: List.generate(_filters.length, (index) {
