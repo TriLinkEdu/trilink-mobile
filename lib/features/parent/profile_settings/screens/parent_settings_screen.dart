@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/theme_notifier.dart';
 
 class ParentSettingsScreen extends StatefulWidget {
   const ParentSettingsScreen({super.key});
@@ -11,6 +12,7 @@ class ParentSettingsScreen extends StatefulWidget {
 class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
   bool _systemAnnouncements = true;
   bool _enhancedPrivacy = false;
+  bool _darkMode = ThemeNotifier.instance.isDark;
 
   @override
   Widget build(BuildContext context) {
@@ -263,6 +265,31 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
           style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
         ),
         onTap: () {},
+      ),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Dark Mode',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+            Switch(
+              value: _darkMode,
+              onChanged: (val) {
+                setState(() => _darkMode = val);
+                ThemeNotifier.instance.toggle();
+              },
+              activeTrackColor: AppColors.primary,
+            ),
+          ],
+        ),
       ),
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),

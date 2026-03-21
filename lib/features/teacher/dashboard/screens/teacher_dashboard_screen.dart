@@ -172,8 +172,10 @@ class TeacherDashboardScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   SizedBox(
+                    width: 5 * 20.0 + 12,
                     height: 32,
                     child: Stack(
+                      clipBehavior: Clip.none,
                       children: List.generate(4, (index) {
                         return Positioned(
                           left: index * 20.0,

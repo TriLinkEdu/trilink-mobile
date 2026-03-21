@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/theme_notifier.dart';
 
 class StudentProfileScreen extends StatefulWidget {
   const StudentProfileScreen({super.key});
@@ -10,7 +11,7 @@ class StudentProfileScreen extends StatefulWidget {
 
 class _StudentProfileScreenState extends State<StudentProfileScreen> {
   bool _pushNotifications = true;
-  bool _darkMode = false;
+  bool _darkMode = ThemeNotifier.instance.isDark;
 
   @override
   Widget build(BuildContext context) {
@@ -195,7 +196,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                             value: _pushNotifications,
                             onChanged: (v) =>
                                 setState(() => _pushNotifications = v),
-                            activeColor: AppColors.primary,
+                            activeTrackColor: AppColors.primary,
                           ),
                         ),
                         _divider(),
@@ -204,8 +205,11 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                           label: 'Dark Mode',
                           trailing: Switch(
                             value: _darkMode,
-                            onChanged: (v) => setState(() => _darkMode = v),
-                            activeColor: AppColors.primary,
+                            onChanged: (v) {
+                              setState(() => _darkMode = v);
+                              ThemeNotifier.instance.toggle();
+                            },
+                            activeTrackColor: AppColors.primary,
                           ),
                         ),
                         _divider(),

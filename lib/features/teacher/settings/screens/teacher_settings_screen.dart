@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/theme_notifier.dart';
 
 class TeacherSettingsScreen extends StatefulWidget {
   const TeacherSettingsScreen({super.key});
@@ -10,6 +11,7 @@ class TeacherSettingsScreen extends StatefulWidget {
 
 class _TeacherSettingsScreenState extends State<TeacherSettingsScreen> {
   bool _predictiveInsights = true;
+  bool _darkMode = ThemeNotifier.instance.isDark;
 
   @override
   Widget build(BuildContext context) {
@@ -275,6 +277,44 @@ class _TeacherSettingsScreenState extends State<TeacherSettingsScreen> {
                 value: _predictiveInsights,
                 onChanged: (val) =>
                     setState(() => _predictiveInsights = val),
+                activeTrackColor: AppColors.primary,
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.indigo.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  _darkMode ? Icons.light_mode : Icons.dark_mode,
+                  color: Colors.indigo,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Text(
+                  'Dark Mode',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              Switch(
+                value: _darkMode,
+                onChanged: (val) {
+                  setState(() => _darkMode = val);
+                  ThemeNotifier.instance.toggle();
+                },
                 activeTrackColor: AppColors.primary,
               ),
             ],
