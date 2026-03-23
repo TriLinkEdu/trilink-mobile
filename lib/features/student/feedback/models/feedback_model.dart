@@ -5,6 +5,7 @@ class FeedbackModel {
   final int rating;
   final String? comment;
   final DateTime createdAt;
+  final String? status;
 
   const FeedbackModel({
     required this.id,
@@ -13,6 +14,7 @@ class FeedbackModel {
     required this.rating,
     this.comment,
     required this.createdAt,
+    this.status,
   });
 
   factory FeedbackModel.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,17 @@ class FeedbackModel {
       rating: json['rating'] as int,
       comment: json['comment'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
+      status: json['status'] as String?,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'subjectId': subjectId,
+        'subjectName': subjectName,
+        'rating': rating,
+        'comment': comment,
+        'createdAt': createdAt.toIso8601String(),
+        'status': status,
+      };
 }

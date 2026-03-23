@@ -25,6 +25,15 @@ class ChatMessageModel {
       isRead: json['isRead'] as bool,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'senderId': senderId,
+        'senderName': senderName,
+        'content': content,
+        'timestamp': timestamp.toIso8601String(),
+        'isRead': isRead,
+      };
 }
 
 class ChatConversationModel {
@@ -33,6 +42,7 @@ class ChatConversationModel {
   final bool isGroup;
   final List<String> participantIds;
   final ChatMessageModel? lastMessage;
+  final int unreadCount;
 
   const ChatConversationModel({
     required this.id,
@@ -40,6 +50,7 @@ class ChatConversationModel {
     required this.isGroup,
     required this.participantIds,
     this.lastMessage,
+    this.unreadCount = 0,
   });
 
   factory ChatConversationModel.fromJson(Map<String, dynamic> json) {
@@ -51,6 +62,16 @@ class ChatConversationModel {
       lastMessage: json['lastMessage'] != null
           ? ChatMessageModel.fromJson(json['lastMessage'])
           : null,
+      unreadCount: json['unreadCount'] as int? ?? 0,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'isGroup': isGroup,
+        'participantIds': participantIds,
+        'lastMessage': lastMessage?.toJson(),
+        'unreadCount': unreadCount,
+      };
 }
