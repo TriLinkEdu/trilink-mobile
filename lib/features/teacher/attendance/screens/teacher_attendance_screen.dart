@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/offline_banner.dart';
 
 class TeacherAttendanceScreen extends StatefulWidget {
   const TeacherAttendanceScreen({super.key});
@@ -102,41 +103,43 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              children: [
-                _buildClassDropdown(),
-                const SizedBox(height: 12),
-                _buildDateAndCount(),
-                const SizedBox(height: 12),
-                _buildSearchBar(),
-                const SizedBox(height: 16),
-                _buildListHeader(),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: ListView.separated(
+      body: OfflineBanner(
+        child: Column(
+          children: [
+            Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              itemCount: _filteredStudents.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 4),
-              itemBuilder: (context, index) {
-                final student = _filteredStudents[index];
-                return _StudentAttendanceTile(
-                  student: student,
-                  onStatusChanged: (status) {
-                    setState(() => student.status = status);
-                  },
-                );
-              },
+              child: Column(
+                children: [
+                  _buildClassDropdown(),
+                  const SizedBox(height: 12),
+                  _buildDateAndCount(),
+                  const SizedBox(height: 12),
+                  _buildSearchBar(),
+                  const SizedBox(height: 16),
+                  _buildListHeader(),
+                ],
+              ),
             ),
-          ),
-          _buildSubmitButton(),
-        ],
+            const SizedBox(height: 8),
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                itemCount: _filteredStudents.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 4),
+                itemBuilder: (context, index) {
+                  final student = _filteredStudents[index];
+                  return _StudentAttendanceTile(
+                    student: student,
+                    onStatusChanged: (status) {
+                      setState(() => student.status = status);
+                    },
+                  );
+                },
+              ),
+            ),
+            _buildSubmitButton(),
+          ],
+        ),
       ),
     );
   }
