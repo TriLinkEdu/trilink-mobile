@@ -193,33 +193,36 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                 .toList(),
           ),
           const SizedBox(height: 8),
-          ...List.generate(2, (week) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: List.generate(7, (day) {
-                  final cellIndex = week * 7 + day;
-                  final dayNum = cellIndex - startWeekday + 1;
+          ...List.generate(
+            ((startWeekday + daysInMonth) / 7).ceil(),
+            (week) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: List.generate(7, (day) {
+                    final cellIndex = week * 7 + day;
+                    final dayNum = cellIndex - startWeekday + 1;
 
-                  if (dayNum < 1) {
-                    final prevDay = previousMonthDays + dayNum;
-                    return _buildDayCell(prevDay, isOtherMonth: true);
-                  }
-                  if (dayNum > daysInMonth) {
+                    if (dayNum < 1) {
+                      final prevDay = previousMonthDays + dayNum;
+                      return _buildDayCell(prevDay, isOtherMonth: true);
+                    }
+                    if (dayNum > daysInMonth) {
+                      return _buildDayCell(
+                        dayNum - daysInMonth,
+                        isOtherMonth: true,
+                      );
+                    }
                     return _buildDayCell(
-                      dayNum - daysInMonth,
-                      isOtherMonth: true,
+                      dayNum,
+                      isSelected: dayNum == _selectedDay,
+                      hasEvent: _daysWithEvents.contains(dayNum),
                     );
-                  }
-                  return _buildDayCell(
-                    dayNum,
-                    isSelected: dayNum == _selectedDay,
-                    hasEvent: _daysWithEvents.contains(dayNum),
-                  );
-                }),
-              ),
-            );
-          }),
+                  }),
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
