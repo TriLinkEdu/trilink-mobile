@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/offline_banner.dart';
 
 class ParentAttendanceScreen extends StatefulWidget {
   final String childName;
@@ -11,6 +12,11 @@ class ParentAttendanceScreen extends StatefulWidget {
 }
 
 class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
+  int _selectedChildIndex = 0;
+  final List<String> _childNames = ['Ahmed Al-Rashid', 'Sara Al-Rashid'];
+
+  String get _displayedChildName => _childNames[_selectedChildIndex];
+
   int _selectedSubject = 0;
   DateTime _currentMonth = DateTime(2023, 10);
   int _selectedDay = 5;
@@ -75,69 +81,78 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircleAvatar(
-                    radius: 10,
-                    backgroundColor: AppColors.primary,
-                    child: Text(
-                      widget.childName.split(' ').map((w) => w[0]).take(2).join(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedChildIndex = (_selectedChildIndex + 1) % _childNames.length;
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(
+                      radius: 10,
+                      backgroundColor: AppColors.primary,
+                      child: Text(
+                        _displayedChildName.split(' ').map((w) => w[0]).take(2).join(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    widget.childName,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary,
+                    const SizedBox(width: 4),
+                    Text(
+                      _displayedChildName,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
-                  ),
-                  const Icon(Icons.keyboard_arrow_down, size: 16),
-                ],
+                    const Icon(Icons.keyboard_arrow_down, size: 16),
+                  ],
+                ),
               ),
             ),
           ],
         ),
         centerTitle: false,
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSubjectFilters(),
-            const SizedBox(height: 16),
-            _buildCalendarSection(),
-            const SizedBox(height: 12),
-            _buildLegend(),
-            const SizedBox(height: 24),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildTermOverview(),
-                  const SizedBox(height: 24),
-                  _buildRecentActivitySection(),
-                  const SizedBox(height: 16),
-                  _buildViewFullHistory(),
-                  const SizedBox(height: 32),
-                ],
+      body: OfflineBanner(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSubjectFilters(),
+              const SizedBox(height: 16),
+              _buildCalendarSection(),
+              const SizedBox(height: 12),
+              _buildLegend(),
+              const SizedBox(height: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildTermOverview(),
+                    const SizedBox(height: 24),
+                    _buildRecentActivitySection(),
+                    const SizedBox(height: 16),
+                    _buildViewFullHistory(),
+                    const SizedBox(height: 32),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
