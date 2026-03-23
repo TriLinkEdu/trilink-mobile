@@ -14,6 +14,77 @@ class _StudentAnnouncementsScreenState
   int _selectedFilter = 0;
   final List<String> _filters = ['All', 'Admin', 'Teacher', 'Calendar'];
 
+  static const List<_AnnouncementData> _allAnnouncements = [
+    _AnnouncementData(
+      section: 'TODAY',
+      category: 'Admin',
+      icon: Icons.warning_amber_rounded,
+      iconColor: Colors.red,
+      iconBgColor: Color(0xFFFEE2E2),
+      title: 'Campus Closure Alert',
+      subtitle: 'Administration',
+      time: '20m ago',
+      body:
+          'Due to severe weather conditions expected this afternoon, all campus...',
+    ),
+    _AnnouncementData(
+      section: 'TODAY',
+      category: 'Calendar',
+      icon: Icons.calendar_today_rounded,
+      iconColor: AppColors.primary,
+      iconBgColor: Color(0xFFDBEAFE),
+      title: 'Final Exam Schedule',
+      subtitle: 'Registrar Office',
+      time: '2h ago',
+      body:
+          'The schedule for the Spring 2024 final exams has been posted. Please revie...',
+    ),
+    _AnnouncementData(
+      section: 'YESTERDAY',
+      category: 'Teacher',
+      icon: Icons.school_rounded,
+      iconColor: Colors.amber,
+      iconBgColor: Color(0xFFFEF3C7),
+      title: 'Biology 101: Class Can...',
+      subtitle: 'Dr. Sarah Johnson',
+      time: 'Yesterday',
+      body:
+          'Due to an unforeseen emergency, today\'s lecture is cancelled. Please...',
+    ),
+    _AnnouncementData(
+      section: 'YESTERDAY',
+      category: 'Teacher',
+      icon: Icons.assignment_rounded,
+      iconColor: Colors.purple,
+      iconBgColor: Color(0xFFEDE9FE),
+      title: 'New Assignment Posted',
+      subtitle: 'Prof. Alan Turing',
+      time: 'Yesterday',
+      body:
+          'The project requirements for "Intro to Algorithms" have been uploaded...',
+    ),
+    _AnnouncementData(
+      section: 'YESTERDAY',
+      category: 'Admin',
+      icon: Icons.menu_book_rounded,
+      iconColor: Colors.green,
+      iconBgColor: Color(0xFFD1FAE5),
+      title: 'Library Hours Extended',
+      subtitle: 'Student Services',
+      time: '2d ago',
+      body:
+          'To help with finals preparation, the main library will remain open 24/7...',
+    ),
+  ];
+
+  List<_AnnouncementData> get _visibleAnnouncements {
+    if (_selectedFilter == 0) return _allAnnouncements;
+    final selectedCategory = _filters[_selectedFilter];
+    return _allAnnouncements
+        .where((announcement) => announcement.category == selectedCategory)
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -46,7 +117,13 @@ class _StudentAnnouncementsScreenState
                     ),
                   ),
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('No unread announcement notifications.'),
+                        ),
+                      );
+                    },
                     icon: const Icon(
                       Icons.notifications_outlined,
                       color: AppColors.primary,
@@ -104,67 +181,40 @@ class _StudentAnnouncementsScreenState
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 children: [
-                  // TODAY section
-                  _SectionHeader(title: 'TODAY'),
-                  const SizedBox(height: 10),
-                  const _AnnouncementItem(
-                    icon: Icons.warning_amber_rounded,
-                    iconColor: Colors.red,
-                    iconBgColor: Color(0xFFFEE2E2),
-                    title: 'Campus Closure Alert',
-                    subtitle: 'Administration',
-                    time: '20m ago',
-                    body:
-                        'Due to severe weather conditions expected this afternoon, all campus...',
-                  ),
-                  const SizedBox(height: 10),
-                  const _AnnouncementItem(
-                    icon: Icons.calendar_today_rounded,
-                    iconColor: AppColors.primary,
-                    iconBgColor: Color(0xFFDBEAFE),
-                    title: 'Final Exam Schedule',
-                    subtitle: 'Registrar Office',
-                    time: '2h ago',
-                    body:
-                        'The schedule for the Spring 2024 final exams has been posted. Please revie...',
-                  ),
-                  const SizedBox(height: 20),
-
-                  // YESTERDAY section
-                  _SectionHeader(title: 'YESTERDAY'),
-                  const SizedBox(height: 10),
-                  const _AnnouncementItem(
-                    icon: Icons.school_rounded,
-                    iconColor: Colors.amber,
-                    iconBgColor: Color(0xFFFEF3C7),
-                    title: 'Biology 101: Class Can...',
-                    subtitle: 'Dr. Sarah Johnson',
-                    time: 'Yesterday',
-                    body:
-                        'Due to an unforeseen emergency, today\'s lecture is cancelled. Please...',
-                  ),
-                  const SizedBox(height: 10),
-                  const _AnnouncementItem(
-                    icon: Icons.assignment_rounded,
-                    iconColor: Colors.purple,
-                    iconBgColor: Color(0xFFEDE9FE),
-                    title: 'New Assignment Posted',
-                    subtitle: 'Prof. Alan Turing',
-                    time: 'Yesterday',
-                    body:
-                        'The project requirements for "Intro to Algorithms" have been uploaded...',
-                  ),
-                  const SizedBox(height: 10),
-                  const _AnnouncementItem(
-                    icon: Icons.menu_book_rounded,
-                    iconColor: Colors.green,
-                    iconBgColor: Color(0xFFD1FAE5),
-                    title: 'Library Hours Extended',
-                    subtitle: 'Student Services',
-                    time: '2d ago',
-                    body:
-                        'To help with finals preparation, the main library will remain open 24/7...',
-                  ),
+                  if (_visibleAnnouncements.isEmpty) ...[
+                    const SizedBox(height: 60),
+                    const Center(
+                      child: Text(
+                        'No announcements in this category yet.',
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                  ] else ...[
+                    for (final section in {'TODAY', 'YESTERDAY'}) ...[
+                      if (_visibleAnnouncements.any(
+                        (announcement) => announcement.section == section,
+                      )) ...[
+                        _SectionHeader(title: section),
+                        const SizedBox(height: 10),
+                        for (final announcement in _visibleAnnouncements.where(
+                          (item) => item.section == section,
+                        )) ...[
+                          _AnnouncementItem(
+                            icon: announcement.icon,
+                            iconColor: announcement.iconColor,
+                            iconBgColor: announcement.iconBgColor,
+                            title: announcement.title,
+                            subtitle: announcement.subtitle,
+                            time: announcement.time,
+                            body: announcement.body,
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                        const SizedBox(height: 10),
+                      ],
+                    ],
+                  ],
                   const SizedBox(height: 24),
                   Center(
                     child: Text(
@@ -184,6 +234,30 @@ class _StudentAnnouncementsScreenState
       ),
     );
   }
+}
+
+class _AnnouncementData {
+  final String section;
+  final String category;
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBgColor;
+  final String title;
+  final String subtitle;
+  final String time;
+  final String body;
+
+  const _AnnouncementData({
+    required this.section,
+    required this.category,
+    required this.icon,
+    required this.iconColor,
+    required this.iconBgColor,
+    required this.title,
+    required this.subtitle,
+    required this.time,
+    required this.body,
+  });
 }
 
 class _SectionHeader extends StatelessWidget {

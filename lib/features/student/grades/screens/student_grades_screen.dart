@@ -2,8 +2,15 @@ import 'package:flutter/material.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 
-class StudentGradesScreen extends StatelessWidget {
+class StudentGradesScreen extends StatefulWidget {
   const StudentGradesScreen({super.key});
+
+  @override
+  State<StudentGradesScreen> createState() => _StudentGradesScreenState();
+}
+
+class _StudentGradesScreenState extends State<StudentGradesScreen> {
+  bool _isThisTerm = true;
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +37,18 @@ class StudentGradesScreen extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      setState(() => _isThisTerm = !_isThisTerm);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            _isThisTerm
+                                ? 'Showing current term grades'
+                                : 'Showing previous term grades',
+                          ),
+                        ),
+                      );
+                    },
                     icon: const Icon(
                       Icons.more_horiz,
                       color: AppColors.textPrimary,
@@ -111,16 +129,22 @@ class StudentGradesScreen extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Fall Semester 2023',
-                          style: TextStyle(
+                        Text(
+                          _isThisTerm ? 'Fall Semester 2023' : 'Spring Semester 2023',
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: AppColors.textPrimary,
                           ),
                         ),
                         TextButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Progress report preview is ready.'),
+                              ),
+                            );
+                          },
                           child: const Text(
                             'View Report',
                             style: TextStyle(

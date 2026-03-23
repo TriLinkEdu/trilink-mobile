@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 
 /// Shows detailed grade breakdown for a specific subject.
-class SubjectGradesScreen extends StatelessWidget {
+class SubjectGradesScreen extends StatefulWidget {
   final String subjectId;
   final String subjectName;
 
@@ -11,6 +11,13 @@ class SubjectGradesScreen extends StatelessWidget {
     required this.subjectId,
     required this.subjectName,
   });
+
+  @override
+  State<SubjectGradesScreen> createState() => _SubjectGradesScreenState();
+}
+
+class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
+  bool _sortByDateDescending = true;
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +41,7 @@ class SubjectGradesScreen extends StatelessWidget {
                   ),
                   Expanded(
                     child: Text(
-                      subjectName,
+                      widget.subjectName,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 18,
@@ -168,9 +175,13 @@ class SubjectGradesScreen extends StatelessWidget {
                           ),
                         ),
                         TextButton(
-                          onPressed: () {},
-                          child: const Text(
-                            'Sort by Date',
+                          onPressed: () {
+                            setState(() => _sortByDateDescending = !_sortByDateDescending);
+                          },
+                          child: Text(
+                            _sortByDateDescending
+                                ? 'Sort by Date ↓'
+                                : 'Sort by Date ↑',
                             style: TextStyle(
                               color: AppColors.primary,
                               fontSize: 13,
@@ -240,7 +251,15 @@ class SubjectGradesScreen extends StatelessWidget {
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton.icon(
-                        onPressed: () {},
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                '${widget.subjectName} report is being prepared.',
+                              ),
+                            ),
+                          );
+                        },
                         icon: const Icon(Icons.download_rounded, size: 20),
                         label: const Text('Download Report PDF'),
                         style: ElevatedButton.styleFrom(

@@ -2,8 +2,15 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 
 /// Gamification hub: streaks, achievements, quick quizzes, leaderboard.
-class GamificationScreen extends StatelessWidget {
+class GamificationScreen extends StatefulWidget {
   const GamificationScreen({super.key});
+
+  @override
+  State<GamificationScreen> createState() => _GamificationScreenState();
+}
+
+class _GamificationScreenState extends State<GamificationScreen> {
+  bool _isWeeklyRanking = true;
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +35,13 @@ class GamificationScreen extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Gamification preferences opening soon.'),
+                        ),
+                      );
+                    },
                     icon: const Icon(
                       Icons.settings_outlined,
                       color: AppColors.primary,
@@ -125,7 +138,13 @@ class GamificationScreen extends StatelessWidget {
                           ),
                         ),
                         TextButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Showing full achievements list.'),
+                              ),
+                            );
+                          },
                           child: const Text(
                             'See All',
                             style: TextStyle(
@@ -188,18 +207,32 @@ class GamificationScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    const _QuickQuizTile(
+                    _QuickQuizTile(
                       icon: Icons.science_rounded,
                       title: 'Physics: Forces',
                       questions: 5,
                       xp: 100,
+                      onStart: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Starting Physics quick quiz...'),
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 10),
-                    const _QuickQuizTile(
+                    _QuickQuizTile(
                       icon: Icons.calculate_rounded,
                       title: 'Math: Algebra',
                       questions: 3,
                       xp: 50,
+                      onStart: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Starting Math quick quiz...'),
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 24),
 
@@ -215,7 +248,12 @@ class GamificationScreen extends StatelessWidget {
                             color: AppColors.textPrimary,
                           ),
                         ),
-                        Row(
+                        InkWell(
+                          onTap: () {
+                            setState(() => _isWeeklyRanking = !_isWeeklyRanking);
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Row(
                           children: [
                             Icon(
                               Icons.swap_vert_rounded,
@@ -224,13 +262,14 @@ class GamificationScreen extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              'Weekly',
+                              _isWeeklyRanking ? 'Weekly' : 'Monthly',
                               style: TextStyle(
                                 fontSize: 13,
                                 color: Colors.grey.shade500,
                               ),
                             ),
                           ],
+                        ),
                         ),
                       ],
                     ),
@@ -336,12 +375,14 @@ class _QuickQuizTile extends StatelessWidget {
   final String title;
   final int questions;
   final int xp;
+  final VoidCallback onStart;
 
   const _QuickQuizTile({
     required this.icon,
     required this.title,
     required this.questions,
     required this.xp,
+    required this.onStart,
   });
 
   @override
@@ -384,7 +425,7 @@ class _QuickQuizTile extends StatelessWidget {
             ),
           ),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: onStart,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               foregroundColor: Colors.white,

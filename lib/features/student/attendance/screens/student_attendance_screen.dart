@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 
-class StudentAttendanceScreen extends StatelessWidget {
+class StudentAttendanceScreen extends StatefulWidget {
   const StudentAttendanceScreen({super.key});
+
+  @override
+  State<StudentAttendanceScreen> createState() =>
+      _StudentAttendanceScreenState();
+}
+
+class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +36,42 @@ class StudentAttendanceScreen extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      showModalBottomSheet<void>(
+                        context: context,
+                        builder: (_) => SafeArea(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ListTile(
+                                leading: const Icon(Icons.calendar_month_rounded),
+                                title: const Text('This Month Summary'),
+                                onTap: () {
+                                  Navigator.of(context).pop();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Showing this month attendance summary.'),
+                                    ),
+                                  );
+                                },
+                              ),
+                              ListTile(
+                                leading: const Icon(Icons.file_download_rounded),
+                                title: const Text('Export Attendance'),
+                                onTap: () {
+                                  Navigator.of(context).pop();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Attendance export is being prepared.'),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                     icon: const Icon(
                       Icons.more_vert,
                       color: AppColors.textPrimary,
@@ -145,7 +187,23 @@ class StudentAttendanceScreen extends StatelessWidget {
                           ),
                         ),
                         TextButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            showDialog<void>(
+                              context: context,
+                              builder: (dialogContext) => AlertDialog(
+                                title: const Text('All Subject Attendance'),
+                                content: const Text(
+                                  'Mathematics 92%\nPhysics 96%\nEnglish Literature 100%',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(dialogContext).pop(),
+                                    child: const Text('Close'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
                           child: const Text(
                             'View All',
                             style: TextStyle(

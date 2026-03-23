@@ -104,7 +104,16 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       ),
       // FAB
       floatingActionButton: FloatingActionButton.small(
-        onPressed: () {},
+        onPressed: () {
+          final message = switch (_selectedTab) {
+            0 => 'Learning path refreshed for today.',
+            1 => 'Top resources selected for your next study session.',
+            _ => 'Evaluation tips prepared based on your recent activity.',
+          };
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
+        },
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
       ),
@@ -358,7 +367,11 @@ class _PathItem extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Continuing $title module...')),
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -389,7 +402,11 @@ class _PathItem extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
-                onPressed: () {},
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Starting $title module...')),
+                  );
+                },
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.textPrimary,
                   side: BorderSide(color: Colors.grey.shade300),
