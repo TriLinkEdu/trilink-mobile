@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'create_group_screen.dart';
+import 'teacher_chat_conversation_screen.dart';
 
 class TeacherMessagesScreen extends StatefulWidget {
   const TeacherMessagesScreen({super.key});
@@ -94,7 +96,14 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const CreateGroupScreen(),
+            ),
+          );
+        },
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.edit, color: Colors.white),
       ),
@@ -231,28 +240,209 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
         children: [
           _buildSectionLabel('ACTIVE THREADS'),
           const SizedBox(height: 8),
-          ..._activeThreads.map((t) => _ThreadTile(thread: t)),
+          ..._activeThreads.map((t) => _ThreadTile(
+                thread: t,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => TeacherChatConversationScreen(
+                        threadName: t.name,
+                      ),
+                    ),
+                  );
+                },
+              )),
           const SizedBox(height: 20),
           _buildSectionLabel('PREVIOUS'),
           const SizedBox(height: 8),
-          ..._previousThreads.map((t) => _ThreadTile(thread: t)),
+          ..._previousThreads.map((t) => _ThreadTile(
+                thread: t,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => TeacherChatConversationScreen(
+                        threadName: t.name,
+                      ),
+                    ),
+                  );
+                },
+              )),
         ],
       ),
     );
   }
 
+  final List<_ParentThread> _parentThreads = [
+    _ParentThread(
+      parentName: 'Mrs. Al-Farsi',
+      childName: "Ahmed's mother",
+      lastMessage: 'Thank you for the update on his progress.',
+      time: '10m ago',
+      unreadCount: 2,
+      avatarColor: Colors.indigo,
+    ),
+    _ParentThread(
+      parentName: 'Mr. Hassan',
+      childName: "Omar's father",
+      lastMessage: 'Can we schedule a meeting this week?',
+      time: '1h ago',
+      unreadCount: 1,
+      avatarColor: Colors.teal,
+    ),
+    _ParentThread(
+      parentName: 'Mrs. Noor',
+      childName: "Fatima's mother",
+      lastMessage: 'She will be absent tomorrow due to a doctor...',
+      time: '3h ago',
+      unreadCount: 0,
+      avatarColor: Colors.deepOrange,
+    ),
+    _ParentThread(
+      parentName: 'Mr. Mohammed',
+      childName: "Sara's father",
+      lastMessage: 'Noted, we will review the homework together.',
+      time: 'Yesterday',
+      unreadCount: 0,
+      avatarColor: Colors.blueGrey,
+    ),
+  ];
+
   Widget _buildParentInboxTab() {
-    return Center(
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.inbox_outlined, size: 48, color: Colors.grey.shade400),
-          const SizedBox(height: 12),
-          Text(
-            'No parent messages yet',
-            style: TextStyle(fontSize: 16, color: Colors.grey.shade500),
-          ),
+          _buildSectionLabel('RECENT CONVERSATIONS'),
+          const SizedBox(height: 8),
+          ..._parentThreads.map((p) => _buildParentTile(p)),
         ],
+      ),
+    );
+  }
+
+  Widget _buildParentTile(_ParentThread parent) {
+    final initials = parent.parentName
+        .replaceAll('Mrs. ', '')
+        .replaceAll('Mr. ', '')
+        .split(' ')
+        .map((w) => w[0])
+        .join();
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => TeacherChatConversationScreen(
+              threadName: parent.parentName,
+              isParent: true,
+            ),
+          ),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: parent.avatarColor.withValues(alpha: 0.15),
+              child: Text(
+                initials,
+                style: TextStyle(
+                  color: parent.avatarColor,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          parent.parentName,
+                          style: TextStyle(
+                            fontWeight: parent.unreadCount > 0
+                                ? FontWeight.w700
+                                : FontWeight.w600,
+                            fontSize: 15,
+                            color: AppColors.textPrimary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Text(
+                        parent.time,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: parent.unreadCount > 0
+                              ? AppColors.primary
+                              : Colors.grey.shade500,
+                          fontWeight: parent.unreadCount > 0
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    parent.childName,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          parent.lastMessage,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                      if (parent.unreadCount > 0)
+                        Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '${parent.unreadCount}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -323,60 +513,82 @@ class _ThreadItem {
   });
 }
 
+class _ParentThread {
+  final String parentName;
+  final String childName;
+  final String lastMessage;
+  final String time;
+  final int unreadCount;
+  final Color avatarColor;
+
+  _ParentThread({
+    required this.parentName,
+    required this.childName,
+    required this.lastMessage,
+    required this.time,
+    required this.unreadCount,
+    required this.avatarColor,
+  });
+}
+
 class _ThreadTile extends StatelessWidget {
   final _ThreadItem thread;
-  const _ThreadTile({required this.thread});
+  final VoidCallback? onTap;
+  const _ThreadTile({required this.thread, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: thread.avatarColor.withValues(alpha: 0.15),
-            child: Icon(thread.icon, color: thread.avatarColor, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        thread.name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                          color: AppColors.textPrimary,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Text(
-                      thread.time,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade500,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  thread.message,
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-              ],
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: thread.avatarColor.withValues(alpha: 0.15),
+              child: Icon(thread.icon, color: thread.avatarColor, size: 22),
             ),
-          ),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          thread.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            color: AppColors.textPrimary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Text(
+                        thread.time,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    thread.message,
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
