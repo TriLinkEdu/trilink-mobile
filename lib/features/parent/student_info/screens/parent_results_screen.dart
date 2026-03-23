@@ -2,15 +2,23 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../../../../core/theme/app_colors.dart';
 
-class ParentResultsScreen extends StatelessWidget {
-  final String studentId;
-  final String studentName;
+class ParentResultsScreen extends StatefulWidget {
+  const ParentResultsScreen({super.key});
 
-  const ParentResultsScreen({
-    super.key,
-    this.studentId = '849201',
-    this.studentName = 'Alex Mercer',
-  });
+  @override
+  State<ParentResultsScreen> createState() => _ParentResultsScreenState();
+}
+
+class _ParentResultsScreenState extends State<ParentResultsScreen> {
+  int _selectedChildIndex = 0;
+
+  final List<Map<String, String>> _children = [
+    {'name': 'Ahmed Al-Rashid', 'id': '849201'},
+    {'name': 'Sara Al-Rashid', 'id': '849202'},
+  ];
+
+  String get studentName => _children[_selectedChildIndex]['name']!;
+  String get studentId => _children[_selectedChildIndex]['id']!;
 
   @override
   Widget build(BuildContext context) {
@@ -32,12 +40,39 @@ class ParentResultsScreen extends StatelessWidget {
         ),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.notifications_outlined,
-              color: AppColors.textPrimary,
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedChildIndex = (_selectedChildIndex + 1) % _children.length;
+              });
+            },
+            child: Container(
+              margin: const EdgeInsets.only(right: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircleAvatar(
+                    radius: 10,
+                    backgroundColor: AppColors.primary,
+                    child: Text(
+                      studentName.split(' ').map((w) => w[0]).take(2).join(),
+                      style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    studentName.split(' ').first,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textPrimary),
+                  ),
+                  const Icon(Icons.keyboard_arrow_down, size: 16),
+                ],
+              ),
             ),
-            onPressed: () {},
           ),
         ],
       ),
