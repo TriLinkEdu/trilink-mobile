@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/offline_banner.dart';
 import '../../attendance/screens/teacher_attendance_screen.dart';
 import '../../exams/screens/create_exam_screen.dart';
 import '../../announcements/screens/create_announcement_screen.dart';
@@ -11,22 +12,24 @@ class TeacherDashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildGreetingHeader(),
-              const SizedBox(height: 24),
-              _buildUpNextCard(context),
-              const SizedBox(height: 20),
-              _buildStatsRow(),
-              const SizedBox(height: 28),
-              _buildQuickActions(context),
-              const SizedBox(height: 28),
-              _buildRecentActivity(),
-            ],
+      body: OfflineBanner(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildGreetingHeader(),
+                const SizedBox(height: 24),
+                _buildUpNextCard(context),
+                const SizedBox(height: 20),
+                _buildStatsRow(),
+                const SizedBox(height: 28),
+                _buildQuickActions(context),
+                const SizedBox(height: 28),
+                _buildRecentActivity(),
+              ],
+            ),
           ),
         ),
       ),
