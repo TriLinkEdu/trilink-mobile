@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../../core/routes/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_notifier.dart';
+import '../../../auth/services/auth_service.dart';
 
 class StudentProfileScreen extends StatefulWidget {
   const StudentProfileScreen({super.key});
@@ -264,8 +266,12 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                       width: double.infinity,
                       height: 48,
                       child: OutlinedButton(
-                        onPressed: () {
-                          // TODO: Implement logout
+                        onPressed: () async {
+                          await AuthService().logout();
+                          if (!context.mounted) return;
+                          Navigator.of(
+                            context,
+                          ).pushNamedAndRemoveUntil(RouteNames.login, (_) => false);
                         },
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.red,
@@ -387,7 +393,7 @@ class _SettingsRow extends StatelessWidget {
               ),
             ),
           ),
-          if (trailing != null) trailing!,
+          if (trailing != null) ...[trailing!],
           if (showChevron)
             Icon(Icons.chevron_right, size: 20, color: Colors.grey.shade400),
         ],

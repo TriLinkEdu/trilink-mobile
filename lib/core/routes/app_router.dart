@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'route_names.dart';
 import '../../features/auth/screens/login_screen.dart';
+import '../../features/auth/services/auth_service.dart';
 
 // Student imports
 import '../../features/student/dashboard/screens/student_main_screen.dart';
@@ -31,7 +32,26 @@ import '../../features/parent/attendance/screens/parent_attendance_screen.dart';
 import '../../features/parent/student_info/screens/parent_results_screen.dart';
 
 class AppRouter {
+  static const Set<String> _studentAllowedRoutes = {
+    RouteNames.login,
+    RouteNames.studentDashboard,
+    RouteNames.studentAnnouncements,
+    RouteNames.studentGrades,
+    RouteNames.studentSubjectGrades,
+    RouteNames.studentAttendance,
+    RouteNames.studentAiAssistant,
+    RouteNames.studentFeedback,
+    RouteNames.studentGamification,
+    RouteNames.studentProfile,
+  };
+
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
+    final currentRole = AuthService().currentRole;
+    if (currentRole == 'student' &&
+        !_studentAllowedRoutes.contains(settings.name)) {
+      return _buildNoopRoute();
+    }
+
     switch (settings.name) {
       // Auth
       case RouteNames.login:
@@ -43,11 +63,14 @@ class AppRouter {
       case RouteNames.studentGrades:
         return MaterialPageRoute(builder: (_) => const StudentGradesScreen());
       case RouteNames.studentSubjectGrades:
-        final args = settings.arguments as Map<String, String>;
+        final args = settings.arguments;
+        final safeArgs = args is Map
+            ? Map<String, dynamic>.from(args)
+            : const <String, dynamic>{};
         return MaterialPageRoute(
           builder: (_) => SubjectGradesScreen(
-            subjectId: args['subjectId'] ?? '',
-            subjectName: args['subjectName'] ?? 'Subject',
+            subjectId: safeArgs['subjectId']?.toString() ?? '',
+            subjectName: safeArgs['subjectName']?.toString() ?? 'Subject',
           ),
         );
       case RouteNames.studentAnnouncements:
@@ -134,4 +157,37 @@ class AppRouter {
         );
     }
   }
+
+  static Route<dynamic> _buildNoopRoute() {
+    return PageRouteBuilder(
+      opaque: false,
+      barrierColor: Colors.transparent,
+      transitionDuration: Duration.zero,
+      reverseTransitionDuration: Duration.zero,
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          const _NavigationNoopScreen(),
+    );
+  }
+}
+
+class _NavigationNoopScreen extends StatefulWidget {
+  const _NavigationNoopScreen();
+
+  @override
+  State<_NavigationNoopScreen> createState() => _NavigationNoopScreenState();
+}
+
+class _NavigationNoopScreenState extends State<_NavigationNoopScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/routes/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 
 class StudentGradesScreen extends StatelessWidget {
@@ -133,7 +134,7 @@ class StudentGradesScreen extends StatelessWidget {
                     const SizedBox(height: 8),
 
                     // Subject Cards
-                    const _SubjectGradeRow(
+                    _SubjectGradeRow(
                       icon: Icons.calculate_rounded,
                       iconBgColor: Color(0xFF1A73E8),
                       name: 'Mathematics',
@@ -142,9 +143,16 @@ class StudentGradesScreen extends StatelessWidget {
                       change: '+4.2%',
                       isPositive: true,
                       isHighlighted: true,
+                      onTap: () => Navigator.of(context).pushNamed(
+                        RouteNames.studentSubjectGrades,
+                        arguments: {
+                          'subjectId': 'mathematics',
+                          'subjectName': 'Mathematics',
+                        },
+                      ),
                     ),
                     const SizedBox(height: 10),
-                    const _SubjectGradeRow(
+                    _SubjectGradeRow(
                       icon: Icons.science_rounded,
                       iconBgColor: Color(0xFF5F6368),
                       name: 'Physics',
@@ -153,9 +161,16 @@ class StudentGradesScreen extends StatelessWidget {
                       change: '-1.5%',
                       isPositive: false,
                       isHighlighted: false,
+                      onTap: () => Navigator.of(context).pushNamed(
+                        RouteNames.studentSubjectGrades,
+                        arguments: {
+                          'subjectId': 'physics',
+                          'subjectName': 'Physics',
+                        },
+                      ),
                     ),
                     const SizedBox(height: 10),
-                    const _SubjectGradeRow(
+                    _SubjectGradeRow(
                       icon: Icons.auto_stories_rounded,
                       iconBgColor: Color(0xFF5F6368),
                       name: 'Literature',
@@ -164,9 +179,16 @@ class StudentGradesScreen extends StatelessWidget {
                       change: '—0%',
                       isPositive: true,
                       isHighlighted: false,
+                      onTap: () => Navigator.of(context).pushNamed(
+                        RouteNames.studentSubjectGrades,
+                        arguments: {
+                          'subjectId': 'literature',
+                          'subjectName': 'Literature',
+                        },
+                      ),
                     ),
                     const SizedBox(height: 10),
-                    const _SubjectGradeRow(
+                    _SubjectGradeRow(
                       icon: Icons.history_edu_rounded,
                       iconBgColor: Color(0xFF5F6368),
                       name: 'History',
@@ -175,9 +197,16 @@ class StudentGradesScreen extends StatelessWidget {
                       change: '+2.1%',
                       isPositive: true,
                       isHighlighted: false,
+                      onTap: () => Navigator.of(context).pushNamed(
+                        RouteNames.studentSubjectGrades,
+                        arguments: {
+                          'subjectId': 'history',
+                          'subjectName': 'History',
+                        },
+                      ),
                     ),
                     const SizedBox(height: 10),
-                    const _SubjectGradeRow(
+                    _SubjectGradeRow(
                       icon: Icons.computer_rounded,
                       iconBgColor: Color(0xFF5F6368),
                       name: 'Computer Science',
@@ -186,6 +215,13 @@ class StudentGradesScreen extends StatelessWidget {
                       change: '+5.5%',
                       isPositive: true,
                       isHighlighted: false,
+                      onTap: () => Navigator.of(context).pushNamed(
+                        RouteNames.studentSubjectGrades,
+                        arguments: {
+                          'subjectId': 'computer-science',
+                          'subjectName': 'Computer Science',
+                        },
+                      ),
                     ),
                     const SizedBox(height: 20),
                   ],
@@ -208,6 +244,7 @@ class _SubjectGradeRow extends StatelessWidget {
   final String change;
   final bool isPositive;
   final bool isHighlighted;
+  final VoidCallback onTap;
 
   const _SubjectGradeRow({
     required this.icon,
@@ -218,109 +255,118 @@ class _SubjectGradeRow extends StatelessWidget {
     required this.change,
     required this.isPositive,
     required this.isHighlighted,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isHighlighted ? AppColors.primary : Colors.white,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(8),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: isHighlighted ? AppColors.primary : Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(8),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: isHighlighted
-                  ? Colors.white.withAlpha(40)
-                  : iconBgColor.withAlpha(20),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              icon,
-              color: isHighlighted ? Colors.white : iconBgColor,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: isHighlighted ? Colors.white : AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  detail,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: isHighlighted
-                        ? Colors.white.withAlpha(180)
-                        : Colors.grey.shade500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          child: Row(
             children: [
-              Text(
-                grade,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: isHighlighted ? Colors.white : AppColors.textPrimary,
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: isHighlighted
+                      ? Colors.white.withAlpha(40)
+                      : iconBgColor.withAlpha(20),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  icon,
+                  color: isHighlighted ? Colors.white : iconBgColor,
+                  size: 22,
                 ),
               ),
-              const SizedBox(height: 2),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    isPositive
-                        ? Icons.trending_up_rounded
-                        : Icons.trending_down_rounded,
-                    size: 14,
-                    color: isHighlighted
-                        ? Colors.white.withAlpha(180)
-                        : isPositive
-                        ? Colors.green
-                        : Colors.red,
-                  ),
-                  const SizedBox(width: 2),
-                  Text(
-                    change,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: isHighlighted
-                          ? Colors.white.withAlpha(180)
-                          : isPositive
-                          ? Colors.green
-                          : Colors.red,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color:
+                            isHighlighted ? Colors.white : AppColors.textPrimary,
+                      ),
                     ),
+                    const SizedBox(height: 2),
+                    Text(
+                      detail,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isHighlighted
+                            ? Colors.white.withAlpha(180)
+                            : Colors.grey.shade500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    grade,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isHighlighted ? Colors.white : AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isPositive
+                            ? Icons.trending_up_rounded
+                            : Icons.trending_down_rounded,
+                        size: 14,
+                        color: isHighlighted
+                            ? Colors.white.withAlpha(180)
+                            : isPositive
+                            ? Colors.green
+                            : Colors.red,
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        change,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isHighlighted
+                              ? Colors.white.withAlpha(180)
+                              : isPositive
+                              ? Colors.green
+                              : Colors.red,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
