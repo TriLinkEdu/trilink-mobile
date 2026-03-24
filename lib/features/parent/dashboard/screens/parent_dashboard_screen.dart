@@ -1,42 +1,93 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/offline_banner.dart';
 
-class ParentDashboardScreen extends StatelessWidget {
-  final String childName;
-  final String childId;
+class ParentDashboardScreen extends StatefulWidget {
+  const ParentDashboardScreen({super.key});
 
-  const ParentDashboardScreen({
-    super.key,
-    this.childName = 'Sara Mekonnen',
-    this.childId = '99281',
-  });
+  @override
+  State<ParentDashboardScreen> createState() => _ParentDashboardScreenState();
+}
+
+class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
+  int _selectedChildIndex = 0;
+
+  final List<Map<String, String>> _children = [
+    {'name': 'Ahmed Al-Rashid', 'id': '99281', 'avatar': 'https://i.pravatar.cc/80?img=47'},
+    {'name': 'Sara Al-Rashid', 'id': '99282', 'avatar': 'https://i.pravatar.cc/80?img=32'},
+  ];
+
+  final List<Map<String, String>> _overviewData = [
+    {'average': '89%', 'avgDelta': '+2.1%', 'attendance': '96%', 'absences': '2 Absences', 'tasks': '3'},
+    {'average': '92%', 'avgDelta': '+3.5%', 'attendance': '98%', 'absences': '1 Absence', 'tasks': '1'},
+  ];
+
+  String get _childName => _children[_selectedChildIndex]['name']!;
+  String get _childAvatar => _children[_selectedChildIndex]['avatar']!;
+
+  void _showChildPicker() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('Select Child', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+            ...List.generate(_children.length, (i) {
+              final child = _children[i];
+              return ListTile(
+                leading: CircleAvatar(backgroundImage: NetworkImage(child['avatar']!)),
+                title: Text(child['name']!),
+                trailing: _selectedChildIndex == i
+                    ? const Icon(Icons.check_circle, color: AppColors.primary)
+                    : null,
+                onTap: () {
+                  setState(() => _selectedChildIndex = i);
+                  Navigator.pop(ctx);
+                },
+              );
+            }),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(context),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 20),
-                    _buildOverviewSection(),
-                    const SizedBox(height: 16),
-                    _buildContactTeacher(),
-                    const SizedBox(height: 24),
-                    _buildRecentActivity(),
-                    const SizedBox(height: 24),
-                  ],
+      body: OfflineBanner(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(context),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 20),
+                      _buildOverviewSection(),
+                      const SizedBox(height: 16),
+                      _buildContactTeacher(),
+                      const SizedBox(height: 24),
+                      _buildRecentActivity(),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -53,20 +104,25 @@ class ParentDashboardScreen extends StatelessWidget {
           const SizedBox(width: 12),
           CircleAvatar(
             radius: 18,
-            backgroundImage: const NetworkImage(
-              'https://i.pravatar.cc/80?img=47',
-            ),
+            backgroundImage: NetworkImage(_childAvatar),
           ),
           const SizedBox(width: 8),
-          Text(
-            childName,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+          GestureDetector(
+            onTap: _showChildPicker,
+            child: Row(
+              children: [
+                Text(
+                  _childName,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const Icon(Icons.keyboard_arrow_down, size: 20),
+              ],
             ),
           ),
-          const Icon(Icons.keyboard_arrow_down, size: 20),
           const Spacer(),
           Container(
             padding: const EdgeInsets.all(8),
@@ -86,6 +142,7 @@ class ParentDashboardScreen extends StatelessWidget {
   }
 
   Widget _buildOverviewSection() {
+    final data = _overviewData[_selectedChildIndex];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -119,8 +176,8 @@ class ParentDashboardScreen extends StatelessWidget {
                 icon: Icons.trending_up,
                 iconColor: AppColors.secondary,
                 label: 'AVERAGE',
-                value: '89%',
-                subtitle: '+2.1%',
+                value: data['average']!,
+                subtitle: data['avgDelta']!,
                 subtitleColor: AppColors.secondary,
               ),
             ),
@@ -130,8 +187,8 @@ class ParentDashboardScreen extends StatelessWidget {
                 icon: Icons.check_circle_outline,
                 iconColor: AppColors.primary,
                 label: 'ATTENDANCE',
-                value: '96%',
-                subtitle: '2 Absences',
+                value: data['attendance']!,
+                subtitle: data['absences']!,
                 subtitleColor: Colors.grey.shade500,
               ),
             ),
@@ -141,7 +198,7 @@ class ParentDashboardScreen extends StatelessWidget {
                 icon: Icons.assignment_outlined,
                 iconColor: Colors.orange,
                 label: 'TASKS',
-                value: '3',
+                value: data['tasks']!,
                 subtitle: 'Due Soon',
                 subtitleColor: AppColors.error,
               ),

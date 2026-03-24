@@ -26,18 +26,25 @@ class RouteNames {
   static const String teacherDashboard = '/teacher/dashboard';
   static const String teacherAttendance = '/teacher/attendance';
   static const String teacherMarkAttendance = '/teacher/attendance/mark';
+  static const String teacherAttendanceAnalytics = '/teacher/attendance/analytics';
   static const String teacherAnnouncements = '/teacher/announcements';
   static const String teacherCreateAnnouncement = '/teacher/announcements/create';
   static const String teacherExams = '/teacher/exams';
   static const String teacherCreateExam = '/teacher/exams/create';
   static const String teacherExamBank = '/teacher/exams/bank';
+  static const String teacherExamAnalytics = '/teacher/exams/analytics';
+  static const String teacherEvaluateSubmissions = '/teacher/exams/evaluate';
   static const String teacherLiveExam = '/teacher/exams/live';
   static const String teacherNotifications = '/teacher/notifications';
   static const String teacherStudentList = '/teacher/students';
   static const String teacherStudentAnalytics = '/teacher/student/analytics';
   static const String teacherCalendar = '/teacher/calendar';
   static const String teacherMessages = '/teacher/messages';
+  static const String teacherChatConversation = '/teacher/messages/conversation';
+  static const String teacherCreateGroup = '/teacher/messages/create-group';
+  static const String teacherClasses = '/teacher/classes';
   static const String teacherSettings = '/teacher/settings';
+  static const String teacherAiAssistant = '/teacher/ai-assistant';
 
   // Parent
   static const String parentHome = '/parent/home';
@@ -48,4 +55,9 @@ class RouteNames {
   static const String parentChat = '/parent/chat';
   static const String parentProfile = '/parent/profile';
   static const String parentSettings = '/parent/settings';
+  static const String parentNotifications = '/parent/notifications';
+  static const String parentAnnouncements = '/parent/announcements';
+  static const String parentFeedback = '/parent/feedback';
+  static const String parentWeeklyReport = '/parent/weekly-report';
+  static const String parentReportComparison = '/parent/report-comparison';
 }

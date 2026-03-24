@@ -83,10 +83,7 @@ class ParentHomeScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const ParentDashboardScreen(
-                    childName: 'Sara Mekonnen',
-                    childId: '99281',
-                  ),
+                  builder: (_) => const ParentDashboardScreen(),
                 ),
               );
             },
@@ -101,10 +98,7 @@ class ParentHomeScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const ParentDashboardScreen(
-                    childName: 'Samuel',
-                    childId: '99290',
-                  ),
+                  builder: (_) => const ParentDashboardScreen(),
                 ),
               );
             },
