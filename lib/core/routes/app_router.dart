@@ -13,6 +13,10 @@ import '../../features/student/profile/screens/student_profile_screen.dart';
 import '../../features/student/ai_assistant/screens/ai_assistant_screen.dart';
 import '../../features/student/gamification/screens/gamification_screen.dart';
 import '../../features/student/feedback/screens/student_feedback_screen.dart';
+import '../../features/student/notifications/screens/student_notifications_screen.dart';
+import '../../features/student/chat/screens/student_chat_screen.dart';
+import '../../features/student/calendar/screens/student_calendar_screen.dart';
+import '../../features/student/settings/screens/student_settings_screen.dart';
 
 // Teacher imports
 import '../../features/teacher/dashboard/screens/teacher_main_screen.dart';
@@ -39,10 +43,14 @@ class AppRouter {
     RouteNames.studentGrades,
     RouteNames.studentSubjectGrades,
     RouteNames.studentAttendance,
+    RouteNames.studentNotifications,
+    RouteNames.studentChat,
     RouteNames.studentAiAssistant,
     RouteNames.studentFeedback,
     RouteNames.studentGamification,
+    RouteNames.studentCalendar,
     RouteNames.studentProfile,
+    RouteNames.studentSettings,
   };
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -81,8 +89,18 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => const StudentAttendanceScreen(),
         );
+      case RouteNames.studentNotifications:
+        return MaterialPageRoute(
+          builder: (_) => const StudentNotificationsScreen(),
+        );
+      case RouteNames.studentChat:
+        return MaterialPageRoute(builder: (_) => const StudentChatScreen());
       case RouteNames.studentProfile:
         return MaterialPageRoute(builder: (_) => const StudentProfileScreen());
+      case RouteNames.studentCalendar:
+        return MaterialPageRoute(builder: (_) => const StudentCalendarScreen());
+      case RouteNames.studentSettings:
+        return MaterialPageRoute(builder: (_) => const StudentSettingsScreen());
       case RouteNames.studentAiAssistant:
         return MaterialPageRoute(builder: (_) => const AiAssistantScreen());
       case RouteNames.studentGamification:
