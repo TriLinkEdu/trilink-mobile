@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../models/announcement_model.dart';
+import '../repositories/mock_student_announcements_repository.dart';
+import '../repositories/student_announcements_repository.dart';
 
 class StudentAnnouncementsScreen extends StatefulWidget {
   const StudentAnnouncementsScreen({super.key});
@@ -13,75 +16,51 @@ class _StudentAnnouncementsScreenState
     extends State<StudentAnnouncementsScreen> {
   int _selectedFilter = 0;
   final List<String> _filters = ['All', 'Admin', 'Teacher', 'Calendar'];
+  final StudentAnnouncementsRepository _repository =
+      MockStudentAnnouncementsRepository();
+  bool _isLoading = true;
+  String? _error;
+  List<AnnouncementModel> _announcements = const [];
 
-  static const List<_AnnouncementData> _allAnnouncements = [
-    _AnnouncementData(
-      section: 'TODAY',
-      category: 'Admin',
-      icon: Icons.warning_amber_rounded,
-      iconColor: Colors.red,
-      iconBgColor: Color(0xFFFEE2E2),
-      title: 'Campus Closure Alert',
-      subtitle: 'Administration',
-      time: '20m ago',
-      body:
-          'Due to severe weather conditions expected this afternoon, all campus...',
-    ),
-    _AnnouncementData(
-      section: 'TODAY',
-      category: 'Calendar',
-      icon: Icons.calendar_today_rounded,
-      iconColor: AppColors.primary,
-      iconBgColor: Color(0xFFDBEAFE),
-      title: 'Final Exam Schedule',
-      subtitle: 'Registrar Office',
-      time: '2h ago',
-      body:
-          'The schedule for the Spring 2024 final exams has been posted. Please revie...',
-    ),
-    _AnnouncementData(
-      section: 'YESTERDAY',
-      category: 'Teacher',
-      icon: Icons.school_rounded,
-      iconColor: Colors.amber,
-      iconBgColor: Color(0xFFFEF3C7),
-      title: 'Biology 101: Class Can...',
-      subtitle: 'Dr. Sarah Johnson',
-      time: 'Yesterday',
-      body:
-          'Due to an unforeseen emergency, today\'s lecture is cancelled. Please...',
-    ),
-    _AnnouncementData(
-      section: 'YESTERDAY',
-      category: 'Teacher',
-      icon: Icons.assignment_rounded,
-      iconColor: Colors.purple,
-      iconBgColor: Color(0xFFEDE9FE),
-      title: 'New Assignment Posted',
-      subtitle: 'Prof. Alan Turing',
-      time: 'Yesterday',
-      body:
-          'The project requirements for "Intro to Algorithms" have been uploaded...',
-    ),
-    _AnnouncementData(
-      section: 'YESTERDAY',
-      category: 'Admin',
-      icon: Icons.menu_book_rounded,
-      iconColor: Colors.green,
-      iconBgColor: Color(0xFFD1FAE5),
-      title: 'Library Hours Extended',
-      subtitle: 'Student Services',
-      time: '2d ago',
-      body:
-          'To help with finals preparation, the main library will remain open 24/7...',
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadAnnouncements();
+  }
 
-  List<_AnnouncementData> get _visibleAnnouncements {
-    if (_selectedFilter == 0) return _allAnnouncements;
-    final selectedCategory = _filters[_selectedFilter];
-    return _allAnnouncements
-        .where((announcement) => announcement.category == selectedCategory)
+  Future<void> _loadAnnouncements() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final announcements = await _repository.fetchAnnouncements();
+      if (!mounted) return;
+      setState(() {
+        _announcements = announcements;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Unable to load announcements right now.';
+        _isLoading = false;
+      });
+    }
+  }
+
+  List<AnnouncementModel> get _visibleAnnouncements {
+    if (_selectedFilter == 0) return _announcements;
+    final selectedCategory = _filters[_selectedFilter].toLowerCase();
+    if (selectedCategory == 'calendar') {
+      return _announcements
+          .where((announcement) => announcement.category == 'calendar')
+          .toList();
+    }
+    return _announcements
+        .where((announcement) =>
+            announcement.authorRole.toLowerCase() == selectedCategory)
         .toList();
   }
 
@@ -178,7 +157,23 @@ class _StudentAnnouncementsScreenState
 
             // Announcements list
             Expanded(
-              child: ListView(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(_error!, style: const TextStyle(color: Colors.red)),
+                          const SizedBox(height: 10),
+                          ElevatedButton(
+                            onPressed: _loadAnnouncements,
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 children: [
                   if (_visibleAnnouncements.isEmpty) ...[
@@ -193,20 +188,20 @@ class _StudentAnnouncementsScreenState
                   ] else ...[
                     for (final section in {'TODAY', 'YESTERDAY'}) ...[
                       if (_visibleAnnouncements.any(
-                        (announcement) => announcement.section == section,
+                        (announcement) => _sectionFor(announcement) == section,
                       )) ...[
                         _SectionHeader(title: section),
                         const SizedBox(height: 10),
                         for (final announcement in _visibleAnnouncements.where(
-                          (item) => item.section == section,
+                          (item) => _sectionFor(item) == section,
                         )) ...[
                           _AnnouncementItem(
-                            icon: announcement.icon,
-                            iconColor: announcement.iconColor,
-                            iconBgColor: announcement.iconBgColor,
+                            icon: _iconFor(announcement),
+                            iconColor: _iconColorFor(announcement),
+                            iconBgColor: _iconBgFor(announcement),
                             title: announcement.title,
-                            subtitle: announcement.subtitle,
-                            time: announcement.time,
+                            subtitle: announcement.authorName,
+                            time: _timeLabel(announcement.createdAt),
                             body: announcement.body,
                           ),
                           const SizedBox(height: 10),
@@ -234,30 +229,39 @@ class _StudentAnnouncementsScreenState
       ),
     );
   }
-}
 
-class _AnnouncementData {
-  final String section;
-  final String category;
-  final IconData icon;
-  final Color iconColor;
-  final Color iconBgColor;
-  final String title;
-  final String subtitle;
-  final String time;
-  final String body;
+  String _sectionFor(AnnouncementModel model) {
+    final daysAgo = DateTime.now().difference(model.createdAt).inDays;
+    return daysAgo <= 0 ? 'TODAY' : 'YESTERDAY';
+  }
 
-  const _AnnouncementData({
-    required this.section,
-    required this.category,
-    required this.icon,
-    required this.iconColor,
-    required this.iconBgColor,
-    required this.title,
-    required this.subtitle,
-    required this.time,
-    required this.body,
-  });
+  String _timeLabel(DateTime createdAt) {
+    final difference = DateTime.now().difference(createdAt);
+    if (difference.inMinutes < 60) return '${difference.inMinutes}m ago';
+    if (difference.inHours < 24) return '${difference.inHours}h ago';
+    if (difference.inDays == 1) return 'Yesterday';
+    return '${difference.inDays}d ago';
+  }
+
+  IconData _iconFor(AnnouncementModel model) {
+    if (model.category == 'calendar') return Icons.calendar_today_rounded;
+    if (model.authorRole.toLowerCase() == 'teacher') return Icons.school_rounded;
+    return Icons.warning_amber_rounded;
+  }
+
+  Color _iconColorFor(AnnouncementModel model) {
+    if (model.category == 'calendar') return AppColors.primary;
+    if (model.authorRole.toLowerCase() == 'teacher') return Colors.amber;
+    return Colors.red;
+  }
+
+  Color _iconBgFor(AnnouncementModel model) {
+    if (model.category == 'calendar') return const Color(0xFFDBEAFE);
+    if (model.authorRole.toLowerCase() == 'teacher') {
+      return const Color(0xFFFEF3C7);
+    }
+    return const Color(0xFFFEE2E2);
+  }
 }
 
 class _SectionHeader extends StatelessWidget {

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../models/ai_assistant_models.dart';
+import '../repositories/mock_student_ai_assistant_repository.dart';
+import '../repositories/student_ai_assistant_repository.dart';
 
 /// AI Assistant with Learning Path, Resources, and Evaluate Me tabs.
 class AiAssistantScreen extends StatefulWidget {
@@ -12,6 +15,103 @@ class AiAssistantScreen extends StatefulWidget {
 class _AiAssistantScreenState extends State<AiAssistantScreen> {
   int _selectedTab = 0;
   final List<String> _tabs = ['Learning Path', 'Resources', 'Evaluate M...'];
+  final StudentAiAssistantRepository _repository =
+      MockStudentAiAssistantRepository();
+
+  bool _isLoading = true;
+  String? _error;
+  AiAssistantData? _assistantData;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAssistantData();
+  }
+
+  Future<void> _loadAssistantData() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final data = await _repository.fetchAssistantData();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _assistantData = data;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = 'Unable to load AI assistant content right now.';
+      });
+    } finally {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Widget _buildContent() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                color: AppColors.textSecondary,
+                size: 34,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 14),
+              OutlinedButton(
+                onPressed: _loadAssistantData,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final data = _assistantData;
+    if (data == null) {
+      return const Center(
+        child: Text(
+          'No AI assistant data available.',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+      );
+    }
+
+    return IndexedStack(
+      index: _selectedTab,
+      children: [
+        _LearningPathTab(pathItems: data.learningPath),
+        _ResourcesTab(resources: data.resources),
+        _EvaluateTab(insights: data.insights),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,14 +190,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
 
             // Content
             Expanded(
-              child: IndexedStack(
-                index: _selectedTab,
-                children: const [
-                  _LearningPathTab(),
-                  _ResourcesTab(),
-                  _EvaluateTab(),
-                ],
-              ),
+              child: _buildContent(),
             ),
           ],
         ),
@@ -124,7 +217,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
 // ─── Learning Path Tab ───────────────────────────────────────────────────────
 
 class _LearningPathTab extends StatelessWidget {
-  const _LearningPathTab();
+  final List<LearningPathItemModel> pathItems;
+
+  const _LearningPathTab({required this.pathItems});
 
   @override
   Widget build(BuildContext context) {
@@ -180,35 +275,40 @@ class _LearningPathTab extends StatelessWidget {
           const SizedBox(height: 20),
 
           // Path items
-          const _PathItem(
-            index: 1,
-            icon: Icons.rocket_launch_rounded,
-            title: 'Forces & Motion',
-            subject: 'Physics',
-            duration: '15 min',
-            progress: 0.6,
-            isActive: true,
-          ),
-          const SizedBox(height: 14),
-          const _PathItem(
-            index: 2,
-            icon: Icons.precision_manufacturing_rounded,
-            title: "Newton's Laws",
-            subject: 'Physics',
-            duration: '20 min',
-            progress: 0.0,
-            isActive: false,
-          ),
-          const SizedBox(height: 14),
-          const _PathItem(
-            index: 3,
-            icon: Icons.speed_rounded,
-            title: 'Friction & Gravity',
-            subject: 'Physics',
-            duration: '10 min',
-            progress: 0.0,
-            isActive: false,
-          ),
+          if (pathItems.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Text(
+                  'No learning path steps available.',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+              ),
+            )
+          else
+            ...List.generate(pathItems.length, (index) {
+              final item = pathItems[index];
+              final icon = switch (index % 3) {
+                0 => Icons.rocket_launch_rounded,
+                1 => Icons.precision_manufacturing_rounded,
+                _ => Icons.speed_rounded,
+              };
+
+              return Padding(
+                padding: EdgeInsets.only(
+                  bottom: index == pathItems.length - 1 ? 0 : 14,
+                ),
+                child: _PathItem(
+                  index: item.step,
+                  icon: icon,
+                  title: item.title,
+                  subject: item.subject,
+                  duration: item.duration,
+                  progress: item.progress,
+                  isActive: item.isActive,
+                ),
+              );
+            }),
           const SizedBox(height: 20),
 
           // AI Insight
@@ -247,7 +347,9 @@ class _LearningPathTab extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "You seem to learn faster with visual aids. We've prioritized video content for your next topics.",
+                        pathItems.isNotEmpty
+                            ? "Your current focus is ${pathItems.first.title}. Continue this step before moving to the next module."
+                            : 'Your personalized tips will appear after your next activity.',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey.shade600,
@@ -431,15 +533,88 @@ class _PathItem extends StatelessWidget {
 // ─── Resources Tab ───────────────────────────────────────────────────────────
 
 class _ResourcesTab extends StatelessWidget {
-  const _ResourcesTab();
+  final List<ResourceRecommendationModel> resources;
+
+  const _ResourcesTab({required this.resources});
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        'AI-curated study resources coming soon',
-        style: TextStyle(color: AppColors.textSecondary),
-      ),
+    if (resources.isEmpty) {
+      return const Center(
+        child: Text(
+          'No study resources available right now.',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(20),
+      itemBuilder: (context, index) {
+        final resource = resources[index];
+        final icon = switch (resource.type.toLowerCase()) {
+          'video' => Icons.ondemand_video_rounded,
+          'worksheet' => Icons.assignment_rounded,
+          'article' => Icons.article_rounded,
+          _ => Icons.menu_book_rounded,
+        };
+
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withAlpha(22),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: AppColors.primary, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      resource.title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${resource.type} • ${resource.estimatedTime} • ${resource.level}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Opening ${resource.title}...')),
+                  );
+                },
+                child: const Text('Open'),
+              ),
+            ],
+          ),
+        );
+      },
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemCount: resources.length,
     );
   }
 }
@@ -447,15 +622,78 @@ class _ResourcesTab extends StatelessWidget {
 // ─── Evaluate Tab ────────────────────────────────────────────────────────────
 
 class _EvaluateTab extends StatelessWidget {
-  const _EvaluateTab();
+  final List<EvaluateInsightModel> insights;
+
+  const _EvaluateTab({required this.insights});
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        'AI evaluation coming soon',
-        style: TextStyle(color: AppColors.textSecondary),
-      ),
+    if (insights.isEmpty) {
+      return const Center(
+        child: Text(
+          'No evaluation insights available right now.',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(20),
+      itemBuilder: (context, index) {
+        final insight = insights[index];
+
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.insights_rounded,
+                    color: AppColors.primary,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    insight.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                insight.summary,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade700,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Recommendation: ${insight.recommendation}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemCount: insights.length,
     );
   }
 }

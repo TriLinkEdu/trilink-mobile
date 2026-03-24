@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../models/attendance_model.dart';
+import '../repositories/mock_student_attendance_repository.dart';
+import '../repositories/student_attendance_repository.dart';
 
 class StudentAttendanceScreen extends StatefulWidget {
   const StudentAttendanceScreen({super.key});
@@ -10,6 +13,39 @@ class StudentAttendanceScreen extends StatefulWidget {
 }
 
 class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
+  final StudentAttendanceRepository _repository =
+      MockStudentAttendanceRepository();
+  bool _isLoading = true;
+  String? _error;
+  List<AttendanceModel> _records = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAttendance();
+  }
+
+  Future<void> _loadAttendance() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final records = await _repository.fetchAttendanceRecords();
+      if (!mounted) return;
+      setState(() {
+        _records = records;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Unable to load attendance records.';
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,11 +118,34 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
             ),
 
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(_error!, style: const TextStyle(color: Colors.red)),
+                          const SizedBox(height: 10),
+                          ElevatedButton(
+                            onPressed: _loadAttendance,
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : _records.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No attendance records yet.',
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                     // Overall Attendance Card
                     Container(
                       width: double.infinity,
@@ -109,9 +168,9 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          const Text(
-                            '94%',
-                            style: TextStyle(
+                          Text(
+                            '${_overallAttendance.toStringAsFixed(0)}%',
+                            style: const TextStyle(
                               fontSize: 48,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
@@ -153,17 +212,17 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
                               _AttendanceStat(
-                                value: '45',
+                                value: '$presentCount',
                                 label: 'PRESENT',
                                 bgColor: Colors.white.withAlpha(30),
                               ),
                               _AttendanceStat(
-                                value: '2',
+                                value: '$absentCount',
                                 label: 'ABSENT',
                                 bgColor: Colors.white.withAlpha(30),
                               ),
                               _AttendanceStat(
-                                value: '1',
+                                value: '$lateCount',
                                 label: 'LATE',
                                 bgColor: Colors.white.withAlpha(30),
                               ),
@@ -192,8 +251,13 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
                               context: context,
                               builder: (dialogContext) => AlertDialog(
                                 title: const Text('All Subject Attendance'),
-                                content: const Text(
-                                  'Mathematics 92%\nPhysics 96%\nEnglish Literature 100%',
+                                content: Text(
+                                  _subjectSummaries
+                                      .map(
+                                        (summary) =>
+                                            '${summary.name} ${summary.percentageLabel}',
+                                      )
+                                      .join('\n'),
                                 ),
                                 actions: [
                                   TextButton(
@@ -217,32 +281,18 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
                     const SizedBox(height: 8),
 
                     // Subject rows
-                    _SubjectAttendanceRow(
-                      icon: Icons.calculate_rounded,
-                      iconColor: AppColors.primary,
-                      name: 'Mathematics',
-                      totalClasses: 24,
-                      percentage: '92%',
-                      dots: _generateDots(20, 2, 2),
-                    ),
-                    const SizedBox(height: 16),
-                    _SubjectAttendanceRow(
-                      icon: Icons.science_rounded,
-                      iconColor: Colors.purple,
-                      name: 'Physics',
-                      totalClasses: 20,
-                      percentage: '96%',
-                      dots: _generateDots(19, 0, 1),
-                    ),
-                    const SizedBox(height: 16),
-                    _SubjectAttendanceRow(
-                      icon: Icons.auto_stories_rounded,
-                      iconColor: Colors.orange,
-                      name: 'English Literature',
-                      totalClasses: 18,
-                      percentage: '100%',
-                      dots: _generateDots(18, 0, 0),
-                    ),
+                    for (int index = 0; index < _subjectSummaries.length; index++) ...[
+                      _SubjectAttendanceRow(
+                        icon: _iconForSubject(_subjectSummaries[index].name),
+                        iconColor: _colorForSubject(_subjectSummaries[index].name),
+                        name: _subjectSummaries[index].name,
+                        totalClasses: _subjectSummaries[index].total,
+                        percentage: _subjectSummaries[index].percentageLabel,
+                        dots: _subjectSummaries[index].dots,
+                      ),
+                      if (index < _subjectSummaries.length - 1)
+                        const SizedBox(height: 16),
+                    ],
                     const SizedBox(height: 24),
 
                     // Legend
@@ -272,19 +322,74 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
     );
   }
 
-  static List<_DotStatus> _generateDots(int present, int absent, int late) {
-    final dots = <_DotStatus>[];
-    for (int i = 0; i < present; i++) {
-      dots.add(_DotStatus.present);
-    }
-    for (int i = 0; i < late; i++) {
-      dots.add(_DotStatus.late);
-    }
-    for (int i = 0; i < absent; i++) {
-      dots.add(_DotStatus.absent);
-    }
-    return dots;
+  int get presentCount => _records.where((record) => record.isPresent).length;
+
+  int get absentCount => _records.length - presentCount;
+
+  int get lateCount => 0;
+
+  double get _overallAttendance {
+    if (_records.isEmpty) return 0;
+    return (presentCount / _records.length) * 100;
   }
+
+  List<_SubjectAttendanceSummary> get _subjectSummaries {
+    final grouped = <String, List<AttendanceModel>>{};
+    for (final record in _records) {
+      grouped.putIfAbsent(record.subjectId, () => <AttendanceModel>[]).add(record);
+    }
+
+    return grouped.entries.map((entry) {
+      final records = entry.value..sort((a, b) => a.date.compareTo(b.date));
+      final present = records.where((record) => record.isPresent).length;
+      final percentage = records.isEmpty ? 0.0 : (present / records.length) * 100;
+
+      return _SubjectAttendanceSummary(
+        name: records.first.subjectName,
+        total: records.length,
+        percentage: percentage,
+        percentageLabel: '${percentage.toStringAsFixed(0)}%',
+        dots: records
+            .map((record) => record.isPresent ? _DotStatus.present : _DotStatus.absent)
+            .toList(),
+      );
+    }).toList()
+      ..sort((a, b) => b.percentage.compareTo(a.percentage));
+  }
+
+  IconData _iconForSubject(String subjectName) {
+    return switch (subjectName.toLowerCase()) {
+      'mathematics' => Icons.calculate_rounded,
+      'physics' => Icons.science_rounded,
+      'english literature' || 'literature' => Icons.auto_stories_rounded,
+      _ => Icons.school_rounded,
+    };
+  }
+
+  Color _colorForSubject(String subjectName) {
+    return switch (subjectName.toLowerCase()) {
+      'mathematics' => AppColors.primary,
+      'physics' => Colors.purple,
+      'english literature' || 'literature' => Colors.orange,
+      _ => Colors.grey,
+    };
+  }
+}
+
+class _SubjectAttendanceSummary {
+  final String name;
+  final int total;
+  final double percentage;
+  final String percentageLabel;
+  final List<_DotStatus> dots;
+
+  const _SubjectAttendanceSummary({
+    required this.name,
+    required this.total,
+    required this.percentage,
+    required this.percentageLabel,
+    required this.dots,
+  });
 }
 
 enum _DotStatus { present, absent, late, future }

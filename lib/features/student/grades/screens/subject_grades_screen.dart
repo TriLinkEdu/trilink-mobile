@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../models/grade_model.dart';
+import '../repositories/mock_student_grades_repository.dart';
+import '../repositories/student_grades_repository.dart';
 
 /// Shows detailed grade breakdown for a specific subject.
 class SubjectGradesScreen extends StatefulWidget {
@@ -18,6 +21,37 @@ class SubjectGradesScreen extends StatefulWidget {
 
 class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
   bool _sortByDateDescending = true;
+  final StudentGradesRepository _repository = MockStudentGradesRepository();
+  bool _isLoading = true;
+  String? _error;
+  List<GradeModel> _subjectGrades = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSubjectGrades();
+  }
+
+  Future<void> _loadSubjectGrades() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final grades = await _repository.fetchGradesBySubject(widget.subjectId);
+      if (!mounted) return;
+      setState(() {
+        _subjectGrades = grades;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Could not load ${widget.subjectName} grades.';
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +90,30 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
             ),
 
             Expanded(
-              child: SingleChildScrollView(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(_error!, style: const TextStyle(color: Colors.red)),
+                          const SizedBox(height: 10),
+                          ElevatedButton(
+                            onPressed: _loadSubjectGrades,
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : _subjectGrades.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No assessments available for this subject yet.',
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                    )
+                  : SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -85,12 +142,12 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          const Row(
+                          Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '92',
+                                _average.toStringAsFixed(0),
                                 style: TextStyle(
                                   fontSize: 54,
                                   fontWeight: FontWeight.bold,
@@ -134,8 +191,14 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
-                              _StatBox(label: 'Highest Score', value: '98%'),
-                              _StatBox(label: 'Lowest Score', value: '74%'),
+                              _StatBox(
+                                label: 'Highest Score',
+                                value: '${_highest.toStringAsFixed(0)}%',
+                              ),
+                              _StatBox(
+                                label: 'Lowest Score',
+                                value: '${_lowest.toStringAsFixed(0)}%',
+                              ),
                             ],
                           ),
                         ],
@@ -153,13 +216,35 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    const _GradeBar(grade: 'A', count: 4, maxCount: 4),
+                    _GradeBar(
+                      grade: 'A',
+                      count: _bucketCount(_subjectGrades, (p) => p >= 90),
+                      maxCount: _subjectGrades.length,
+                    ),
                     const SizedBox(height: 8),
-                    const _GradeBar(grade: 'B', count: 4, maxCount: 4),
+                    _GradeBar(
+                      grade: 'B',
+                      count: _bucketCount(
+                        _subjectGrades,
+                        (p) => p >= 80 && p < 90,
+                      ),
+                      maxCount: _subjectGrades.length,
+                    ),
                     const SizedBox(height: 8),
-                    const _GradeBar(grade: 'C', count: 2, maxCount: 4),
+                    _GradeBar(
+                      grade: 'C',
+                      count: _bucketCount(
+                        _subjectGrades,
+                        (p) => p >= 70 && p < 80,
+                      ),
+                      maxCount: _subjectGrades.length,
+                    ),
                     const SizedBox(height: 8),
-                    const _GradeBar(grade: 'D', count: 1, maxCount: 4),
+                    _GradeBar(
+                      grade: 'D',
+                      count: _bucketCount(_subjectGrades, (p) => p < 70),
+                      maxCount: _subjectGrades.length,
+                    ),
                     const SizedBox(height: 28),
 
                     // Assessments
@@ -191,59 +276,20 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    const _AssessmentRow(
-                      icon: Icons.quiz_rounded,
-                      title: 'Quiz 4: Algebra II',
-                      date: 'Oct 28, 2023',
-                      score: '98%',
-                      grade: 'A+',
-                      gradeColor: Colors.green,
-                    ),
-                    const SizedBox(height: 8),
-                    const _AssessmentRow(
-                      icon: Icons.assignment_rounded,
-                      title: 'Midterm Exam',
-                      date: 'Oct 24, 2023',
-                      score: '94%',
-                      grade: 'A',
-                      gradeColor: Colors.green,
-                    ),
-                    const SizedBox(height: 8),
-                    const _AssessmentRow(
-                      icon: Icons.quiz_rounded,
-                      title: 'Quiz 3: Forces',
-                      date: 'Oct 15, 2023',
-                      score: '88%',
-                      grade: 'B+',
-                      gradeColor: AppColors.primary,
-                    ),
-                    const SizedBox(height: 8),
-                    const _AssessmentRow(
-                      icon: Icons.science_rounded,
-                      title: 'Lab Report: Motion',
-                      date: 'Oct 10, 2023',
-                      score: '92%',
-                      grade: 'A',
-                      gradeColor: Colors.green,
-                    ),
-                    const SizedBox(height: 8),
-                    const _AssessmentRow(
-                      icon: Icons.quiz_rounded,
-                      title: 'Quiz 2: Geometry',
-                      date: 'Sep 28, 2023',
-                      score: '74%',
-                      grade: 'C',
-                      gradeColor: Colors.orange,
-                    ),
-                    const SizedBox(height: 8),
-                    const _AssessmentRow(
-                      icon: Icons.quiz_rounded,
-                      title: 'Quiz 1: Basics',
-                      date: 'Sep 15, 2023',
-                      score: '100%',
-                      grade: 'A+',
-                      gradeColor: Colors.green,
-                    ),
+                    for (final assessment in _sortedAssessments) ...[
+                      _AssessmentRow(
+                        icon: assessment.assessmentName.toLowerCase().contains('quiz')
+                            ? Icons.quiz_rounded
+                            : Icons.assignment_rounded,
+                        title: assessment.assessmentName,
+                        date: _formatDate(assessment.date),
+                        score:
+                            '${assessment.percentage.toStringAsFixed(0)}%',
+                        grade: _gradeLabel(assessment.percentage),
+                        gradeColor: _gradeColor(assessment.percentage),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                     const SizedBox(height: 24),
 
                     // Download button
@@ -285,6 +331,72 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
         ),
       ),
     );
+  }
+
+  List<GradeModel> get _sortedAssessments {
+    final sorted = List<GradeModel>.from(_subjectGrades)
+      ..sort((a, b) => a.date.compareTo(b.date));
+    return _sortByDateDescending ? sorted.reversed.toList() : sorted;
+  }
+
+  double get _average {
+    if (_subjectGrades.isEmpty) return 0;
+    return _subjectGrades
+            .map((grade) => grade.percentage)
+            .reduce((a, b) => a + b) /
+        _subjectGrades.length;
+  }
+
+  double get _lowest {
+    if (_subjectGrades.isEmpty) return 0;
+    return _subjectGrades
+        .map((grade) => grade.percentage)
+        .reduce((a, b) => a < b ? a : b);
+  }
+
+  double get _highest {
+    if (_subjectGrades.isEmpty) return 0;
+    return _subjectGrades
+        .map((grade) => grade.percentage)
+        .reduce((a, b) => a > b ? a : b);
+  }
+
+  int _bucketCount(List<GradeModel> list, bool Function(double) predicate) {
+    return list.where((grade) => predicate(grade.percentage)).length;
+  }
+
+  String _formatDate(DateTime date) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  }
+
+  String _gradeLabel(double percentage) {
+    if (percentage >= 95) return 'A+';
+    if (percentage >= 90) return 'A';
+    if (percentage >= 85) return 'B+';
+    if (percentage >= 80) return 'B';
+    if (percentage >= 70) return 'C';
+    return 'D';
+  }
+
+  Color _gradeColor(double percentage) {
+    if (percentage >= 90) return Colors.green;
+    if (percentage >= 80) return AppColors.primary;
+    if (percentage >= 70) return Colors.orange;
+    return Colors.red;
   }
 }
 
