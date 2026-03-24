@@ -226,6 +226,7 @@ class StudentDashboardScreen extends StatelessWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        tooltip: 'Open AI Assistant',
         onPressed: () =>
             Navigator.of(context).pushNamed(RouteNames.studentAiAssistant),
         backgroundColor: AppColors.primary,

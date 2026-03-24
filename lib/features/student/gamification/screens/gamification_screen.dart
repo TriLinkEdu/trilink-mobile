@@ -35,6 +35,7 @@ class _GamificationScreenState extends State<GamificationScreen> {
                     ),
                   ),
                   IconButton(
+                    tooltip: 'Gamification settings',
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(

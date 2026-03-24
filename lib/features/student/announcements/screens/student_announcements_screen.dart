@@ -76,12 +76,16 @@ class _StudentAnnouncementsScreenState
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 20,
-                      color: AppColors.textPrimary,
+                  Semantics(
+                    label: 'Back',
+                    button: true,
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 20,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                   ),
                   const Expanded(
@@ -96,6 +100,7 @@ class _StudentAnnouncementsScreenState
                     ),
                   ),
                   IconButton(
+                    tooltip: 'Announcement notifications',
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -123,28 +128,33 @@ class _StudentAnnouncementsScreenState
                     padding: const EdgeInsets.only(right: 8),
                     child: GestureDetector(
                       onTap: () => setState(() => _selectedFilter = index),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isSelected ? AppColors.primary : Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isSelected
-                                ? AppColors.primary
-                                : Colors.grey.shade300,
+                      child: Semantics(
+                        selected: isSelected,
+                        button: true,
+                        label: 'Filter ${_filters[index]}',
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 8,
                           ),
-                        ),
-                        child: Text(
-                          _filters[index],
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: isSelected
-                                ? Colors.white
-                                : Colors.grey.shade600,
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppColors.primary : Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : Colors.grey.shade300,
+                            ),
+                          ),
+                          child: Text(
+                            _filters[index],
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.grey.shade600,
+                            ),
                           ),
                         ),
                       ),
@@ -158,7 +168,11 @@ class _StudentAnnouncementsScreenState
             // Announcements list
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        semanticsLabel: 'Loading announcements',
+                      ),
+                    )
                   : _error != null
                   ? Center(
                       child: Column(

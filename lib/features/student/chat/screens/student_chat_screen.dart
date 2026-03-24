@@ -109,6 +109,7 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
           ],
         ),
         floatingActionButton: FloatingActionButton(
+          tooltip: 'Start conversation',
           onPressed: _showComposeOptions,
           child: const Icon(Icons.edit),
         ),

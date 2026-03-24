@@ -72,6 +72,7 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
                     ),
                   ),
                   IconButton(
+                    tooltip: 'More attendance options',
                     onPressed: () {
                       showModalBottomSheet<void>(
                         context: context,
@@ -119,7 +120,11 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
 
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        semanticsLabel: 'Loading attendance records',
+                      ),
+                    )
                   : _error != null
                   ? Center(
                       child: Column(

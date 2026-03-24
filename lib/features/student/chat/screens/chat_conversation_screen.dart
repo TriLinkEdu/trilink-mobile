@@ -109,6 +109,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                   ),
                   const SizedBox(width: 8),
                   FloatingActionButton.small(
+                    tooltip: 'Send message',
                     onPressed: _sendMessage,
                     child: const Icon(Icons.send_rounded),
                   ),

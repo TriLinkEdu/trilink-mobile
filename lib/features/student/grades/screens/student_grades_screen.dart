@@ -96,6 +96,7 @@ class _StudentGradesScreenState extends State<StudentGradesScreen> {
                     ),
                   ),
                   IconButton(
+                    tooltip: 'Switch term view',
                     onPressed: () {
                       setState(() => _isThisTerm = !_isThisTerm);
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -119,7 +120,11 @@ class _StudentGradesScreenState extends State<StudentGradesScreen> {
 
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        semanticsLabel: 'Loading grades',
+                      ),
+                    )
                   : _error != null
                   ? Center(
                       child: Column(

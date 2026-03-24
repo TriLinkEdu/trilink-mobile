@@ -61,7 +61,11 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
 
   Widget _buildContent() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(
+          semanticsLabel: 'Loading AI assistant data',
+        ),
+      );
     }
 
     if (_error != null) {
@@ -138,6 +142,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                   ),
                   const Spacer(),
                   IconButton(
+                    tooltip: 'Close AI Assistant',
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.close, color: AppColors.textPrimary),
                   ),
@@ -156,28 +161,33 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                     padding: const EdgeInsets.only(right: 8),
                     child: GestureDetector(
                       onTap: () => setState(() => _selectedTab = i),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 9,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isSelected ? AppColors.primary : Colors.white,
-                          borderRadius: BorderRadius.circular(22),
-                          border: Border.all(
-                            color: isSelected
-                                ? AppColors.primary
-                                : Colors.grey.shade300,
+                      child: Semantics(
+                        button: true,
+                        selected: isSelected,
+                        label: 'AI tab ${_tabs[i]}',
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 9,
                           ),
-                        ),
-                        child: Text(
-                          _tabs[i],
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: isSelected
-                                ? Colors.white
-                                : Colors.grey.shade600,
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppColors.primary : Colors.white,
+                            borderRadius: BorderRadius.circular(22),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : Colors.grey.shade300,
+                            ),
+                          ),
+                          child: Text(
+                            _tabs[i],
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.grey.shade600,
+                            ),
                           ),
                         ),
                       ),
@@ -197,6 +207,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       ),
       // FAB
       floatingActionButton: FloatingActionButton.small(
+        tooltip: 'Refresh AI suggestions',
         onPressed: () {
           final message = switch (_selectedTab) {
             0 => 'Learning path refreshed for today.',

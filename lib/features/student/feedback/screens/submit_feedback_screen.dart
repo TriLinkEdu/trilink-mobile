@@ -61,6 +61,7 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> {
               children: List.generate(
                 5,
                 (index) => IconButton(
+                  tooltip: 'Set rating ${index + 1} star${index == 0 ? '' : 's'}',
                   onPressed: () => setState(() => _rating = index + 1),
                   icon: Icon(
                     index < _rating ? Icons.star : Icons.star_border,
