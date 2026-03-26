@@ -15,17 +15,18 @@ class StudentMainScreen extends StatefulWidget {
 class _StudentMainScreenState extends State<StudentMainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    StudentDashboardScreen(),
-    StudentGradesScreen(),
-    StudentAttendanceScreen(),
-    StudentProfileScreen(),
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: const [
+          StudentDashboardScreen(),
+          StudentGradesScreen(),
+          StudentAttendanceScreen(),
+          StudentProfileScreen(),
+        ],
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,

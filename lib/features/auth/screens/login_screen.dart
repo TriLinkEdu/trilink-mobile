@@ -18,6 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isLoading = false;
   _Role _selectedRole = _Role.student;
 
   @override
@@ -27,10 +28,18 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _handleLogin() {
-    if (_formKey.currentState?.validate() ?? false) {
-      final String destinationRoute;
+  Future<void> _handleLogin() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    setState(() => _isLoading = true);
+    try {
       final authService = AuthService();
+      await authService.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      final String destinationRoute;
       switch (_selectedRole) {
         case _Role.student:
           authService.setCurrentRole('student');
@@ -45,7 +54,31 @@ class _LoginScreenState extends State<LoginScreen> {
           destinationRoute = RouteNames.parentHome;
           break;
       }
+      if (!mounted) return;
       Navigator.of(context).pushReplacementNamed(destinationRoute);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Login failed: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleContinueOffline() async {
+    setState(() => _isLoading = true);
+    try {
+      await AuthService().loginOffline();
+      if (!mounted) return;
+      Navigator.of(context).pushReplacementNamed(RouteNames.studentDashboard);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Offline login failed: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -333,7 +366,8 @@ class _LoginScreenState extends State<LoginScreen> {
     return Align(
       alignment: Alignment.centerRight,
       child: TextButton(
-        onPressed: () {},
+        onPressed: () =>
+            Navigator.of(context).pushNamed(RouteNames.forgotPassword),
         style: TextButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 8),
         ),
@@ -350,7 +384,7 @@ class _LoginScreenState extends State<LoginScreen> {
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
-        onPressed: _handleLogin,
+        onPressed: _isLoading ? null : _handleLogin,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
@@ -363,7 +397,16 @@ class _LoginScreenState extends State<LoginScreen> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        child: const Text('LOG IN'),
+        child: _isLoading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: Colors.white,
+                ),
+              )
+            : const Text('LOG IN'),
       ),
     );
   }
@@ -375,7 +418,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Icon(Icons.wifi_off_rounded, size: 18, color: Colors.grey.shade500),
         const SizedBox(width: 6),
         TextButton(
-          onPressed: () {},
+          onPressed: _isLoading ? null : _handleContinueOffline,
           style: TextButton.styleFrom(padding: EdgeInsets.zero),
           child: Text(
             'Continue offline',

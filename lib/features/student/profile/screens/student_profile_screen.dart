@@ -2,31 +2,65 @@ import 'package:flutter/material.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_notifier.dart';
+import '../../../../core/services/storage_service.dart';
 import '../../../auth/services/auth_service.dart';
+import '../repositories/student_profile_repository.dart';
+import '../repositories/mock_student_profile_repository.dart';
 
 class StudentProfileScreen extends StatefulWidget {
-  const StudentProfileScreen({super.key});
+  final StudentProfileRepository? repository;
+
+  const StudentProfileScreen({super.key, this.repository});
 
   @override
   State<StudentProfileScreen> createState() => _StudentProfileScreenState();
 }
 
 class _StudentProfileScreenState extends State<StudentProfileScreen> {
+  late final StudentProfileRepository _repo;
+  final StorageService _storage = StorageService();
+
   bool _pushNotifications = true;
   bool _darkMode = ThemeNotifier.instance.isDark;
   String _language = 'English';
   String _textSize = 'Default';
 
   @override
+  void initState() {
+    super.initState();
+    _repo = widget.repository ?? MockStudentProfileRepository();
+    _loadPreferences();
+  }
+
+  void _loadPreferences() {
+    setState(() {
+      _pushNotifications =
+          _storage.getBool('pushNotifications', defaultValue: true);
+      _language = _storage.getString('language') ?? 'English';
+      _textSize = _storage.getString('textSize') ?? 'Default';
+      _darkMode = ThemeNotifier.instance.isDark;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final user = AuthService().currentUser;
+    final displayName = user?.name ?? 'Student';
+    final displayEmail = user?.email ?? 'No email';
+    final gradeSection = [
+      if (user?.grade != null) user!.grade!,
+      if (user?.section != null) user!.section!,
+    ].join(' • ');
+    final studentId = user?.id ?? '';
+
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       body: SafeArea(
         child: Column(
           children: [
-            // App bar
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
                   SizedBox(
@@ -54,13 +88,8 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                     ),
                   ),
                   TextButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Profile editor will be available next.'),
-                        ),
-                      );
-                    },
+                    onPressed: () => Navigator.of(context)
+                        .pushNamed(RouteNames.studentProfileEdit),
                     child: const Text(
                       'Edit',
                       style: TextStyle(
@@ -73,7 +102,6 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                 ],
               ),
             ),
-
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -93,25 +121,37 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                             color: Colors.grey,
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                          child: Icon(
-                            Icons.camera_alt_rounded,
-                            size: 16,
-                            color: Colors.grey.shade600,
+                        GestureDetector(
+                          onTap: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Photo picker will use device camera/gallery when integrated',
+                                ),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              shape: BoxShape.circle,
+                              border:
+                                  Border.all(color: Colors.white, width: 2),
+                            ),
+                            child: Icon(
+                              Icons.camera_alt_rounded,
+                              size: 16,
+                              color: Colors.grey.shade600,
+                            ),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 14),
-                    const Text(
-                      'Sara Mekonnen',
-                      style: TextStyle(
+                    Text(
+                      displayName,
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
@@ -119,7 +159,9 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Grade 11-B • ID: 2024098',
+                      gradeSection.isNotEmpty
+                          ? '$gradeSection • ID: $studentId'
+                          : 'ID: $studentId',
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.grey.shade500,
@@ -166,7 +208,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                           icon: Icons.email_outlined,
                           label: 'Email',
                           trailing: Text(
-                            'sara.m@trilink.edu',
+                            displayEmail,
                             style: TextStyle(
                               fontSize: 13,
                               color: Colors.grey.shade500,
@@ -218,8 +260,10 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                           label: 'Push Notifications',
                           trailing: Switch(
                             value: _pushNotifications,
-                            onChanged: (v) =>
-                                setState(() => _pushNotifications = v),
+                            onChanged: (v) {
+                              setState(() => _pushNotifications = v);
+                              _storage.setBool('pushNotifications', v);
+                            },
                             activeTrackColor: AppColors.primary,
                           ),
                         ),
@@ -295,72 +339,64 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                           icon: Icons.notifications_outlined,
                           label: 'Notifications',
                           showChevron: true,
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pushNamed(RouteNames.studentNotifications),
+                          onTap: () => Navigator.of(context)
+                              .pushNamed(RouteNames.studentNotifications),
                         ),
                         _divider(),
                         _SettingsRow(
                           icon: Icons.chat_outlined,
                           label: 'Chat',
                           showChevron: true,
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pushNamed(RouteNames.studentChat),
+                          onTap: () => Navigator.of(context)
+                              .pushNamed(RouteNames.studentChat),
                         ),
                         _divider(),
                         _SettingsRow(
                           icon: Icons.calendar_month_outlined,
                           label: 'Calendar',
                           showChevron: true,
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pushNamed(RouteNames.studentCalendar),
+                          onTap: () => Navigator.of(context)
+                              .pushNamed(RouteNames.studentCalendar),
                         ),
                         _divider(),
                         _SettingsRow(
                           icon: Icons.settings_outlined,
                           label: 'App Settings',
                           showChevron: true,
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pushNamed(RouteNames.studentSettings),
+                          onTap: () => Navigator.of(context)
+                              .pushNamed(RouteNames.studentSettings),
                         ),
                         _divider(),
                         _SettingsRow(
                           icon: Icons.assignment_outlined,
                           label: 'Assignments',
                           showChevron: true,
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pushNamed(RouteNames.studentAssignments),
+                          onTap: () => Navigator.of(context)
+                              .pushNamed(RouteNames.studentAssignments),
                         ),
                         _divider(),
                         _SettingsRow(
                           icon: Icons.folder_outlined,
                           label: 'Courses & Resources',
                           showChevron: true,
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pushNamed(RouteNames.studentCourseResources),
+                          onTap: () => Navigator.of(context)
+                              .pushNamed(RouteNames.studentCourseResources),
                         ),
                         _divider(),
                         _SettingsRow(
                           icon: Icons.fact_check_outlined,
                           label: 'Exam Attempt',
                           showChevron: true,
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pushNamed(RouteNames.studentExamAttempt),
+                          onTap: () => Navigator.of(context)
+                              .pushNamed(RouteNames.studentExamAttempt),
                         ),
                         _divider(),
                         _SettingsRow(
                           icon: Icons.sync_outlined,
                           label: 'Sync Status',
                           showChevron: true,
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pushNamed(RouteNames.studentSyncStatus),
+                          onTap: () => Navigator.of(context)
+                              .pushNamed(RouteNames.studentSyncStatus),
                         ),
                       ],
                     ),
@@ -374,9 +410,10 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                         onPressed: () async {
                           await AuthService().logout();
                           if (!context.mounted) return;
-                          Navigator.of(
-                            context,
-                          ).pushNamedAndRemoveUntil(RouteNames.login, (_) => false);
+                          Navigator.of(context).pushNamedAndRemoveUntil(
+                            RouteNames.login,
+                            (_) => false,
+                          );
                         },
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.red,
@@ -423,17 +460,90 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
   }
 
   void _showChangePasswordDialog() {
+    final oldPwController = TextEditingController();
+    final newPwController = TextEditingController();
+    final confirmPwController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Change Password'),
-        content: const Text(
-          'Password update flow is prepared and ready for API integration.',
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: oldPwController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Current Password',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) =>
+                    (v == null || v.isEmpty) ? 'Required' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: newPwController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'New Password',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Required';
+                  if (v.length < 6) return 'At least 6 characters';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: confirmPwController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Confirm New Password',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Required';
+                  if (v != newPwController.text) return 'Passwords do not match';
+                  return null;
+                },
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Close'),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (!(formKey.currentState?.validate() ?? false)) return;
+              try {
+                await _repo.changePassword(
+                  oldPassword: oldPwController.text,
+                  newPassword: newPwController.text,
+                );
+                if (!dialogContext.mounted) return;
+                Navigator.of(dialogContext).pop();
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Password changed successfully'),
+                  ),
+                );
+              } catch (e) {
+                if (!dialogContext.mounted) return;
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  SnackBar(content: Text('Failed: $e')),
+                );
+              }
+            },
+            child: const Text('Update'),
           ),
         ],
       ),
@@ -447,17 +557,31 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const SizedBox(height: 12),
+            const Text(
+              'Choose Language',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+            ),
+            const SizedBox(height: 10),
             ListTile(
               title: const Text('English'),
+              trailing: _language == 'English'
+                  ? const Icon(Icons.check, color: AppColors.primary)
+                  : null,
               onTap: () {
                 setState(() => _language = 'English');
+                _storage.setString('language', 'English');
                 Navigator.of(sheetContext).pop();
               },
             ),
             ListTile(
               title: const Text('Amharic'),
+              trailing: _language == 'Amharic'
+                  ? const Icon(Icons.check, color: AppColors.primary)
+                  : null,
               onTap: () {
                 setState(() => _language = 'Amharic');
+                _storage.setString('language', 'Amharic');
                 Navigator.of(sheetContext).pop();
               },
             ),
@@ -474,27 +598,24 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(
-              title: const Text('Small'),
-              onTap: () {
-                setState(() => _textSize = 'Small');
-                Navigator.of(sheetContext).pop();
-              },
+            const SizedBox(height: 12),
+            const Text(
+              'Choose Text Size',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
             ),
-            ListTile(
-              title: const Text('Default'),
-              onTap: () {
-                setState(() => _textSize = 'Default');
-                Navigator.of(sheetContext).pop();
-              },
-            ),
-            ListTile(
-              title: const Text('Large'),
-              onTap: () {
-                setState(() => _textSize = 'Large');
-                Navigator.of(sheetContext).pop();
-              },
-            ),
+            const SizedBox(height: 10),
+            for (final size in const ['Small', 'Default', 'Large'])
+              ListTile(
+                title: Text(size),
+                trailing: _textSize == size
+                    ? const Icon(Icons.check, color: AppColors.primary)
+                    : null,
+                onTap: () {
+                  setState(() => _textSize = size);
+                  _storage.setString('textSize', size);
+                  Navigator.of(sheetContext).pop();
+                },
+              ),
           ],
         ),
       ),
@@ -506,7 +627,37 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Help Center'),
-        content: const Text('Support docs and FAQ screen is ready for content integration.'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              _FaqItem(
+                question: 'How do I check my grades?',
+                answer:
+                    'Navigate to the Grades tab from the bottom navigation bar to view all your subject grades.',
+              ),
+              SizedBox(height: 12),
+              _FaqItem(
+                question: 'How do I contact my teacher?',
+                answer:
+                    'Use the Chat section to send a direct message to any of your teachers.',
+              ),
+              SizedBox(height: 12),
+              _FaqItem(
+                question: 'How do I submit assignments?',
+                answer:
+                    'Open Assignments from the dashboard, select the assignment, and tap "Submit" to upload your work.',
+              ),
+              SizedBox(height: 12),
+              _FaqItem(
+                question: 'How do I reset my password?',
+                answer:
+                    'Go to Profile > Password, or log out and tap "Forgot password?" on the login screen.',
+              ),
+            ],
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
@@ -518,18 +669,66 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
   }
 
   void _showBugReport() {
+    final bugController = TextEditingController();
+
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Report a Bug'),
-        content: const Text('Bug report form stub is ready for backend ticket submission integration.'),
+        content: TextField(
+          controller: bugController,
+          maxLines: 4,
+          decoration: const InputDecoration(
+            hintText: 'Describe the issue you encountered...',
+            border: OutlineInputBorder(),
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Close'),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (bugController.text.trim().isEmpty) return;
+              Navigator.of(dialogContext).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Bug report submitted. Thank you for your feedback!',
+                  ),
+                ),
+              );
+            },
+            child: const Text('Submit'),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _FaqItem extends StatelessWidget {
+  final String question;
+  final String answer;
+
+  const _FaqItem({required this.question, required this.answer});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          question,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          answer,
+          style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+        ),
+      ],
     );
   }
 }

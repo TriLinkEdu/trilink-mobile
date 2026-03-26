@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_notifier.dart';
+import '../../../../core/services/storage_service.dart';
 import '../../../auth/services/auth_service.dart';
 
-/// Personalization options (themes, notifications, privacy).
 class StudentSettingsScreen extends StatefulWidget {
   const StudentSettingsScreen({super.key});
 
@@ -13,9 +13,26 @@ class StudentSettingsScreen extends StatefulWidget {
 }
 
 class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
+  final StorageService _storage = StorageService();
+
   bool _notificationsEnabled = true;
   bool _biometricLock = false;
   String _language = 'English';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  void _loadPreferences() {
+    setState(() {
+      _notificationsEnabled =
+          _storage.getBool('pushNotifications', defaultValue: true);
+      _biometricLock = _storage.getBool('biometricLock');
+      _language = _storage.getString('language') ?? 'English';
+    });
+  }
 
   Future<void> _showLanguagePicker() async {
     final language = await showModalBottomSheet<String>(
@@ -48,11 +65,10 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
       },
     );
 
-    if (language == null || !mounted) {
-      return;
-    }
+    if (language == null || !mounted) return;
 
     setState(() => _language = language);
+    await _storage.setString('language', language);
   }
 
   Future<void> _confirmLogout() async {
@@ -60,7 +76,8 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Log Out'),
-        content: const Text('Are you sure you want to log out of your account?'),
+        content:
+            const Text('Are you sure you want to log out of your account?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -74,16 +91,13 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
       ),
     );
 
-    if (shouldLogout != true || !mounted) {
-      return;
-    }
+    if (shouldLogout != true || !mounted) return;
 
     await AuthService().logout();
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
 
-    Navigator.of(context).pushNamedAndRemoveUntil(RouteNames.login, (_) => false);
+    Navigator.of(context)
+        .pushNamedAndRemoveUntil(RouteNames.login, (_) => false);
   }
 
   @override
@@ -104,10 +118,12 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
                   } else {
                     ThemeNotifier.instance.setLight();
                   }
+                  setState(() {});
                 },
                 activeTrackColor: AppColors.primary,
                 title: const Text('Dark Mode'),
-                subtitle: const Text('Use a darker theme for low-light viewing.'),
+                subtitle:
+                    const Text('Use a darker theme for low-light viewing.'),
               ),
             ],
           ),
@@ -119,10 +135,12 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
                 value: _notificationsEnabled,
                 onChanged: (value) {
                   setState(() => _notificationsEnabled = value);
+                  _storage.setBool('pushNotifications', value);
                 },
                 activeTrackColor: AppColors.primary,
                 title: const Text('Push Notifications'),
-                subtitle: const Text('Receive updates about classes and announcements.'),
+                subtitle: const Text(
+                    'Receive updates about classes and announcements.'),
               ),
             ],
           ),
@@ -134,6 +152,7 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
                 value: _biometricLock,
                 onChanged: (value) {
                   setState(() => _biometricLock = value);
+                  _storage.setBool('biometricLock', value);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
@@ -146,7 +165,8 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
                 },
                 activeTrackColor: AppColors.primary,
                 title: const Text('Biometric Lock'),
-                subtitle: const Text('Require biometric verification on app open.'),
+                subtitle: const Text(
+                    'Require biometric verification on app open.'),
               ),
               ListTile(
                 title: const Text('Language'),
@@ -160,7 +180,8 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
           OutlinedButton.icon(
             onPressed: _confirmLogout,
             icon: const Icon(Icons.logout, color: Colors.red),
-            label: const Text('Log Out', style: TextStyle(color: Colors.red)),
+            label:
+                const Text('Log Out', style: TextStyle(color: Colors.red)),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: Colors.red),
               minimumSize: const Size.fromHeight(46),
