@@ -5,7 +5,9 @@ import '../repositories/mock_student_attendance_repository.dart';
 import '../repositories/student_attendance_repository.dart';
 
 class StudentAttendanceScreen extends StatefulWidget {
-  const StudentAttendanceScreen({super.key});
+  final StudentAttendanceRepository? repository;
+
+  const StudentAttendanceScreen({super.key, this.repository});
 
   @override
   State<StudentAttendanceScreen> createState() =>
@@ -13,8 +15,8 @@ class StudentAttendanceScreen extends StatefulWidget {
 }
 
 class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
-  final StudentAttendanceRepository _repository =
-      MockStudentAttendanceRepository();
+  late final StudentAttendanceRepository _repository =
+      widget.repository ?? MockStudentAttendanceRepository();
   bool _isLoading = true;
   String? _error;
   List<AttendanceModel> _records = const [];
@@ -47,6 +49,111 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
     }
   }
 
+  void _showOptionsSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.calendar_month_rounded),
+              title: const Text('This Month Summary'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _showMonthlySummary();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.file_download_rounded),
+              title: const Text('Export Attendance'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _exportAttendance();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showMonthlySummary() {
+    final present = presentCount;
+    final absent = absentCount;
+    final late_ = lateCount;
+    final excused = excusedCount;
+    final total = _records.length;
+    final pct =
+        total > 0 ? ((present + late_ + excused) / total * 100) : 0.0;
+
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Attendance Summary',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              _buildSummaryRow('Present', '$present', dotColor: Colors.green),
+              _buildSummaryRow('Absent', '$absent', dotColor: Colors.red),
+              _buildSummaryRow('Late', '$late_', dotColor: Colors.orange),
+              _buildSummaryRow('Excused', '$excused', dotColor: Colors.blue),
+              const Divider(height: 24),
+              _buildSummaryRow('Total Classes', '$total'),
+              _buildSummaryRow(
+                  'Attendance Rate', '${pct.toStringAsFixed(1)}%'),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(String label, String value, {Color? dotColor}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          if (dotColor != null) ...[
+            Container(
+              width: 10,
+              height: 10,
+              decoration:
+                  BoxDecoration(color: dotColor, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 8),
+          ],
+          Expanded(child: Text(label, style: const TextStyle(fontSize: 14))),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 14, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _exportAttendance() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Preparing attendance report...')),
+    );
+    await Future<void>.delayed(const Duration(seconds: 1));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Attendance report exported')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,9 +161,9 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // App bar
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
                   SizedBox(
@@ -85,42 +192,7 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
                   ),
                   IconButton(
                     tooltip: 'More attendance options',
-                    onPressed: () {
-                      showModalBottomSheet<void>(
-                        context: context,
-                        builder: (_) => SafeArea(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ListTile(
-                                leading: const Icon(Icons.calendar_month_rounded),
-                                title: const Text('This Month Summary'),
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Showing this month attendance summary.'),
-                                    ),
-                                  );
-                                },
-                              ),
-                              ListTile(
-                                leading: const Icon(Icons.file_download_rounded),
-                                title: const Text('Export Attendance'),
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Attendance export is being prepared.'),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
+                    onPressed: _showOptionsSheet,
                     icon: const Icon(
                       Icons.more_vert,
                       color: AppColors.textPrimary,
@@ -129,7 +201,6 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
                 ],
               ),
             ),
-
             Expanded(
               child: _isLoading
                   ? const Center(
@@ -138,200 +209,231 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
                       ),
                     )
                   : _error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(_error!, style: const TextStyle(color: Colors.red)),
-                          const SizedBox(height: 10),
-                          ElevatedButton(
-                            onPressed: _loadAttendance,
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
-                    )
-                  : _records.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'No attendance records yet.',
-                        style: TextStyle(color: AppColors.textSecondary),
-                      ),
-                    )
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                    // Overall Attendance Card
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 24),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF1A73E8), Color(0xFF4A90E2)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Column(
-                        children: [
-                          const Text(
-                            'Overall Attendance',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white70,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${_overallAttendance.toStringAsFixed(0)}%',
-                            style: const TextStyle(
-                              fontSize: 48,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withAlpha(40),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.check_circle_rounded,
-                                  size: 14,
-                                  color: Colors.greenAccent,
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  '12 Day Streak',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          // Stats row
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              _AttendanceStat(
-                                value: '$presentCount',
-                                label: 'PRESENT',
-                                bgColor: Colors.white.withAlpha(30),
-                              ),
-                              _AttendanceStat(
-                                value: '$absentCount',
-                                label: 'ABSENT',
-                                bgColor: Colors.white.withAlpha(30),
-                              ),
-                              _AttendanceStat(
-                                value: '$lateCount',
-                                label: 'LATE',
-                                bgColor: Colors.white.withAlpha(30),
+                              Text(_error!,
+                                  style: const TextStyle(color: Colors.red)),
+                              const SizedBox(height: 10),
+                              ElevatedButton(
+                                onPressed: _loadAttendance,
+                                child: const Text('Retry'),
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Subject Breakdown Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Subject Breakdown',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            showDialog<void>(
-                              context: context,
-                              builder: (dialogContext) => AlertDialog(
-                                title: const Text('All Subject Attendance'),
-                                content: Text(
-                                  _subjectSummaries
-                                      .map(
-                                        (summary) =>
-                                            '${summary.name} ${summary.percentageLabel}',
-                                      )
-                                      .join('\n'),
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.of(dialogContext).pop(),
-                                    child: const Text('Close'),
+                        )
+                      : _records.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'No attendance records yet.',
+                                style:
+                                    TextStyle(color: AppColors.textSecondary),
+                              ),
+                            )
+                          : SingleChildScrollView(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 20),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 24),
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          Color(0xFF1A73E8),
+                                          Color(0xFF4A90E2),
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        const Text(
+                                          'Overall Attendance',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.white70,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          '${_overallAttendance.toStringAsFixed(0)}%',
+                                          style: const TextStyle(
+                                            fontSize: 48,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 5,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color:
+                                                Colors.white.withAlpha(40),
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(
+                                                Icons.check_circle_rounded,
+                                                size: 14,
+                                                color: Colors.greenAccent,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                '$_currentStreak Day Streak',
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 20),
+                                        Wrap(
+                                          spacing: 8,
+                                          runSpacing: 8,
+                                          alignment: WrapAlignment.center,
+                                          children: [
+                                            _AttendanceStat(
+                                              value: '$presentCount',
+                                              label: 'PRESENT',
+                                              bgColor:
+                                                  Colors.white.withAlpha(30),
+                                            ),
+                                            _AttendanceStat(
+                                              value: '$absentCount',
+                                              label: 'ABSENT',
+                                              bgColor:
+                                                  Colors.white.withAlpha(30),
+                                            ),
+                                            _AttendanceStat(
+                                              value: '$lateCount',
+                                              label: 'LATE',
+                                              bgColor:
+                                                  Colors.white.withAlpha(30),
+                                            ),
+                                            _AttendanceStat(
+                                              value: '$excusedCount',
+                                              label: 'EXCUSED',
+                                              bgColor:
+                                                  Colors.white.withAlpha(30),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
+                                  const SizedBox(height: 24),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text(
+                                        'Subject Breakdown',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: () {
+                                          showDialog<void>(
+                                            context: context,
+                                            builder: (dialogContext) =>
+                                                AlertDialog(
+                                              title: const Text(
+                                                  'All Subject Attendance'),
+                                              content: Text(
+                                                _subjectSummaries
+                                                    .map(
+                                                      (summary) =>
+                                                          '${summary.name} ${summary.percentageLabel}',
+                                                    )
+                                                    .join('\n'),
+                                              ),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.of(
+                                                              dialogContext)
+                                                          .pop(),
+                                                  child: const Text('Close'),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                        child: const Text(
+                                          'View All',
+                                          style: TextStyle(
+                                            color: AppColors.primary,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  for (int index = 0;
+                                      index < _subjectSummaries.length;
+                                      index++) ...[
+                                    _SubjectAttendanceRow(
+                                      icon: _iconForSubject(
+                                          _subjectSummaries[index].name),
+                                      iconColor: _colorForSubject(
+                                          _subjectSummaries[index].name),
+                                      name: _subjectSummaries[index].name,
+                                      totalClasses:
+                                          _subjectSummaries[index].total,
+                                      percentage: _subjectSummaries[index]
+                                          .percentageLabel,
+                                      dots: _subjectSummaries[index].dots,
+                                    ),
+                                    if (index <
+                                        _subjectSummaries.length - 1)
+                                      const SizedBox(height: 16),
+                                  ],
+                                  const SizedBox(height: 24),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.center,
+                                    children: [
+                                      const _LegendItem(
+                                          color: Colors.green,
+                                          label: 'Present'),
+                                      const SizedBox(width: 12),
+                                      const _LegendItem(
+                                          color: Colors.orange,
+                                          label: 'Late'),
+                                      const SizedBox(width: 12),
+                                      const _LegendItem(
+                                          color: Colors.red,
+                                          label: 'Absent'),
+                                      const SizedBox(width: 12),
+                                      const _LegendItem(
+                                          color: Colors.blue,
+                                          label: 'Excused'),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 20),
                                 ],
                               ),
-                            );
-                          },
-                          child: const Text(
-                            'View All',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 13,
                             ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Subject rows
-                    for (int index = 0; index < _subjectSummaries.length; index++) ...[
-                      _SubjectAttendanceRow(
-                        icon: _iconForSubject(_subjectSummaries[index].name),
-                        iconColor: _colorForSubject(_subjectSummaries[index].name),
-                        name: _subjectSummaries[index].name,
-                        totalClasses: _subjectSummaries[index].total,
-                        percentage: _subjectSummaries[index].percentageLabel,
-                        dots: _subjectSummaries[index].dots,
-                      ),
-                      if (index < _subjectSummaries.length - 1)
-                        const SizedBox(height: 16),
-                    ],
-                    const SizedBox(height: 24),
-
-                    // Legend
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _LegendItem(color: Colors.green, label: 'Present'),
-                        const SizedBox(width: 16),
-                        _LegendItem(color: Colors.orange, label: 'Late'),
-                        const SizedBox(width: 16),
-                        _LegendItem(color: Colors.red, label: 'Absent'),
-                        const SizedBox(width: 16),
-                        _LegendItem(
-                          color: Colors.grey.shade300,
-                          label: 'Future',
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                  ],
-                ),
-              ),
             ),
           ],
         ),
@@ -339,36 +441,67 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
     );
   }
 
-  int get presentCount => _records.where((record) => record.isPresent).length;
+  int get presentCount =>
+      _records.where((r) => r.status == AttendanceStatus.present).length;
 
-  int get absentCount => _records.length - presentCount;
+  int get absentCount =>
+      _records.where((r) => r.status == AttendanceStatus.absent).length;
 
-  int get lateCount => 0;
+  int get lateCount =>
+      _records.where((r) => r.status == AttendanceStatus.late).length;
+
+  int get excusedCount =>
+      _records.where((r) => r.status == AttendanceStatus.excused).length;
 
   double get _overallAttendance {
     if (_records.isEmpty) return 0;
-    return (presentCount / _records.length) * 100;
+    final attended = presentCount + lateCount + excusedCount;
+    return (attended / _records.length) * 100;
+  }
+
+  int get _currentStreak {
+    final sorted = List<AttendanceModel>.from(_records)
+      ..sort((a, b) => b.date.compareTo(a.date));
+    int streak = 0;
+    for (final record in sorted) {
+      if (record.status == AttendanceStatus.absent) break;
+      streak++;
+    }
+    return streak;
   }
 
   List<_SubjectAttendanceSummary> get _subjectSummaries {
     final grouped = <String, List<AttendanceModel>>{};
     for (final record in _records) {
-      grouped.putIfAbsent(record.subjectId, () => <AttendanceModel>[]).add(record);
+      grouped
+          .putIfAbsent(record.subjectId, () => <AttendanceModel>[])
+          .add(record);
     }
 
     return grouped.entries.map((entry) {
       final records = entry.value..sort((a, b) => a.date.compareTo(b.date));
-      final present = records.where((record) => record.isPresent).length;
-      final percentage = records.isEmpty ? 0.0 : (present / records.length) * 100;
+      final attended =
+          records.where((r) => r.status != AttendanceStatus.absent).length;
+      final percentage =
+          records.isEmpty ? 0.0 : (attended / records.length) * 100;
 
       return _SubjectAttendanceSummary(
         name: records.first.subjectName,
         total: records.length,
         percentage: percentage,
         percentageLabel: '${percentage.toStringAsFixed(0)}%',
-        dots: records
-            .map((record) => record.isPresent ? _DotStatus.present : _DotStatus.absent)
-            .toList(),
+        dots: records.map((record) {
+          switch (record.status) {
+            case AttendanceStatus.present:
+              return _DotStatus.present;
+            case AttendanceStatus.late:
+              return _DotStatus.late;
+            case AttendanceStatus.excused:
+              return _DotStatus.excused;
+            case AttendanceStatus.absent:
+              return _DotStatus.absent;
+          }
+        }).toList(),
       );
     }).toList()
       ..sort((a, b) => b.percentage.compareTo(a.percentage));
@@ -409,7 +542,7 @@ class _SubjectAttendanceSummary {
   });
 }
 
-enum _DotStatus { present, absent, late, future }
+enum _DotStatus { present, absent, late, excused, future }
 
 class _AttendanceStat extends StatelessWidget {
   final String value;
@@ -425,7 +558,7 @@ class _AttendanceStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(12),
@@ -536,7 +669,6 @@ class _SubjectAttendanceRow extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          // Dots
           Wrap(
             spacing: 6,
             runSpacing: 6,
@@ -549,13 +681,16 @@ class _SubjectAttendanceRow extends StatelessWidget {
                   color = Colors.red;
                 case _DotStatus.late:
                   color = Colors.orange;
+                case _DotStatus.excused:
+                  color = Colors.blue;
                 case _DotStatus.future:
                   color = Colors.grey.shade300;
               }
               return Container(
                 width: 12,
                 height: 12,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                decoration:
+                    BoxDecoration(color: color, shape: BoxShape.circle),
               );
             }).toList(),
           ),

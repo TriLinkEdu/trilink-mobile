@@ -4,15 +4,16 @@ import '../models/grade_model.dart';
 import '../repositories/mock_student_grades_repository.dart';
 import '../repositories/student_grades_repository.dart';
 
-/// Shows detailed grade breakdown for a specific subject.
 class SubjectGradesScreen extends StatefulWidget {
   final String subjectId;
   final String subjectName;
+  final StudentGradesRepository? repository;
 
   const SubjectGradesScreen({
     super.key,
     required this.subjectId,
     required this.subjectName,
+    this.repository,
   });
 
   @override
@@ -21,7 +22,9 @@ class SubjectGradesScreen extends StatefulWidget {
 
 class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
   bool _sortByDateDescending = true;
-  final StudentGradesRepository _repository = MockStudentGradesRepository();
+  bool _isDownloading = false;
+  late final StudentGradesRepository _repository =
+      widget.repository ?? MockStudentGradesRepository();
   bool _isLoading = true;
   String? _error;
   List<GradeModel> _subjectGrades = const [];
@@ -53,6 +56,16 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
     }
   }
 
+  Future<void> _downloadReport() async {
+    setState(() => _isDownloading = true);
+    await Future<void>.delayed(const Duration(milliseconds: 1500));
+    if (!mounted) return;
+    setState(() => _isDownloading = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Report saved')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -60,9 +73,9 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // App bar
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
                   GestureDetector(
@@ -88,244 +101,268 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                 ],
               ),
             ),
-
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(_error!, style: const TextStyle(color: Colors.red)),
-                          const SizedBox(height: 10),
-                          ElevatedButton(
-                            onPressed: _loadSubjectGrades,
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
-                    )
-                  : _subjectGrades.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'No assessments available for this subject yet.',
-                        style: TextStyle(color: AppColors.textSecondary),
-                      ),
-                    )
-                  : SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Current Average Card
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 24),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF1A73E8), Color(0xFF4A90E2)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Column(
-                        children: [
-                          Text(
-                            'CURRENT AVERAGE',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.white.withAlpha(180),
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                _average.toStringAsFixed(0),
-                                style: TextStyle(
-                                  fontSize: 54,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  height: 1,
-                                ),
+                              Text(_error!,
+                                  style: const TextStyle(color: Colors.red)),
+                              const SizedBox(height: 10),
+                              ElevatedButton(
+                                onPressed: _loadSubjectGrades,
+                                child: const Text('Retry'),
                               ),
-                              Padding(
-                                padding: EdgeInsets.only(top: 8),
-                                child: Text(
-                                  '%',
-                                  style: TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white70,
+                            ],
+                          ),
+                        )
+                      : _subjectGrades.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'No assessments available for this subject yet.',
+                                style:
+                                    TextStyle(color: AppColors.textSecondary),
+                              ),
+                            )
+                          : SingleChildScrollView(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 20),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 24),
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          Color(0xFF1A73E8),
+                                          Color(0xFF4A90E2),
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Text(
+                                          'CURRENT AVERAGE',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color:
+                                                Colors.white.withAlpha(180),
+                                            fontWeight: FontWeight.w600,
+                                            letterSpacing: 1,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              _average.toStringAsFixed(0),
+                                              style: const TextStyle(
+                                                fontSize: 54,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                                height: 1,
+                                              ),
+                                            ),
+                                            const Padding(
+                                              padding:
+                                                  EdgeInsets.only(top: 8),
+                                              child: Text(
+                                                '%',
+                                                style: TextStyle(
+                                                  fontSize: 22,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Colors.white70,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                            vertical: 5,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: _gradeChipColor(
+                                                    _letterGradeForAverage(
+                                                        _average))
+                                                .withAlpha(180),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            'Grade ${_letterGradeForAverage(_average)}',
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 18),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceEvenly,
+                                          children: [
+                                            _StatBox(
+                                              label: 'Highest Score',
+                                              value:
+                                                  '${_highest.toStringAsFixed(0)}%',
+                                            ),
+                                            _StatBox(
+                                              label: 'Lowest Score',
+                                              value:
+                                                  '${_lowest.toStringAsFixed(0)}%',
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.green.withAlpha(180),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Text(
-                              'Grade A',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              _StatBox(
-                                label: 'Highest Score',
-                                value: '${_highest.toStringAsFixed(0)}%',
-                              ),
-                              _StatBox(
-                                label: 'Lowest Score',
-                                value: '${_lowest.toStringAsFixed(0)}%',
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Grade Distribution
-                    const Text(
-                      'Grade Distribution',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    _GradeBar(
-                      grade: 'A',
-                      count: _bucketCount(_subjectGrades, (p) => p >= 90),
-                      maxCount: _subjectGrades.length,
-                    ),
-                    const SizedBox(height: 8),
-                    _GradeBar(
-                      grade: 'B',
-                      count: _bucketCount(
-                        _subjectGrades,
-                        (p) => p >= 80 && p < 90,
-                      ),
-                      maxCount: _subjectGrades.length,
-                    ),
-                    const SizedBox(height: 8),
-                    _GradeBar(
-                      grade: 'C',
-                      count: _bucketCount(
-                        _subjectGrades,
-                        (p) => p >= 70 && p < 80,
-                      ),
-                      maxCount: _subjectGrades.length,
-                    ),
-                    const SizedBox(height: 8),
-                    _GradeBar(
-                      grade: 'D',
-                      count: _bucketCount(_subjectGrades, (p) => p < 70),
-                      maxCount: _subjectGrades.length,
-                    ),
-                    const SizedBox(height: 28),
-
-                    // Assessments
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Assessments',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            setState(() => _sortByDateDescending = !_sortByDateDescending);
-                          },
-                          child: Text(
-                            _sortByDateDescending
-                                ? 'Sort by Date ↓'
-                                : 'Sort by Date ↑',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    for (final assessment in _sortedAssessments) ...[
-                      _AssessmentRow(
-                        icon: assessment.assessmentName.toLowerCase().contains('quiz')
-                            ? Icons.quiz_rounded
-                            : Icons.assignment_rounded,
-                        title: assessment.assessmentName,
-                        date: _formatDate(assessment.date),
-                        score:
-                            '${assessment.percentage.toStringAsFixed(0)}%',
-                        grade: _gradeLabel(assessment.percentage),
-                        gradeColor: _gradeColor(assessment.percentage),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                    const SizedBox(height: 24),
-
-                    // Download button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                '${widget.subjectName} report is being prepared.',
+                                  const SizedBox(height: 24),
+                                  const Text(
+                                    'Grade Distribution',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 14),
+                                  _GradeBar(
+                                    grade: 'A',
+                                    count: _bucketCount(
+                                        _subjectGrades, (p) => p >= 90),
+                                    maxCount: _subjectGrades.length,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _GradeBar(
+                                    grade: 'B',
+                                    count: _bucketCount(_subjectGrades,
+                                        (p) => p >= 80 && p < 90),
+                                    maxCount: _subjectGrades.length,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _GradeBar(
+                                    grade: 'C',
+                                    count: _bucketCount(_subjectGrades,
+                                        (p) => p >= 70 && p < 80),
+                                    maxCount: _subjectGrades.length,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _GradeBar(
+                                    grade: 'D',
+                                    count: _bucketCount(
+                                        _subjectGrades, (p) => p < 70),
+                                    maxCount: _subjectGrades.length,
+                                  ),
+                                  const SizedBox(height: 28),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text(
+                                        'Assessments',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: () {
+                                          setState(() =>
+                                              _sortByDateDescending =
+                                                  !_sortByDateDescending);
+                                        },
+                                        child: Text(
+                                          _sortByDateDescending
+                                              ? 'Sort by Date ↓'
+                                              : 'Sort by Date ↑',
+                                          style: const TextStyle(
+                                            color: AppColors.primary,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  for (final assessment
+                                      in _sortedAssessments) ...[
+                                    _AssessmentRow(
+                                      icon: assessment.assessmentName
+                                              .toLowerCase()
+                                              .contains('quiz')
+                                          ? Icons.quiz_rounded
+                                          : Icons.assignment_rounded,
+                                      title: assessment.assessmentName,
+                                      date: _formatDate(assessment.date),
+                                      score:
+                                          '${assessment.percentage.toStringAsFixed(0)}%',
+                                      grade: assessment.letterGrade,
+                                      gradeColor: _gradeColor(
+                                          assessment.percentage),
+                                    ),
+                                    const SizedBox(height: 8),
+                                  ],
+                                  const SizedBox(height: 24),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    height: 50,
+                                    child: ElevatedButton.icon(
+                                      onPressed: _isDownloading
+                                          ? null
+                                          : _downloadReport,
+                                      icon: _isDownloading
+                                          ? const SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child:
+                                                  CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Colors.white,
+                                              ),
+                                            )
+                                          : const Icon(
+                                              Icons.download_rounded,
+                                              size: 20),
+                                      label: Text(_isDownloading
+                                          ? 'Preparing...'
+                                          : 'Download Report PDF'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.primary,
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        elevation: 0,
+                                        textStyle: const TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
+                                ],
                               ),
                             ),
-                          );
-                        },
-                        icon: const Icon(Icons.download_rounded, size: 20),
-                        label: const Text('Download Report PDF'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                          textStyle: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-                ),
-              ),
             ),
           ],
         ),
@@ -365,31 +402,33 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
     return list.where((grade) => predicate(grade.percentage)).length;
   }
 
-  String _formatDate(DateTime date) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  String _letterGradeForAverage(double avg) {
+    if (avg >= 90) return 'A';
+    if (avg >= 80) return 'B';
+    if (avg >= 70) return 'C';
+    if (avg >= 60) return 'D';
+    return 'F';
   }
 
-  String _gradeLabel(double percentage) {
-    if (percentage >= 95) return 'A+';
-    if (percentage >= 90) return 'A';
-    if (percentage >= 85) return 'B+';
-    if (percentage >= 80) return 'B';
-    if (percentage >= 70) return 'C';
-    return 'D';
+  Color _gradeChipColor(String grade) {
+    switch (grade) {
+      case 'A':
+        return Colors.green;
+      case 'B':
+        return AppColors.primary;
+      case 'C':
+        return Colors.orange;
+      default:
+        return Colors.red;
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
   Color _gradeColor(double percentage) {
@@ -466,7 +505,7 @@ class _GradeBar extends StatelessWidget {
                 ),
               ),
               FractionallySizedBox(
-                widthFactor: count / maxCount,
+                widthFactor: maxCount > 0 ? count / maxCount : 0,
                 child: Container(
                   height: 10,
                   decoration: BoxDecoration(

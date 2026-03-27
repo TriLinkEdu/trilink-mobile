@@ -1,88 +1,219 @@
 import 'package:flutter/material.dart';
+import '../../gamification/screens/quiz_result_screen.dart';
+import '../models/exam_model.dart';
+import '../repositories/mock_student_exams_repository.dart';
+import '../repositories/student_exams_repository.dart';
 
 class StudentExamAttemptScreen extends StatefulWidget {
-  const StudentExamAttemptScreen({super.key});
+  final String? examId;
+  final StudentExamsRepository? repository;
+
+  const StudentExamAttemptScreen({super.key, this.examId, this.repository});
 
   @override
-  State<StudentExamAttemptScreen> createState() => _StudentExamAttemptScreenState();
+  State<StudentExamAttemptScreen> createState() =>
+      _StudentExamAttemptScreenState();
 }
 
 class _StudentExamAttemptScreenState extends State<StudentExamAttemptScreen> {
-  int _currentQuestionIndex = 0;
-  int? _selectedOption;
+  late final StudentExamsRepository _repository =
+      widget.repository ?? MockStudentExamsRepository();
 
-  static const _questions = [
-    {
-      'question': 'What is 7 × 6?',
-      'options': ['36', '42', '48', '56'],
-      'answer': 1,
-    },
-    {
-      'question': 'Water boils at?',
-      'options': ['90°C', '95°C', '100°C', '120°C'],
-      'answer': 2,
-    },
-  ];
+  bool _isLoading = true;
+  bool _isSubmitting = false;
+  String? _error;
+  ExamModel? _exam;
+  int _currentQuestionIndex = 0;
+  final Map<String, int> _answers = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExam();
+  }
+
+  Future<void> _loadExam() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      ExamModel exam;
+      if (widget.examId != null) {
+        exam = await _repository.fetchExamQuestions(widget.examId!);
+      } else {
+        final exams = await _repository.fetchAvailableExams();
+        if (exams.isEmpty) throw Exception('No exams available');
+        exam = await _repository.fetchExamQuestions(exams.first.id);
+      }
+      if (!mounted) return;
+      setState(() {
+        _exam = exam;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Unable to load exam.';
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _selectAnswer(int optionIndex) {
+    final question = _exam!.questions[_currentQuestionIndex];
+    setState(() => _answers[question.id] = optionIndex);
+  }
 
   void _nextQuestion() {
-    if (_currentQuestionIndex < _questions.length - 1) {
-      setState(() {
-        _currentQuestionIndex++;
-        _selectedOption = null;
-      });
-      return;
+    if (_currentQuestionIndex < _exam!.questions.length - 1) {
+      setState(() => _currentQuestionIndex++);
     }
+  }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Exam submitted (mock).')),
-    );
+  void _previousQuestion() {
+    if (_currentQuestionIndex > 0) {
+      setState(() => _currentQuestionIndex--);
+    }
+  }
+
+  Future<void> _submitExam() async {
+    setState(() => _isSubmitting = true);
+    try {
+      final result = await _repository.submitExam(_exam!.id, _answers);
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => QuizResultScreen(
+            result: result,
+            questions: _exam!.questions,
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to submit exam.')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final current = _questions[_currentQuestionIndex];
-    final options = (current['options'] as List<String>);
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Exam Attempt')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_error != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Exam Attempt')),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(_error!, style: const TextStyle(color: Colors.red)),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: _loadExam,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final exam = _exam!;
+    final questions = exam.questions;
+
+    if (questions.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: Text(exam.title)),
+        body: const Center(child: Text('No questions in this exam.')),
+      );
+    }
+
+    final current = questions[_currentQuestionIndex];
+    final selectedOption = _answers[current.id];
+    final isLastQuestion = _currentQuestionIndex == questions.length - 1;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Exam Attempt')),
+      appBar: AppBar(title: Text(exam.title)),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Question ${_currentQuestionIndex + 1}/${_questions.length}',
-              style: Theme.of(context).textTheme.titleMedium,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Question ${_currentQuestionIndex + 1}/${questions.length}',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                Text(
+                  '${_answers.length}/${questions.length} answered',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 4),
+            LinearProgressIndicator(
+              value: (_currentQuestionIndex + 1) / questions.length,
+              backgroundColor: Colors.grey.shade200,
+            ),
+            const SizedBox(height: 16),
             Text(
-              current['question'] as String,
+              current.text,
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
-            ...List.generate(options.length, (index) {
+            ...List.generate(current.options.length, (index) {
               return RadioListTile<int>(
                 value: index,
-                groupValue: _selectedOption,
-                title: Text(options[index]),
+                groupValue: selectedOption,
+                title: Text(current.options[index]),
                 onChanged: (value) {
-                  setState(() {
-                    _selectedOption = value;
-                  });
+                  if (value != null) _selectAnswer(value);
                 },
               );
             }),
             const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _selectedOption == null ? null : _nextQuestion,
-                child: Text(
-                  _currentQuestionIndex == _questions.length - 1
-                      ? 'Submit Exam'
-                      : 'Next Question',
+            Row(
+              children: [
+                if (_currentQuestionIndex > 0)
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _previousQuestion,
+                      child: const Text('Previous'),
+                    ),
+                  ),
+                if (_currentQuestionIndex > 0) const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: selectedOption == null
+                        ? null
+                        : isLastQuestion
+                            ? (_isSubmitting ? null : _submitExam)
+                            : _nextQuestion,
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child:
+                                CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(isLastQuestion
+                            ? 'Submit Exam'
+                            : 'Next Question'),
+                  ),
                 ),
-              ),
+              ],
             ),
           ],
         ),
