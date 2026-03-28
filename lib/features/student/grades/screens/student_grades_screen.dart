@@ -83,7 +83,19 @@ class _StudentGradesScreenState extends State<StudentGradesScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                  const SizedBox(width: 40),
+                  SizedBox(
+                    width: 40,
+                    child: Navigator.of(context).canPop()
+                        ? IconButton(
+                            tooltip: 'Back',
+                            onPressed: () => Navigator.of(context).pop(),
+                            icon: const Icon(
+                              Icons.arrow_back_ios_new_rounded,
+                              size: 18,
+                            ),
+                          )
+                        : null,
+                  ),
                   const Expanded(
                     child: Text(
                       'Academic Grades',

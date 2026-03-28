@@ -103,7 +103,7 @@ class StudentDashboardScreen extends StatelessWidget {
                   TextButton(
                     onPressed: () => Navigator.of(
                       context,
-                    ).pushNamed(RouteNames.studentAttendance),
+                    ).pushNamed(RouteNames.studentCalendar),
                     child: const Text(
                       'View Calendar',
                       style: TextStyle(color: AppColors.primary, fontSize: 13),
@@ -172,6 +172,38 @@ class StudentDashboardScreen extends StatelessWidget {
                     onTap: () => Navigator.of(
                       context,
                     ).pushNamed(RouteNames.studentGrades),
+                  ),
+                  _QuickActionTile(
+                    icon: Icons.notifications_rounded,
+                    label: 'Notifications',
+                    color: Colors.redAccent,
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentNotifications),
+                  ),
+                  _QuickActionTile(
+                    icon: Icons.chat_rounded,
+                    label: 'Chat',
+                    color: Colors.teal,
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentChat),
+                  ),
+                  _QuickActionTile(
+                    icon: Icons.calendar_month_rounded,
+                    label: 'Calendar',
+                    color: Colors.indigo,
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentCalendar),
+                  ),
+                  _QuickActionTile(
+                    icon: Icons.settings_rounded,
+                    label: 'Settings',
+                    color: Colors.blueGrey,
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentSettings),
                   ),
                 ],
               ),

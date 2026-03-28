@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'evaluate_me_screen.dart';
+import 'learning_path_screen.dart';
 import '../models/ai_assistant_models.dart';
+import 'resource_recommendation_screen.dart';
 import '../repositories/mock_student_ai_assistant_repository.dart';
 import '../repositories/student_ai_assistant_repository.dart';
 
@@ -57,6 +60,16 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  void _openDetailedPage(int tabIndex) {
+    final page = switch (tabIndex) {
+      0 => const LearningPathScreen(),
+      1 => const ResourceRecommendationScreen(),
+      _ => const EvaluateMeScreen(),
+    };
+
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
   }
 
   Widget _buildContent() {
@@ -141,6 +154,14 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                     ),
                   ),
                   const Spacer(),
+                  IconButton(
+                    tooltip: 'Open detailed page',
+                    onPressed: () => _openDetailedPage(_selectedTab),
+                    icon: const Icon(
+                      Icons.open_in_new_rounded,
+                      color: AppColors.primary,
+                    ),
+                  ),
                   IconButton(
                     tooltip: 'Close AI Assistant',
                     onPressed: () => Navigator.of(context).pop(),

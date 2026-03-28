@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'submit_feedback_screen.dart';
 
 /// Anonymous feedback for each subject/teacher.
 class StudentFeedbackScreen extends StatefulWidget {
@@ -179,6 +180,26 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                             if (v != null) setState(() => _selectedSubject = v);
                           },
                         ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => SubmitFeedbackScreen(
+                                subjectId: _selectedSubject
+                                    .toLowerCase()
+                                    .replaceAll(' ', '_'),
+                                subjectName: _selectedSubject,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                        label: const Text('Open detailed form'),
                       ),
                     ),
                     const SizedBox(height: 22),

@@ -29,7 +29,19 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                  const SizedBox(width: 40),
+                  SizedBox(
+                    width: 40,
+                    child: Navigator.of(context).canPop()
+                        ? IconButton(
+                            tooltip: 'Back',
+                            onPressed: () => Navigator.of(context).pop(),
+                            icon: const Icon(
+                              Icons.arrow_back_ios_new_rounded,
+                              size: 18,
+                            ),
+                          )
+                        : null,
+                  ),
                   const Expanded(
                     child: Text(
                       'Profile',
@@ -269,6 +281,50 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                           label: 'Report a Bug',
                           showChevron: true,
                           onTap: _showBugReport,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // NAVIGATION section
+                    _SectionHeader(title: 'NAVIGATION'),
+                    const SizedBox(height: 8),
+                    _SettingsCard(
+                      children: [
+                        _SettingsRow(
+                          icon: Icons.notifications_outlined,
+                          label: 'Notifications',
+                          showChevron: true,
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(RouteNames.studentNotifications),
+                        ),
+                        _divider(),
+                        _SettingsRow(
+                          icon: Icons.chat_outlined,
+                          label: 'Chat',
+                          showChevron: true,
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(RouteNames.studentChat),
+                        ),
+                        _divider(),
+                        _SettingsRow(
+                          icon: Icons.calendar_month_outlined,
+                          label: 'Calendar',
+                          showChevron: true,
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(RouteNames.studentCalendar),
+                        ),
+                        _divider(),
+                        _SettingsRow(
+                          icon: Icons.settings_outlined,
+                          label: 'App Settings',
+                          showChevron: true,
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(RouteNames.studentSettings),
                         ),
                       ],
                     ),

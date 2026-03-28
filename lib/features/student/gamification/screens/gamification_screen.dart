@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../../core/routes/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'leaderboard_screen.dart';
+import 'quiz_screen.dart';
 
 /// Gamification hub: streaks, achievements, quick quizzes, leaderboard.
 class GamificationScreen extends StatefulWidget {
@@ -24,6 +27,24 @@ class _GamificationScreenState extends State<GamificationScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               child: Row(
                 children: [
+                  IconButton(
+                    tooltip: 'Back',
+                    onPressed: () {
+                      if (Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop();
+                      } else {
+                        Navigator.of(context).pushNamedAndRemoveUntil(
+                          RouteNames.studentDashboard,
+                          (_) => false,
+                        );
+                      }
+                    },
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      size: 18,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                   const Expanded(
                     child: Text(
                       'Gamification Hub',
@@ -214,9 +235,9 @@ class _GamificationScreenState extends State<GamificationScreen> {
                       questions: 5,
                       xp: 100,
                       onStart: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Starting Physics quick quiz...'),
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const QuizScreen(subjectId: 'physics'),
                           ),
                         );
                       },
@@ -228,9 +249,9 @@ class _GamificationScreenState extends State<GamificationScreen> {
                       questions: 3,
                       xp: 50,
                       onStart: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Starting Math quick quiz...'),
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const QuizScreen(subjectId: 'math'),
                           ),
                         );
                       },
@@ -256,6 +277,16 @@ class _GamificationScreenState extends State<GamificationScreen> {
                           borderRadius: BorderRadius.circular(8),
                           child: Row(
                           children: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const LeaderboardScreen(),
+                                  ),
+                                );
+                              },
+                              child: const Text('Open'),
+                            ),
                             Icon(
                               Icons.swap_vert_rounded,
                               size: 16,
