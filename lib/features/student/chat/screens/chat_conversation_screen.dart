@@ -1,14 +1,19 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import '../models/chat_models.dart';
+import '../repositories/student_chat_repository.dart';
+import '../repositories/mock_student_chat_repository.dart';
 
-/// Individual chat conversation screen.
 class ChatConversationScreen extends StatefulWidget {
   final String conversationId;
   final String title;
+  final StudentChatRepository? repository;
 
   const ChatConversationScreen({
     super.key,
     required this.conversationId,
     required this.title,
+    this.repository,
   });
 
   @override
@@ -16,29 +21,93 @@ class ChatConversationScreen extends StatefulWidget {
 }
 
 class _ChatConversationScreenState extends State<ChatConversationScreen> {
+  static const String _currentUserId = 'student1';
+
+  late final StudentChatRepository _repository;
   final TextEditingController _controller = TextEditingController();
-  final List<_Message> _messages = [
-    _Message(text: 'Good morning class, remember to revise chapter 4.', isMine: false),
-    _Message(text: 'Thanks! I will review it tonight.', isMine: true),
-    _Message(text: 'Great. Share questions before 8PM.', isMine: false),
-  ];
+  final ScrollController _scrollController = ScrollController();
+  List<ChatMessageModel> _messages = [];
+  bool _isLoading = true;
+  bool _isSending = false;
+  Timer? _autoReplyTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _repository = widget.repository ?? MockStudentChatRepository();
+    _loadMessages();
+  }
 
   @override
   void dispose() {
     _controller.dispose();
+    _scrollController.dispose();
+    _autoReplyTimer?.cancel();
     super.dispose();
   }
 
-  void _sendMessage() {
-    final text = _controller.text.trim();
-    if (text.isEmpty) {
-      return;
+  Future<void> _loadMessages() async {
+    setState(() => _isLoading = true);
+    try {
+      final messages = await _repository.fetchMessages(widget.conversationId);
+      if (!mounted) return;
+      setState(() {
+        _messages = messages;
+        _isLoading = false;
+      });
+      _scrollToBottom();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
     }
+  }
 
-    setState(() {
-      _messages.add(_Message(text: text, isMine: true));
-      _controller.clear();
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
+      }
     });
+  }
+
+  Future<void> _sendMessage() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty || _isSending) return;
+
+    _controller.clear();
+    setState(() => _isSending = true);
+
+    try {
+      final sentMessage = await _repository.sendMessage(
+        widget.conversationId,
+        text,
+      );
+      if (!mounted) return;
+      setState(() {
+        _messages.add(sentMessage);
+        _isSending = false;
+      });
+      _scrollToBottom();
+
+      _autoReplyTimer?.cancel();
+      _autoReplyTimer = Timer(const Duration(milliseconds: 1200), () async {
+        if (!mounted) return;
+        final refreshed = await _repository.fetchMessages(widget.conversationId);
+        if (!mounted) return;
+        setState(() => _messages = refreshed);
+        _scrollToBottom();
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isSending = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to send message.')),
+      );
+    }
   }
 
   @override
@@ -48,38 +117,59 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final message = _messages[index];
-                return Align(
-                  alignment: message.isMine
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 9,
-                    ),
-                    constraints: const BoxConstraints(maxWidth: 280),
-                    decoration: BoxDecoration(
-                      color: message.isMine
-                          ? Theme.of(context).colorScheme.primary
-                          : Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      message.text,
-                      style: TextStyle(
-                        color: message.isMine ? Colors.white : Colors.black87,
-                      ),
-                    ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(12),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      final message = _messages[index];
+                      final isMine = message.senderId == _currentUserId;
+                      return Align(
+                        alignment: isMine
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 9,
+                          ),
+                          constraints: const BoxConstraints(maxWidth: 280),
+                          decoration: BoxDecoration(
+                            color: isMine
+                                ? Theme.of(context).colorScheme.primary
+                                : Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (!isMine)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 2),
+                                  child: Text(
+                                    message.senderName,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey.shade700,
+                                    ),
+                                  ),
+                                ),
+                              Text(
+                                message.content,
+                                style: TextStyle(
+                                  color: isMine ? Colors.white : Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
           SafeArea(
             top: false,
@@ -110,8 +200,14 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                   const SizedBox(width: 8),
                   FloatingActionButton.small(
                     tooltip: 'Send message',
-                    onPressed: _sendMessage,
-                    child: const Icon(Icons.send_rounded),
+                    onPressed: _isSending ? null : _sendMessage,
+                    child: _isSending
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.send_rounded),
                   ),
                 ],
               ),
@@ -121,11 +217,4 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       ),
     );
   }
-}
-
-class _Message {
-  final String text;
-  final bool isMine;
-
-  const _Message({required this.text, required this.isMine});
 }

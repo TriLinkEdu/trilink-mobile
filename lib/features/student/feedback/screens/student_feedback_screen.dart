@@ -1,21 +1,29 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../models/feedback_model.dart';
+import '../repositories/student_feedback_repository.dart';
+import '../repositories/mock_student_feedback_repository.dart';
 import 'submit_feedback_screen.dart';
 
-/// Anonymous feedback for each subject/teacher.
 class StudentFeedbackScreen extends StatefulWidget {
-  const StudentFeedbackScreen({super.key});
+  final StudentFeedbackRepository? repository;
+
+  const StudentFeedbackScreen({super.key, this.repository});
 
   @override
   State<StudentFeedbackScreen> createState() => _StudentFeedbackScreenState();
 }
 
 class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
+  late final StudentFeedbackRepository _repository;
   int _selectedRating = 4;
   String _selectedSubject = 'Mathematics 101';
   bool _isSubmitting = false;
+  bool _isLoading = true;
+  bool _showBanner = true;
   final _whatWentWellController = TextEditingController();
   final _whatCouldImproveController = TextEditingController();
+  List<FeedbackModel> _feedbackHistory = [];
 
   final List<String> _subjects = [
     'Mathematics 101',
@@ -26,22 +34,157 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _repository = widget.repository ?? MockStudentFeedbackRepository();
+    _loadFeedbackHistory();
+  }
+
+  @override
   void dispose() {
     _whatWentWellController.dispose();
     _whatCouldImproveController.dispose();
     super.dispose();
   }
 
+  Future<void> _loadFeedbackHistory() async {
+    setState(() => _isLoading = true);
+    try {
+      final history = await _repository.fetchFeedbackHistory();
+      if (!mounted) return;
+      setState(() {
+        _feedbackHistory = history;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _submitFeedback() async {
+    final positive = _whatWentWellController.text.trim();
+    final improvement = _whatCouldImproveController.text.trim();
+
+    if (positive.isEmpty && improvement.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please add at least one feedback comment.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final comment = [
+        if (positive.isNotEmpty) 'What went well: $positive',
+        if (improvement.isNotEmpty) 'Could improve: $improvement',
+      ].join('\n');
+
+      await _repository.submitFeedback(
+        subjectId: _selectedSubject.toLowerCase().replaceAll(' ', '_'),
+        subjectName: _selectedSubject,
+        rating: _selectedRating,
+        comment: comment,
+      );
+
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+
+      _whatWentWellController.clear();
+      _whatCouldImproveController.clear();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Feedback submitted for $_selectedSubject.')),
+      );
+
+      _loadFeedbackHistory();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to submit feedback.')),
+      );
+    }
+  }
+
+  void _showAllFeedbackHistory() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => DraggableScrollableSheet(
+        initialChildSize: 0.65,
+        maxChildSize: 0.9,
+        minChildSize: 0.3,
+        expand: false,
+        builder: (_, controller) => Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Row(
+                children: [
+                  const Text(
+                    'All Feedback History',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: () => Navigator.pop(sheetContext),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(),
+            Expanded(
+              child: _feedbackHistory.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No feedback submitted yet.',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    )
+                  : ListView.separated(
+                      controller: controller,
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _feedbackHistory.length,
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final fb = _feedbackHistory[index];
+                        return _FeedbackHistoryTile(feedback: fb);
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final recentItems = _feedbackHistory.length > 2
+        ? _feedbackHistory.sublist(_feedbackHistory.length - 2)
+        : _feedbackHistory;
+
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       body: SafeArea(
         child: Column(
           children: [
-            // App bar
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
                   GestureDetector(
@@ -67,81 +210,84 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                 ],
               ),
             ),
-
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Anonymous notice
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withAlpha(15),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppColors.primary.withAlpha(40),
-                        ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withAlpha(30),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.shield_rounded,
-                              size: 16,
-                              color: AppColors.primary,
-                            ),
+                    if (_showBanner)
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withAlpha(15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.primary.withAlpha(40),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    const Expanded(
-                                      child: Text(
-                                        'Anonymous Feedback',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.textPrimary,
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withAlpha(30),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.shield_rounded,
+                                size: 16,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Expanded(
+                                        child: Text(
+                                          'Anonymous Feedback',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.textPrimary,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    Icon(
-                                      Icons.close,
-                                      size: 18,
-                                      color: Colors.grey.shade400,
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Your feedback helps improve the course. Instructors will see your comments but not your name.',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
-                                    height: 1.4,
+                                      GestureDetector(
+                                        onTap: () => setState(
+                                            () => _showBanner = false),
+                                        child: Icon(
+                                          Icons.close,
+                                          size: 18,
+                                          color: Colors.grey.shade400,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Your feedback helps improve the course. Instructors will see your comments but not your name.',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
                     const SizedBox(height: 22),
 
-                    // Select Subject
                     const Text(
                       'Select Subject',
                       style: TextStyle(
@@ -152,11 +298,13 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                     ),
                     const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 14),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade300),
+                        border:
+                            Border.all(color: Colors.grey.shade300),
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
@@ -172,12 +320,14 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                           ),
                           items: _subjects
                               .map(
-                                (s) =>
-                                    DropdownMenuItem(value: s, child: Text(s)),
+                                (s) => DropdownMenuItem(
+                                    value: s, child: Text(s)),
                               )
                               .toList(),
                           onChanged: (v) {
-                            if (v != null) setState(() => _selectedSubject = v);
+                            if (v != null) {
+                              setState(() => _selectedSubject = v);
+                            }
                           },
                         ),
                       ),
@@ -186,25 +336,28 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton.icon(
-                        onPressed: () {
-                          Navigator.of(context).push(
+                        onPressed: () async {
+                          final result =
+                              await Navigator.of(context).push<bool>(
                             MaterialPageRoute(
                               builder: (_) => SubmitFeedbackScreen(
                                 subjectId: _selectedSubject
                                     .toLowerCase()
                                     .replaceAll(' ', '_'),
                                 subjectName: _selectedSubject,
+                                repository: _repository,
                               ),
                             ),
                           );
+                          if (result == true) _loadFeedbackHistory();
                         },
-                        icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                        icon: const Icon(Icons.open_in_new_rounded,
+                            size: 16),
                         label: const Text('Open detailed form'),
                       ),
                     ),
                     const SizedBox(height: 22),
 
-                    // Rating
                     const Text(
                       'Rate your understanding (1-5)',
                       style: TextStyle(
@@ -220,16 +373,19 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                         final isSelected = rating == _selectedRating;
                         return Expanded(
                           child: GestureDetector(
-                            onTap: () =>
-                                setState(() => _selectedRating = rating),
+                            onTap: () => setState(
+                                () => _selectedRating = rating),
                             child: Container(
-                              margin: EdgeInsets.only(right: i < 4 ? 8 : 0),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              margin: EdgeInsets.only(
+                                  right: i < 4 ? 8 : 0),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 12),
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? AppColors.primary
                                     : Colors.white,
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius:
+                                    BorderRadius.circular(10),
                                 border: Border.all(
                                   color: isSelected
                                       ? AppColors.primary
@@ -248,15 +404,19 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                                           : AppColors.textPrimary,
                                     ),
                                   ),
-                                  if (rating == 1 || rating == 5) ...[
+                                  if (rating == 1 ||
+                                      rating == 5) ...[
                                     const SizedBox(height: 2),
                                     Text(
-                                      rating == 1 ? 'POOR' : 'GREAT',
+                                      rating == 1
+                                          ? 'POOR'
+                                          : 'GREAT',
                                       style: TextStyle(
                                         fontSize: 8,
                                         fontWeight: FontWeight.w600,
                                         color: isSelected
-                                            ? Colors.white.withAlpha(200)
+                                            ? Colors.white
+                                                .withAlpha(200)
                                             : Colors.grey.shade400,
                                       ),
                                     ),
@@ -270,7 +430,6 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                     ),
                     const SizedBox(height: 22),
 
-                    // What went well?
                     const Text(
                       'What went well?',
                       style: TextStyle(
@@ -284,7 +443,8 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                       controller: _whatWentWellController,
                       maxLines: 2,
                       decoration: InputDecoration(
-                        hintText: 'Highlight effective teaching methods...',
+                        hintText:
+                            'Highlight effective teaching methods...',
                         hintStyle: TextStyle(
                           color: Colors.grey.shade400,
                           fontSize: 13,
@@ -298,11 +458,13 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
+                          borderSide:
+                              BorderSide(color: Colors.grey.shade300),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
+                          borderSide:
+                              BorderSide(color: Colors.grey.shade300),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -316,7 +478,6 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                     ),
                     const SizedBox(height: 18),
 
-                    // What could improve?
                     const Text(
                       'What could improve?',
                       style: TextStyle(
@@ -339,11 +500,13 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
+                          borderSide:
+                              BorderSide(color: Colors.grey.shade300),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
+                          borderSide:
+                              BorderSide(color: Colors.grey.shade300),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -357,48 +520,12 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Submit button
                     SizedBox(
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton(
-                        onPressed: _isSubmitting
-                            ? null
-                            : () async {
-                                final positive = _whatWentWellController.text
-                                    .trim();
-                                final improvement =
-                                    _whatCouldImproveController.text.trim();
-
-                                if (positive.isEmpty && improvement.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Please add at least one feedback comment.',
-                                      ),
-                                    ),
-                                  );
-                                  return;
-                                }
-
-                                setState(() => _isSubmitting = true);
-                                await Future<void>.delayed(
-                                  const Duration(milliseconds: 600),
-                                );
-                                if (!context.mounted) return;
-                                setState(() => _isSubmitting = false);
-
-                                _whatWentWellController.clear();
-                                _whatCouldImproveController.clear();
-
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Feedback submitted for $_selectedSubject.',
-                                    ),
-                                  ),
-                                );
-                              },
+                        onPressed:
+                            _isSubmitting ? null : _submitFeedback,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
@@ -412,9 +539,12 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                           ),
                         ),
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisAlignment:
+                              MainAxisAlignment.center,
                           children: [
-                            Text(_isSubmitting ? 'Submitting...' : 'Submit Feedback'),
+                            Text(_isSubmitting
+                                ? 'Submitting...'
+                                : 'Submit Feedback'),
                             const SizedBox(width: 6),
                             Icon(
                               _isSubmitting
@@ -428,9 +558,9 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                     ),
                     const SizedBox(height: 28),
 
-                    // Recent Feedback
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment:
+                          MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
                           'Recent Feedback',
@@ -441,24 +571,7 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                           ),
                         ),
                         TextButton(
-                          onPressed: () {
-                            showDialog<void>(
-                              context: context,
-                              builder: (dialogContext) => AlertDialog(
-                                title: const Text('All Feedback History'),
-                                content: const Text(
-                                  '2 recent feedback items are currently available in this prototype view.',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.of(dialogContext).pop(),
-                                    child: const Text('Close'),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
+                          onPressed: _showAllFeedbackHistory,
                           child: const Text(
                             'View all',
                             style: TextStyle(
@@ -471,28 +584,30 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                     ),
                     const SizedBox(height: 8),
 
-                    // Recent feedback items
-                    const _RecentFeedbackItem(
-                      subject: 'Physics: Mechanics',
-                      date: 'Oct 24, 2023',
-                      rating: 3,
-                      status: 'REPLIED',
-                      statusColor: Colors.green,
-                      comment:
-                          '"The lab sessions were very helpful, but the lecture pace was a bit too fast for the complex..."',
-                      instructorResponse:
-                          '"Thanks for the feedback! We\'ll try to slow down during the thermodynamics module next week."',
-                    ),
-                    const SizedBox(height: 14),
-                    const _RecentFeedbackItem(
-                      subject: 'World History',
-                      date: 'Oct 12, 2023',
-                      rating: 5,
-                      status: 'PENDING',
-                      statusColor: Colors.orange,
-                      comment:
-                          '"Absolutely loved the documentary we watche..."',
-                    ),
+                    if (_isLoading)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(20),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    else if (recentItems.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Center(
+                          child: Text(
+                            'No feedback submitted yet.',
+                            style: TextStyle(
+                                color: Colors.grey.shade500),
+                          ),
+                        ),
+                      )
+                    else
+                      for (final fb
+                          in recentItems.reversed) ...[
+                        _RecentFeedbackItem(feedback: fb),
+                        const SizedBox(height: 14),
+                      ],
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -506,26 +621,24 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
 }
 
 class _RecentFeedbackItem extends StatelessWidget {
-  final String subject;
-  final String date;
-  final int rating;
-  final String status;
-  final Color statusColor;
-  final String comment;
-  final String? instructorResponse;
+  final FeedbackModel feedback;
 
-  const _RecentFeedbackItem({
-    required this.subject,
-    required this.date,
-    required this.rating,
-    required this.status,
-    required this.statusColor,
-    required this.comment,
-    this.instructorResponse,
-  });
+  const _RecentFeedbackItem({required this.feedback});
+
+  String _formatDate(DateTime date) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  }
 
   @override
   Widget build(BuildContext context) {
+    final statusLabel = (feedback.status ?? 'PENDING').toUpperCase();
+    final isReplied = statusLabel == 'REVIEWED';
+    final statusColor = isReplied ? Colors.green : Colors.orange;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -546,7 +659,7 @@ class _RecentFeedbackItem extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  subject,
+                  feedback.subjectName,
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -555,7 +668,8 @@ class _RecentFeedbackItem extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: statusColor.withAlpha(25),
                   borderRadius: BorderRadius.circular(6),
@@ -564,7 +678,7 @@ class _RecentFeedbackItem extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      status == 'REPLIED'
+                      isReplied
                           ? Icons.arrow_back_rounded
                           : Icons.schedule_rounded,
                       size: 12,
@@ -572,7 +686,7 @@ class _RecentFeedbackItem extends StatelessWidget {
                     ),
                     const SizedBox(width: 3),
                     Text(
-                      status,
+                      statusLabel,
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
@@ -588,8 +702,9 @@ class _RecentFeedbackItem extends StatelessWidget {
           Row(
             children: [
               Text(
-                date,
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                _formatDate(feedback.createdAt),
+                style: TextStyle(
+                    fontSize: 11, color: Colors.grey.shade500),
               ),
               const SizedBox(width: 12),
               Row(
@@ -598,65 +713,78 @@ class _RecentFeedbackItem extends StatelessWidget {
                   (i) => Icon(
                     Icons.star_rounded,
                     size: 14,
-                    color: i < rating ? Colors.amber : Colors.grey.shade300,
+                    color: i < feedback.rating
+                        ? Colors.amber
+                        : Colors.grey.shade300,
                   ),
                 ),
               ),
               const SizedBox(width: 4),
               Text(
-                '$rating/5 Rating',
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                '${feedback.rating}/5 Rating',
+                style: TextStyle(
+                    fontSize: 11, color: Colors.grey.shade500),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Text(
-            comment,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade700,
-              height: 1.4,
-              fontStyle: FontStyle.italic,
-            ),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-          ),
-          if (instructorResponse != null) ...[
+          if (feedback.comment != null &&
+              feedback.comment!.isNotEmpty) ...[
             const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.green.withAlpha(15),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.green.withAlpha(40)),
+            Text(
+              '"${feedback.comment}"',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade700,
+                height: 1.4,
+                fontStyle: FontStyle.italic,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'INSTRUCTOR RESPONSE',
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.green,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    instructorResponse!,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade700,
-                      height: 1.4,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ],
-              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _FeedbackHistoryTile extends StatelessWidget {
+  final FeedbackModel feedback;
+
+  const _FeedbackHistoryTile({required this.feedback});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      leading: CircleAvatar(
+        backgroundColor: AppColors.primary.withAlpha(20),
+        child: Text(
+          '${feedback.rating}',
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppColors.primary,
+          ),
+        ),
+      ),
+      title: Text(feedback.subjectName),
+      subtitle: Text(
+        feedback.comment ?? 'No comment',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: Text(
+        (feedback.status ?? 'pending').toUpperCase(),
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: feedback.status == 'reviewed'
+              ? Colors.green
+              : Colors.orange,
+        ),
       ),
     );
   }
