@@ -1,123 +1,186 @@
 import 'package:flutter/material.dart';
+import '../../exams/models/exam_model.dart';
+import '../repositories/student_gamification_repository.dart';
+import '../repositories/mock_student_gamification_repository.dart';
+import 'quiz_result_screen.dart';
 
 class QuizScreen extends StatefulWidget {
   final String subjectId;
   final String? chapterId;
+  final StudentGamificationRepository? repository;
 
-  const QuizScreen({super.key, required this.subjectId, this.chapterId});
+  const QuizScreen({
+    super.key,
+    required this.subjectId,
+    this.chapterId,
+    this.repository,
+  });
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
 }
 
 class _QuizScreenState extends State<QuizScreen> {
+  late final StudentGamificationRepository _repository;
+  ExamModel? _quiz;
+  bool _isLoading = true;
+  String? _error;
+
   int _questionIndex = 0;
-  int _score = 0;
+  final Map<String, int> _answers = {};
+  bool _submitting = false;
 
-  final List<_Question> _questions = const [
-    _Question(
-      prompt: 'What is the SI unit of force?',
-      options: ['Newton', 'Joule', 'Pascal', 'Watt'],
-      correctIndex: 0,
-    ),
-    _Question(
-      prompt: 'Acceleration due to gravity on Earth is approximately?',
-      options: ['4.9 m/s²', '9.8 m/s²', '19.6 m/s²', '1.6 m/s²'],
-      correctIndex: 1,
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _repository = widget.repository ?? MockStudentGamificationRepository();
+    _loadQuiz();
+  }
 
-  void _selectAnswer(int index) {
-    if (_questionIndex >= _questions.length) {
-      return;
-    }
-
-    if (index == _questions[_questionIndex].correctIndex) {
-      _score += 1;
-    }
-
+  Future<void> _loadQuiz() async {
     setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final quiz = await _repository.fetchQuiz(widget.subjectId);
+      if (!mounted) return;
+      setState(() => _quiz = quiz);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = 'Could not load quiz. Please try again.');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _selectAnswer(int optionIndex) {
+    final quiz = _quiz;
+    if (quiz == null || _questionIndex >= quiz.questions.length) return;
+
+    final question = quiz.questions[_questionIndex];
+    setState(() {
+      _answers[question.id] = optionIndex;
       _questionIndex += 1;
     });
+
+    if (_questionIndex >= quiz.questions.length) {
+      _submitQuiz();
+    }
+  }
+
+  Future<void> _submitQuiz() async {
+    final quiz = _quiz;
+    if (quiz == null) return;
+
+    setState(() => _submitting = true);
+    try {
+      final result = await _repository.submitQuizAnswers(quiz.id, _answers);
+      if (!mounted) return;
+
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => QuizResultScreen(
+            result: result,
+            questions: quiz.questions,
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to submit quiz. Please retry.')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final finished = _questionIndex >= _questions.length;
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Quiz')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_error != null || _quiz == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Quiz')),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(_error ?? 'Quiz not found.'),
+              const SizedBox(height: 12),
+              OutlinedButton(
+                onPressed: _loadQuiz,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final quiz = _quiz!;
+    final finished = _questionIndex >= quiz.questions.length;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Quiz')),
-      body: finished
-          ? Center(
+      appBar: AppBar(title: Text(quiz.title)),
+      body: _submitting
+          ? const Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    'Score: $_score / ${_questions.length}',
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        _questionIndex = 0;
-                        _score = 0;
-                      });
-                    },
-                    child: const Text('Retry Quiz'),
-                  ),
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Submitting your answers...'),
                 ],
               ),
             )
-          : Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Question ${_questionIndex + 1} of ${_questions.length}',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    _questions[_questionIndex].prompt,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ...List.generate(
-                    _questions[_questionIndex].options.length,
-                    (index) => Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed: () => _selectAnswer(index),
-                          child: Text(_questions[_questionIndex].options[index]),
+          : finished
+              ? const Center(child: CircularProgressIndicator())
+              : Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      LinearProgressIndicator(
+                        value: (_questionIndex + 1) / quiz.questions.length,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Question ${_questionIndex + 1} of ${quiz.questions.length}',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        quiz.questions[_questionIndex].text,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 16),
+                      ...List.generate(
+                        quiz.questions[_questionIndex].options.length,
+                        (index) => Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton(
+                              onPressed: () => _selectAnswer(index),
+                              child: Text(
+                                quiz.questions[_questionIndex].options[index],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                ),
     );
   }
-}
-
-class _Question {
-  final String prompt;
-  final List<String> options;
-  final int correctIndex;
-
-  const _Question({
-    required this.prompt,
-    required this.options,
-    required this.correctIndex,
-  });
 }

@@ -9,7 +9,9 @@ import '../repositories/student_ai_assistant_repository.dart';
 
 /// AI Assistant with Learning Path, Resources, and Evaluate Me tabs.
 class AiAssistantScreen extends StatefulWidget {
-  const AiAssistantScreen({super.key});
+  final StudentAiAssistantRepository? repository;
+
+  const AiAssistantScreen({super.key, this.repository});
 
   @override
   State<AiAssistantScreen> createState() => _AiAssistantScreenState();
@@ -18,8 +20,7 @@ class AiAssistantScreen extends StatefulWidget {
 class _AiAssistantScreenState extends State<AiAssistantScreen> {
   int _selectedTab = 0;
   final List<String> _tabs = ['Learning Path', 'Resources', 'Evaluate M...'];
-  final StudentAiAssistantRepository _repository =
-      MockStudentAiAssistantRepository();
+  late final StudentAiAssistantRepository _repository;
 
   bool _isLoading = true;
   String? _error;
@@ -28,6 +29,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   @override
   void initState() {
     super.initState();
+    _repository = widget.repository ?? MockStudentAiAssistantRepository();
     _loadAssistantData();
   }
 
@@ -63,10 +65,20 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   }
 
   void _openDetailedPage(int tabIndex) {
+    final data = _assistantData;
     final page = switch (tabIndex) {
-      0 => const LearningPathScreen(),
-      1 => const ResourceRecommendationScreen(),
-      _ => const EvaluateMeScreen(),
+      0 => LearningPathScreen(
+          items: data?.learningPath,
+          repository: _repository,
+        ),
+      1 => ResourceRecommendationScreen(
+          resources: data?.resources,
+          repository: _repository,
+        ),
+      _ => EvaluateMeScreen(
+          insights: data?.insights,
+          repository: _repository,
+        ),
     };
 
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
@@ -123,8 +135,14 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     return IndexedStack(
       index: _selectedTab,
       children: [
-        _LearningPathTab(pathItems: data.learningPath),
-        _ResourcesTab(resources: data.resources),
+        _LearningPathTab(
+          pathItems: data.learningPath,
+          onNavigateToPath: () => _openDetailedPage(0),
+        ),
+        _ResourcesTab(
+          resources: data.resources,
+          onNavigateToResources: () => _openDetailedPage(1),
+        ),
         _EvaluateTab(insights: data.insights),
       ],
     );
@@ -137,12 +155,10 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 16, 0),
               child: Row(
                 children: [
-                  // Logo
                   Icon(Icons.auto_awesome, color: AppColors.primary, size: 28),
                   const SizedBox(width: 8),
                   const Text(
@@ -172,7 +188,6 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
             ),
             const SizedBox(height: 14),
 
-            // Tab bar
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
@@ -219,26 +234,15 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
             ),
             const SizedBox(height: 6),
 
-            // Content
             Expanded(
               child: _buildContent(),
             ),
           ],
         ),
       ),
-      // FAB
       floatingActionButton: FloatingActionButton.small(
         tooltip: 'Refresh AI suggestions',
-        onPressed: () {
-          final message = switch (_selectedTab) {
-            0 => 'Learning path refreshed for today.',
-            1 => 'Top resources selected for your next study session.',
-            _ => 'Evaluation tips prepared based on your recent activity.',
-          };
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(message)));
-        },
+        onPressed: _loadAssistantData,
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
       ),
@@ -248,10 +252,43 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
 
 // ─── Learning Path Tab ───────────────────────────────────────────────────────
 
-class _LearningPathTab extends StatelessWidget {
+class _LearningPathTab extends StatefulWidget {
   final List<LearningPathItemModel> pathItems;
+  final VoidCallback onNavigateToPath;
 
-  const _LearningPathTab({required this.pathItems});
+  const _LearningPathTab({
+    required this.pathItems,
+    required this.onNavigateToPath,
+  });
+
+  @override
+  State<_LearningPathTab> createState() => _LearningPathTabState();
+}
+
+class _LearningPathTabState extends State<_LearningPathTab> {
+  late List<LearningPathItemModel> _items;
+
+  @override
+  void initState() {
+    super.initState();
+    _items = List.of(widget.pathItems);
+  }
+
+  @override
+  void didUpdateWidget(covariant _LearningPathTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.pathItems != widget.pathItems) {
+      _items = List.of(widget.pathItems);
+    }
+  }
+
+  void _toggleBookmark(int index) {
+    setState(() {
+      _items[index] = _items[index].copyWith(
+        isBookmarked: !_items[index].isBookmarked,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -260,7 +297,6 @@ class _LearningPathTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section header
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(18),
@@ -306,8 +342,7 @@ class _LearningPathTab extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // Path items
-          if (pathItems.isEmpty)
+          if (_items.isEmpty)
             const Center(
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 20),
@@ -318,8 +353,8 @@ class _LearningPathTab extends StatelessWidget {
               ),
             )
           else
-            ...List.generate(pathItems.length, (index) {
-              final item = pathItems[index];
+            ...List.generate(_items.length, (index) {
+              final item = _items[index];
               final icon = switch (index % 3) {
                 0 => Icons.rocket_launch_rounded,
                 1 => Icons.precision_manufacturing_rounded,
@@ -328,7 +363,7 @@ class _LearningPathTab extends StatelessWidget {
 
               return Padding(
                 padding: EdgeInsets.only(
-                  bottom: index == pathItems.length - 1 ? 0 : 14,
+                  bottom: index == _items.length - 1 ? 0 : 14,
                 ),
                 child: _PathItem(
                   index: item.step,
@@ -338,12 +373,20 @@ class _LearningPathTab extends StatelessWidget {
                   duration: item.duration,
                   progress: item.progress,
                   isActive: item.isActive,
+                  isBookmarked: item.isBookmarked,
+                  onBookmarkToggle: () => _toggleBookmark(index),
+                  onAction: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => LearningPathScreen(items: _items),
+                      ),
+                    );
+                  },
                 ),
               );
             }),
           const SizedBox(height: 20),
 
-          // AI Insight
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -379,8 +422,8 @@ class _LearningPathTab extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        pathItems.isNotEmpty
-                            ? "Your current focus is ${pathItems.first.title}. Continue this step before moving to the next module."
+                        _items.isNotEmpty
+                            ? "Your current focus is ${_items.first.title}. Continue this step before moving to the next module."
                             : 'Your personalized tips will appear after your next activity.',
                         style: TextStyle(
                           fontSize: 12,
@@ -408,6 +451,9 @@ class _PathItem extends StatelessWidget {
   final String duration;
   final double progress;
   final bool isActive;
+  final bool isBookmarked;
+  final VoidCallback onBookmarkToggle;
+  final VoidCallback onAction;
 
   const _PathItem({
     required this.index,
@@ -417,6 +463,9 @@ class _PathItem extends StatelessWidget {
     required this.duration,
     required this.progress,
     required this.isActive,
+    required this.isBookmarked,
+    required this.onBookmarkToggle,
+    required this.onAction,
   });
 
   @override
@@ -477,10 +526,15 @@ class _PathItem extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(
-                Icons.bookmark_border_rounded,
-                color: Colors.grey.shade400,
-                size: 22,
+              GestureDetector(
+                onTap: onBookmarkToggle,
+                child: Icon(
+                  isBookmarked
+                      ? Icons.bookmark_rounded
+                      : Icons.bookmark_border_rounded,
+                  color: isBookmarked ? AppColors.primary : Colors.grey.shade400,
+                  size: 22,
+                ),
               ),
             ],
           ),
@@ -501,11 +555,7 @@ class _PathItem extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Continuing $title module...')),
-                  );
-                },
+                onPressed: onAction,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -536,11 +586,7 @@ class _PathItem extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Starting $title module...')),
-                  );
-                },
+                onPressed: onAction,
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.textPrimary,
                   side: BorderSide(color: Colors.grey.shade300),
@@ -566,8 +612,12 @@ class _PathItem extends StatelessWidget {
 
 class _ResourcesTab extends StatelessWidget {
   final List<ResourceRecommendationModel> resources;
+  final VoidCallback onNavigateToResources;
 
-  const _ResourcesTab({required this.resources});
+  const _ResourcesTab({
+    required this.resources,
+    required this.onNavigateToResources,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -635,8 +685,11 @@ class _ResourcesTab extends StatelessWidget {
               ),
               TextButton(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Opening ${resource.title}...')),
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          ResourceRecommendationScreen(resources: resources),
+                    ),
                   );
                 },
                 child: const Text('Open'),

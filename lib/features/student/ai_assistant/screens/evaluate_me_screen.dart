@@ -1,29 +1,70 @@
 import 'package:flutter/material.dart';
+import '../models/ai_assistant_models.dart';
+import '../repositories/mock_student_ai_assistant_repository.dart';
+import '../repositories/student_ai_assistant_repository.dart';
 
 /// AI-generated general feedback about performance and learning habits.
-class EvaluateMeScreen extends StatelessWidget {
-  const EvaluateMeScreen({super.key});
+class EvaluateMeScreen extends StatefulWidget {
+  final List<EvaluateInsightModel>? insights;
+  final StudentAiAssistantRepository? repository;
+
+  const EvaluateMeScreen({super.key, this.insights, this.repository});
+
+  @override
+  State<EvaluateMeScreen> createState() => _EvaluateMeScreenState();
+}
+
+class _EvaluateMeScreenState extends State<EvaluateMeScreen> {
+  late final StudentAiAssistantRepository _repository;
+  List<EvaluateInsightModel> _insights = [];
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _repository = widget.repository ?? MockStudentAiAssistantRepository();
+    if (widget.insights != null && widget.insights!.isNotEmpty) {
+      _insights = List.of(widget.insights!);
+    } else {
+      _loadFromRepository();
+    }
+  }
+
+  Future<void> _loadFromRepository() async {
+    setState(() => _isLoading = true);
+    try {
+      final data = await _repository.fetchAssistantData();
+      if (!mounted) return;
+      setState(() => _insights = List.of(data.insights));
+    } catch (_) {
+      if (!mounted) return;
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Evaluate Me')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: const [
-          _InsightCard(
-            title: 'Strength',
-            summary: 'You consistently perform well in conceptual questions.',
-            recommendation: 'Keep using quick concept summaries before practice.',
-          ),
-          SizedBox(height: 10),
-          _InsightCard(
-            title: 'Focus Area',
-            summary: 'Multi-step numerical questions reduce your speed.',
-            recommendation: 'Practice 3 timed multi-step problems daily.',
-          ),
-        ],
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _insights.isEmpty
+              ? const Center(
+                  child: Text('No evaluation insights available.'))
+              : ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _insights.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final insight = _insights[index];
+                    return _InsightCard(
+                      title: insight.title,
+                      summary: insight.summary,
+                      recommendation: insight.recommendation,
+                    );
+                  },
+                ),
     );
   }
 }
