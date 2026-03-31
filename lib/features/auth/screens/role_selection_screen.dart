@@ -7,18 +7,18 @@ class RoleSelectionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: const Text('Select Your Role')),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
-                'Select Your Role',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              Text(
+                'Choose how you use TriLink',
+                style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 48),
-              // TODO: Role selection cards
             ],
           ),
         ),

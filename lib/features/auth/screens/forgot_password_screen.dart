@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../cubit/auth_cubit.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -66,20 +67,20 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(Icons.mark_email_read_rounded, size: 80, color: theme.colorScheme.primary),
-        const SizedBox(height: 24),
+        AppSpacing.gapXxl,
         Text('Check your email', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
+        AppSpacing.gapMd,
         Text(
           'We sent a password reset link to\n${_emailController.text.trim()}',
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
-        const SizedBox(height: 32),
+        AppSpacing.gapXxxl,
         FilledButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Back to Login'),
         ),
-        const SizedBox(height: 12),
+        AppSpacing.gapMd,
         TextButton(
           onPressed: () => setState(() => _emailSent = false),
           child: const Text('Try a different email'),
@@ -94,21 +95,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 40),
+          AppSpacing.gapHuge,
           Icon(Icons.lock_reset_rounded, size: 64, color: theme.colorScheme.primary),
-          const SizedBox(height: 24),
+          AppSpacing.gapXxl,
           Text(
             'Forgot Password?',
             style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 8),
+          AppSpacing.gapSm,
           Text(
             'Enter your email address and we\'ll send you a link to reset your password.',
             style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 32),
+          AppSpacing.gapXxxl,
           TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
@@ -123,7 +124,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               return null;
             },
           ),
-          const SizedBox(height: 24),
+          AppSpacing.gapXxl,
           FilledButton(
             onPressed: _isLoading ? null : _handleSubmit,
             child: _isLoading

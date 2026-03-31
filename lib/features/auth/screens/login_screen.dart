@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_shadows.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/theme_notifier.dart';
 import '../../../core/routes/route_names.dart';
 import '../cubit/auth_cubit.dart';
@@ -14,7 +18,8 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -22,8 +27,25 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   _Role _selectedRole = _Role.student;
 
+  late final AnimationController _logoController;
+  late final Animation<double> _logoScale;
+
+  @override
+  void initState() {
+    super.initState();
+    _logoController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _logoScale = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _logoController, curve: Curves.elasticOut),
+    );
+    _logoController.forward();
+  }
+
   @override
   void dispose() {
+    _logoController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -33,6 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     setState(() => _isLoading = true);
+    HapticFeedback.mediumImpact();
     try {
       final authCubit = context.read<AuthCubit>();
       await authCubit.login(
@@ -90,42 +113,41 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 28.0),
+            padding: const EdgeInsets.symmetric(horizontal: 28),
             child: Form(
               key: _formKey,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _buildDarkModeToggle(theme, isDark),
-                  const SizedBox(height: 16),
-                  _buildLogo(),
-                  const SizedBox(height: 24),
+                  AppSpacing.gapLg,
+                  _buildAnimatedLogo(theme),
+                  AppSpacing.gapXxl,
                   Text(
                     'Welcome to TriLink',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+                    style: theme.textTheme.headlineSmall?.copyWith(
                       color: theme.colorScheme.onSurface,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  AppSpacing.gapXs,
                   Text(
                     'Learn smarter, grow faster',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: theme.colorScheme.primary.withAlpha(180),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(height: 28),
+                  AppSpacing.gapXxl,
                   _buildRoleSelector(theme),
-                  const SizedBox(height: 28),
+                  AppSpacing.gapXxl,
                   _buildEmailField(theme),
-                  const SizedBox(height: 20),
+                  AppSpacing.gapLg,
                   _buildPasswordField(theme),
                   _buildForgotPassword(theme),
-                  const SizedBox(height: 8),
+                  AppSpacing.gapSm,
                   _buildLoginButton(theme),
-                  const SizedBox(height: 24),
+                  AppSpacing.gapMd,
+                  _buildCreateAccount(theme),
+                  AppSpacing.gapXxl,
                   _buildContinueOffline(theme),
                 ],
               ),
@@ -140,32 +162,50 @@ class _LoginScreenState extends State<LoginScreen> {
     return Align(
       alignment: Alignment.centerRight,
       child: GestureDetector(
-        onTap: () => ThemeNotifier.instance.toggle(),
-        child: Container(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          ThemeNotifier.instance.toggle();
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: AppRadius.borderMd,
           ),
-          child: Icon(
-            isDark ? Icons.light_mode : Icons.dark_mode,
-            color: isDark ? Colors.amber : theme.colorScheme.onSurfaceVariant,
-            size: 22,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            transitionBuilder: (child, animation) => RotationTransition(
+              turns: animation,
+              child: FadeTransition(opacity: animation, child: child),
+            ),
+            child: Icon(
+              isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+              key: ValueKey(isDark),
+              color: isDark
+                  ? AppColors.xpGold
+                  : theme.colorScheme.onSurfaceVariant,
+              size: 20,
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildLogo() {
-    return Container(
-      width: 80,
-      height: 80,
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(18),
+  Widget _buildAnimatedLogo(ThemeData theme) {
+    return ScaleTransition(
+      scale: _logoScale,
+      child: Container(
+        width: 88,
+        height: 88,
+        decoration: BoxDecoration(
+          gradient: AppGradients.primaryHero,
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          boxShadow: AppShadows.glow(AppColors.primary),
+        ),
+        child: const Icon(Icons.school_rounded, color: Colors.white, size: 44),
       ),
-      child: const Icon(Icons.school_rounded, color: Colors.white, size: 44),
     );
   }
 
@@ -174,7 +214,7 @@ class _LoginScreenState extends State<LoginScreen> {
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.borderMd,
       ),
       child: Row(
         children: _Role.values.map((role) {
@@ -182,9 +222,13 @@ class _LoginScreenState extends State<LoginScreen> {
           final label = role.name[0].toUpperCase() + role.name.substring(1);
           return Expanded(
             child: GestureDetector(
-              onTap: () => setState(() => _selectedRole = role),
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() => _selectedRole = role);
+              },
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOut,
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
                   color: isSelected
@@ -192,14 +236,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: theme.colorScheme.primary
-                                .withValues(alpha: 0.3),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
+                      ? AppShadows.glow(theme.colorScheme.primary)
                       : null,
                 ),
                 child: Row(
@@ -216,7 +253,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ? theme.colorScheme.onPrimary
                           : theme.colorScheme.onSurfaceVariant,
                     ),
-                    const SizedBox(width: 6),
+                    AppSpacing.hGapXs,
                     Text(
                       label,
                       style: TextStyle(
@@ -242,15 +279,8 @@ class _LoginScreenState extends State<LoginScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Email',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 6),
+        Text('Email', style: theme.textTheme.labelLarge),
+        AppSpacing.gapSm,
         TextFormField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
@@ -263,10 +293,6 @@ class _LoginScreenState extends State<LoginScreen> {
             prefixIcon: Icon(
               Icons.email_outlined,
               color: theme.colorScheme.onSurfaceVariant,
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
             ),
           ),
           validator: (value) {
@@ -282,15 +308,8 @@ class _LoginScreenState extends State<LoginScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Password',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 6),
+        Text('Password', style: theme.textTheme.labelLarge),
+        AppSpacing.gapSm,
         TextFormField(
           controller: _passwordController,
           obscureText: _obscurePassword,
@@ -309,10 +328,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               onPressed: () =>
                   setState(() => _obscurePassword = !_obscurePassword),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
             ),
           ),
           validator: (value) {
@@ -335,10 +350,7 @@ class _LoginScreenState extends State<LoginScreen> {
         style: TextButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 8),
         ),
-        child: Text(
-          'Forgot password?',
-          style: TextStyle(color: theme.colorScheme.primary, fontSize: 13),
-        ),
+        child: const Text('Forgot password?'),
       ),
     );
   }
@@ -346,21 +358,9 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildLoginButton(ThemeData theme) {
     return SizedBox(
       width: double.infinity,
-      height: 50,
+      height: 52,
       child: ElevatedButton(
         onPressed: _isLoading ? null : _handleLogin,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: theme.colorScheme.primary,
-          foregroundColor: theme.colorScheme.onPrimary,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          elevation: 0,
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
         child: _isLoading
             ? SizedBox(
                 width: 22,
@@ -375,28 +375,44 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildContinueOffline(ThemeData theme) {
+  Widget _buildCreateAccount(ThemeData theme) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          Icons.wifi_off_rounded,
-          size: 18,
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-        const SizedBox(width: 6),
-        TextButton(
-          onPressed: _isLoading ? null : _handleContinueOffline,
-          style: TextButton.styleFrom(padding: EdgeInsets.zero),
-          child: Text(
-            'Continue offline',
-            style: TextStyle(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontSize: 14,
-            ),
+        Text(
+          "Don't have an account?",
+          style: TextStyle(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontSize: 14,
           ),
         ),
+        TextButton(
+          onPressed: () =>
+              Navigator.of(context).pushNamed(RouteNames.register),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+          ),
+          child: const Text('Sign Up'),
+        ),
       ],
+    );
+  }
+
+  Widget _buildContinueOffline(ThemeData theme) {
+    return TextButton.icon(
+      onPressed: _isLoading ? null : _handleContinueOffline,
+      icon: Icon(
+        Icons.wifi_off_rounded,
+        size: 18,
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+      label: Text(
+        'Continue offline',
+        style: TextStyle(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontSize: 14,
+        ),
+      ),
     );
   }
 }

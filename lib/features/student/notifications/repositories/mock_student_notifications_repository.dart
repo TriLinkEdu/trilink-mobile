@@ -1,3 +1,4 @@
+import '../../../../core/routes/route_names.dart';
 import '../models/notification_model.dart';
 import 'student_notifications_repository.dart';
 
@@ -13,8 +14,8 @@ class MockStudentNotificationsRepository
       type: 'academic',
       isRead: false,
       createdAt: DateTime.now().subtract(const Duration(minutes: 30)),
-      routeName: '/assignments/detail',
-      routeArgs: {'id': 'a3'},
+      routeName: RouteNames.studentAssignmentDetail,
+      routeArgs: {'assignmentId': 'a3'},
     ),
     NotificationModel(
       id: 'n2',
@@ -23,8 +24,7 @@ class MockStudentNotificationsRepository
       type: 'academic',
       isRead: false,
       createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-      routeName: '/courses/resources',
-      routeArgs: {'id': 'cr7'},
+      routeName: RouteNames.studentCourseResources,
     ),
     NotificationModel(
       id: 'n3',
@@ -33,8 +33,8 @@ class MockStudentNotificationsRepository
       type: 'academic',
       isRead: false,
       createdAt: DateTime.now().subtract(const Duration(hours: 6)),
-      routeName: '/exams/detail',
-      routeArgs: {'id': 'e1'},
+      routeName: RouteNames.studentExamAttempt,
+      routeArgs: {'examId': 'e1'},
     ),
     NotificationModel(
       id: 'n4',
@@ -51,8 +51,8 @@ class MockStudentNotificationsRepository
       type: 'social',
       isRead: false,
       createdAt: DateTime.now().subtract(const Duration(minutes: 15)),
-      routeName: '/chat/conversation',
-      routeArgs: {'id': 'conv1'},
+      routeName: RouteNames.studentChatConversation,
+      routeArgs: {'conversationId': 'conv1', 'title': 'Physics Study Group'},
     ),
     NotificationModel(
       id: 'n6',
@@ -61,8 +61,8 @@ class MockStudentNotificationsRepository
       type: 'administrative',
       isRead: true,
       createdAt: DateTime.now().subtract(const Duration(days: 2)),
-      routeName: '/calendar/event',
-      routeArgs: {'id': 'ev4'},
+      routeName: RouteNames.studentCalendarEventDetail,
+      routeArgs: {'eventId': 'ev4'},
     ),
     NotificationModel(
       id: 'n7',
@@ -71,8 +71,8 @@ class MockStudentNotificationsRepository
       type: 'academic',
       isRead: false,
       createdAt: DateTime.now().subtract(const Duration(days: 1, hours: 3)),
-      routeName: '/assignments/detail',
-      routeArgs: {'id': 'a2'},
+      routeName: RouteNames.studentAssignmentDetail,
+      routeArgs: {'assignmentId': 'a2'},
     ),
     NotificationModel(
       id: 'n8',
@@ -97,8 +97,8 @@ class MockStudentNotificationsRepository
       type: 'administrative',
       isRead: true,
       createdAt: DateTime.now().subtract(const Duration(days: 2, hours: 5)),
-      routeName: '/calendar/event',
-      routeArgs: {'id': 'ev3'},
+      routeName: RouteNames.studentCalendarEventDetail,
+      routeArgs: {'eventId': 'ev3'},
     ),
   ];
 
