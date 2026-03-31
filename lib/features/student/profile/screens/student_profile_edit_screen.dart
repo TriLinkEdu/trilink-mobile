@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../../auth/services/auth_service.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../auth/cubit/auth_cubit.dart';
 import '../repositories/student_profile_repository.dart';
-import '../repositories/mock_student_profile_repository.dart';
 
 class StudentProfileEditScreen extends StatefulWidget {
-  final StudentProfileRepository? repository;
-  const StudentProfileEditScreen({super.key, this.repository});
+  const StudentProfileEditScreen({super.key});
 
   @override
   State<StudentProfileEditScreen> createState() => _StudentProfileEditScreenState();
@@ -23,7 +23,7 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
   @override
   void initState() {
     super.initState();
-    _repo = widget.repository ?? MockStudentProfileRepository();
+    _repo = sl<StudentProfileRepository>();
     _nameController = TextEditingController();
     _emailController = TextEditingController();
     _phoneController = TextEditingController();
@@ -48,6 +48,7 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
   Future<void> _handleSave() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final authCubit = context.read<AuthCubit>();
     setState(() => _isSaving = true);
     try {
       final updated = await _repo.updateProfile(
@@ -55,7 +56,7 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
         email: _emailController.text.trim(),
         phone: _phoneController.text.trim(),
       );
-      AuthService().updateUser(updated);
+      authCubit.updateUser(updated);
       if (mounted) {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -84,6 +85,7 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final authUser = context.read<AuthCubit>().currentUser;
 
     return Scaffold(
       appBar: AppBar(
@@ -171,7 +173,7 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
-                      initialValue: AuthService().currentUser?.school ?? '',
+                      initialValue: authUser?.school ?? '',
                       enabled: false,
                       decoration: const InputDecoration(
                         labelText: 'School',
@@ -184,7 +186,7 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
                       children: [
                         Expanded(
                           child: TextFormField(
-                            initialValue: AuthService().currentUser?.grade ?? '',
+                            initialValue: authUser?.grade ?? '',
                             enabled: false,
                             decoration: const InputDecoration(
                               labelText: 'Grade',
@@ -195,7 +197,7 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
                         const SizedBox(width: 16),
                         Expanded(
                           child: TextFormField(
-                            initialValue: AuthService().currentUser?.section ?? '',
+                            initialValue: authUser?.section ?? '',
                             enabled: false,
                             decoration: const InputDecoration(
                               labelText: 'Section',

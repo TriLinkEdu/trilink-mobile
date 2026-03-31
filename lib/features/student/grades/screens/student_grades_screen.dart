@@ -1,339 +1,332 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../../core/di/injection_container.dart';
 import '../../../../core/routes/route_names.dart';
+import '../cubit/grades_cubit.dart';
 import '../models/grade_model.dart';
-import '../repositories/mock_student_grades_repository.dart';
 import '../repositories/student_grades_repository.dart';
 
-class StudentGradesScreen extends StatefulWidget {
-  final StudentGradesRepository? repository;
-
-  const StudentGradesScreen({super.key, this.repository});
-
-  @override
-  State<StudentGradesScreen> createState() => _StudentGradesScreenState();
-}
-
-class _StudentGradesScreenState extends State<StudentGradesScreen> {
-  bool _isThisTerm = true;
-  late final StudentGradesRepository _repository =
-      widget.repository ?? MockStudentGradesRepository();
-  bool _isLoading = true;
-  String? _error;
-  List<_SubjectSummary> _summaries = const [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadGrades();
-  }
-
-  Future<void> _loadGrades() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final term = _isThisTerm ? 'Fall 2023' : 'Spring 2023';
-      final grades = await _repository.fetchGrades(term: term);
-      final bySubject = <String, List<GradeModel>>{};
-      for (final grade in grades) {
-        bySubject.putIfAbsent(grade.subjectId, () => <GradeModel>[]).add(grade);
-      }
-
-      final summaries = bySubject.entries.map((entry) {
-        final subjectGrades = entry.value
-          ..sort((a, b) => a.date.compareTo(b.date));
-        final average =
-            subjectGrades.map((g) => g.percentage).reduce((a, b) => a + b) /
-                subjectGrades.length;
-        final trend = subjectGrades.length > 1
-            ? subjectGrades.last.percentage - subjectGrades.first.percentage
-            : 0.0;
-
-        return _SubjectSummary(
-          subjectId: entry.key,
-          subjectName: subjectGrades.first.subjectName,
-          average: average,
-          assessmentCount: subjectGrades.length,
-          trend: trend,
-        );
-      }).toList()
-        ..sort((a, b) => b.average.compareTo(a.average));
-
-      if (!mounted) return;
-      setState(() {
-        _summaries = summaries;
-        _isLoading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'Unable to load grades right now.';
-        _isLoading = false;
-      });
-    }
-  }
+class StudentGradesScreen extends StatelessWidget {
+  const StudentGradesScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 40,
-                    child: Navigator.of(context).canPop()
-                        ? IconButton(
-                            tooltip: 'Back',
-                            onPressed: () => Navigator.of(context).pop(),
-                            icon: const Icon(
-                              Icons.arrow_back_ios_new_rounded,
-                              size: 18,
-                            ),
-                          )
-                        : null,
-                  ),
-                  Expanded(
-                    child: Text(
-                      'Academic Grades',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: 'Switch term view',
-                    onPressed: () {
-                      setState(() => _isThisTerm = !_isThisTerm);
-                      _loadGrades();
-                    },
-                    icon: Icon(
-                      Icons.more_horiz,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: _isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        semanticsLabel: 'Loading grades',
-                      ),
-                    )
-                  : _error != null
-                      ? Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(_error!,
-                                  style: const TextStyle(color: Colors.red)),
-                              const SizedBox(height: 10),
-                              ElevatedButton(
-                                onPressed: _loadGrades,
-                                child: const Text('Retry'),
-                              ),
-                            ],
-                          ),
-                        )
-                      : _summaries.isEmpty
-                          ? Center(
-                              child: Text(
-                                'No grades available yet.',
-                                style: TextStyle(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            )
-                          : SingleChildScrollView(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 20),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 28),
-                                    decoration: BoxDecoration(
-                                      color: theme.colorScheme.primary
-                                          .withAlpha(20),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        Text(
-                                          'Overall Average',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: theme
-                                                .colorScheme.onSurfaceVariant,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          '${_overallAverage.toStringAsFixed(0)}%',
-                                          style: TextStyle(
-                                            fontSize: 48,
-                                            fontWeight: FontWeight.bold,
-                                            color: theme.colorScheme.primary,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                            vertical: 5,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: theme.colorScheme.primary
-                                                .withAlpha(30),
-                                            borderRadius:
-                                                BorderRadius.circular(20),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                Icons.shield_rounded,
-                                                size: 14,
-                                                color:
-                                                    theme.colorScheme.primary,
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                'Performance Updated',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: theme
-                                                      .colorScheme.primary,
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 24),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        _isThisTerm
-                                            ? 'Fall Semester 2023'
-                                            : 'Spring Semester 2023',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: theme.colorScheme.onSurface,
-                                        ),
-                                      ),
-                                      TextButton(
-                                        onPressed: () {
-                                          Navigator.of(context).pushNamed(
-                                              RouteNames.studentAssignments);
-                                        },
-                                        child: Text(
-                                          'Assignments',
-                                          style: TextStyle(
-                                            color: theme.colorScheme.primary,
-                                            fontSize: 13,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  for (int index = 0;
-                                      index < _summaries.length;
-                                      index++) ...[
-                                    _SubjectGradeRow(
-                                      icon: _iconForSubject(
-                                          _summaries[index].subjectName),
-                                      iconBgColor: _colorForSubject(
-                                          _summaries[index].subjectName),
-                                      name: _summaries[index].subjectName,
-                                      detail:
-                                          '${_summaries[index].assessmentCount} Assessments',
-                                      grade:
-                                          '${_summaries[index].average.toStringAsFixed(0)}%',
-                                      change:
-                                          _trendLabel(_summaries[index].trend),
-                                      isPositive:
-                                          _summaries[index].trend >= 0,
-                                      isHighlighted: index == 0,
-                                      onTap: () =>
-                                          Navigator.of(context).pushNamed(
-                                        RouteNames.studentSubjectGrades,
-                                        arguments: {
-                                          'subjectId':
-                                              _summaries[index].subjectId,
-                                          'subjectName':
-                                              _summaries[index].subjectName,
-                                        },
-                                      ),
-                                    ),
-                                    if (index < _summaries.length - 1)
-                                      const SizedBox(height: 10),
-                                  ],
-                                  const SizedBox(height: 20),
-                                ],
-                              ),
-                            ),
-            ),
-          ],
-        ),
-      ),
+    return BlocProvider(
+      create: (_) => GradesCubit(sl<StudentGradesRepository>())..loadGrades(),
+      child: const _GradesView(),
     );
   }
+}
 
-  double get _overallAverage {
-    if (_summaries.isEmpty) return 0;
-    return _summaries.map((summary) => summary.average).reduce((a, b) => a + b) /
-        _summaries.length;
+class _GradesView extends StatelessWidget {
+  const _GradesView();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<GradesCubit, GradesState>(
+      builder: (context, state) {
+        final theme = Theme.of(context);
+        final summaries = _summariesFromGrades(state.grades);
+        final overallAverage = _overallAverage(summaries);
+        final isLoading = state.status == GradesStatus.initial ||
+            state.status == GradesStatus.loading;
+
+        return Scaffold(
+          body: SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 40,
+                        child: Navigator.of(context).canPop()
+                            ? IconButton(
+                                tooltip: 'Back',
+                                onPressed: () => Navigator.of(context).pop(),
+                                icon: const Icon(
+                                  Icons.arrow_back_ios_new_rounded,
+                                  size: 18,
+                                ),
+                              )
+                            : null,
+                      ),
+                      Expanded(
+                        child: Text(
+                          'Academic Grades',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Switch term view',
+                        onPressed: () {
+                          final next = state.selectedTerm == 'Fall 2023'
+                              ? 'Spring 2023'
+                              : 'Fall 2023';
+                          context.read<GradesCubit>().switchTerm(next);
+                        },
+                        icon: Icon(
+                          Icons.more_horiz,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: isLoading
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            semanticsLabel: 'Loading grades',
+                          ),
+                        )
+                      : state.status == GradesStatus.error
+                          ? Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text('Unable to load grades right now.',
+                                      style: TextStyle(color: Colors.red)),
+                                  const SizedBox(height: 10),
+                                  ElevatedButton(
+                                    onPressed: () => context
+                                        .read<GradesCubit>()
+                                        .loadGrades(),
+                                    child: const Text('Retry'),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : summaries.isEmpty
+                              ? Center(
+                                  child: Text(
+                                    'No grades available yet.',
+                                    style: TextStyle(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                )
+                              : SingleChildScrollView(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 20),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 28),
+                                        decoration: BoxDecoration(
+                                          color: theme.colorScheme.primary
+                                              .withAlpha(20),
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            Text(
+                                              'Overall Average',
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                color: theme.colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              '${overallAverage.toStringAsFixed(0)}%',
+                                              style: TextStyle(
+                                                fontSize: 48,
+                                                fontWeight: FontWeight.bold,
+                                                color: theme.colorScheme.primary,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 5,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: theme.colorScheme.primary
+                                                    .withAlpha(30),
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    Icons.shield_rounded,
+                                                    size: 14,
+                                                    color: theme
+                                                        .colorScheme.primary,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Text(
+                                                    'Performance Updated',
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      color: theme
+                                                          .colorScheme.primary,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 24),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            state.selectedTerm == 'Fall 2023'
+                                                ? 'Fall Semester 2023'
+                                                : 'Spring Semester 2023',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: theme.colorScheme.onSurface,
+                                            ),
+                                          ),
+                                          TextButton(
+                                            onPressed: () {
+                                              Navigator.of(context).pushNamed(
+                                                  RouteNames.studentAssignments);
+                                            },
+                                            child: Text(
+                                              'Assignments',
+                                              style: TextStyle(
+                                                color:
+                                                    theme.colorScheme.primary,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      for (int index = 0;
+                                          index < summaries.length;
+                                          index++) ...[
+                                        _SubjectGradeRow(
+                                          icon: _iconForSubject(
+                                              summaries[index].subjectName),
+                                          iconBgColor: _colorForSubject(
+                                              summaries[index].subjectName),
+                                          name: summaries[index].subjectName,
+                                          detail:
+                                              '${summaries[index].assessmentCount} Assessments',
+                                          grade:
+                                              '${summaries[index].average.toStringAsFixed(0)}%',
+                                          change: _trendLabel(
+                                              summaries[index].trend),
+                                          isPositive:
+                                              summaries[index].trend >= 0,
+                                          isHighlighted: index == 0,
+                                          onTap: () =>
+                                              Navigator.of(context).pushNamed(
+                                            RouteNames.studentSubjectGrades,
+                                            arguments: {
+                                              'subjectId':
+                                                  summaries[index].subjectId,
+                                              'subjectName':
+                                                  summaries[index].subjectName,
+                                            },
+                                          ),
+                                        ),
+                                        if (index < summaries.length - 1)
+                                          const SizedBox(height: 10),
+                                      ],
+                                      const SizedBox(height: 20),
+                                    ],
+                                  ),
+                                ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+List<_SubjectSummary> _summariesFromGrades(List<GradeModel> grades) {
+  final bySubject = <String, List<GradeModel>>{};
+  for (final grade in grades) {
+    bySubject.putIfAbsent(grade.subjectId, () => <GradeModel>[]).add(grade);
   }
 
-  String _trendLabel(double trend) {
-    if (trend.abs() < 0.1) return '0.0%';
-    final sign = trend >= 0 ? '+' : '';
-    return '$sign${trend.toStringAsFixed(1)}%';
-  }
+  final summaries = bySubject.entries.map((entry) {
+    final subjectGrades = entry.value
+      ..sort((a, b) => a.date.compareTo(b.date));
+    final average =
+        subjectGrades.map((g) => g.percentage).reduce((a, b) => a + b) /
+            subjectGrades.length;
+    final trend = subjectGrades.length > 1
+        ? subjectGrades.last.percentage - subjectGrades.first.percentage
+        : 0.0;
 
-  IconData _iconForSubject(String subjectName) {
-    return switch (subjectName.toLowerCase()) {
-      'mathematics' => Icons.calculate_rounded,
-      'physics' => Icons.science_rounded,
-      'literature' || 'english literature' => Icons.auto_stories_rounded,
-      'history' => Icons.history_edu_rounded,
-      'computer science' => Icons.computer_rounded,
-      _ => Icons.school_rounded,
-    };
-  }
+    return _SubjectSummary(
+      subjectId: entry.key,
+      subjectName: subjectGrades.first.subjectName,
+      average: average,
+      assessmentCount: subjectGrades.length,
+      trend: trend,
+    );
+  }).toList()
+    ..sort((a, b) => b.average.compareTo(a.average));
 
-  Color _colorForSubject(String subjectName) {
-    return switch (subjectName.toLowerCase()) {
-      'mathematics' => const Color(0xFF1A73E8),
-      'physics' => const Color(0xFF5F6368),
-      'literature' || 'english literature' => const Color(0xFFEF6C00),
-      'history' => const Color(0xFF6D4C41),
-      'computer science' => const Color(0xFF0F9D58),
-      _ => const Color(0xFF5F6368),
-    };
-  }
+  return summaries;
+}
+
+double _overallAverage(List<_SubjectSummary> summaries) {
+  if (summaries.isEmpty) return 0;
+  return summaries.map((summary) => summary.average).reduce((a, b) => a + b) /
+      summaries.length;
+}
+
+String _trendLabel(double trend) {
+  if (trend.abs() < 0.1) return '0.0%';
+  final sign = trend >= 0 ? '+' : '';
+  return '$sign${trend.toStringAsFixed(1)}%';
+}
+
+IconData _iconForSubject(String subjectName) {
+  return switch (subjectName.toLowerCase()) {
+    'mathematics' => Icons.calculate_rounded,
+    'physics' => Icons.science_rounded,
+    'literature' || 'english literature' => Icons.auto_stories_rounded,
+    'history' => Icons.history_edu_rounded,
+    'computer science' => Icons.computer_rounded,
+    _ => Icons.school_rounded,
+  };
+}
+
+Color _colorForSubject(String subjectName) {
+  return switch (subjectName.toLowerCase()) {
+    'mathematics' => const Color(0xFF1A73E8),
+    'physics' => const Color(0xFF5F6368),
+    'literature' || 'english literature' => const Color(0xFFEF6C00),
+    'history' => const Color(0xFF6D4C41),
+    'computer science' => const Color(0xFF0F9D58),
+    _ => const Color(0xFF5F6368),
+  };
 }
 
 class _SubjectSummary {

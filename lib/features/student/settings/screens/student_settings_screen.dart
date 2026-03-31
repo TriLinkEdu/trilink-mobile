@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/di/injection_container.dart';
 import '../../../../core/routes/route_names.dart';
-import '../../../../core/theme/theme_notifier.dart';
 import '../../../../core/services/storage_service.dart';
-import '../../../auth/services/auth_service.dart';
+import '../../../../core/theme/theme_notifier.dart';
+import '../../../auth/cubit/auth_cubit.dart';
 
 class StudentSettingsScreen extends StatefulWidget {
   const StudentSettingsScreen({super.key});
@@ -12,7 +14,7 @@ class StudentSettingsScreen extends StatefulWidget {
 }
 
 class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
-  final StorageService _storage = StorageService();
+  final StorageService _storage = sl<StorageService>();
 
   bool _notificationsEnabled = true;
   bool _biometricLock = false;
@@ -96,7 +98,7 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
 
     if (shouldLogout != true || !mounted) return;
 
-    await AuthService().logout();
+    await context.read<AuthCubit>().logout();
     if (!mounted) return;
 
     Navigator.of(context)

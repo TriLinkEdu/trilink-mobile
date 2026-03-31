@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/di/injection_container.dart';
 import '../../../../core/routes/route_names.dart';
-import '../../../../core/theme/theme_notifier.dart';
 import '../../../../core/services/storage_service.dart';
-import '../../../auth/services/auth_service.dart';
+import '../../../../core/theme/theme_notifier.dart';
+import '../../../auth/cubit/auth_cubit.dart';
 import '../repositories/student_profile_repository.dart';
-import '../repositories/mock_student_profile_repository.dart';
 
 class StudentProfileScreen extends StatefulWidget {
-  final StudentProfileRepository? repository;
-
-  const StudentProfileScreen({super.key, this.repository});
+  const StudentProfileScreen({super.key});
 
   @override
   State<StudentProfileScreen> createState() => _StudentProfileScreenState();
@@ -17,7 +16,7 @@ class StudentProfileScreen extends StatefulWidget {
 
 class _StudentProfileScreenState extends State<StudentProfileScreen> {
   late final StudentProfileRepository _repo;
-  final StorageService _storage = StorageService();
+  final StorageService _storage = sl<StorageService>();
 
   bool _pushNotifications = true;
   String _language = 'English';
@@ -26,7 +25,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _repo = widget.repository ?? MockStudentProfileRepository();
+    _repo = sl<StudentProfileRepository>();
     _loadPreferences();
   }
 
@@ -42,7 +41,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final user = AuthService().currentUser;
+    final user = context.read<AuthCubit>().currentUser;
     final displayName = user?.name ?? 'Student';
     final displayEmail = user?.email ?? 'No email';
     final gradeSection = [
@@ -402,7 +401,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                       height: 48,
                       child: OutlinedButton(
                         onPressed: () async {
-                          await AuthService().logout();
+                          await context.read<AuthCubit>().logout();
                           if (!context.mounted) return;
                           Navigator.of(context).pushNamedAndRemoveUntil(
                             RouteNames.login,

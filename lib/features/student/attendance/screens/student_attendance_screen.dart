@@ -1,53 +1,32 @@
 import 'package:flutter/material.dart';
-import '../models/attendance_model.dart';
-import '../repositories/mock_student_attendance_repository.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../../core/di/injection_container.dart';
+import '../cubit/attendance_cubit.dart';
+import '../models/attendance_model.dart' as am;
 import '../repositories/student_attendance_repository.dart';
 
-class StudentAttendanceScreen extends StatefulWidget {
-  final StudentAttendanceRepository? repository;
-
-  const StudentAttendanceScreen({super.key, this.repository});
+class StudentAttendanceScreen extends StatelessWidget {
+  const StudentAttendanceScreen({super.key});
 
   @override
-  State<StudentAttendanceScreen> createState() =>
-      _StudentAttendanceScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          AttendanceCubit(sl<StudentAttendanceRepository>())..loadAttendance(),
+      child: const _AttendanceView(),
+    );
+  }
 }
 
-class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
-  late final StudentAttendanceRepository _repository =
-      widget.repository ?? MockStudentAttendanceRepository();
-  bool _isLoading = true;
-  String? _error;
-  List<AttendanceModel> _records = const [];
+class _AttendanceView extends StatefulWidget {
+  const _AttendanceView();
 
   @override
-  void initState() {
-    super.initState();
-    _loadAttendance();
-  }
+  State<_AttendanceView> createState() => _AttendanceViewState();
+}
 
-  Future<void> _loadAttendance() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final records = await _repository.fetchAttendanceRecords();
-      if (!mounted) return;
-      setState(() {
-        _records = records;
-        _isLoading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'Unable to load attendance records.';
-        _isLoading = false;
-      });
-    }
-  }
-
+class _AttendanceViewState extends State<_AttendanceView> {
   void _showOptionsSheet() {
     showModalBottomSheet<void>(
       context: context,
@@ -78,11 +57,12 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
   }
 
   void _showMonthlySummary() {
-    final present = presentCount;
-    final absent = absentCount;
-    final late_ = lateCount;
-    final excused = excusedCount;
-    final total = _records.length;
+    final records = context.read<AttendanceCubit>().state.records;
+    final present = _presentCount(records);
+    final absent = _absentCount(records);
+    final late_ = _lateCount(records);
+    final excused = _excusedCount(records);
+    final total = records.length;
     final pct =
         total > 0 ? ((present + late_ + excused) / total * 100) : 0.0;
 
@@ -202,238 +182,256 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
               ),
             ),
             Expanded(
-              child: _isLoading
-                  ? const Center(
+              child: BlocBuilder<AttendanceCubit, AttendanceState>(
+                builder: (context, state) {
+                  final loading = state.status == AttendanceStatus.initial ||
+                      state.status == AttendanceStatus.loading;
+                  if (loading) {
+                    return const Center(
                       child: CircularProgressIndicator(
                         semanticsLabel: 'Loading attendance records',
                       ),
-                    )
-                  : _error != null
-                      ? Center(
+                    );
+                  }
+                  if (state.status == AttendanceStatus.error) {
+                    return Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            state.errorMessage ??
+                                'Unable to load attendance records.',
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                          const SizedBox(height: 10),
+                          ElevatedButton(
+                            onPressed: () => context
+                                .read<AttendanceCubit>()
+                                .loadAttendance(),
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  final records = state.records;
+                  if (records.isEmpty) {
+                    return Center(
+                      child: Text(
+                        'No attendance records yet.',
+                        style: TextStyle(
+                            color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    );
+                  }
+
+                  final subjectSummaries = _subjectSummaries(records);
+
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 24),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [
+                                Color(0xFF1A73E8),
+                                Color(0xFF4A90E2),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                           child: Column(
-                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(_error!,
-                                  style: const TextStyle(color: Colors.red)),
-                              const SizedBox(height: 10),
-                              ElevatedButton(
-                                onPressed: _loadAttendance,
-                                child: const Text('Retry'),
+                              const Text(
+                                'Overall Attendance',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '${_overallAttendance(records).toStringAsFixed(0)}%',
+                                style: const TextStyle(
+                                  fontSize: 48,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      Colors.white.withAlpha(40),
+                                  borderRadius:
+                                      BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.check_circle_rounded,
+                                      size: 14,
+                                      color: Colors.greenAccent,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${_currentStreak(records)} Day Streak',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                alignment: WrapAlignment.center,
+                                children: [
+                                  _AttendanceStat(
+                                    value: '${_presentCount(records)}',
+                                    label: 'PRESENT',
+                                    bgColor:
+                                        Colors.white.withAlpha(30),
+                                  ),
+                                  _AttendanceStat(
+                                    value: '${_absentCount(records)}',
+                                    label: 'ABSENT',
+                                    bgColor:
+                                        Colors.white.withAlpha(30),
+                                  ),
+                                  _AttendanceStat(
+                                    value: '${_lateCount(records)}',
+                                    label: 'LATE',
+                                    bgColor:
+                                        Colors.white.withAlpha(30),
+                                  ),
+                                  _AttendanceStat(
+                                    value: '${_excusedCount(records)}',
+                                    label: 'EXCUSED',
+                                    bgColor:
+                                        Colors.white.withAlpha(30),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        )
-                      : _records.isEmpty
-                          ? Center(
-                              child: Text(
-                                'No attendance records yet.',
-                                style: TextStyle(
-                                    color: theme.colorScheme.onSurfaceVariant),
-                              ),
-                            )
-                          : SingleChildScrollView(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 20),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 24),
-                                    decoration: BoxDecoration(
-                                      gradient: const LinearGradient(
-                                        colors: [
-                                          Color(0xFF1A73E8),
-                                          Color(0xFF4A90E2),
-                                        ],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                      ),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        const Text(
-                                          'Overall Attendance',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.white70,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          '${_overallAttendance.toStringAsFixed(0)}%',
-                                          style: const TextStyle(
-                                            fontSize: 48,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                            vertical: 5,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color:
-                                                Colors.white.withAlpha(40),
-                                            borderRadius:
-                                                BorderRadius.circular(20),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              const Icon(
-                                                Icons.check_circle_rounded,
-                                                size: 14,
-                                                color: Colors.greenAccent,
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                '$_currentStreak Day Streak',
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        const SizedBox(height: 20),
-                                        Wrap(
-                                          spacing: 8,
-                                          runSpacing: 8,
-                                          alignment: WrapAlignment.center,
-                                          children: [
-                                            _AttendanceStat(
-                                              value: '$presentCount',
-                                              label: 'PRESENT',
-                                              bgColor:
-                                                  Colors.white.withAlpha(30),
-                                            ),
-                                            _AttendanceStat(
-                                              value: '$absentCount',
-                                              label: 'ABSENT',
-                                              bgColor:
-                                                  Colors.white.withAlpha(30),
-                                            ),
-                                            _AttendanceStat(
-                                              value: '$lateCount',
-                                              label: 'LATE',
-                                              bgColor:
-                                                  Colors.white.withAlpha(30),
-                                            ),
-                                            _AttendanceStat(
-                                              value: '$excusedCount',
-                                              label: 'EXCUSED',
-                                              bgColor:
-                                                  Colors.white.withAlpha(30),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 24),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'Subject Breakdown',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: theme.colorScheme.onSurface,
-                                        ),
-                                      ),
-                                      TextButton(
-                                        onPressed: () {
-                                          showDialog<void>(
-                                            context: context,
-                                            builder: (dialogContext) =>
-                                                AlertDialog(
-                                              title: const Text(
-                                                  'All Subject Attendance'),
-                                              content: Text(
-                                                _subjectSummaries
-                                                    .map(
-                                                      (summary) =>
-                                                          '${summary.name} ${summary.percentageLabel}',
-                                                    )
-                                                    .join('\n'),
-                                              ),
-                                              actions: [
-                                                TextButton(
-                                                  onPressed: () =>
-                                                      Navigator.of(
-                                                              dialogContext)
-                                                          .pop(),
-                                                  child: const Text('Close'),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                        child: Text(
-                                          'View All',
-                                          style: TextStyle(
-                                            color: theme.colorScheme.primary,
-                                            fontSize: 13,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  for (int index = 0;
-                                      index < _subjectSummaries.length;
-                                      index++) ...[
-                                    _SubjectAttendanceRow(
-                                      icon: _iconForSubject(
-                                          _subjectSummaries[index].name),
-                                      iconColor: _colorForSubject(
-                                          _subjectSummaries[index].name),
-                                      name: _subjectSummaries[index].name,
-                                      totalClasses:
-                                          _subjectSummaries[index].total,
-                                      percentage: _subjectSummaries[index]
-                                          .percentageLabel,
-                                      dots: _subjectSummaries[index].dots,
-                                    ),
-                                    if (index <
-                                        _subjectSummaries.length - 1)
-                                      const SizedBox(height: 16),
-                                  ],
-                                  const SizedBox(height: 24),
-                                  const Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.center,
-                                    children: [
-                                      _LegendItem(
-                                          color: Colors.green,
-                                          label: 'Present'),
-                                      SizedBox(width: 12),
-                                      _LegendItem(
-                                          color: Colors.orange,
-                                          label: 'Late'),
-                                      SizedBox(width: 12),
-                                      _LegendItem(
-                                          color: Colors.red,
-                                          label: 'Absent'),
-                                      SizedBox(width: 12),
-                                      _LegendItem(
-                                          color: Colors.blue,
-                                          label: 'Excused'),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 20),
-                                ],
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment:
+                              MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Subject Breakdown',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onSurface,
                               ),
                             ),
+                            TextButton(
+                              onPressed: () {
+                                showDialog<void>(
+                                  context: context,
+                                  builder: (dialogContext) =>
+                                      AlertDialog(
+                                    title: const Text(
+                                        'All Subject Attendance'),
+                                    content: Text(
+                                      subjectSummaries
+                                          .map(
+                                            (summary) =>
+                                                '${summary.name} ${summary.percentageLabel}',
+                                          )
+                                          .join('\n'),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.of(
+                                                    dialogContext)
+                                                .pop(),
+                                        child: const Text('Close'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                              child: Text(
+                                'View All',
+                                style: TextStyle(
+                                  color: theme.colorScheme.primary,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        for (int index = 0;
+                            index < subjectSummaries.length;
+                            index++) ...[
+                          _SubjectAttendanceRow(
+                            icon: _iconForSubject(
+                                subjectSummaries[index].name),
+                            iconColor: _colorForSubject(
+                                subjectSummaries[index].name),
+                            name: subjectSummaries[index].name,
+                            totalClasses:
+                                subjectSummaries[index].total,
+                            percentage: subjectSummaries[index]
+                                .percentageLabel,
+                            dots: subjectSummaries[index].dots,
+                          ),
+                          if (index <
+                              subjectSummaries.length - 1)
+                            const SizedBox(height: 16),
+                        ],
+                        const SizedBox(height: 24),
+                        const Row(
+                          mainAxisAlignment:
+                              MainAxisAlignment.center,
+                          children: [
+                            _LegendItem(
+                                color: Colors.green,
+                                label: 'Present'),
+                            SizedBox(width: 12),
+                            _LegendItem(
+                                color: Colors.orange,
+                                label: 'Late'),
+                            SizedBox(width: 12),
+                            _LegendItem(
+                                color: Colors.red,
+                                label: 'Absent'),
+                            SizedBox(width: 12),
+                            _LegendItem(
+                                color: Colors.blue,
+                                label: 'Excused'),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
           ],
         ),
@@ -441,64 +439,69 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
     );
   }
 
-  int get presentCount =>
-      _records.where((r) => r.status == AttendanceStatus.present).length;
+  int _presentCount(List<am.AttendanceModel> records) =>
+      records.where((r) => r.status == am.AttendanceStatus.present).length;
 
-  int get absentCount =>
-      _records.where((r) => r.status == AttendanceStatus.absent).length;
+  int _absentCount(List<am.AttendanceModel> records) =>
+      records.where((r) => r.status == am.AttendanceStatus.absent).length;
 
-  int get lateCount =>
-      _records.where((r) => r.status == AttendanceStatus.late).length;
+  int _lateCount(List<am.AttendanceModel> records) =>
+      records.where((r) => r.status == am.AttendanceStatus.late).length;
 
-  int get excusedCount =>
-      _records.where((r) => r.status == AttendanceStatus.excused).length;
+  int _excusedCount(List<am.AttendanceModel> records) =>
+      records.where((r) => r.status == am.AttendanceStatus.excused).length;
 
-  double get _overallAttendance {
-    if (_records.isEmpty) return 0;
-    final attended = presentCount + lateCount + excusedCount;
-    return (attended / _records.length) * 100;
+  double _overallAttendance(List<am.AttendanceModel> records) {
+    if (records.isEmpty) return 0;
+    final attended =
+        _presentCount(records) + _lateCount(records) + _excusedCount(records);
+    return (attended / records.length) * 100;
   }
 
-  int get _currentStreak {
-    final sorted = List<AttendanceModel>.from(_records)
+  int _currentStreak(List<am.AttendanceModel> records) {
+    final sorted = List<am.AttendanceModel>.from(records)
       ..sort((a, b) => b.date.compareTo(a.date));
     int streak = 0;
     for (final record in sorted) {
-      if (record.status == AttendanceStatus.absent) break;
+      if (record.status == am.AttendanceStatus.absent) break;
       streak++;
     }
     return streak;
   }
 
-  List<_SubjectAttendanceSummary> get _subjectSummaries {
-    final grouped = <String, List<AttendanceModel>>{};
-    for (final record in _records) {
+  List<_SubjectAttendanceSummary> _subjectSummaries(
+      List<am.AttendanceModel> records) {
+    final grouped = <String, List<am.AttendanceModel>>{};
+    for (final record in records) {
       grouped
-          .putIfAbsent(record.subjectId, () => <AttendanceModel>[])
+          .putIfAbsent(record.subjectId, () => <am.AttendanceModel>[])
           .add(record);
     }
 
     return grouped.entries.map((entry) {
-      final records = entry.value..sort((a, b) => a.date.compareTo(b.date));
-      final attended =
-          records.where((r) => r.status != AttendanceStatus.absent).length;
-      final percentage =
-          records.isEmpty ? 0.0 : (attended / records.length) * 100;
+      final subjectRecords = entry.value
+        ..sort((a, b) => a.date.compareTo(b.date));
+      final attended = subjectRecords
+          .where((r) => r.status != am.AttendanceStatus.absent)
+          .length;
+      final percentage = subjectRecords.isEmpty
+          ? 0.0
+          : (attended / subjectRecords.length) * 100;
 
       return _SubjectAttendanceSummary(
-        name: records.first.subjectName,
-        total: records.length,
+        name: subjectRecords.first.subjectName,
+        total: subjectRecords.length,
         percentage: percentage,
         percentageLabel: '${percentage.toStringAsFixed(0)}%',
-        dots: records.map((record) {
+        dots: subjectRecords.map((record) {
           switch (record.status) {
-            case AttendanceStatus.present:
+            case am.AttendanceStatus.present:
               return _DotStatus.present;
-            case AttendanceStatus.late:
+            case am.AttendanceStatus.late:
               return _DotStatus.late;
-            case AttendanceStatus.excused:
+            case am.AttendanceStatus.excused:
               return _DotStatus.excused;
-            case AttendanceStatus.absent:
+            case am.AttendanceStatus.absent:
               return _DotStatus.absent;
           }
         }).toList(),

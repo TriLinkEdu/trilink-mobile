@@ -1,46 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart' as intl;
+import '../../../../core/di/injection_container.dart';
 import '../../../../core/routes/route_names.dart';
-import '../../../auth/services/auth_service.dart';
-import '../models/dashboard_data_model.dart';
+import '../../../auth/cubit/auth_cubit.dart';
+import '../cubit/dashboard_cubit.dart';
 import '../repositories/student_dashboard_repository.dart';
-import '../repositories/mock_student_dashboard_repository.dart';
 
-class StudentDashboardScreen extends StatefulWidget {
-  final StudentDashboardRepository? repository;
-
-  const StudentDashboardScreen({super.key, this.repository});
+class StudentDashboardScreen extends StatelessWidget {
+  const StudentDashboardScreen({super.key});
 
   @override
-  State<StudentDashboardScreen> createState() =>
-      _StudentDashboardScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          DashboardCubit(sl<StudentDashboardRepository>())..loadDashboard(),
+      child: const _DashboardView(),
+    );
+  }
 }
 
-class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
-  late final StudentDashboardRepository _repo;
-  DashboardDataModel? _data;
-  bool _isLoading = true;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _repo = widget.repository ?? MockStudentDashboardRepository();
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-    try {
-      final data = await _repo.fetchDashboardData();
-      if (mounted) setState(() { _data = data; _isLoading = false; });
-    } catch (e) {
-      if (mounted) setState(() { _error = e.toString(); _isLoading = false; });
-    }
-  }
+class _DashboardView extends StatelessWidget {
+  const _DashboardView();
 
   String _timeAgo(DateTime dt) {
     final diff = DateTime.now().difference(dt);
@@ -60,322 +41,6 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
     return 'Due in ${hours}h ${minutes}m';
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    if (_error != null) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(_error!, style: const TextStyle(color: Colors.red)),
-              const SizedBox(height: 12),
-              ElevatedButton(onPressed: _loadData, child: const Text('Retry')),
-            ],
-          ),
-        ),
-      );
-    }
-
-    final data = _data!;
-    final now = DateTime.now();
-    final dateStr = intl.DateFormat('MMM dd, EEEE').format(now);
-    final hour = now.hour;
-    final greeting = hour < 12
-        ? 'Good morning'
-        : hour < 17
-            ? 'Good afternoon'
-            : 'Good evening';
-    final userName = AuthService().currentUser?.name ?? 'Student';
-    final firstName = userName.split(' ').first;
-
-    return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                dateStr,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '$greeting, $firstName',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => Navigator.of(context)
-                        .pushNamed(RouteNames.studentProfile),
-                    child: CircleAvatar(
-                      radius: 22,
-                      backgroundColor: theme.colorScheme.primary,
-                      child: Icon(
-                        Icons.person_rounded,
-                        color: theme.colorScheme.onPrimary,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: _StatChip(
-                      icon: Icons.local_fire_department,
-                      iconColor: Colors.green,
-                      value: '${data.stats.streakDays}',
-                      label: 'Day Streak',
-                      onTap: () => Navigator.of(context)
-                          .pushNamed(RouteNames.studentGamification),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _StatChip(
-                      icon: Icons.star_rounded,
-                      iconColor: Colors.amber,
-                      value: '${data.stats.totalXp}',
-                      label: 'Total XP',
-                      onTap: () => Navigator.of(context)
-                          .pushNamed(RouteNames.studentGamification),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _StatChip(
-                      icon: Icons.emoji_events_rounded,
-                      iconColor: theme.colorScheme.primary,
-                      value: 'Lvl ${data.stats.level}',
-                      label: data.stats.levelTitle,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 28),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Next Up',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.of(context)
-                        .pushNamed(RouteNames.studentCalendar),
-                    child: Text(
-                      'View Calendar',
-                      style: TextStyle(
-                        color: theme.colorScheme.primary,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              if (data.nextUp != null)
-                _NextUpCard(
-                  title: data.nextUp!.title,
-                  subtitle: data.nextUp!.subtitle,
-                  dueText: _dueIn(data.nextUp!.dueAt),
-                  participantCount: data.nextUp!.participantCount,
-                  onPrepareTap: () => Navigator.of(context).pushNamed(
-                    RouteNames.studentSubjectGrades,
-                    arguments: {
-                      'subjectId': data.nextUp!.subjectId,
-                      'subjectName': data.nextUp!.subjectName,
-                    },
-                  ),
-                ),
-              const SizedBox(height: 28),
-
-              Text(
-                'Quick Actions',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 14),
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 2.8,
-                children: [
-                  _QuickActionTile(
-                    icon: Icons.quiz_rounded,
-                    label: 'Gamification',
-                    color: theme.colorScheme.primary,
-                    onTap: () => Navigator.of(context)
-                        .pushNamed(RouteNames.studentGamification),
-                  ),
-                  _QuickActionTile(
-                    icon: Icons.menu_book_rounded,
-                    label: 'AI Assistant',
-                    color: Colors.orange,
-                    onTap: () => Navigator.of(context)
-                        .pushNamed(RouteNames.studentAiAssistant),
-                  ),
-                  _QuickActionTile(
-                    icon: Icons.feedback_rounded,
-                    label: 'Feedback',
-                    color: Colors.green,
-                    onTap: () => Navigator.of(context)
-                        .pushNamed(RouteNames.studentFeedback),
-                  ),
-                  _QuickActionTile(
-                    icon: Icons.bar_chart_rounded,
-                    label: 'Grades',
-                    color: Colors.purple,
-                    onTap: () => Navigator.of(context)
-                        .pushNamed(RouteNames.studentGrades),
-                  ),
-                  _QuickActionTile(
-                    icon: Icons.notifications_rounded,
-                    label: 'Notifications',
-                    color: Colors.redAccent,
-                    onTap: () => Navigator.of(context)
-                        .pushNamed(RouteNames.studentNotifications),
-                  ),
-                  _QuickActionTile(
-                    icon: Icons.chat_rounded,
-                    label: 'Chat',
-                    color: Colors.teal,
-                    onTap: () => Navigator.of(context)
-                        .pushNamed(RouteNames.studentChat),
-                  ),
-                  _QuickActionTile(
-                    icon: Icons.calendar_month_rounded,
-                    label: 'Calendar',
-                    color: Colors.indigo,
-                    onTap: () => Navigator.of(context)
-                        .pushNamed(RouteNames.studentCalendar),
-                  ),
-                  _QuickActionTile(
-                    icon: Icons.settings_rounded,
-                    label: 'Settings',
-                    color: Colors.blueGrey,
-                    onTap: () => Navigator.of(context)
-                        .pushNamed(RouteNames.studentSettings),
-                  ),
-                  _QuickActionTile(
-                    icon: Icons.assignment_rounded,
-                    label: 'Assignments',
-                    color: Colors.deepOrange,
-                    onTap: () => Navigator.of(context)
-                        .pushNamed(RouteNames.studentAssignments),
-                  ),
-                  _QuickActionTile(
-                    icon: Icons.folder_open_rounded,
-                    label: 'Resources',
-                    color: Colors.lightBlue,
-                    onTap: () => Navigator.of(context)
-                        .pushNamed(RouteNames.studentCourseResources),
-                  ),
-                  _QuickActionTile(
-                    icon: Icons.fact_check_rounded,
-                    label: 'Exam Attempt',
-                    color: Colors.pink,
-                    onTap: () => Navigator.of(context)
-                        .pushNamed(RouteNames.studentExamAttempt),
-                  ),
-                  _QuickActionTile(
-                    icon: Icons.sync_rounded,
-                    label: 'Sync Status',
-                    color: Colors.green,
-                    onTap: () => Navigator.of(context)
-                        .pushNamed(RouteNames.studentSyncStatus),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 28),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Announcements',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.of(context)
-                        .pushNamed(RouteNames.studentAnnouncements),
-                    child: Text(
-                      'See All',
-                      style: TextStyle(
-                        color: theme.colorScheme.primary,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              ...data.recentAnnouncements.map((a) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _AnnouncementTile(
-                    avatarColor: _authorColor(a.authorName, theme),
-                    title: a.authorName,
-                    time: _timeAgo(a.createdAt),
-                    body: a.snippet,
-                    onTap: () => Navigator.of(context).pushNamed(
-                      RouteNames.studentAnnouncementDetail,
-                      arguments: {'announcementId': a.id},
-                    ),
-                  ),
-                );
-              }),
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'Open AI Assistant',
-        onPressed: () =>
-            Navigator.of(context).pushNamed(RouteNames.studentAiAssistant),
-        child: const Icon(Icons.auto_awesome),
-      ),
-    );
-  }
-
   Color _authorColor(String name, ThemeData theme) {
     final colors = [
       theme.colorScheme.primary,
@@ -386,6 +51,335 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
       Colors.indigo,
     ];
     return colors[name.hashCode.abs() % colors.length];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<DashboardCubit, DashboardState>(
+      builder: (context, state) {
+        final theme = Theme.of(context);
+
+        if (state.status == DashboardStatus.loading ||
+            state.status == DashboardStatus.initial) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (state.status == DashboardStatus.error) {
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    state.errorMessage ?? 'Error',
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: () =>
+                        context.read<DashboardCubit>().loadDashboard(),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final data = state.data!;
+        final now = DateTime.now();
+        final dateStr = intl.DateFormat('MMM dd, EEEE').format(now);
+        final hour = now.hour;
+        final greeting = hour < 12
+            ? 'Good morning'
+            : hour < 17
+                ? 'Good afternoon'
+                : 'Good evening';
+        final userName =
+            context.read<AuthCubit>().currentUser?.name ?? 'Student';
+        final firstName = userName.split(' ').first;
+
+        return Scaffold(
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    dateStr,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '$greeting, $firstName',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => Navigator.of(context)
+                            .pushNamed(RouteNames.studentProfile),
+                        child: CircleAvatar(
+                          radius: 22,
+                          backgroundColor: theme.colorScheme.primary,
+                          child: Icon(
+                            Icons.person_rounded,
+                            color: theme.colorScheme.onPrimary,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatChip(
+                          icon: Icons.local_fire_department,
+                          iconColor: Colors.green,
+                          value: '${data.stats.streakDays}',
+                          label: 'Day Streak',
+                          onTap: () => Navigator.of(context)
+                              .pushNamed(RouteNames.studentGamification),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _StatChip(
+                          icon: Icons.star_rounded,
+                          iconColor: Colors.amber,
+                          value: '${data.stats.totalXp}',
+                          label: 'Total XP',
+                          onTap: () => Navigator.of(context)
+                              .pushNamed(RouteNames.studentGamification),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _StatChip(
+                          icon: Icons.emoji_events_rounded,
+                          iconColor: theme.colorScheme.primary,
+                          value: 'Lvl ${data.stats.level}',
+                          label: data.stats.levelTitle,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 28),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Next Up',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context)
+                            .pushNamed(RouteNames.studentCalendar),
+                        child: Text(
+                          'View Calendar',
+                          style: TextStyle(
+                            color: theme.colorScheme.primary,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  if (data.nextUp != null)
+                    _NextUpCard(
+                      title: data.nextUp!.title,
+                      subtitle: data.nextUp!.subtitle,
+                      dueText: _dueIn(data.nextUp!.dueAt),
+                      participantCount: data.nextUp!.participantCount,
+                      onPrepareTap: () => Navigator.of(context).pushNamed(
+                        RouteNames.studentSubjectGrades,
+                        arguments: {
+                          'subjectId': data.nextUp!.subjectId,
+                          'subjectName': data.nextUp!.subjectName,
+                        },
+                      ),
+                    ),
+                  const SizedBox(height: 28),
+
+                  Text(
+                    'Quick Actions',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 2.8,
+                    children: [
+                      _QuickActionTile(
+                        icon: Icons.quiz_rounded,
+                        label: 'Gamification',
+                        color: theme.colorScheme.primary,
+                        onTap: () => Navigator.of(context)
+                            .pushNamed(RouteNames.studentGamification),
+                      ),
+                      _QuickActionTile(
+                        icon: Icons.menu_book_rounded,
+                        label: 'AI Assistant',
+                        color: Colors.orange,
+                        onTap: () => Navigator.of(context)
+                            .pushNamed(RouteNames.studentAiAssistant),
+                      ),
+                      _QuickActionTile(
+                        icon: Icons.feedback_rounded,
+                        label: 'Feedback',
+                        color: Colors.green,
+                        onTap: () => Navigator.of(context)
+                            .pushNamed(RouteNames.studentFeedback),
+                      ),
+                      _QuickActionTile(
+                        icon: Icons.bar_chart_rounded,
+                        label: 'Grades',
+                        color: Colors.purple,
+                        onTap: () => Navigator.of(context)
+                            .pushNamed(RouteNames.studentGrades),
+                      ),
+                      _QuickActionTile(
+                        icon: Icons.notifications_rounded,
+                        label: 'Notifications',
+                        color: Colors.redAccent,
+                        onTap: () => Navigator.of(context)
+                            .pushNamed(RouteNames.studentNotifications),
+                      ),
+                      _QuickActionTile(
+                        icon: Icons.chat_rounded,
+                        label: 'Chat',
+                        color: Colors.teal,
+                        onTap: () => Navigator.of(context)
+                            .pushNamed(RouteNames.studentChat),
+                      ),
+                      _QuickActionTile(
+                        icon: Icons.calendar_month_rounded,
+                        label: 'Calendar',
+                        color: Colors.indigo,
+                        onTap: () => Navigator.of(context)
+                            .pushNamed(RouteNames.studentCalendar),
+                      ),
+                      _QuickActionTile(
+                        icon: Icons.settings_rounded,
+                        label: 'Settings',
+                        color: Colors.blueGrey,
+                        onTap: () => Navigator.of(context)
+                            .pushNamed(RouteNames.studentSettings),
+                      ),
+                      _QuickActionTile(
+                        icon: Icons.assignment_rounded,
+                        label: 'Assignments',
+                        color: Colors.deepOrange,
+                        onTap: () => Navigator.of(context)
+                            .pushNamed(RouteNames.studentAssignments),
+                      ),
+                      _QuickActionTile(
+                        icon: Icons.folder_open_rounded,
+                        label: 'Resources',
+                        color: Colors.lightBlue,
+                        onTap: () => Navigator.of(context)
+                            .pushNamed(RouteNames.studentCourseResources),
+                      ),
+                      _QuickActionTile(
+                        icon: Icons.fact_check_rounded,
+                        label: 'Exam Attempt',
+                        color: Colors.pink,
+                        onTap: () => Navigator.of(context)
+                            .pushNamed(RouteNames.studentExamAttempt),
+                      ),
+                      _QuickActionTile(
+                        icon: Icons.sync_rounded,
+                        label: 'Sync Status',
+                        color: Colors.green,
+                        onTap: () => Navigator.of(context)
+                            .pushNamed(RouteNames.studentSyncStatus),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 28),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Announcements',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context)
+                            .pushNamed(RouteNames.studentAnnouncements),
+                        child: Text(
+                          'See All',
+                          style: TextStyle(
+                            color: theme.colorScheme.primary,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ...data.recentAnnouncements.map((a) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _AnnouncementTile(
+                        avatarColor: _authorColor(a.authorName, theme),
+                        title: a.authorName,
+                        time: _timeAgo(a.createdAt),
+                        body: a.snippet,
+                        onTap: () => Navigator.of(context).pushNamed(
+                          RouteNames.studentAnnouncementDetail,
+                          arguments: {'announcementId': a.id},
+                        ),
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+          ),
+          floatingActionButton: FloatingActionButton(
+            tooltip: 'Open AI Assistant',
+            onPressed: () =>
+                Navigator.of(context).pushNamed(RouteNames.studentAiAssistant),
+            child: const Icon(Icons.auto_awesome),
+          ),
+        );
+      },
+    );
   }
 }
 
