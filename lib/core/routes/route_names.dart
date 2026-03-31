@@ -26,6 +26,11 @@ class RouteNames {
   static const String studentCourseResources = '/student/courses-resources';
   static const String studentExamAttempt = '/student/exam/attempt';
   static const String studentSyncStatus = '/student/sync-status';
+  static const String studentProfileEdit = '/student/profile/edit';
+  static const String studentAnnouncementDetail = '/student/announcements/detail';
+  static const String studentCalendarEventDetail = '/student/calendar/event';
+  static const String studentAchievements = '/student/achievements';
+  static const String studentCourseResourceDetail = '/student/courses-resources/detail';
 
   // Teacher
   static const String teacherDashboard = '/teacher/dashboard';

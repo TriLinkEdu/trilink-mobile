@@ -22,6 +22,12 @@ import '../../features/student/assignments/screens/assignment_detail_screen.dart
 import '../../features/student/courses/screens/student_courses_resources_screen.dart';
 import '../../features/student/exams/screens/student_exam_attempt_screen.dart';
 import '../../features/student/sync/screens/student_sync_status_screen.dart';
+import '../../features/auth/screens/forgot_password_screen.dart';
+import '../../features/student/profile/screens/student_profile_edit_screen.dart';
+import '../../features/student/announcements/screens/announcement_detail_screen.dart';
+import '../../features/student/calendar/screens/calendar_event_detail_screen.dart';
+import '../../features/student/gamification/screens/achievements_list_screen.dart';
+import '../../features/student/courses/screens/course_resource_detail_screen.dart';
 
 // Teacher imports
 import '../../features/teacher/dashboard/screens/teacher_main_screen.dart';
@@ -61,6 +67,12 @@ class AppRouter {
     RouteNames.studentCourseResources,
     RouteNames.studentExamAttempt,
     RouteNames.studentSyncStatus,
+    RouteNames.forgotPassword,
+    RouteNames.studentProfileEdit,
+    RouteNames.studentAnnouncementDetail,
+    RouteNames.studentCalendarEventDetail,
+    RouteNames.studentAchievements,
+    RouteNames.studentCourseResourceDetail,
   };
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -121,10 +133,6 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => AssignmentDetailScreen(
             assignmentId: safeArgs['assignmentId']?.toString() ?? '',
-            title: safeArgs['title']?.toString() ?? 'Assignment',
-            subject: safeArgs['subject']?.toString() ?? 'Subject',
-            dueDateLabel: safeArgs['dueDateLabel']?.toString() ?? 'TBD',
-            statusLabel: safeArgs['statusLabel']?.toString() ?? 'Pending',
           ),
         );
       case RouteNames.studentCourseResources:
@@ -132,7 +140,15 @@ class AppRouter {
           builder: (_) => const StudentCoursesResourcesScreen(),
         );
       case RouteNames.studentExamAttempt:
-        return MaterialPageRoute(builder: (_) => const StudentExamAttemptScreen());
+        final args = settings.arguments;
+        final safeArgs = args is Map
+            ? Map<String, dynamic>.from(args)
+            : const <String, dynamic>{};
+        return MaterialPageRoute(
+          builder: (_) => StudentExamAttemptScreen(
+            examId: safeArgs['examId']?.toString(),
+          ),
+        );
       case RouteNames.studentSyncStatus:
         return MaterialPageRoute(builder: (_) => const StudentSyncStatusScreen());
       case RouteNames.studentAiAssistant:
@@ -141,6 +157,52 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const GamificationScreen());
       case RouteNames.studentFeedback:
         return MaterialPageRoute(builder: (_) => const StudentFeedbackScreen());
+
+      case RouteNames.forgotPassword:
+        return MaterialPageRoute(builder: (_) => const ForgotPasswordScreen());
+
+      case RouteNames.studentProfileEdit:
+        return MaterialPageRoute(
+          builder: (_) => const StudentProfileEditScreen(),
+        );
+
+      case RouteNames.studentAnnouncementDetail:
+        final args = settings.arguments;
+        final safeArgs = args is Map
+            ? Map<String, dynamic>.from(args)
+            : const <String, dynamic>{};
+        return MaterialPageRoute(
+          builder: (_) => AnnouncementDetailScreen(
+            announcementId: safeArgs['announcementId']?.toString() ?? '',
+          ),
+        );
+
+      case RouteNames.studentCalendarEventDetail:
+        final args = settings.arguments;
+        final safeArgs = args is Map
+            ? Map<String, dynamic>.from(args)
+            : const <String, dynamic>{};
+        return MaterialPageRoute(
+          builder: (_) => CalendarEventDetailScreen(
+            eventId: safeArgs['eventId']?.toString() ?? '',
+          ),
+        );
+
+      case RouteNames.studentAchievements:
+        return MaterialPageRoute(
+          builder: (_) => const AchievementsListScreen(),
+        );
+
+      case RouteNames.studentCourseResourceDetail:
+        final args = settings.arguments;
+        final safeArgs = args is Map
+            ? Map<String, dynamic>.from(args)
+            : const <String, dynamic>{};
+        return MaterialPageRoute(
+          builder: (_) => CourseResourceDetailScreen(
+            resourceId: safeArgs['resourceId']?.toString() ?? '',
+          ),
+        );
 
       // Teacher routes
       case RouteNames.teacherDashboard:
