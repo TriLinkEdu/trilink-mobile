@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/routes/route_names.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_shadows.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/pressable.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/ai_assistant_cubit.dart';
-import 'evaluate_me_screen.dart';
-import 'learning_path_screen.dart';
 import '../models/ai_assistant_models.dart';
-import 'resource_recommendation_screen.dart';
 import '../repositories/student_ai_assistant_repository.dart';
 
 /// AI Assistant with Learning Path, Resources, and Evaluate Me tabs.
@@ -35,14 +38,12 @@ class _AiAssistantViewState extends State<_AiAssistantView> {
   final List<String> _tabs = ['Learning Path', 'Resources', 'Evaluate M...'];
 
   void _openDetailedPage(int tabIndex) {
-    final data = context.read<AiAssistantCubit>().state.data;
-    final page = switch (tabIndex) {
-      0 => LearningPathScreen(items: data?.learningPath),
-      1 => ResourceRecommendationScreen(resources: data?.resources),
-      _ => EvaluateMeScreen(insights: data?.insights),
+    final route = switch (tabIndex) {
+      0 => RouteNames.studentLearningPath,
+      1 => RouteNames.studentResourceRecommendation,
+      _ => RouteNames.studentEvaluateMe,
     };
-
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+    Navigator.of(context).pushNamed(route);
   }
 
   Widget _buildContent() {
@@ -53,10 +54,9 @@ class _AiAssistantViewState extends State<_AiAssistantView> {
         final loading = state.status == AiAssistantStatus.initial ||
             state.status == AiAssistantStatus.loading;
         if (loading) {
-          return const Center(
-            child: CircularProgressIndicator(
-              semanticsLabel: 'Loading AI assistant data',
-            ),
+          return const Padding(
+            padding: EdgeInsets.all(20),
+            child: ShimmerList(),
           );
         }
 
@@ -72,14 +72,14 @@ class _AiAssistantViewState extends State<_AiAssistantView> {
                     color: theme.colorScheme.onSurfaceVariant,
                     size: 34,
                   ),
-                  const SizedBox(height: 12),
+                  AppSpacing.gapMd,
                   Text(
                     state.errorMessage ??
                         'Unable to load AI assistant content right now.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
                   ),
-                  const SizedBox(height: 14),
+                  AppSpacing.gapMd,
                   OutlinedButton(
                     onPressed: () =>
                         context.read<AiAssistantCubit>().loadAssistantData(),
@@ -132,13 +132,11 @@ class _AiAssistantViewState extends State<_AiAssistantView> {
               child: Row(
                 children: [
                   Icon(Icons.auto_awesome, color: theme.colorScheme.primary, size: 28),
-                  const SizedBox(width: 8),
+                  AppSpacing.hGapSm,
                   Text(
                     'AI Assistant',
-                    style: TextStyle(
-                      fontSize: 20,
+                    style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   const Spacer(),
@@ -158,7 +156,7 @@ class _AiAssistantViewState extends State<_AiAssistantView> {
                 ],
               ),
             ),
-            const SizedBox(height: 14),
+            AppSpacing.gapMd,
 
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -167,7 +165,7 @@ class _AiAssistantViewState extends State<_AiAssistantView> {
                   final isSelected = _selectedTab == i;
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
-                    child: GestureDetector(
+                    child: Pressable(
                       onTap: () => setState(() => _selectedTab = i),
                       child: Semantics(
                         button: true,
@@ -182,7 +180,7 @@ class _AiAssistantViewState extends State<_AiAssistantView> {
                             color: isSelected
                                 ? theme.colorScheme.primary
                                 : theme.colorScheme.surface,
-                            borderRadius: BorderRadius.circular(22),
+                            borderRadius: AppRadius.borderXxl,
                             border: Border.all(
                               color: isSelected
                                   ? theme.colorScheme.primary
@@ -206,7 +204,7 @@ class _AiAssistantViewState extends State<_AiAssistantView> {
                 }),
               ),
             ),
-            const SizedBox(height: 6),
+            AppSpacing.gapSm,
 
             Expanded(
               child: _buildContent(),
@@ -279,21 +277,19 @@ class _LearningPathTabState extends State<_LearningPathTab> {
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
-            ),
+            borderRadius: AppRadius.borderLg,
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Your Personalized Path',
-                  style: TextStyle(
-                    fontSize: 18,
+                  style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
                   ),
                 ),
-                const SizedBox(height: 6),
+                AppSpacing.gapSm,
                 Row(
                   children: [
                     Icon(
@@ -301,12 +297,11 @@ class _LearningPathTabState extends State<_LearningPathTab> {
                       size: 16,
                       color: theme.colorScheme.primary,
                     ),
-                    const SizedBox(width: 6),
+                    AppSpacing.hGapSm,
                     Expanded(
                       child: Text(
                         'Curated specifically for you based on your recent quiz results in Physics and Mathematics.',
-                        style: TextStyle(
-                          fontSize: 12,
+                        style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                           height: 1.4,
                         ),
@@ -317,7 +312,7 @@ class _LearningPathTabState extends State<_LearningPathTab> {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          AppSpacing.gapXl,
 
           if (_items.isEmpty)
             Center(
@@ -353,23 +348,20 @@ class _LearningPathTabState extends State<_LearningPathTab> {
                   isBookmarked: item.isBookmarked,
                   onBookmarkToggle: () => _toggleBookmark(index),
                   onAction: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => LearningPathScreen(items: _items),
-                      ),
-                    );
+                    Navigator.of(context)
+                        .pushNamed(RouteNames.studentLearningPath);
                   },
                 ),
               );
             }),
-          const SizedBox(height: 20),
+          AppSpacing.gapXl,
 
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: AppRadius.borderLg,
               border: Border.all(color: theme.colorScheme.outlineVariant),
             ),
             child: Row(
@@ -384,20 +376,18 @@ class _LearningPathTabState extends State<_LearningPathTab> {
                     color: theme.colorScheme.primary,
                   ),
                 ),
-                const SizedBox(width: 12),
+                AppSpacing.hGapMd,
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'AI Insight',
-                        style: TextStyle(
-                          fontSize: 14,
+                        style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.onSurface,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      AppSpacing.gapXs,
                       Text(
                         _items.isNotEmpty
                             ? "Your current focus is ${_items.first.title}. Continue this step before moving to the next module."
@@ -453,19 +443,13 @@ class _PathItem extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppRadius.borderLg,
         border: Border.all(
           color: isActive
               ? theme.colorScheme.primary.withAlpha(60)
               : theme.colorScheme.outlineVariant,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: theme.shadowColor.withAlpha(8),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppShadows.subtle(theme.shadowColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -477,24 +461,22 @@ class _PathItem extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   color: theme.colorScheme.primary.withAlpha(20),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: AppRadius.borderSm,
                 ),
                 child: Icon(icon, color: theme.colorScheme.primary, size: 22),
               ),
-              const SizedBox(width: 12),
+              AppSpacing.hGapMd,
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       '$index. $title',
-                      style: TextStyle(
-                        fontSize: 15,
+                      style: theme.textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurface,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    AppSpacing.gapXxs,
                     Text(
                       '$subject • $duration',
                       style: TextStyle(
@@ -505,7 +487,7 @@ class _PathItem extends StatelessWidget {
                   ],
                 ),
               ),
-              GestureDetector(
+              Pressable(
                 onTap: onBookmarkToggle,
                 child: Icon(
                   isBookmarked
@@ -520,9 +502,9 @@ class _PathItem extends StatelessWidget {
             ],
           ),
           if (isActive) ...[
-            const SizedBox(height: 12),
+            AppSpacing.gapMd,
             ClipRRect(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: AppRadius.borderSm,
               child: LinearProgressIndicator(
                 value: progress,
                 minHeight: 5,
@@ -532,7 +514,7 @@ class _PathItem extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            AppSpacing.gapMd,
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -541,7 +523,7 @@ class _PathItem extends StatelessWidget {
                   backgroundColor: theme.colorScheme.primary,
                   foregroundColor: theme.colorScheme.onPrimary,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(22),
+                    borderRadius: AppRadius.borderXxl,
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   elevation: 0,
@@ -556,14 +538,14 @@ class _PathItem extends StatelessWidget {
                         fontSize: 14,
                       ),
                     ),
-                    SizedBox(width: 4),
+                    AppSpacing.hGapXs,
                     Icon(Icons.play_arrow_rounded, size: 18),
                   ],
                 ),
               ),
             ),
           ] else ...[
-            const SizedBox(height: 12),
+            AppSpacing.gapMd,
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
@@ -572,7 +554,7 @@ class _PathItem extends StatelessWidget {
                   foregroundColor: theme.colorScheme.onSurface,
                   side: BorderSide(color: theme.colorScheme.outlineVariant),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(22),
+                    borderRadius: AppRadius.borderXxl,
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
@@ -628,7 +610,7 @@ class _ResourcesTab extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppRadius.borderMd,
             border: Border.all(color: theme.colorScheme.outlineVariant),
           ),
           child: Row(
@@ -638,24 +620,22 @@ class _ResourcesTab extends StatelessWidget {
                 height: 42,
                 decoration: BoxDecoration(
                   color: theme.colorScheme.primary.withAlpha(22),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: AppRadius.borderSm,
                 ),
                 child: Icon(icon, color: theme.colorScheme.primary, size: 20),
               ),
-              const SizedBox(width: 12),
+              AppSpacing.hGapMd,
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       resource.title,
-                      style: TextStyle(
+                      style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurface,
-                        fontSize: 14,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    AppSpacing.gapXs,
                     Text(
                       '${resource.type} • ${resource.estimatedTime} • ${resource.level}',
                       style: TextStyle(
@@ -668,12 +648,8 @@ class _ResourcesTab extends StatelessWidget {
               ),
               TextButton(
                 onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          ResourceRecommendationScreen(resources: resources),
-                    ),
-                  );
+                  Navigator.of(context)
+                      .pushNamed(RouteNames.studentResourceRecommendation);
                 },
                 child: const Text('Open'),
               ),
@@ -681,7 +657,7 @@ class _ResourcesTab extends StatelessWidget {
           ),
         );
       },
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => AppSpacing.gapMd,
       itemCount: resources.length,
     );
   }
@@ -716,7 +692,7 @@ class _EvaluateTab extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppRadius.borderMd,
             border: Border.all(color: theme.colorScheme.outlineVariant),
           ),
           child: Column(
@@ -729,7 +705,7 @@ class _EvaluateTab extends StatelessWidget {
                     color: theme.colorScheme.primary,
                     size: 18,
                   ),
-                  const SizedBox(width: 8),
+                  AppSpacing.hGapSm,
                   Text(
                     insight.title,
                     style: TextStyle(
@@ -740,7 +716,7 @@ class _EvaluateTab extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              AppSpacing.gapSm,
               Text(
                 insight.summary,
                 style: TextStyle(
@@ -749,7 +725,7 @@ class _EvaluateTab extends StatelessWidget {
                   height: 1.4,
                 ),
               ),
-              const SizedBox(height: 10),
+              AppSpacing.gapSm,
               Text(
                 'Recommendation: ${insight.recommendation}',
                 style: TextStyle(
@@ -762,7 +738,7 @@ class _EvaluateTab extends StatelessWidget {
           ),
         );
       },
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => AppSpacing.gapMd,
       itemCount: insights.length,
     );
   }

@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/ai_assistant_cubit.dart';
 import '../models/ai_assistant_models.dart';
 import '../repositories/student_ai_assistant_repository.dart';
@@ -39,7 +43,10 @@ class _LearningPathBlocView extends StatelessWidget {
           final loading = state.status == AiAssistantStatus.initial ||
               state.status == AiAssistantStatus.loading;
           if (loading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Padding(
+              padding: EdgeInsets.all(16),
+              child: ShimmerList(),
+            );
           }
           final list = state.data?.learningPath ?? [];
           if (list.isEmpty) {
@@ -101,13 +108,13 @@ class _LearningPathContentState extends State<_LearningPathContent> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Subject: ${item.subject}'),
-            const SizedBox(height: 4),
+            AppSpacing.gapXs,
             Text('Duration: ${item.duration}'),
-            const SizedBox(height: 4),
+            AppSpacing.gapXs,
             Text('Progress: ${(item.progress * 100).toInt()}%'),
-            const SizedBox(height: 8),
+            AppSpacing.gapSm,
             ClipRRect(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: AppRadius.borderSm,
               child: LinearProgressIndicator(
                 value: item.progress,
                 minHeight: 6,
@@ -135,7 +142,7 @@ class _LearningPathContentState extends State<_LearningPathContent> {
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: _items.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      separatorBuilder: (_, _) => AppSpacing.gapSm,
       itemBuilder: (context, index) {
         final item = _items[index];
         return _LearningStepCard(
@@ -176,7 +183,7 @@ class _LearningStepCard extends StatelessWidget {
               : isActive
                   ? Icons.play_circle_fill_rounded
                   : Icons.menu_book_rounded,
-          color: isComplete ? Colors.green : null,
+          color: isComplete ? AppColors.success : null,
         ),
         title: Text(title),
         subtitle: Text(subtitle),
@@ -188,7 +195,7 @@ class _LearningStepCard extends StatelessWidget {
                   : 'Start',
           style: TextStyle(
             color: isComplete
-                ? Colors.green
+                ? AppColors.success
                 : Theme.of(context).colorScheme.primary,
           ),
         ),

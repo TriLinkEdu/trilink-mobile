@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/notifications_cubit.dart';
 import '../models/notification_model.dart';
 import '../repositories/student_notifications_repository.dart';
@@ -98,7 +100,10 @@ class _NotificationsViewState extends State<_NotificationsView> {
           final loading = state.status == NotificationsStatus.initial ||
               state.status == NotificationsStatus.loading;
           if (loading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Padding(
+              padding: AppSpacing.paddingLg,
+              child: ShimmerList(),
+            );
           }
           if (state.status == NotificationsStatus.error) {
             return Center(
@@ -107,9 +112,9 @@ class _NotificationsViewState extends State<_NotificationsView> {
                 children: [
                   Text(
                     state.errorMessage ?? 'Unable to load notifications.',
-                    style: const TextStyle(color: Colors.red),
+                    style: TextStyle(color: theme.colorScheme.error),
                   ),
-                  const SizedBox(height: 10),
+                  AppSpacing.gapMd,
                   ElevatedButton(
                     onPressed: () =>
                         context.read<NotificationsCubit>().loadNotifications(),
@@ -124,9 +129,9 @@ class _NotificationsViewState extends State<_NotificationsView> {
 
           return Column(
             children: [
-              const SizedBox(height: 10),
+              AppSpacing.gapMd,
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: AppSpacing.horizontalLg,
                 child: Row(
                   children: [
                     ChoiceChip(
@@ -135,7 +140,7 @@ class _NotificationsViewState extends State<_NotificationsView> {
                       onSelected: (_) =>
                           setState(() => _filterIndex = 0),
                     ),
-                    const SizedBox(width: 8),
+                    AppSpacing.hGapSm,
                     ChoiceChip(
                       label: const Text('Unread'),
                       selected: _filterIndex == 1,
@@ -145,7 +150,7 @@ class _NotificationsViewState extends State<_NotificationsView> {
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
+              AppSpacing.gapSm,
               Expanded(
                 child: visibleItems.isEmpty
                     ? Center(

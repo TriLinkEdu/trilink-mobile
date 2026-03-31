@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../../exams/models/exam_model.dart';
 import '../cubit/quiz_cubit.dart';
 import '../repositories/student_gamification_repository.dart';
@@ -90,7 +92,10 @@ class _QuizViewState extends State<_QuizView> {
               state.status == QuizLoadStatus.loading) {
             return Scaffold(
               appBar: AppBar(title: const Text('Quiz')),
-              body: const Center(child: CircularProgressIndicator()),
+              body: const Padding(
+                padding: AppSpacing.paddingLg,
+                child: ShimmerList(itemCount: 5, itemHeight: 56),
+              ),
             );
           }
 
@@ -102,7 +107,7 @@ class _QuizViewState extends State<_QuizView> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(state.errorMessage ?? 'Quiz not found.'),
-                    const SizedBox(height: 12),
+                    AppSpacing.gapMd,
                     OutlinedButton(
                       onPressed: () => context
                           .read<QuizCubit>()
@@ -125,28 +130,31 @@ class _QuizViewState extends State<_QuizView> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        CircularProgressIndicator(),
+                        ShimmerLoading(height: 24, width: 120),
                         SizedBox(height: 16),
                         Text('Submitting your answers...'),
                       ],
                     ),
                   )
                 : finished
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const Padding(
+                        padding: AppSpacing.paddingLg,
+                        child: ShimmerList(itemCount: 3),
+                      )
                     : Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: AppSpacing.paddingLg,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             LinearProgressIndicator(
                               value: (_questionIndex + 1) / quiz.questions.length,
                             ),
-                            const SizedBox(height: 16),
+                            AppSpacing.gapLg,
                             Text(
                               'Question ${_questionIndex + 1} of ${quiz.questions.length}',
                               style: const TextStyle(fontWeight: FontWeight.w600),
                             ),
-                            const SizedBox(height: 12),
+                            AppSpacing.gapMd,
                             Text(
                               quiz.questions[_questionIndex].text,
                               style: const TextStyle(
@@ -154,7 +162,7 @@ class _QuizViewState extends State<_QuizView> {
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            AppSpacing.gapLg,
                             ...List.generate(
                               quiz.questions[_questionIndex].options.length,
                               (index) => Padding(

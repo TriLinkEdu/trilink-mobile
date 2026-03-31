@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/pressable.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../../../auth/cubit/auth_cubit.dart';
 import '../repositories/student_profile_repository.dart';
 
@@ -101,14 +104,17 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Padding(
+              padding: EdgeInsets.all(24),
+              child: ShimmerList(),
+            )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: Form(
                 key: _formKey,
                 child: Column(
                   children: [
-                    GestureDetector(
+                    Pressable(
                       onTap: () {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Photo picker will use device camera/gallery when integrated')),
@@ -136,7 +142,7 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    AppSpacing.gapXxxl,
                     TextFormField(
                       controller: _nameController,
                       decoration: const InputDecoration(
@@ -146,7 +152,7 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
                       ),
                       validator: (v) => v == null || v.trim().isEmpty ? 'Name is required' : null,
                     ),
-                    const SizedBox(height: 16),
+                    AppSpacing.gapLg,
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
@@ -161,7 +167,7 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
+                    AppSpacing.gapLg,
                     TextFormField(
                       controller: _phoneController,
                       keyboardType: TextInputType.phone,
@@ -171,7 +177,7 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
                         border: OutlineInputBorder(),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    AppSpacing.gapLg,
                     TextFormField(
                       initialValue: authUser?.school ?? '',
                       enabled: false,
@@ -181,7 +187,7 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
                         border: OutlineInputBorder(),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    AppSpacing.gapLg,
                     Row(
                       children: [
                         Expanded(
@@ -194,7 +200,7 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        AppSpacing.hGapLg,
                         Expanded(
                           child: TextFormField(
                             initialValue: authUser?.section ?? '',

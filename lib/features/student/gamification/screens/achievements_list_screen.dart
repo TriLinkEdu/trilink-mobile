@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/achievements_list_cubit.dart';
 import '../models/gamification_models.dart';
 import '../repositories/student_gamification_repository.dart';
@@ -33,7 +37,10 @@ class _AchievementsListView extends StatelessWidget {
           final loading = state.status == AchievementsListStatus.initial ||
               state.status == AchievementsListStatus.loading;
           if (loading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Padding(
+              padding: AppSpacing.paddingLg,
+              child: ShimmerList(itemCount: 6, itemHeight: 72),
+            );
           }
           final unlocked =
               state.achievements.where((a) => a.isUnlocked).toList();
@@ -41,21 +48,21 @@ class _AchievementsListView extends StatelessWidget {
               state.achievements.where((a) => !a.isUnlocked).toList();
 
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: AppSpacing.paddingLg,
             children: [
               if (unlocked.isNotEmpty) ...[
                 Text('Unlocked (${unlocked.length})',
                     style: theme.textTheme.titleMedium
                         ?.copyWith(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
+                AppSpacing.gapSm,
                 ...unlocked.map((a) => _AchievementTile(achievement: a)),
-                const SizedBox(height: 24),
+                AppSpacing.gapXxl,
               ],
               if (locked.isNotEmpty) ...[
                 Text('Locked (${locked.length})',
                     style: theme.textTheme.titleMedium
                         ?.copyWith(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
+                AppSpacing.gapSm,
                 ...locked.map((a) => _AchievementTile(achievement: a)),
               ],
             ],
@@ -83,13 +90,13 @@ class _AchievementTile extends StatelessWidget {
           height: 44,
           decoration: BoxDecoration(
             color: isUnlocked
-                ? Colors.amber.withValues(alpha: 0.15)
+                ? AppColors.leaderboardCrown.withAlpha(38)
                 : theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: AppRadius.borderMd,
           ),
           child: Icon(
             isUnlocked ? Icons.emoji_events_rounded : Icons.lock_rounded,
-            color: isUnlocked ? Colors.amber : theme.colorScheme.onSurfaceVariant,
+            color: isUnlocked ? AppColors.leaderboardCrown : theme.colorScheme.onSurfaceVariant,
           ),
         ),
         title: Text(
@@ -108,7 +115,7 @@ class _AchievementTile extends StatelessWidget {
           ),
         ),
         trailing: isUnlocked
-            ? const Icon(Icons.check_circle_rounded, color: Colors.green)
+            ? const Icon(Icons.check_circle_rounded, color: AppColors.success)
             : null,
       ),
     );

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/sync_cubit.dart';
 import '../models/sync_status_model.dart';
 import '../repositories/student_sync_repository.dart';
@@ -59,9 +62,9 @@ class _StudentSyncStatusViewState extends State<_StudentSyncStatusView> {
 
   Color _statusColor(SyncItemStatus status) {
     return switch (status) {
-      SyncItemStatus.synced => Colors.green,
-      SyncItemStatus.pending => Colors.orange,
-      SyncItemStatus.error => Colors.red,
+      SyncItemStatus.synced => AppColors.success,
+      SyncItemStatus.pending => AppColors.warning,
+      SyncItemStatus.error => AppColors.danger,
     };
   }
 
@@ -84,7 +87,10 @@ class _StudentSyncStatusViewState extends State<_StudentSyncStatusView> {
         return Scaffold(
           appBar: AppBar(title: const Text('Sync Status')),
           body: isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: ShimmerList(),
+                )
               : state.status == SyncStatus.error
                   ? Center(
                       child: Column(
@@ -92,9 +98,9 @@ class _StudentSyncStatusViewState extends State<_StudentSyncStatusView> {
                         children: [
                           Text(
                             state.errorMessage ?? '',
-                            style: const TextStyle(color: Colors.red),
+                            style: const TextStyle(color: AppColors.danger),
                           ),
-                          const SizedBox(height: 10),
+                          AppSpacing.gapSm,
                           ElevatedButton(
                             onPressed: () => context
                                 .read<SyncCubit>()
@@ -113,7 +119,7 @@ class _StudentSyncStatusViewState extends State<_StudentSyncStatusView> {
                         'Offline Access & Sync',
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
-                      const SizedBox(height: 16),
+                      AppSpacing.gapLg,
                       Expanded(
                         child: items.isEmpty
                             ? const Center(
@@ -121,7 +127,7 @@ class _StudentSyncStatusViewState extends State<_StudentSyncStatusView> {
                             : ListView.separated(
                                 itemCount: items.length,
                                 separatorBuilder: (_, __) =>
-                                    const SizedBox(height: 10),
+                                    AppSpacing.gapSm,
                                 itemBuilder: (context, index) {
                                   final item = items[index];
                                   return Card(
@@ -141,7 +147,7 @@ class _StudentSyncStatusViewState extends State<_StudentSyncStatusView> {
                                 },
                               ),
                       ),
-                      const SizedBox(height: 16),
+                      AppSpacing.gapLg,
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(

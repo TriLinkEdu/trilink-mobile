@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/ai_assistant_cubit.dart';
 import '../models/ai_assistant_models.dart';
 import '../repositories/student_ai_assistant_repository.dart';
@@ -39,7 +41,10 @@ class _EvaluateMeBlocView extends StatelessWidget {
           final loading = state.status == AiAssistantStatus.initial ||
               state.status == AiAssistantStatus.loading;
           if (loading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Padding(
+              padding: EdgeInsets.all(16),
+              child: ShimmerList(),
+            );
           }
           final list = state.data?.insights ?? [];
           if (list.isEmpty) {
@@ -64,7 +69,7 @@ class _EvaluateMeList extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: insights.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      separatorBuilder: (_, _) => AppSpacing.gapSm,
       itemBuilder: (context, index) {
         final insight = insights[index];
         return _InsightCard(
@@ -98,11 +103,11 @@ class _InsightCard extends StatelessWidget {
           children: [
             Text(
               title,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 8),
+            AppSpacing.gapSm,
             Text(summary),
-            const SizedBox(height: 8),
+            AppSpacing.gapSm,
             Text('Recommendation: $recommendation'),
           ],
         ),

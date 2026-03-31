@@ -3,7 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/services/storage_service.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_shadows.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/theme_notifier.dart';
+import '../../../../core/widgets/pressable.dart';
 import '../../../auth/cubit/auth_cubit.dart';
 import '../repositories/student_profile_repository.dart';
 
@@ -20,7 +24,6 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
 
   bool _pushNotifications = true;
   String _language = 'English';
-  String _textSize = 'Default';
 
   @override
   void initState() {
@@ -34,7 +37,6 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
       _pushNotifications =
           _storage.getBool('pushNotifications', defaultValue: true);
       _language = _storage.getString('language') ?? 'English';
-      _textSize = _storage.getString('textSize') ?? 'Default';
     });
   }
 
@@ -73,11 +75,10 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                         : null,
                   ),
                   Expanded(
-                    child: Text(
+                    child:                     Text(
                       'Profile',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 18,
+                      style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: theme.colorScheme.onSurface,
                       ),
@@ -103,7 +104,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   children: [
-                    const SizedBox(height: 10),
+                    AppSpacing.gapMd,
                     Stack(
                       alignment: Alignment.bottomRight,
                       children: [
@@ -116,7 +117,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
-                        GestureDetector(
+                        Pressable(
                           onTap: () {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
@@ -145,16 +146,15 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 14),
+                    AppSpacing.gapLg,
                     Text(
                       displayName,
-                      style: TextStyle(
-                        fontSize: 20,
+                      style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.onSurface,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    AppSpacing.gapXs,
                     Text(
                       gradeSection.isNotEmpty
                           ? '$gradeSection • ID: $studentId'
@@ -164,7 +164,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    AppSpacing.gapSm,
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -172,7 +172,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primary.withAlpha(20),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: AppRadius.borderLg,
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -182,7 +182,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                             size: 14,
                             color: theme.colorScheme.primary,
                           ),
-                          const SizedBox(width: 4),
+                          AppSpacing.hGapXs,
                           Text(
                             'Level 12 Scholar',
                             style: TextStyle(
@@ -194,10 +194,10 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 28),
+                    AppSpacing.gapXxxl,
 
                     _SectionHeader(title: 'ACCOUNT'),
-                    const SizedBox(height: 8),
+                    AppSpacing.gapSm,
                     _SettingsCard(
                       children: [
                         _SettingsRow(
@@ -232,7 +232,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                                   color: theme.colorScheme.onSurfaceVariant,
                                 ),
                               ),
-                              const SizedBox(width: 4),
+                              AppSpacing.hGapXs,
                               Icon(
                                 Icons.chevron_right,
                                 size: 20,
@@ -244,10 +244,10 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    AppSpacing.gapXxl,
 
                     _SectionHeader(title: 'PREFERENCES'),
-                    const SizedBox(height: 8),
+                    AppSpacing.gapSm,
                     _SettingsCard(
                       children: [
                         _SettingsRow(
@@ -284,13 +284,13 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                _textSize,
+                                ThemeNotifier.instance.textScaleLabel,
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: theme.colorScheme.onSurfaceVariant,
                                 ),
                               ),
-                              const SizedBox(width: 4),
+                              AppSpacing.hGapXs,
                               Icon(
                                 Icons.chevron_right,
                                 size: 20,
@@ -300,12 +300,36 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                           ),
                           onTap: _showTextSizePicker,
                         ),
+                        _divider(),
+                        _SettingsRow(
+                          icon: Icons.font_download_outlined,
+                          label: 'Font Family',
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                ThemeNotifier.instance.fontFamily,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              AppSpacing.hGapXs,
+                              Icon(
+                                Icons.chevron_right,
+                                size: 20,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ],
+                          ),
+                          onTap: _showFontFamilyPicker,
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    AppSpacing.gapXxl,
 
                     _SectionHeader(title: 'SUPPORT'),
-                    const SizedBox(height: 8),
+                    AppSpacing.gapSm,
                     _SettingsCard(
                       children: [
                         _SettingsRow(
@@ -323,10 +347,10 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    AppSpacing.gapXxl,
 
                     _SectionHeader(title: 'NAVIGATION'),
-                    const SizedBox(height: 8),
+                    AppSpacing.gapSm,
                     _SettingsCard(
                       children: [
                         _SettingsRow(
@@ -392,9 +416,25 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                           onTap: () => Navigator.of(context)
                               .pushNamed(RouteNames.studentSyncStatus),
                         ),
+                        _divider(),
+                        _SettingsRow(
+                          icon: Icons.fact_check_outlined,
+                          label: 'Attendance',
+                          showChevron: true,
+                          onTap: () => Navigator.of(context)
+                              .pushNamed(RouteNames.studentAttendance),
+                        ),
+                        _divider(),
+                        _SettingsRow(
+                          icon: Icons.rate_review_outlined,
+                          label: 'Feedback',
+                          showChevron: true,
+                          onTap: () => Navigator.of(context)
+                              .pushNamed(RouteNames.studentFeedback),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    AppSpacing.gapXxl,
 
                     SizedBox(
                       width: double.infinity,
@@ -403,16 +443,17 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                         onPressed: () async {
                           await context.read<AuthCubit>().logout();
                           if (!context.mounted) return;
-                          Navigator.of(context).pushNamedAndRemoveUntil(
+                          Navigator.of(context, rootNavigator: true)
+                              .pushNamedAndRemoveUntil(
                             RouteNames.login,
                             (_) => false,
                           );
                         },
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.red,
-                          side: const BorderSide(color: Colors.red),
+                          foregroundColor: theme.colorScheme.error,
+                          side: BorderSide(color: theme.colorScheme.error),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: AppRadius.borderMd,
                           ),
                         ),
                         child: const Text(
@@ -424,7 +465,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    AppSpacing.gapMd,
                     Text(
                       'Version 2.4.0 (Build 302)',
                       style: TextStyle(
@@ -432,7 +473,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    AppSpacing.gapXxl,
                   ],
                 ),
               ),
@@ -477,7 +518,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                 validator: (v) =>
                     (v == null || v.isEmpty) ? 'Required' : null,
               ),
-              const SizedBox(height: 12),
+              AppSpacing.gapMd,
               TextFormField(
                 controller: newPwController,
                 obscureText: true,
@@ -491,7 +532,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 12),
+              AppSpacing.gapMd,
               TextFormField(
                 controller: confirmPwController,
                 obscureText: true,
@@ -552,12 +593,12 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 12),
+              AppSpacing.gapMd,
               const Text(
                 'Choose Language',
                 style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
               ),
-              const SizedBox(height: 10),
+              AppSpacing.gapMd,
               ListTile(
                 title: const Text('English'),
                 trailing: _language == 'English'
@@ -592,29 +633,111 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
       context: context,
       builder: (sheetContext) {
         final sheetTheme = Theme.of(sheetContext);
+        final tn = ThemeNotifier.instance;
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 12),
-              const Text(
+              AppSpacing.gapMd,
+              Text(
                 'Choose Text Size',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                style: sheetTheme.textTheme.titleMedium,
               ),
-              const SizedBox(height: 10),
-              for (final size in const ['Small', 'Default', 'Large'])
+              AppSpacing.gapSm,
+              for (final entry in ThemeNotifier.scaleOptions.entries)
                 ListTile(
-                  title: Text(size),
-                  trailing: _textSize == size
-                      ? Icon(Icons.check, color: sheetTheme.colorScheme.primary)
+                  title: Text(entry.key),
+                  subtitle: Text(
+                    'Aa Bb Cc',
+                    style: TextStyle(
+                      fontSize: 14 * entry.value,
+                    ),
+                  ),
+                  trailing: tn.textScaleLabel == entry.key
+                      ? Icon(Icons.check_circle,
+                          color: sheetTheme.colorScheme.primary)
                       : null,
                   onTap: () {
-                    setState(() => _textSize = size);
-                    _storage.setString('textSize', size);
+                    tn.setTextScale(entry.key);
                     Navigator.of(sheetContext).pop();
                   },
                 ),
+              AppSpacing.gapMd,
             ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showFontFamilyPicker() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        final sheetTheme = Theme.of(sheetContext);
+        final tn = ThemeNotifier.instance;
+        return DraggableScrollableSheet(
+          initialChildSize: 0.55,
+          minChildSize: 0.35,
+          maxChildSize: 0.75,
+          expand: false,
+          builder: (_, scrollController) => SafeArea(
+            child: Column(
+              children: [
+                AppSpacing.gapMd,
+                Container(
+                  width: 32,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: sheetTheme.colorScheme.outlineVariant,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                AppSpacing.gapMd,
+                Text(
+                  'Choose Font Family',
+                  style: sheetTheme.textTheme.titleMedium,
+                ),
+                AppSpacing.gapSm,
+                Expanded(
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: ThemeNotifier.availableFonts.length,
+                    itemBuilder: (_, i) {
+                      final font = ThemeNotifier.availableFonts[i];
+                      final isSelected = tn.fontFamily == font;
+                      return ListTile(
+                        title: Text(
+                          font,
+                          style: TextStyle(
+                            fontFamily: font,
+                            fontWeight:
+                                isSelected ? FontWeight.w600 : FontWeight.w400,
+                          ),
+                        ),
+                        subtitle: Text(
+                          'The quick brown fox jumps over the lazy dog',
+                          style: TextStyle(
+                            fontFamily: font,
+                            fontSize: 12,
+                            color: sheetTheme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        trailing: isSelected
+                            ? Icon(Icons.check_circle,
+                                color: sheetTheme.colorScheme.primary)
+                            : null,
+                        onTap: () {
+                          tn.setFontFamily(font);
+                          Navigator.of(sheetContext).pop();
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -636,19 +759,19 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                 answer:
                     'Navigate to the Grades tab from the bottom navigation bar to view all your subject grades.',
               ),
-              SizedBox(height: 12),
+              AppSpacing.gapMd,
               _FaqItem(
                 question: 'How do I contact my teacher?',
                 answer:
                     'Use the Chat section to send a direct message to any of your teachers.',
               ),
-              SizedBox(height: 12),
+              AppSpacing.gapMd,
               _FaqItem(
                 question: 'How do I submit assignments?',
                 answer:
                     'Open Assignments from the dashboard, select the assignment, and tap "Submit" to upload your work.',
               ),
-              SizedBox(height: 12),
+              AppSpacing.gapMd,
               _FaqItem(
                 question: 'How do I reset my password?',
                 answer:
@@ -724,7 +847,7 @@ class _FaqItem extends StatelessWidget {
           question,
           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
         ),
-        const SizedBox(height: 4),
+        AppSpacing.gapXs,
         Text(
           answer,
           style: TextStyle(
@@ -771,14 +894,8 @@ class _SettingsCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: theme.shadowColor.withAlpha(8),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: AppRadius.borderLg,
+        boxShadow: AppShadows.subtle(theme.shadowColor),
       ),
       child: Column(children: children),
     );
@@ -811,7 +928,7 @@ class _SettingsRow extends StatelessWidget {
         child: Row(
           children: [
             Icon(icon, size: 22, color: theme.colorScheme.onSurfaceVariant),
-            const SizedBox(width: 14),
+            AppSpacing.hGapLg,
             Expanded(
               child: Text(
                 label,

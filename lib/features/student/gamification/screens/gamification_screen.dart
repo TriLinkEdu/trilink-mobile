@@ -3,11 +3,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/routes/route_names.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_shadows.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/pressable.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/gamification_cubit.dart';
 import '../models/gamification_models.dart';
 import '../repositories/student_gamification_repository.dart';
-import 'leaderboard_screen.dart';
-import 'quiz_screen.dart';
 
 /// Gamification hub: streaks, achievements, quick quizzes, leaderboard.
 class GamificationScreen extends StatelessWidget {
@@ -39,25 +43,24 @@ class _GamificationViewState extends State<_GamificationView> {
     final theme = Theme.of(context);
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       builder: (_) => StatefulBuilder(
         builder: (ctx, setSheetState) => Padding(
-          padding: const EdgeInsets.all(24),
+          padding: AppSpacing.paddingXxl,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'Notification Preferences',
-                style: TextStyle(
-                  fontSize: 18,
+                style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.onSurface,
                 ),
               ),
-              const SizedBox(height: 16),
+              AppSpacing.gapLg,
               SwitchListTile(
                 title: const Text('Quiz Reminders'),
                 subtitle: const Text('Get reminded about available quizzes'),
@@ -85,7 +88,7 @@ class _GamificationViewState extends State<_GamificationView> {
                   setState(() {});
                 },
               ),
-              const SizedBox(height: 8),
+              AppSpacing.gapSm,
             ],
           ),
         ),
@@ -106,20 +109,20 @@ class _GamificationViewState extends State<_GamificationView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _streakRow('Current Streak', '${streak.currentStreak} days'),
-            const SizedBox(height: 8),
+            AppSpacing.gapSm,
             _streakRow('Longest Streak', '${streak.longestStreak} days'),
-            const SizedBox(height: 12),
+            AppSpacing.gapMd,
             const Text(
               'Recent Active Days',
               style: TextStyle(fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 8),
+            AppSpacing.gapSm,
             ...streak.recentDays.map((d) => Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Row(
                     children: [
-                      const Icon(Icons.check_circle, color: Colors.green, size: 16),
-                      const SizedBox(width: 8),
+                      const Icon(Icons.check_circle, color: AppColors.success, size: 16),
+                      AppSpacing.hGapSm,
                       Text(
                         '${d.day}/${d.month}/${d.year}',
                         style: const TextStyle(fontSize: 13),
@@ -175,20 +178,13 @@ class _GamificationViewState extends State<_GamificationView> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              padding: EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.md),
               child: Row(
                 children: [
                   IconButton(
                     tooltip: 'Back',
                     onPressed: () {
-                      if (Navigator.of(context).canPop()) {
-                        Navigator.of(context).pop();
-                      } else {
-                        Navigator.of(context).pushNamedAndRemoveUntil(
-                          RouteNames.studentDashboard,
-                          (_) => false,
-                        );
-                      }
+                      Navigator.of(context).maybePop();
                     },
                     icon: Icon(
                       Icons.arrow_back_ios_new_rounded,
@@ -199,8 +195,7 @@ class _GamificationViewState extends State<_GamificationView> {
                   Expanded(
                     child: Text(
                       'Gamification Hub',
-                      style: TextStyle(
-                        fontSize: 20,
+                      style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.onSurface,
                       ),
@@ -224,24 +219,27 @@ class _GamificationViewState extends State<_GamificationView> {
                   final loading = state.status == GamificationStatus.initial ||
                       state.status == GamificationStatus.loading;
                   if (loading) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const Padding(
+                      padding: AppSpacing.horizontalXl,
+                      child: ShimmerList(itemCount: 5, itemHeight: 80),
+                    );
                   }
                   return SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: AppSpacing.horizontalXl,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildStreakCard(state.streak),
-                        const SizedBox(height: 24),
+                        AppSpacing.gapXxl,
                         _buildAchievementsSection(state.achievements),
-                        const SizedBox(height: 24),
+                        AppSpacing.gapXxl,
                         _buildQuickQuizSection(state.availableQuizzes),
-                        const SizedBox(height: 24),
+                        AppSpacing.gapXxl,
                         _buildLeaderboardSection(
                           state.leaderboardEntries,
                           state.isWeeklyRanking,
                         ),
-                        const SizedBox(height: 24),
+                        AppSpacing.gapXxl,
                       ],
                     ),
                   );
@@ -255,18 +253,14 @@ class _GamificationViewState extends State<_GamificationView> {
   }
 
   Widget _buildStreakCard(StreakModel? streak) {
-    return GestureDetector(
+    return Pressable(
       onTap: _showStreakHistory,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 28),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF1A73E8), Color(0xFF4A90E2)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(20),
+          gradient: AppGradients.primaryHero,
+          borderRadius: AppRadius.borderXl,
         ),
         child: Column(
           children: [
@@ -283,7 +277,7 @@ class _GamificationViewState extends State<_GamificationView> {
                 size: 30,
               ),
             ),
-            const SizedBox(height: 12),
+            AppSpacing.gapMd,
             Text(
               streak != null
                   ? '${streak.currentStreak} Day Streak'
@@ -294,7 +288,7 @@ class _GamificationViewState extends State<_GamificationView> {
                 color: Colors.white,
               ),
             ),
-            const SizedBox(height: 4),
+            AppSpacing.gapXs,
             Text(
               "Keep it up! You're on fire.",
               style: TextStyle(
@@ -302,7 +296,7 @@ class _GamificationViewState extends State<_GamificationView> {
                 color: Colors.white.withAlpha(200),
               ),
             ),
-            const SizedBox(height: 16),
+            AppSpacing.gapLg,
             Container(
               padding: const EdgeInsets.symmetric(
                 horizontal: 20,
@@ -310,7 +304,7 @@ class _GamificationViewState extends State<_GamificationView> {
               ),
               decoration: BoxDecoration(
                 color: Colors.white.withAlpha(40),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: AppRadius.borderXl,
               ),
               child: const Text(
                 'View History',
@@ -338,8 +332,7 @@ class _GamificationViewState extends State<_GamificationView> {
           children: [
             Text(
               'Achievements',
-              style: TextStyle(
-                fontSize: 17,
+              style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: theme.colorScheme.onSurface,
               ),
@@ -360,7 +353,7 @@ class _GamificationViewState extends State<_GamificationView> {
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        AppSpacing.gapSm,
         SizedBox(
           height: 100,
           child: displayAchievements.isEmpty
@@ -368,10 +361,10 @@ class _GamificationViewState extends State<_GamificationView> {
               : ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: displayAchievements.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 14),
+                  separatorBuilder: (_, _) => AppSpacing.hGapLg,
                   itemBuilder: (_, i) {
                     final a = displayAchievements[i];
-                    final color = a.isUnlocked ? Colors.amber : Colors.grey;
+                    final color = a.isUnlocked ? AppColors.leaderboardCrown : Colors.grey;
                     final icon = a.isUnlocked
                         ? Icons.emoji_events_rounded
                         : Icons.lock_rounded;
@@ -396,13 +389,12 @@ class _GamificationViewState extends State<_GamificationView> {
       children: [
         Text(
           'Quick Quiz',
-          style: TextStyle(
-            fontSize: 17,
+          style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
             color: theme.colorScheme.onSurface,
           ),
         ),
-        const SizedBox(height: 12),
+        AppSpacing.gapMd,
         if (availableQuizzes.isEmpty)
           const Center(child: Text('No quizzes available.'))
         else
@@ -418,12 +410,9 @@ class _GamificationViewState extends State<_GamificationView> {
                 questions: quiz.questionCount,
                 xp: quiz.xpReward,
                 onStart: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => QuizScreen(
-                        subjectId: quiz.subjectId,
-                      ),
-                    ),
+                  Navigator.of(context).pushNamed(
+                    RouteNames.studentQuiz,
+                    arguments: {'subjectId': quiz.subjectId},
                   );
                 },
               ),
@@ -447,8 +436,7 @@ class _GamificationViewState extends State<_GamificationView> {
           children: [
             Text(
               'Leaderboard',
-              style: TextStyle(
-                fontSize: 17,
+              style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: theme.colorScheme.onSurface,
               ),
@@ -456,16 +444,13 @@ class _GamificationViewState extends State<_GamificationView> {
             InkWell(
               onTap: () =>
                   context.read<GamificationCubit>().toggleLeaderboardPeriod(),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppRadius.borderSm,
               child: Row(
                 children: [
                   TextButton(
                     onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const LeaderboardScreen(),
-                        ),
-                      );
+                      Navigator.of(context)
+                          .pushNamed(RouteNames.studentLeaderboard);
                     },
                     child: const Text('Open'),
                   ),
@@ -474,7 +459,7 @@ class _GamificationViewState extends State<_GamificationView> {
                     size: 16,
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
-                  const SizedBox(width: 4),
+                  AppSpacing.hGapXs,
                   Text(
                     isWeeklyRanking ? 'Weekly' : 'Monthly',
                     style: TextStyle(
@@ -487,7 +472,7 @@ class _GamificationViewState extends State<_GamificationView> {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        AppSpacing.gapMd,
         if (topEntries.isEmpty)
           const Center(child: Text('No leaderboard data.'))
         else
@@ -498,7 +483,7 @@ class _GamificationViewState extends State<_GamificationView> {
               Color(0xFFC0C0C0),
               Color(0xFFCD7F32),
             ];
-            final avatarColors = [Colors.orange, Colors.teal, theme.colorScheme.primary];
+            final avatarColors = [AppColors.streakFire, AppColors.secondary, theme.colorScheme.primary];
             return Padding(
               padding: EdgeInsets.only(
                 bottom: i < topEntries.length - 1 ? 8 : 0,
@@ -560,7 +545,7 @@ class _AchievementChip extends StatelessWidget {
             size: 26,
           ),
         ),
-        const SizedBox(height: 6),
+        AppSpacing.gapSm,
         Text(
           label,
           style: TextStyle(
@@ -573,7 +558,7 @@ class _AchievementChip extends StatelessWidget {
           sublabel,
           style: TextStyle(
             fontSize: 10,
-            color: isUnlocked ? Colors.green : theme.colorScheme.onSurfaceVariant,
+            color: isUnlocked ? AppColors.success : theme.colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -601,22 +586,16 @@ class _QuickQuizTile extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: theme.shadowColor.withAlpha(8),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: AppRadius.borderLg,
+        boxShadow: AppShadows.subtle(theme.shadowColor),
       ),
       child: Row(
         children: [
           Icon(icon, color: theme.colorScheme.onSurfaceVariant, size: 22),
-          const SizedBox(width: 12),
+          AppSpacing.hGapMd,
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -629,7 +608,7 @@ class _QuickQuizTile extends StatelessWidget {
                     color: theme.colorScheme.onSurface,
                   ),
                 ),
-                const SizedBox(height: 2),
+                AppSpacing.gapXxs,
                 Text(
                   '$questions Questions  •  $xp XP',
                   style: TextStyle(
@@ -643,11 +622,11 @@ class _QuickQuizTile extends StatelessWidget {
           ElevatedButton(
             onPressed: onStart,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.success,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppRadius.borderSm,
               ),
               elevation: 0,
               textStyle: const TextStyle(
@@ -685,17 +664,11 @@ class _LeaderboardRow extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: theme.shadowColor.withAlpha(8),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: AppRadius.borderLg,
+        boxShadow: AppShadows.subtle(theme.shadowColor),
       ),
       child: Row(
         children: [
@@ -717,13 +690,13 @@ class _LeaderboardRow extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          AppSpacing.hGapMd,
           CircleAvatar(
             radius: 18,
             backgroundColor: avatarColor.withAlpha(40),
             child: Icon(Icons.person_rounded, color: avatarColor, size: 20),
           ),
-          const SizedBox(width: 12),
+          AppSpacing.hGapMd,
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

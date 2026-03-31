@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_shadows.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/routes/route_names.dart';
+import '../../../../core/widgets/pressable.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/feedback_cubit.dart';
 import '../models/feedback_model.dart';
 import '../repositories/student_feedback_repository.dart';
-import 'submit_feedback_screen.dart';
 
 class StudentFeedbackScreen extends StatelessWidget {
   const StudentFeedbackScreen({super.key});
@@ -149,7 +155,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                       padding: const EdgeInsets.all(16),
                       itemCount: feedbackHistory.length,
                       separatorBuilder: (_, __) =>
-                          const SizedBox(height: 12),
+                          AppSpacing.gapMd,
                       itemBuilder: (context, index) {
                         final fb = feedbackHistory[index];
                         return _FeedbackHistoryTile(feedback: fb);
@@ -183,7 +189,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                  GestureDetector(
+                  Pressable(
                     onTap: () => Navigator.of(context).pop(),
                     child: Icon(
                       Icons.arrow_back_ios_new_rounded,
@@ -192,11 +198,10 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                     ),
                   ),
                   Expanded(
-                    child: Text(
+                    child:                     Text(
                       'Feedback',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 18,
+                      style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: theme.colorScheme.onSurface,
                       ),
@@ -217,7 +222,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: theme.colorScheme.primary.withAlpha(15),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: AppRadius.borderMd,
                           border: Border.all(
                             color: theme.colorScheme.primary.withAlpha(40),
                           ),
@@ -239,7 +244,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                                 color: theme.colorScheme.primary,
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            AppSpacing.hGapMd,
                             Expanded(
                               child: Column(
                                 crossAxisAlignment:
@@ -258,7 +263,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                                           ),
                                         ),
                                       ),
-                                      GestureDetector(
+                                      Pressable(
                                         onTap: () => setState(
                                             () => _showBanner = false),
                                         child: Icon(
@@ -270,7 +275,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 4),
+                                  AppSpacing.gapXs,
                                   Text(
                                     'Your feedback helps improve the course. Instructors will see your comments but not your name.',
                                     style: TextStyle(
@@ -286,7 +291,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                           ],
                         ),
                       ),
-                    const SizedBox(height: 22),
+                    AppSpacing.gapXxl,
 
                     Text(
                       'Select Subject',
@@ -296,13 +301,13 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                         color: theme.colorScheme.onSurface,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    AppSpacing.gapSm,
                     Container(
                       padding:
                           const EdgeInsets.symmetric(horizontal: 14),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.surface,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppRadius.borderMd,
                         border: Border.all(
                             color: theme.colorScheme.outlineVariant),
                       ),
@@ -332,22 +337,21 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    AppSpacing.gapMd,
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton.icon(
                         onPressed: () async {
                           final cubit = context.read<FeedbackCubit>();
                           final result =
-                              await Navigator.of(context).push<bool>(
-                            MaterialPageRoute(
-                              builder: (_) => SubmitFeedbackScreen(
-                                subjectId: _selectedSubject
-                                    .toLowerCase()
-                                    .replaceAll(' ', '_'),
-                                subjectName: _selectedSubject,
-                              ),
-                            ),
+                              await Navigator.of(context).pushNamed<bool>(
+                            RouteNames.studentSubmitFeedback,
+                            arguments: {
+                              'subjectId': _selectedSubject
+                                  .toLowerCase()
+                                  .replaceAll(' ', '_'),
+                              'subjectName': _selectedSubject,
+                            },
                           );
                           if (result == true && mounted) {
                             cubit.loadFeedbackHistory();
@@ -358,7 +362,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                         label: const Text('Open detailed form'),
                       ),
                     ),
-                    const SizedBox(height: 22),
+                    AppSpacing.gapXxl,
 
                     Text(
                       'Rate your understanding (1-5)',
@@ -368,13 +372,13 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                         color: theme.colorScheme.onSurface,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    AppSpacing.gapMd,
                     Row(
                       children: List.generate(5, (i) {
                         final rating = i + 1;
                         final isSelected = rating == _selectedRating;
                         return Expanded(
-                          child: GestureDetector(
+                          child: Pressable(
                             onTap: () => setState(
                                 () => _selectedRating = rating),
                             child: Container(
@@ -387,7 +391,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                                     ? theme.colorScheme.primary
                                     : theme.colorScheme.surface,
                                 borderRadius:
-                                    BorderRadius.circular(10),
+                                    AppRadius.borderMd,
                                 border: Border.all(
                                   color: isSelected
                                       ? theme.colorScheme.primary
@@ -408,7 +412,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                                   ),
                                   if (rating == 1 ||
                                       rating == 5) ...[
-                                    const SizedBox(height: 2),
+                                    AppSpacing.gapXxs,
                                     Text(
                                       rating == 1
                                           ? 'POOR'
@@ -431,7 +435,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                         );
                       }),
                     ),
-                    const SizedBox(height: 22),
+                    AppSpacing.gapXxl,
 
                     Text(
                       'What went well?',
@@ -441,7 +445,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                         color: theme.colorScheme.onSurface,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    AppSpacing.gapSm,
                     TextField(
                       controller: _whatWentWellController,
                       maxLines: 2,
@@ -460,7 +464,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                         contentPadding: const EdgeInsets.all(14),
                       ),
                     ),
-                    const SizedBox(height: 18),
+                    AppSpacing.gapXl,
 
                     Text(
                       'What could improve?',
@@ -470,7 +474,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                         color: theme.colorScheme.onSurface,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    AppSpacing.gapSm,
                     TextField(
                       controller: _whatCouldImproveController,
                       maxLines: 2,
@@ -483,7 +487,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                         contentPadding: const EdgeInsets.all(14),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    AppSpacing.gapXxl,
 
                     SizedBox(
                       width: double.infinity,
@@ -495,7 +499,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                           backgroundColor: theme.colorScheme.primary,
                           foregroundColor: theme.colorScheme.onPrimary,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: AppRadius.borderMd,
                           ),
                           elevation: 0,
                           textStyle: const TextStyle(
@@ -510,7 +514,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                             Text(_isSubmitting
                                 ? 'Submitting...'
                                 : 'Submit Feedback'),
-                            const SizedBox(width: 6),
+                            AppSpacing.hGapSm,
                             Icon(
                               _isSubmitting
                                   ? Icons.hourglass_top_rounded
@@ -521,7 +525,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 28),
+                    AppSpacing.gapXxxl,
 
                     Row(
                       mainAxisAlignment:
@@ -547,14 +551,12 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    AppSpacing.gapSm,
 
                     if (historyLoading)
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(20),
-                          child: CircularProgressIndicator(),
-                        ),
+                      const Padding(
+                        padding: EdgeInsets.all(20),
+                        child: ShimmerList(),
                       )
                     else if (feedbackState.status == FeedbackStatus.error)
                       Center(
@@ -565,10 +567,10 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                             children: [
                               Text(
                                 feedbackState.errorMessage ?? '',
-                                style: const TextStyle(color: Colors.red),
+                                style: TextStyle(color: theme.colorScheme.error),
                                 textAlign: TextAlign.center,
                               ),
-                              const SizedBox(height: 10),
+                              AppSpacing.gapMd,
                               ElevatedButton(
                                 onPressed: () => context
                                     .read<FeedbackCubit>()
@@ -595,9 +597,9 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                       for (final fb
                           in recentItems.reversed) ...[
                         _RecentFeedbackItem(feedback: fb),
-                        const SizedBox(height: 14),
+                        AppSpacing.gapLg,
                       ],
-                    const SizedBox(height: 24),
+                    AppSpacing.gapXxl,
                   ],
                 ),
               ),
@@ -629,20 +631,14 @@ class _RecentFeedbackItem extends StatelessWidget {
     final theme = Theme.of(context);
     final statusLabel = (feedback.status ?? 'PENDING').toUpperCase();
     final isReplied = statusLabel == 'REVIEWED';
-    final statusColor = isReplied ? Colors.green : Colors.orange;
+    final statusColor = isReplied ? AppColors.success : AppColors.warning;
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: theme.shadowColor.withAlpha(8),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: AppRadius.borderLg,
+        boxShadow: AppShadows.subtle(theme.shadowColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -664,7 +660,7 @@ class _RecentFeedbackItem extends StatelessWidget {
                     horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: statusColor.withAlpha(25),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: AppRadius.borderSm,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -676,7 +672,7 @@ class _RecentFeedbackItem extends StatelessWidget {
                       size: 12,
                       color: statusColor,
                     ),
-                    const SizedBox(width: 3),
+                    AppSpacing.hGapXs,
                     Text(
                       statusLabel,
                       style: TextStyle(
@@ -690,7 +686,7 @@ class _RecentFeedbackItem extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          AppSpacing.gapXs,
           Row(
             children: [
               Text(
@@ -699,7 +695,7 @@ class _RecentFeedbackItem extends StatelessWidget {
                     fontSize: 11,
                     color: theme.colorScheme.onSurfaceVariant),
               ),
-              const SizedBox(width: 12),
+              AppSpacing.hGapMd,
               Row(
                 children: List.generate(
                   5,
@@ -707,12 +703,12 @@ class _RecentFeedbackItem extends StatelessWidget {
                     Icons.star_rounded,
                     size: 14,
                     color: i < feedback.rating
-                        ? Colors.amber
+                        ? AppColors.xpGold
                         : theme.colorScheme.outlineVariant,
                   ),
                 ),
               ),
-              const SizedBox(width: 4),
+              AppSpacing.hGapXs,
               Text(
                 '${feedback.rating}/5 Rating',
                 style: TextStyle(
@@ -723,7 +719,7 @@ class _RecentFeedbackItem extends StatelessWidget {
           ),
           if (feedback.comment != null &&
               feedback.comment!.isNotEmpty) ...[
-            const SizedBox(height: 10),
+            AppSpacing.gapMd,
             Text(
               '"${feedback.comment}"',
               style: TextStyle(
@@ -753,7 +749,7 @@ class _FeedbackHistoryTile extends StatelessWidget {
 
     return ListTile(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.borderMd,
         side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
       leading: CircleAvatar(
@@ -778,8 +774,8 @@ class _FeedbackHistoryTile extends StatelessWidget {
           fontSize: 10,
           fontWeight: FontWeight.w600,
           color: feedback.status == 'reviewed'
-              ? Colors.green
-              : Colors.orange,
+              ? AppColors.success
+              : AppColors.warning,
         ),
       ),
     );

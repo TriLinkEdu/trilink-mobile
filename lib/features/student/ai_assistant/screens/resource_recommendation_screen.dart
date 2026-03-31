@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/ai_assistant_cubit.dart';
 import '../models/ai_assistant_models.dart';
 import '../repositories/student_ai_assistant_repository.dart';
@@ -39,7 +41,10 @@ class _ResourceRecommendationBlocView extends StatelessWidget {
           final loading = state.status == AiAssistantStatus.initial ||
               state.status == AiAssistantStatus.loading;
           if (loading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Padding(
+              padding: EdgeInsets.all(16),
+              child: ShimmerList(),
+            );
           }
           final list = state.data?.resources ?? [];
           if (list.isEmpty) {
@@ -84,7 +89,7 @@ class _ResourceListPageState extends State<_ResourceListPage> {
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: widget.resources.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
+      separatorBuilder: (_, _) => AppSpacing.gapSm,
       itemBuilder: (context, index) {
         final resource = widget.resources[index];
         final icon = switch (resource.type.toLowerCase()) {

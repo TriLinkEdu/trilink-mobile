@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/services/storage_service.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/theme_notifier.dart';
 import '../../../auth/cubit/auth_cubit.dart';
 
@@ -45,12 +47,12 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 12),
+              AppSpacing.gapMd,
               const Text(
                 'Choose Language',
                 style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
               ),
-              const SizedBox(height: 10),
+              AppSpacing.gapMd,
               ...options.map(
                 (option) => ListTile(
                   title: Text(option),
@@ -63,7 +65,7 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
                   onTap: () => Navigator.pop(sheetContext, option),
                 ),
               ),
-              const SizedBox(height: 8),
+              AppSpacing.gapSm,
             ],
           ),
         );
@@ -101,12 +103,14 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
     await context.read<AuthCubit>().logout();
     if (!mounted) return;
 
-    Navigator.of(context)
+    Navigator.of(context, rootNavigator: true)
         .pushNamedAndRemoveUntil(RouteNames.login, (_) => false);
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
@@ -131,7 +135,7 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          AppSpacing.gapMd,
           _SectionCard(
             title: 'Notifications',
             children: [
@@ -147,7 +151,7 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          AppSpacing.gapMd,
           _SectionCard(
             title: 'Privacy',
             children: [
@@ -178,14 +182,14 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          AppSpacing.gapXl,
           OutlinedButton.icon(
             onPressed: _confirmLogout,
-            icon: const Icon(Icons.logout, color: Colors.red),
+            icon: Icon(Icons.logout, color: theme.colorScheme.error),
             label:
-                const Text('Log Out', style: TextStyle(color: Colors.red)),
+                Text('Log Out', style: TextStyle(color: theme.colorScheme.error)),
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Colors.red),
+              side: BorderSide(color: theme.colorScheme.error),
               minimumSize: const Size.fromHeight(46),
             ),
           ),
@@ -208,7 +212,7 @@ class _SectionCard extends StatelessWidget {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.borderMd,
         side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
       child: Column(

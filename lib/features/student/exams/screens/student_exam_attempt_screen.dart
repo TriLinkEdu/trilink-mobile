@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../../gamification/screens/quiz_result_screen.dart';
 import '../cubit/exam_attempt_cubit.dart';
 import '../models/exam_model.dart';
@@ -32,7 +35,10 @@ class _ExamAttemptView extends StatelessWidget {
             state.status == ExamAttemptStatus.initial) {
           return Scaffold(
             appBar: AppBar(title: const Text('Exam Attempt')),
-            body: const Center(child: CircularProgressIndicator()),
+            body: const Padding(
+              padding: EdgeInsets.all(16),
+              child: ShimmerList(),
+            ),
           );
         }
 
@@ -44,8 +50,8 @@ class _ExamAttemptView extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(state.errorMessage ?? '',
-                      style: const TextStyle(color: Colors.red)),
-                  const SizedBox(height: 10),
+                      style: const TextStyle(color: AppColors.danger)),
+                  AppSpacing.gapSm,
                   ElevatedButton(
                     onPressed: () =>
                         context.read<ExamAttemptCubit>().retryLoadExam(),
@@ -156,16 +162,16 @@ class _ExamAttemptQuestionsState extends State<_ExamAttemptQuestions> {
                 ),
               ],
             ),
-            const SizedBox(height: 4),
+            AppSpacing.gapXs,
             LinearProgressIndicator(
               value: (_currentQuestionIndex + 1) / questions.length,
             ),
-            const SizedBox(height: 16),
+            AppSpacing.gapLg,
             Text(
               current.text,
               style: Theme.of(context).textTheme.titleLarge,
             ),
-            const SizedBox(height: 16),
+            AppSpacing.gapLg,
             ...List.generate(current.options.length, (index) {
               return RadioListTile<int>(
                 value: index,
@@ -186,7 +192,7 @@ class _ExamAttemptQuestionsState extends State<_ExamAttemptQuestions> {
                       child: const Text('Previous'),
                     ),
                   ),
-                if (_currentQuestionIndex > 0) const SizedBox(width: 12),
+                if (_currentQuestionIndex > 0) AppSpacing.hGapMd,
                 Expanded(
                   child: ElevatedButton(
                     onPressed: selectedOption == null

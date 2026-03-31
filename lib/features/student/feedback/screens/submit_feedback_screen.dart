@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../repositories/student_feedback_repository.dart';
 
 class SubmitFeedbackScreen extends StatefulWidget {
@@ -75,7 +77,7 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> {
               'Rate this subject',
               style: TextStyle(fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 8),
+            AppSpacing.gapSm,
             Row(
               children: List.generate(
                 5,
@@ -85,12 +87,12 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> {
                   onPressed: () => setState(() => _rating = index + 1),
                   icon: Icon(
                     index < _rating ? Icons.star : Icons.star_border,
-                    color: Colors.amber,
+                    color: AppColors.xpGold,
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            AppSpacing.gapMd,
             TextField(
               controller: _commentController,
               maxLines: 5,
@@ -99,7 +101,7 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> {
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 14),
+            AppSpacing.gapLg,
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
