@@ -165,7 +165,6 @@ class _StudentExamAttemptScreenState extends State<StudentExamAttemptScreen> {
             const SizedBox(height: 4),
             LinearProgressIndicator(
               value: (_currentQuestionIndex + 1) / questions.length,
-              backgroundColor: Colors.grey.shade200,
             ),
             const SizedBox(height: 16),
             Text(

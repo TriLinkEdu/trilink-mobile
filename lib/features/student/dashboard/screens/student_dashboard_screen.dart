@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as intl;
 import '../../../../core/routes/route_names.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../auth/services/auth_service.dart';
 import '../models/dashboard_data_model.dart';
 import '../repositories/student_dashboard_repository.dart';
@@ -63,16 +62,16 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     if (_isLoading) {
-      return Scaffold(
-        backgroundColor: Colors.grey.shade50,
-        body: const Center(child: CircularProgressIndicator()),
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_error != null) {
       return Scaffold(
-        backgroundColor: Colors.grey.shade50,
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -99,17 +98,18 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
     final firstName = userName.split(' ').first;
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
               Text(
                 dateStr,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 4),
               Row(
@@ -117,21 +117,21 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                 children: [
                   Text(
                     '$greeting, $firstName',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   GestureDetector(
                     onTap: () => Navigator.of(context)
                         .pushNamed(RouteNames.studentProfile),
-                    child: const CircleAvatar(
+                    child: CircleAvatar(
                       radius: 22,
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: theme.colorScheme.primary,
                       child: Icon(
                         Icons.person_rounded,
-                        color: Colors.white,
+                        color: theme.colorScheme.onPrimary,
                         size: 24,
                       ),
                     ),
@@ -140,7 +140,6 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Stats Row
               Row(
                 children: [
                   Expanded(
@@ -168,7 +167,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                   Expanded(
                     child: _StatChip(
                       icon: Icons.emoji_events_rounded,
-                      iconColor: AppColors.primary,
+                      iconColor: theme.colorScheme.primary,
                       value: 'Lvl ${data.stats.level}',
                       label: data.stats.levelTitle,
                     ),
@@ -177,24 +176,26 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
               ),
               const SizedBox(height: 28),
 
-              // Next Up
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Next Up',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   TextButton(
                     onPressed: () => Navigator.of(context)
                         .pushNamed(RouteNames.studentCalendar),
-                    child: const Text(
+                    child: Text(
                       'View Calendar',
-                      style: TextStyle(color: AppColors.primary, fontSize: 13),
+                      style: TextStyle(
+                        color: theme.colorScheme.primary,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                 ],
@@ -216,13 +217,12 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                 ),
               const SizedBox(height: 28),
 
-              // Quick Actions
-              const Text(
+              Text(
                 'Quick Actions',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 14),
@@ -237,7 +237,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                   _QuickActionTile(
                     icon: Icons.quiz_rounded,
                     label: 'Gamification',
-                    color: AppColors.primary,
+                    color: theme.colorScheme.primary,
                     onTap: () => Navigator.of(context)
                         .pushNamed(RouteNames.studentGamification),
                   ),
@@ -322,24 +322,26 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
               ),
               const SizedBox(height: 28),
 
-              // Announcements
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Announcements',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   TextButton(
                     onPressed: () => Navigator.of(context)
                         .pushNamed(RouteNames.studentAnnouncements),
-                    child: const Text(
+                    child: Text(
                       'See All',
-                      style: TextStyle(color: AppColors.primary, fontSize: 13),
+                      style: TextStyle(
+                        color: theme.colorScheme.primary,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                 ],
@@ -349,7 +351,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: _AnnouncementTile(
-                    avatarColor: _authorColor(a.authorName),
+                    avatarColor: _authorColor(a.authorName, theme),
                     title: a.authorName,
                     time: _timeAgo(a.createdAt),
                     body: a.snippet,
@@ -369,15 +371,14 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
         tooltip: 'Open AI Assistant',
         onPressed: () =>
             Navigator.of(context).pushNamed(RouteNames.studentAiAssistant),
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.auto_awesome, color: Colors.white),
+        child: const Icon(Icons.auto_awesome),
       ),
     );
   }
 
-  static Color _authorColor(String name) {
-    const colors = [
-      AppColors.primary,
+  Color _authorColor(String name, ThemeData theme) {
+    final colors = [
+      theme.colorScheme.primary,
       Colors.brown,
       Colors.teal,
       Colors.deepPurple,
@@ -405,14 +406,16 @@ class _StatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     final child = Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(10),
+            color: theme.shadowColor.withAlpha(10),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -424,16 +427,19 @@ class _StatChip extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             label,
-            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+            style: TextStyle(
+              fontSize: 11,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -463,14 +469,16 @@ class _NextUpCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(10),
+            color: theme.shadowColor.withAlpha(10),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -501,10 +509,10 @@ class _NextUpCard extends StatelessWidget {
                     Flexible(
                       child: Text(
                         title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                          color: theme.colorScheme.onSurface,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -533,7 +541,10 @@ class _NextUpCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 Row(
@@ -563,7 +574,7 @@ class _NextUpCard extends StatelessWidget {
                       '+$participantCount',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade500,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const Spacer(),
@@ -576,24 +587,24 @@ class _NextUpCard extends StatelessWidget {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.primary,
+                          color: theme.colorScheme.primary,
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
                               'Prepare',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: theme.colorScheme.onPrimary,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                            SizedBox(width: 4),
+                            const SizedBox(width: 4),
                             Icon(
                               Icons.arrow_forward,
-                              color: Colors.white,
+                              color: theme.colorScheme.onPrimary,
                               size: 14,
                             ),
                           ],
@@ -626,13 +637,15 @@ class _QuickActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(10),
+            color: theme.shadowColor.withAlpha(10),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -659,10 +672,10 @@ class _QuickActionTile extends StatelessWidget {
                 const SizedBox(width: 12),
                 Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -691,16 +704,18 @@ class _AnnouncementTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(8),
+              color: theme.shadowColor.withAlpha(8),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -723,10 +738,10 @@ class _AnnouncementTile extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -734,7 +749,7 @@ class _AnnouncementTile extends StatelessWidget {
                         time,
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.grey.shade400,
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -744,7 +759,7 @@ class _AnnouncementTile extends StatelessWidget {
                     body,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade600,
+                      color: theme.colorScheme.onSurfaceVariant,
                       height: 1.4,
                     ),
                     maxLines: 2,

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../models/attendance_model.dart';
 import '../repositories/mock_student_attendance_repository.dart';
 import '../repositories/student_attendance_repository.dart';
@@ -156,8 +155,9 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
       body: SafeArea(
         child: Column(
           children: [
@@ -179,23 +179,23 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
                           )
                         : null,
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Attendance Record',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ),
                   IconButton(
                     tooltip: 'More attendance options',
                     onPressed: _showOptionsSheet,
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.more_vert,
-                      color: AppColors.textPrimary,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                 ],
@@ -224,11 +224,11 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
                           ),
                         )
                       : _records.isEmpty
-                          ? const Center(
+                          ? Center(
                               child: Text(
                                 'No attendance records yet.',
-                                style:
-                                    TextStyle(color: AppColors.textSecondary),
+                                style: TextStyle(
+                                    color: theme.colorScheme.onSurfaceVariant),
                               ),
                             )
                           : SingleChildScrollView(
@@ -342,12 +342,12 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const Text(
+                                      Text(
                                         'Subject Breakdown',
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
-                                          color: AppColors.textPrimary,
+                                          color: theme.colorScheme.onSurface,
                                         ),
                                       ),
                                       TextButton(
@@ -378,10 +378,10 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
                                             ),
                                           );
                                         },
-                                        child: const Text(
+                                        child: Text(
                                           'View All',
                                           style: TextStyle(
-                                            color: AppColors.primary,
+                                            color: theme.colorScheme.primary,
                                             fontSize: 13,
                                           ),
                                         ),
@@ -409,23 +409,23 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
                                       const SizedBox(height: 16),
                                   ],
                                   const SizedBox(height: 24),
-                                  Row(
+                                  const Row(
                                     mainAxisAlignment:
                                         MainAxisAlignment.center,
                                     children: [
-                                      const _LegendItem(
+                                      _LegendItem(
                                           color: Colors.green,
                                           label: 'Present'),
-                                      const SizedBox(width: 12),
-                                      const _LegendItem(
+                                      SizedBox(width: 12),
+                                      _LegendItem(
                                           color: Colors.orange,
                                           label: 'Late'),
-                                      const SizedBox(width: 12),
-                                      const _LegendItem(
+                                      SizedBox(width: 12),
+                                      _LegendItem(
                                           color: Colors.red,
                                           label: 'Absent'),
-                                      const SizedBox(width: 12),
-                                      const _LegendItem(
+                                      SizedBox(width: 12),
+                                      _LegendItem(
                                           color: Colors.blue,
                                           label: 'Excused'),
                                     ],
@@ -518,7 +518,7 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
 
   Color _colorForSubject(String subjectName) {
     return switch (subjectName.toLowerCase()) {
-      'mathematics' => AppColors.primary,
+      'mathematics' => Theme.of(context).colorScheme.primary,
       'physics' => Colors.purple,
       'english literature' || 'literature' => Colors.orange,
       _ => Colors.grey,
@@ -608,14 +608,16 @@ class _SubjectAttendanceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(8),
+            color: theme.shadowColor.withAlpha(8),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -642,17 +644,17 @@ class _SubjectAttendanceRow extends StatelessWidget {
                   children: [
                     Text(
                       name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     Text(
                       'Total Classes: $totalClasses',
                       style: TextStyle(
                         fontSize: 11,
-                        color: Colors.grey.shade500,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -660,10 +662,10 @@ class _SubjectAttendanceRow extends StatelessWidget {
               ),
               Text(
                 percentage,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
             ],
@@ -684,7 +686,7 @@ class _SubjectAttendanceRow extends StatelessWidget {
                 case _DotStatus.excused:
                   color = Colors.blue;
                 case _DotStatus.future:
-                  color = Colors.grey.shade300;
+                  color = theme.colorScheme.outlineVariant;
               }
               return Container(
                 width: 12,
@@ -718,7 +720,10 @@ class _LegendItem extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           label,
-          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+          style: TextStyle(
+            fontSize: 11,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );

@@ -112,6 +112,8 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(title: Text(widget.title)),
       body: Column(
@@ -139,8 +141,8 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                           constraints: const BoxConstraints(maxWidth: 280),
                           decoration: BoxDecoration(
                             color: isMine
-                                ? Theme.of(context).colorScheme.primary
-                                : Colors.grey.shade200,
+                                ? theme.colorScheme.primaryContainer
+                                : theme.colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Column(
@@ -154,14 +156,16 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.grey.shade700,
+                                      color: theme.colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                 ),
                               Text(
                                 message.content,
                                 style: TextStyle(
-                                  color: isMine ? Colors.white : Colors.black87,
+                                  color: isMine
+                                      ? theme.colorScheme.onPrimaryContainer
+                                      : theme.colorScheme.onSurface,
                                 ),
                               ),
                             ],
@@ -185,7 +189,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                       decoration: InputDecoration(
                         hintText: 'Type a message',
                         filled: true,
-                        fillColor: Colors.grey.shade100,
+                        fillColor: theme.colorScheme.surfaceContainerLow,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
                           borderSide: BorderSide.none,

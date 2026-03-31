@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../models/grade_model.dart';
 import '../repositories/mock_student_grades_repository.dart';
 import '../repositories/student_grades_repository.dart';
@@ -68,8 +67,9 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
       body: SafeArea(
         child: Column(
           children: [
@@ -80,20 +80,20 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
-                    child: const Icon(
+                    child: Icon(
                       Icons.arrow_back_ios_new_rounded,
                       size: 20,
-                      color: AppColors.textPrimary,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   Expanded(
                     child: Text(
                       widget.subjectName,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -120,11 +120,12 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                           ),
                         )
                       : _subjectGrades.isEmpty
-                          ? const Center(
+                          ? Center(
                               child: Text(
                                 'No assessments available for this subject yet.',
-                                style:
-                                    TextStyle(color: AppColors.textSecondary),
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
                               ),
                             )
                           : SingleChildScrollView(
@@ -234,12 +235,12 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 24),
-                                  const Text(
+                                  Text(
                                     'Grade Distribution',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
-                                      color: AppColors.textPrimary,
+                                      color: theme.colorScheme.onSurface,
                                     ),
                                   ),
                                   const SizedBox(height: 14),
@@ -275,12 +276,12 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const Text(
+                                      Text(
                                         'Assessments',
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
-                                          color: AppColors.textPrimary,
+                                          color: theme.colorScheme.onSurface,
                                         ),
                                       ),
                                       TextButton(
@@ -293,8 +294,8 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                                           _sortByDateDescending
                                               ? 'Sort by Date ↓'
                                               : 'Sort by Date ↑',
-                                          style: const TextStyle(
-                                            color: AppColors.primary,
+                                          style: TextStyle(
+                                            color: theme.colorScheme.primary,
                                             fontSize: 13,
                                           ),
                                         ),
@@ -329,13 +330,14 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                                           ? null
                                           : _downloadReport,
                                       icon: _isDownloading
-                                          ? const SizedBox(
+                                          ? SizedBox(
                                               width: 20,
                                               height: 20,
                                               child:
                                                   CircularProgressIndicator(
                                                 strokeWidth: 2,
-                                                color: Colors.white,
+                                                color: theme
+                                                    .colorScheme.onPrimary,
                                               ),
                                             )
                                           : const Icon(
@@ -345,8 +347,10 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                                           ? 'Preparing...'
                                           : 'Download Report PDF'),
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppColors.primary,
-                                        foregroundColor: Colors.white,
+                                        backgroundColor:
+                                            theme.colorScheme.primary,
+                                        foregroundColor:
+                                            theme.colorScheme.onPrimary,
                                         shape: RoundedRectangleBorder(
                                           borderRadius:
                                               BorderRadius.circular(12),
@@ -415,7 +419,7 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
       case 'A':
         return Colors.green;
       case 'B':
-        return AppColors.primary;
+        return Theme.of(context).colorScheme.primary;
       case 'C':
         return Colors.orange;
       default:
@@ -433,7 +437,7 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
 
   Color _gradeColor(double percentage) {
     if (percentage >= 90) return Colors.green;
-    if (percentage >= 80) return AppColors.primary;
+    if (percentage >= 80) return Theme.of(context).colorScheme.primary;
     if (percentage >= 70) return Colors.orange;
     return Colors.red;
   }
@@ -480,16 +484,18 @@ class _GradeBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Row(
       children: [
         SizedBox(
           width: 20,
           child: Text(
             grade,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: theme.colorScheme.onSurface,
             ),
           ),
         ),
@@ -500,7 +506,7 @@ class _GradeBar extends StatelessWidget {
               Container(
                 height: 10,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
+                  color: theme.colorScheme.outlineVariant,
                   borderRadius: BorderRadius.circular(5),
                 ),
               ),
@@ -509,7 +515,7 @@ class _GradeBar extends StatelessWidget {
                 child: Container(
                   height: 10,
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
+                    color: theme.colorScheme.primary,
                     borderRadius: BorderRadius.circular(5),
                   ),
                 ),
@@ -523,7 +529,10 @@ class _GradeBar extends StatelessWidget {
           child: Text(
             '$count',
             textAlign: TextAlign.right,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+            style: TextStyle(
+              fontSize: 12,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
       ],
@@ -550,14 +559,16 @@ class _AssessmentRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(8),
+            color: theme.shadowColor.withAlpha(8),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -565,7 +576,7 @@ class _AssessmentRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, color: AppColors.primary, size: 22),
+          Icon(icon, color: theme.colorScheme.primary, size: 22),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -573,16 +584,19 @@ class _AssessmentRow extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   date,
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -592,10 +606,10 @@ class _AssessmentRow extends StatelessWidget {
             children: [
               Text(
                 score,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               Text(

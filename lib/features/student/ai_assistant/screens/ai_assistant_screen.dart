@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
 import 'evaluate_me_screen.dart';
 import 'learning_path_screen.dart';
 import '../models/ai_assistant_models.dart';
@@ -85,6 +84,8 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   }
 
   Widget _buildContent() {
+    final theme = Theme.of(context);
+
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(
@@ -100,16 +101,16 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 Icons.error_outline,
-                color: AppColors.textSecondary,
+                color: theme.colorScheme.onSurfaceVariant,
                 size: 34,
               ),
               const SizedBox(height: 12),
               Text(
                 _error!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.textSecondary),
+                style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
               ),
               const SizedBox(height: 14),
               OutlinedButton(
@@ -124,10 +125,10 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
 
     final data = _assistantData;
     if (data == null) {
-      return const Center(
+      return Center(
         child: Text(
           'No AI assistant data available.',
-          style: TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
         ),
       );
     }
@@ -150,8 +151,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -159,29 +161,29 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
               padding: const EdgeInsets.fromLTRB(20, 16, 16, 0),
               child: Row(
                 children: [
-                  Icon(Icons.auto_awesome, color: AppColors.primary, size: 28),
+                  Icon(Icons.auto_awesome, color: theme.colorScheme.primary, size: 28),
                   const SizedBox(width: 8),
-                  const Text(
+                  Text(
                     'AI Assistant',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   const Spacer(),
                   IconButton(
                     tooltip: 'Open detailed page',
                     onPressed: () => _openDetailedPage(_selectedTab),
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.open_in_new_rounded,
-                      color: AppColors.primary,
+                      color: theme.colorScheme.primary,
                     ),
                   ),
                   IconButton(
                     tooltip: 'Close AI Assistant',
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, color: AppColors.textPrimary),
+                    icon: Icon(Icons.close, color: theme.colorScheme.onSurface),
                   ),
                 ],
               ),
@@ -207,12 +209,14 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                             vertical: 9,
                           ),
                           decoration: BoxDecoration(
-                            color: isSelected ? AppColors.primary : Colors.white,
+                            color: isSelected
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.surface,
                             borderRadius: BorderRadius.circular(22),
                             border: Border.all(
                               color: isSelected
-                                  ? AppColors.primary
-                                  : Colors.grey.shade300,
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.outlineVariant,
                             ),
                           ),
                           child: Text(
@@ -221,8 +225,8 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
                               color: isSelected
-                                  ? Colors.white
-                                  : Colors.grey.shade600,
+                                  ? theme.colorScheme.onPrimary
+                                  : theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ),
@@ -243,8 +247,8 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       floatingActionButton: FloatingActionButton.small(
         tooltip: 'Refresh AI suggestions',
         onPressed: _loadAssistantData,
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+        backgroundColor: theme.colorScheme.primary,
+        child: Icon(Icons.auto_awesome, color: theme.colorScheme.onPrimary, size: 20),
       ),
     );
   }
@@ -292,6 +296,8 @@ class _LearningPathTabState extends State<_LearningPathTab> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -301,19 +307,19 @@ class _LearningPathTabState extends State<_LearningPathTab> {
             width: double.infinity,
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
+              color: theme.colorScheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Your Personalized Path',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -322,7 +328,7 @@ class _LearningPathTabState extends State<_LearningPathTab> {
                     Icon(
                       Icons.auto_awesome,
                       size: 16,
-                      color: AppColors.primary,
+                      color: theme.colorScheme.primary,
                     ),
                     const SizedBox(width: 6),
                     Expanded(
@@ -330,7 +336,7 @@ class _LearningPathTabState extends State<_LearningPathTab> {
                         'Curated specifically for you based on your recent quiz results in Physics and Mathematics.',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: theme.colorScheme.onSurfaceVariant,
                           height: 1.4,
                         ),
                       ),
@@ -343,12 +349,12 @@ class _LearningPathTabState extends State<_LearningPathTab> {
           const SizedBox(height: 20),
 
           if (_items.isEmpty)
-            const Center(
+            Center(
               child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 20),
+                padding: const EdgeInsets.symmetric(vertical: 20),
                 child: Text(
                   'No learning path steps available.',
-                  style: TextStyle(color: AppColors.textSecondary),
+                  style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
                 ),
               ),
             )
@@ -391,20 +397,20 @@ class _LearningPathTabState extends State<_LearningPathTab> {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
+              color: theme.colorScheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 CircleAvatar(
                   radius: 16,
-                  backgroundColor: AppColors.primary.withAlpha(25),
-                  child: const Icon(
+                  backgroundColor: theme.colorScheme.primary.withAlpha(25),
+                  child: Icon(
                     Icons.lightbulb_outline,
                     size: 18,
-                    color: AppColors.primary,
+                    color: theme.colorScheme.primary,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -412,12 +418,12 @@ class _LearningPathTabState extends State<_LearningPathTab> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'AI Insight',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -427,7 +433,7 @@ class _LearningPathTabState extends State<_LearningPathTab> {
                             : 'Your personalized tips will appear after your next activity.',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: theme.colorScheme.onSurfaceVariant,
                           height: 1.4,
                         ),
                       ),
@@ -470,19 +476,21 @@ class _PathItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isActive
-              ? AppColors.primary.withAlpha(60)
-              : Colors.grey.shade200,
+              ? theme.colorScheme.primary.withAlpha(60)
+              : theme.colorScheme.outlineVariant,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(8),
+            color: theme.shadowColor.withAlpha(8),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -497,10 +505,10 @@ class _PathItem extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withAlpha(20),
+                  color: theme.colorScheme.primary.withAlpha(20),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(icon, color: AppColors.primary, size: 22),
+                child: Icon(icon, color: theme.colorScheme.primary, size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -509,10 +517,10 @@ class _PathItem extends StatelessWidget {
                   children: [
                     Text(
                       '$index. $title',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -520,7 +528,7 @@ class _PathItem extends StatelessWidget {
                       '$subject • $duration',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade500,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -532,7 +540,9 @@ class _PathItem extends StatelessWidget {
                   isBookmarked
                       ? Icons.bookmark_rounded
                       : Icons.bookmark_border_rounded,
-                  color: isBookmarked ? AppColors.primary : Colors.grey.shade400,
+                  color: isBookmarked
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
                   size: 22,
                 ),
               ),
@@ -545,9 +555,9 @@ class _PathItem extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: progress,
                 minHeight: 5,
-                backgroundColor: AppColors.primary.withAlpha(30),
-                valueColor: const AlwaysStoppedAnimation<Color>(
-                  AppColors.primary,
+                backgroundColor: theme.colorScheme.primary.withAlpha(30),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  theme.colorScheme.primary,
                 ),
               ),
             ),
@@ -557,8 +567,8 @@ class _PathItem extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: onAction,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(22),
                   ),
@@ -588,8 +598,8 @@ class _PathItem extends StatelessWidget {
               child: OutlinedButton(
                 onPressed: onAction,
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.textPrimary,
-                  side: BorderSide(color: Colors.grey.shade300),
+                  foregroundColor: theme.colorScheme.onSurface,
+                  side: BorderSide(color: theme.colorScheme.outlineVariant),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(22),
                   ),
@@ -621,11 +631,13 @@ class _ResourcesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     if (resources.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'No study resources available right now.',
-          style: TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
         ),
       );
     }
@@ -644,9 +656,9 @@ class _ResourcesTab extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
           ),
           child: Row(
             children: [
@@ -654,10 +666,10 @@ class _ResourcesTab extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withAlpha(22),
+                  color: theme.colorScheme.primary.withAlpha(22),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(icon, color: AppColors.primary, size: 20),
+                child: Icon(icon, color: theme.colorScheme.primary, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -666,9 +678,9 @@ class _ResourcesTab extends StatelessWidget {
                   children: [
                     Text(
                       resource.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                         fontSize: 14,
                       ),
                     ),
@@ -677,7 +689,7 @@ class _ResourcesTab extends StatelessWidget {
                       '${resource.type} • ${resource.estimatedTime} • ${resource.level}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -713,11 +725,13 @@ class _EvaluateTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     if (insights.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'No evaluation insights available right now.',
-          style: TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
         ),
       );
     }
@@ -730,26 +744,26 @@ class _EvaluateTab extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.insights_rounded,
-                    color: AppColors.primary,
+                    color: theme.colorScheme.primary,
                     size: 18,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     insight.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: theme.colorScheme.onSurface,
                       fontSize: 14,
                     ),
                   ),
@@ -760,7 +774,7 @@ class _EvaluateTab extends StatelessWidget {
                 insight.summary,
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey.shade700,
+                  color: theme.colorScheme.onSurfaceVariant,
                   height: 1.4,
                 ),
               ),
@@ -769,7 +783,7 @@ class _EvaluateTab extends StatelessWidget {
                 'Recommendation: ${insight.recommendation}',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey.shade600,
+                  color: theme.colorScheme.onSurfaceVariant,
                   height: 1.4,
                 ),
               ),

@@ -84,10 +84,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? null : Colors.white,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -97,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildDarkModeToggle(isDark),
+                  _buildDarkModeToggle(theme, isDark),
                   const SizedBox(height: 16),
                   _buildLogo(),
                   const SizedBox(height: 24),
@@ -106,7 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : AppColors.textPrimary,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -114,20 +114,20 @@ class _LoginScreenState extends State<LoginScreen> {
                     'Learn smarter, grow faster',
                     style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.primary.withAlpha(180),
+                      color: theme.colorScheme.primary.withAlpha(180),
                     ),
                   ),
                   const SizedBox(height: 28),
-                  _buildRoleSelector(isDark),
+                  _buildRoleSelector(theme),
                   const SizedBox(height: 28),
-                  _buildEmailField(isDark),
+                  _buildEmailField(theme),
                   const SizedBox(height: 20),
-                  _buildPasswordField(isDark),
-                  _buildForgotPassword(),
+                  _buildPasswordField(theme),
+                  _buildForgotPassword(theme),
                   const SizedBox(height: 8),
-                  _buildLoginButton(),
+                  _buildLoginButton(theme),
                   const SizedBox(height: 24),
-                  _buildContinueOffline(),
+                  _buildContinueOffline(theme),
                 ],
               ),
             ),
@@ -137,7 +137,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildDarkModeToggle(bool isDark) {
+  Widget _buildDarkModeToggle(ThemeData theme, bool isDark) {
     return Align(
       alignment: Alignment.centerRight,
       child: GestureDetector(
@@ -145,12 +145,12 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
+            color: theme.colorScheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
             isDark ? Icons.light_mode : Icons.dark_mode,
-            color: isDark ? Colors.amber : Colors.grey.shade700,
+            color: isDark ? Colors.amber : theme.colorScheme.onSurfaceVariant,
             size: 22,
           ),
         ),
@@ -170,11 +170,11 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildRoleSelector(bool isDark) {
+  Widget _buildRoleSelector(ThemeData theme) {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
+        color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -188,12 +188,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.primary : Colors.transparent,
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.3),
+                            color: theme.colorScheme.primary
+                                .withValues(alpha: 0.3),
                             blurRadius: 6,
                             offset: const Offset(0, 2),
                           ),
@@ -211,10 +214,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               : Icons.family_restroom,
                       size: 16,
                       color: isSelected
-                          ? Colors.white
-                          : isDark
-                              ? Colors.grey.shade400
-                              : Colors.grey.shade600,
+                          ? theme.colorScheme.onPrimary
+                          : theme.colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -224,10 +225,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         fontWeight:
                             isSelected ? FontWeight.w600 : FontWeight.w500,
                         color: isSelected
-                            ? Colors.white
-                            : isDark
-                                ? Colors.grey.shade400
-                                : Colors.grey.shade600,
+                            ? theme.colorScheme.onPrimary
+                            : theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -240,7 +239,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildEmailField(bool isDark) {
+  Widget _buildEmailField(ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -249,7 +248,7 @@ class _LoginScreenState extends State<LoginScreen> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 6),
@@ -262,26 +261,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 : _selectedRole == _Role.teacher
                     ? 'teacher@school.edu'
                     : 'parent@email.com',
-            hintStyle: TextStyle(color: Colors.grey.shade400),
-            prefixIcon: Icon(Icons.email_outlined, color: Colors.grey.shade500),
-            filled: true,
-            fillColor: isDark ? Colors.grey.shade800 : Colors.grey.shade50,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: AppColors.primary,
-                width: 1.5,
-              ),
+            prefixIcon: Icon(
+              Icons.email_outlined,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
@@ -297,7 +279,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildPasswordField(bool isDark) {
+  Widget _buildPasswordField(ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -306,7 +288,7 @@ class _LoginScreenState extends State<LoginScreen> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 6),
@@ -315,36 +297,19 @@ class _LoginScreenState extends State<LoginScreen> {
           obscureText: _obscurePassword,
           decoration: InputDecoration(
             hintText: 'Enter your password',
-            hintStyle: TextStyle(color: Colors.grey.shade400),
-            prefixIcon: Icon(Icons.lock_outline, color: Colors.grey.shade500),
+            prefixIcon: Icon(
+              Icons.lock_outline,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             suffixIcon: IconButton(
               icon: Icon(
                 _obscurePassword
                     ? Icons.visibility_off_outlined
                     : Icons.visibility_outlined,
-                color: Colors.grey.shade500,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
               onPressed: () =>
                   setState(() => _obscurePassword = !_obscurePassword),
-            ),
-            filled: true,
-            fillColor: isDark ? Colors.grey.shade800 : Colors.grey.shade50,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: AppColors.primary,
-                width: 1.5,
-              ),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
@@ -362,7 +327,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildForgotPassword() {
+  Widget _buildForgotPassword(ThemeData theme) {
     return Align(
       alignment: Alignment.centerRight,
       child: TextButton(
@@ -371,23 +336,23 @@ class _LoginScreenState extends State<LoginScreen> {
         style: TextButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 8),
         ),
-        child: const Text(
+        child: Text(
           'Forgot password?',
-          style: TextStyle(color: AppColors.primary, fontSize: 13),
+          style: TextStyle(color: theme.colorScheme.primary, fontSize: 13),
         ),
       ),
     );
   }
 
-  Widget _buildLoginButton() {
+  Widget _buildLoginButton(ThemeData theme) {
     return SizedBox(
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
         onPressed: _isLoading ? null : _handleLogin,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          backgroundColor: theme.colorScheme.primary,
+          foregroundColor: theme.colorScheme.onPrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -398,12 +363,12 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         child: _isLoading
-            ? const SizedBox(
+            ? SizedBox(
                 width: 22,
                 height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
-                  color: Colors.white,
+                  color: theme.colorScheme.onPrimary,
                 ),
               )
             : const Text('LOG IN'),
@@ -411,18 +376,25 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildContinueOffline() {
+  Widget _buildContinueOffline(ThemeData theme) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.wifi_off_rounded, size: 18, color: Colors.grey.shade500),
+        Icon(
+          Icons.wifi_off_rounded,
+          size: 18,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
         const SizedBox(width: 6),
         TextButton(
           onPressed: _isLoading ? null : _handleContinueOffline,
           style: TextButton.styleFrom(padding: EdgeInsets.zero),
           child: Text(
             'Continue offline',
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+            style: TextStyle(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: 14,
+            ),
           ),
         ),
       ],

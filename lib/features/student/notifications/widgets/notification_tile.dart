@@ -20,11 +20,13 @@ class NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return ListTile(
       onTap: onTap,
       leading: Icon(
         isRead ? Icons.notifications_none : Icons.notifications_active,
-        color: isRead ? Colors.grey : Theme.of(context).colorScheme.primary,
+        color: isRead ? theme.colorScheme.onSurfaceVariant : theme.colorScheme.primary,
       ),
       title: Text(title),
       subtitle: Column(
@@ -35,7 +37,7 @@ class NotificationTile extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             time,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+            style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -43,7 +45,7 @@ class NotificationTile extends StatelessWidget {
         onPressed: onToggleRead,
         icon: Icon(
           isRead ? Icons.mark_email_read_outlined : Icons.mark_email_unread,
-          color: isRead ? Colors.grey : Theme.of(context).colorScheme.primary,
+          color: isRead ? theme.colorScheme.onSurfaceVariant : theme.colorScheme.primary,
         ),
         tooltip: isRead ? 'Mark as unread' : 'Mark as read',
       ),

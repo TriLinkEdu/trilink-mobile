@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../core/routes/route_names.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_notifier.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../auth/services/auth_service.dart';
@@ -21,7 +20,6 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
   final StorageService _storage = StorageService();
 
   bool _pushNotifications = true;
-  bool _darkMode = ThemeNotifier.instance.isDark;
   String _language = 'English';
   String _textSize = 'Default';
 
@@ -38,12 +36,12 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
           _storage.getBool('pushNotifications', defaultValue: true);
       _language = _storage.getString('language') ?? 'English';
       _textSize = _storage.getString('textSize') ?? 'Default';
-      _darkMode = ThemeNotifier.instance.isDark;
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final user = AuthService().currentUser;
     final displayName = user?.name ?? 'Student';
     final displayEmail = user?.email ?? 'No email';
@@ -54,7 +52,6 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
     final studentId = user?.id ?? '';
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
       body: SafeArea(
         child: Column(
           children: [
@@ -76,24 +73,24 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                           )
                         : null,
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Profile',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ),
                   TextButton(
                     onPressed: () => Navigator.of(context)
                         .pushNamed(RouteNames.studentProfileEdit),
-                    child: const Text(
+                    child: Text(
                       'Edit',
                       style: TextStyle(
-                        color: AppColors.primary,
+                        color: theme.colorScheme.primary,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
@@ -108,17 +105,16 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                 child: Column(
                   children: [
                     const SizedBox(height: 10),
-                    // Avatar
                     Stack(
                       alignment: Alignment.bottomRight,
                       children: [
                         CircleAvatar(
                           radius: 48,
-                          backgroundColor: Colors.grey.shade200,
-                          child: const Icon(
+                          backgroundColor: theme.colorScheme.outlineVariant,
+                          child: Icon(
                             Icons.person_rounded,
                             size: 56,
-                            color: Colors.grey,
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                         GestureDetector(
@@ -134,15 +130,17 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
+                              color: theme.colorScheme.surfaceContainerLow,
                               shape: BoxShape.circle,
-                              border:
-                                  Border.all(color: Colors.white, width: 2),
+                              border: Border.all(
+                                color: theme.colorScheme.surface,
+                                width: 2,
+                              ),
                             ),
                             child: Icon(
                               Icons.camera_alt_rounded,
                               size: 16,
-                              color: Colors.grey.shade600,
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ),
@@ -151,10 +149,10 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                     const SizedBox(height: 14),
                     Text(
                       displayName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -164,7 +162,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                           : 'ID: $studentId',
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.grey.shade500,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -174,23 +172,23 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withAlpha(20),
+                        color: theme.colorScheme.primary.withAlpha(20),
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
                             Icons.emoji_events_rounded,
                             size: 14,
-                            color: AppColors.primary,
+                            color: theme.colorScheme.primary,
                           ),
-                          SizedBox(width: 4),
+                          const SizedBox(width: 4),
                           Text(
                             'Level 12 Scholar',
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.primary,
+                              color: theme.colorScheme.primary,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -199,7 +197,6 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                     ),
                     const SizedBox(height: 28),
 
-                    // ACCOUNT section
                     _SectionHeader(title: 'ACCOUNT'),
                     const SizedBox(height: 8),
                     _SettingsCard(
@@ -211,7 +208,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                             displayEmail,
                             style: TextStyle(
                               fontSize: 13,
-                              color: Colors.grey.shade500,
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ),
@@ -233,14 +230,14 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                                 _language,
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Colors.grey.shade500,
+                                  color: theme.colorScheme.onSurfaceVariant,
                                 ),
                               ),
                               const SizedBox(width: 4),
                               Icon(
                                 Icons.chevron_right,
                                 size: 20,
-                                color: Colors.grey.shade400,
+                                color: theme.colorScheme.onSurfaceVariant,
                               ),
                             ],
                           ),
@@ -250,7 +247,6 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // PREFERENCES section
                     _SectionHeader(title: 'PREFERENCES'),
                     const SizedBox(height: 8),
                     _SettingsCard(
@@ -264,7 +260,6 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                               setState(() => _pushNotifications = v);
                               _storage.setBool('pushNotifications', v);
                             },
-                            activeTrackColor: AppColors.primary,
                           ),
                         ),
                         _divider(),
@@ -272,12 +267,14 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                           icon: Icons.dark_mode_outlined,
                           label: 'Dark Mode',
                           trailing: Switch(
-                            value: _darkMode,
+                            value: ThemeNotifier.instance.isDark,
                             onChanged: (v) {
-                              setState(() => _darkMode = v);
-                              ThemeNotifier.instance.toggle();
+                              if (v) {
+                                ThemeNotifier.instance.setDark();
+                              } else {
+                                ThemeNotifier.instance.setLight();
+                              }
                             },
-                            activeTrackColor: AppColors.primary,
                           ),
                         ),
                         _divider(),
@@ -291,14 +288,14 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                                 _textSize,
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Colors.grey.shade500,
+                                  color: theme.colorScheme.onSurfaceVariant,
                                 ),
                               ),
                               const SizedBox(width: 4),
                               Icon(
                                 Icons.chevron_right,
                                 size: 20,
-                                color: Colors.grey.shade400,
+                                color: theme.colorScheme.onSurfaceVariant,
                               ),
                             ],
                           ),
@@ -308,7 +305,6 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // SUPPORT section
                     _SectionHeader(title: 'SUPPORT'),
                     const SizedBox(height: 8),
                     _SettingsCard(
@@ -330,7 +326,6 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // NAVIGATION section
                     _SectionHeader(title: 'NAVIGATION'),
                     const SizedBox(height: 8),
                     _SettingsCard(
@@ -402,7 +397,6 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Log Out button
                     SizedBox(
                       width: double.infinity,
                       height: 48,
@@ -436,7 +430,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                       'Version 2.4.0 (Build 302)',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade400,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -450,11 +444,11 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
     );
   }
 
-  static Widget _divider() {
+  Widget _divider() {
     return Divider(
       height: 1,
       thickness: 0.5,
-      color: Colors.grey.shade200,
+      color: Theme.of(context).colorScheme.outlineVariant,
       indent: 50,
     );
   }
@@ -553,72 +547,78 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
   void _showLanguagePicker() {
     showModalBottomSheet<void>(
       context: context,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            const Text(
-              'Choose Language',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-            ),
-            const SizedBox(height: 10),
-            ListTile(
-              title: const Text('English'),
-              trailing: _language == 'English'
-                  ? const Icon(Icons.check, color: AppColors.primary)
-                  : null,
-              onTap: () {
-                setState(() => _language = 'English');
-                _storage.setString('language', 'English');
-                Navigator.of(sheetContext).pop();
-              },
-            ),
-            ListTile(
-              title: const Text('Amharic'),
-              trailing: _language == 'Amharic'
-                  ? const Icon(Icons.check, color: AppColors.primary)
-                  : null,
-              onTap: () {
-                setState(() => _language = 'Amharic');
-                _storage.setString('language', 'Amharic');
-                Navigator.of(sheetContext).pop();
-              },
-            ),
-          ],
-        ),
-      ),
+      builder: (sheetContext) {
+        final sheetTheme = Theme.of(sheetContext);
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              const Text(
+                'Choose Language',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+              ),
+              const SizedBox(height: 10),
+              ListTile(
+                title: const Text('English'),
+                trailing: _language == 'English'
+                    ? Icon(Icons.check, color: sheetTheme.colorScheme.primary)
+                    : null,
+                onTap: () {
+                  setState(() => _language = 'English');
+                  _storage.setString('language', 'English');
+                  Navigator.of(sheetContext).pop();
+                },
+              ),
+              ListTile(
+                title: const Text('Amharic'),
+                trailing: _language == 'Amharic'
+                    ? Icon(Icons.check, color: sheetTheme.colorScheme.primary)
+                    : null,
+                onTap: () {
+                  setState(() => _language = 'Amharic');
+                  _storage.setString('language', 'Amharic');
+                  Navigator.of(sheetContext).pop();
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
   void _showTextSizePicker() {
     showModalBottomSheet<void>(
       context: context,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            const Text(
-              'Choose Text Size',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-            ),
-            const SizedBox(height: 10),
-            for (final size in const ['Small', 'Default', 'Large'])
-              ListTile(
-                title: Text(size),
-                trailing: _textSize == size
-                    ? const Icon(Icons.check, color: AppColors.primary)
-                    : null,
-                onTap: () {
-                  setState(() => _textSize = size);
-                  _storage.setString('textSize', size);
-                  Navigator.of(sheetContext).pop();
-                },
+      builder: (sheetContext) {
+        final sheetTheme = Theme.of(sheetContext);
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              const Text(
+                'Choose Text Size',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
               ),
-          ],
-        ),
-      ),
+              const SizedBox(height: 10),
+              for (final size in const ['Small', 'Default', 'Large'])
+                ListTile(
+                  title: Text(size),
+                  trailing: _textSize == size
+                      ? Icon(Icons.check, color: sheetTheme.colorScheme.primary)
+                      : null,
+                  onTap: () {
+                    setState(() => _textSize = size);
+                    _storage.setString('textSize', size);
+                    Navigator.of(sheetContext).pop();
+                  },
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -627,11 +627,11 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Help Center'),
-        content: SingleChildScrollView(
+        content: const SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               _FaqItem(
                 question: 'How do I check my grades?',
                 answer:
@@ -716,6 +716,8 @@ class _FaqItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -726,7 +728,10 @@ class _FaqItem extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           answer,
-          style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+          style: TextStyle(
+            fontSize: 13,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );
@@ -739,6 +744,8 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Align(
       alignment: Alignment.centerLeft,
       child: Text(
@@ -746,7 +753,7 @@ class _SectionHeader extends StatelessWidget {
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: Colors.grey.shade500,
+          color: theme.colorScheme.onSurfaceVariant,
           letterSpacing: 0.5,
         ),
       ),
@@ -760,13 +767,15 @@ class _SettingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(8),
+            color: theme.shadowColor.withAlpha(8),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -794,27 +803,33 @@ class _SettingsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return InkWell(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Row(
           children: [
-            Icon(icon, size: 22, color: Colors.grey.shade600),
+            Icon(icon, size: 22, color: theme.colorScheme.onSurfaceVariant),
             const SizedBox(width: 14),
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
             ),
             if (trailing != null) ...[trailing!],
             if (showChevron)
-              Icon(Icons.chevron_right, size: 20, color: Colors.grey.shade400),
+              Icon(
+                Icons.chevron_right,
+                size: 20,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
           ],
         ),
       ),

@@ -47,6 +47,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Leaderboard'),
@@ -70,15 +72,18 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                     return Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: theme.colorScheme.surface,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade300),
+                        border: Border.all(
+                          color: theme.colorScheme.outlineVariant,
+                        ),
                       ),
                       child: Row(
                         children: [
                           CircleAvatar(
                             radius: 14,
-                            backgroundColor: Colors.grey.shade200,
+                            backgroundColor:
+                                theme.colorScheme.surfaceContainerLow,
                             child: Text(
                               '${entry.rank}',
                               style: const TextStyle(fontSize: 12),

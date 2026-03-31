@@ -123,6 +123,7 @@ class _StudentNotificationsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final visibleItems = _visibleItems;
 
     return Scaffold(
@@ -178,10 +179,10 @@ class _StudentNotificationsScreenState
                     const SizedBox(height: 8),
                     Expanded(
                       child: visibleItems.isEmpty
-                          ? const Center(
+                          ? Center(
                               child: Text(
                                 'No notifications in this view.',
-                                style: TextStyle(color: Colors.grey),
+                                style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
                               ),
                             )
                           : ListView.separated(

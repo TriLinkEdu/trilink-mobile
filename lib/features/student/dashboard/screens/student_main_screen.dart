@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../student/attendance/screens/student_attendance_screen.dart';
 import '../../../student/grades/screens/student_grades_screen.dart';
 import '../../../student/profile/screens/student_profile_screen.dart';
-import '../../../../core/theme/app_colors.dart';
 import 'student_dashboard_screen.dart';
 
 class StudentMainScreen extends StatefulWidget {
@@ -17,6 +16,8 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
@@ -29,10 +30,10 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.colorScheme.surface,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(15),
+              color: theme.shadowColor.withAlpha(15),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -92,6 +93,8 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -102,7 +105,9 @@ class _NavItem extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: isSelected ? AppColors.primary : Colors.grey.shade400,
+              color: isSelected
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.onSurfaceVariant,
               size: 24,
             ),
             const SizedBox(height: 4),
@@ -111,7 +116,9 @@ class _NavItem extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                color: isSelected ? AppColors.primary : Colors.grey.shade400,
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],

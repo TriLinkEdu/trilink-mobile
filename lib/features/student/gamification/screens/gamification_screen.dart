@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../core/routes/route_names.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../models/gamification_models.dart';
 import '../repositories/student_gamification_repository.dart';
 import '../repositories/mock_student_gamification_repository.dart';
@@ -73,6 +72,7 @@ class _GamificationScreenState extends State<GamificationScreen> {
   }
 
   void _showSettingsSheet() {
+    final theme = Theme.of(context);
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -85,12 +85,12 @@ class _GamificationScreenState extends State<GamificationScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Notification Preferences',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 16),
@@ -204,8 +204,9 @@ class _GamificationScreenState extends State<GamificationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
       body: SafeArea(
         child: Column(
           children: [
@@ -225,28 +226,28 @@ class _GamificationScreenState extends State<GamificationScreen> {
                         );
                       }
                     },
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.arrow_back_ios_new_rounded,
                       size: 18,
-                      color: AppColors.textPrimary,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Gamification Hub',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ),
                   IconButton(
                     tooltip: 'Gamification settings',
                     onPressed: _showSettingsSheet,
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.settings_outlined,
-                      color: AppColors.primary,
+                      color: theme.colorScheme.primary,
                     ),
                   ),
                 ],
@@ -354,6 +355,7 @@ class _GamificationScreenState extends State<GamificationScreen> {
   }
 
   Widget _buildAchievementsSection() {
+    final theme = Theme.of(context);
     final displayAchievements = _achievements.take(4).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -361,12 +363,12 @@ class _GamificationScreenState extends State<GamificationScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'Achievements',
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+                color: theme.colorScheme.onSurface,
               ),
             ),
             TextButton(
@@ -375,10 +377,10 @@ class _GamificationScreenState extends State<GamificationScreen> {
                   RouteNames.studentAchievements,
                 );
               },
-              child: const Text(
+              child: Text(
                 'See All',
                 style: TextStyle(
-                  color: AppColors.primary,
+                  color: theme.colorScheme.primary,
                   fontSize: 13,
                 ),
               ),
@@ -415,15 +417,16 @@ class _GamificationScreenState extends State<GamificationScreen> {
   }
 
   Widget _buildQuickQuizSection() {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Quick Quiz',
           style: TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 12),
@@ -459,6 +462,7 @@ class _GamificationScreenState extends State<GamificationScreen> {
   }
 
   Widget _buildLeaderboardSection() {
+    final theme = Theme.of(context);
     final topEntries = _leaderboardEntries.take(3).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -466,12 +470,12 @@ class _GamificationScreenState extends State<GamificationScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'Leaderboard',
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+                color: theme.colorScheme.onSurface,
               ),
             ),
             InkWell(
@@ -494,14 +498,14 @@ class _GamificationScreenState extends State<GamificationScreen> {
                   Icon(
                     Icons.swap_vert_rounded,
                     size: 16,
-                    color: Colors.grey.shade500,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     _isWeeklyRanking ? 'Weekly' : 'Monthly',
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.grey.shade500,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -520,7 +524,7 @@ class _GamificationScreenState extends State<GamificationScreen> {
               Color(0xFFC0C0C0),
               Color(0xFFCD7F32),
             ];
-            const avatarColors = [Colors.orange, Colors.teal, AppColors.primary];
+            final avatarColors = [Colors.orange, Colors.teal, theme.colorScheme.primary];
             return Padding(
               padding: EdgeInsets.only(
                 bottom: i < topEntries.length - 1 ? 8 : 0,
@@ -557,39 +561,45 @@ class _AchievementChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Column(
       children: [
         Container(
           width: 54,
           height: 54,
           decoration: BoxDecoration(
-            color: isUnlocked ? color.withAlpha(25) : Colors.grey.shade100,
+            color: isUnlocked
+                ? color.withAlpha(25)
+                : theme.colorScheme.surfaceContainerLow,
             shape: BoxShape.circle,
             border: Border.all(
-              color: isUnlocked ? color.withAlpha(80) : Colors.grey.shade300,
+              color: isUnlocked
+                  ? color.withAlpha(80)
+                  : theme.colorScheme.outlineVariant,
               width: 2,
             ),
           ),
           child: Icon(
             icon,
-            color: isUnlocked ? color : Colors.grey.shade400,
+            color: isUnlocked ? color : theme.colorScheme.onSurfaceVariant,
             size: 26,
           ),
         ),
         const SizedBox(height: 6),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
           ),
         ),
         Text(
           sublabel,
           style: TextStyle(
             fontSize: 10,
-            color: isUnlocked ? Colors.green : Colors.grey.shade400,
+            color: isUnlocked ? Colors.green : theme.colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -614,14 +624,16 @@ class _QuickQuizTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(8),
+            color: theme.shadowColor.withAlpha(8),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -629,7 +641,7 @@ class _QuickQuizTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, color: Colors.grey.shade500, size: 22),
+          Icon(icon, color: theme.colorScheme.onSurfaceVariant, size: 22),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -637,16 +649,19 @@ class _QuickQuizTile extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   '$questions Questions  •  $xp XP',
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -695,17 +710,21 @@ class _LeaderboardRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: isCurrentUser ? AppColors.primary.withAlpha(15) : Colors.white,
+        color: isCurrentUser
+            ? theme.colorScheme.primary.withAlpha(15)
+            : theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: isCurrentUser
-            ? Border.all(color: AppColors.primary.withAlpha(50))
+            ? Border.all(color: theme.colorScheme.primary.withAlpha(50))
             : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(8),
+            color: theme.shadowColor.withAlpha(8),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -748,24 +767,27 @@ class _LeaderboardRow extends StatelessWidget {
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: isCurrentUser
-                        ? AppColors.primary
-                        : AppColors.textPrimary,
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurface,
                   ),
                 ),
                 if (classLabel.isNotEmpty)
                   Text(
                     classLabel,
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
               ],
             ),
           ),
           Text(
             xp,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,
-              color: AppColors.primary,
+              color: theme.colorScheme.primary,
             ),
           ),
         ],

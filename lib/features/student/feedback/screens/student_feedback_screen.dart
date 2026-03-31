@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../models/feedback_model.dart';
 import '../repositories/student_feedback_repository.dart';
 import '../repositories/mock_student_feedback_repository.dart';
@@ -111,6 +110,8 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
   }
 
   void _showAllFeedbackHistory() {
+    final theme = Theme.of(context);
+
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -128,12 +129,12 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
               child: Row(
                 children: [
-                  const Text(
+                  Text(
                     'All Feedback History',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   const Spacer(),
@@ -147,10 +148,11 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
             const Divider(),
             Expanded(
               child: _feedbackHistory.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Text(
                         'No feedback submitted yet.',
-                        style: TextStyle(color: Colors.grey),
+                        style: TextStyle(
+                            color: theme.colorScheme.onSurfaceVariant),
                       ),
                     )
                   : ListView.separated(
@@ -173,12 +175,12 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final recentItems = _feedbackHistory.length > 2
         ? _feedbackHistory.sublist(_feedbackHistory.length - 2)
         : _feedbackHistory;
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
       body: SafeArea(
         child: Column(
           children: [
@@ -189,20 +191,20 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
-                    child: const Icon(
+                    child: Icon(
                       Icons.arrow_back_ios_new_rounded,
                       size: 20,
-                      color: AppColors.textPrimary,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Feedback',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -220,10 +222,10 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withAlpha(15),
+                          color: theme.colorScheme.primary.withAlpha(15),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AppColors.primary.withAlpha(40),
+                            color: theme.colorScheme.primary.withAlpha(40),
                           ),
                         ),
                         child: Row(
@@ -233,13 +235,14 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                               width: 32,
                               height: 32,
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withAlpha(30),
+                                color:
+                                    theme.colorScheme.primary.withAlpha(30),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.shield_rounded,
                                 size: 16,
-                                color: AppColors.primary,
+                                color: theme.colorScheme.primary,
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -250,13 +253,14 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                                 children: [
                                   Row(
                                     children: [
-                                      const Expanded(
+                                      Expanded(
                                         child: Text(
                                           'Anonymous Feedback',
                                           style: TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w600,
-                                            color: AppColors.textPrimary,
+                                            color:
+                                                theme.colorScheme.onSurface,
                                           ),
                                         ),
                                       ),
@@ -266,7 +270,8 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                                         child: Icon(
                                           Icons.close,
                                           size: 18,
-                                          color: Colors.grey.shade400,
+                                          color: theme
+                                              .colorScheme.onSurfaceVariant,
                                         ),
                                       ),
                                     ],
@@ -276,7 +281,8 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                                     'Your feedback helps improve the course. Instructors will see your comments but not your name.',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.grey.shade600,
+                                      color: theme
+                                          .colorScheme.onSurfaceVariant,
                                       height: 1.4,
                                     ),
                                   ),
@@ -288,12 +294,12 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                       ),
                     const SizedBox(height: 22),
 
-                    const Text(
+                    Text(
                       'Select Subject',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -301,10 +307,10 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                       padding:
                           const EdgeInsets.symmetric(horizontal: 14),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: theme.colorScheme.surface,
                         borderRadius: BorderRadius.circular(12),
-                        border:
-                            Border.all(color: Colors.grey.shade300),
+                        border: Border.all(
+                            color: theme.colorScheme.outlineVariant),
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
@@ -312,11 +318,11 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                           isExpanded: true,
                           icon: Icon(
                             Icons.keyboard_arrow_down_rounded,
-                            color: Colors.grey.shade500,
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            color: AppColors.textPrimary,
+                            color: theme.colorScheme.onSurface,
                           ),
                           items: _subjects
                               .map(
@@ -358,12 +364,12 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                     ),
                     const SizedBox(height: 22),
 
-                    const Text(
+                    Text(
                       'Rate your understanding (1-5)',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -382,14 +388,14 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                                   vertical: 12),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? AppColors.primary
-                                    : Colors.white,
+                                    ? theme.colorScheme.primary
+                                    : theme.colorScheme.surface,
                                 borderRadius:
                                     BorderRadius.circular(10),
                                 border: Border.all(
                                   color: isSelected
-                                      ? AppColors.primary
-                                      : Colors.grey.shade300,
+                                      ? theme.colorScheme.primary
+                                      : theme.colorScheme.outlineVariant,
                                 ),
                               ),
                               child: Column(
@@ -400,8 +406,8 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                       color: isSelected
-                                          ? Colors.white
-                                          : AppColors.textPrimary,
+                                          ? theme.colorScheme.onPrimary
+                                          : theme.colorScheme.onSurface,
                                     ),
                                   ),
                                   if (rating == 1 ||
@@ -415,9 +421,10 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                                         fontSize: 8,
                                         fontWeight: FontWeight.w600,
                                         color: isSelected
-                                            ? Colors.white
+                                            ? theme.colorScheme.onPrimary
                                                 .withAlpha(200)
-                                            : Colors.grey.shade400,
+                                            : theme.colorScheme
+                                                .onSurfaceVariant,
                                       ),
                                     ),
                                   ],
@@ -430,12 +437,12 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                     ),
                     const SizedBox(height: 22),
 
-                    const Text(
+                    Text(
                       'What went well?',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -446,44 +453,25 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                         hintText:
                             'Highlight effective teaching methods...',
                         hintStyle: TextStyle(
-                          color: Colors.grey.shade400,
+                          color: theme.colorScheme.onSurfaceVariant,
                           fontSize: 13,
                         ),
                         suffixIcon: Icon(
                           Icons.thumb_up_outlined,
-                          color: Colors.grey.shade300,
+                          color: theme.colorScheme.outlineVariant,
                           size: 20,
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide:
-                              BorderSide(color: Colors.grey.shade300),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide:
-                              BorderSide(color: Colors.grey.shade300),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.primary,
-                            width: 1.5,
-                          ),
                         ),
                         contentPadding: const EdgeInsets.all(14),
                       ),
                     ),
                     const SizedBox(height: 18),
 
-                    const Text(
+                    Text(
                       'What could improve?',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -493,27 +481,8 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                       decoration: InputDecoration(
                         hintText: 'Suggest areas for improvement...',
                         hintStyle: TextStyle(
-                          color: Colors.grey.shade400,
+                          color: theme.colorScheme.onSurfaceVariant,
                           fontSize: 13,
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide:
-                              BorderSide(color: Colors.grey.shade300),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide:
-                              BorderSide(color: Colors.grey.shade300),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.primary,
-                            width: 1.5,
-                          ),
                         ),
                         contentPadding: const EdgeInsets.all(14),
                       ),
@@ -527,8 +496,8 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                         onPressed:
                             _isSubmitting ? null : _submitFeedback,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
+                          backgroundColor: theme.colorScheme.primary,
+                          foregroundColor: theme.colorScheme.onPrimary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -562,20 +531,20 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                       mainAxisAlignment:
                           MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Recent Feedback',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                         TextButton(
                           onPressed: _showAllFeedbackHistory,
-                          child: const Text(
+                          child: Text(
                             'View all',
                             style: TextStyle(
-                              color: AppColors.primary,
+                              color: theme.colorScheme.primary,
                               fontSize: 13,
                             ),
                           ),
@@ -598,7 +567,8 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                           child: Text(
                             'No feedback submitted yet.',
                             style: TextStyle(
-                                color: Colors.grey.shade500),
+                                color: theme
+                                    .colorScheme.onSurfaceVariant),
                           ),
                         ),
                       )
@@ -635,6 +605,7 @@ class _RecentFeedbackItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final statusLabel = (feedback.status ?? 'PENDING').toUpperCase();
     final isReplied = statusLabel == 'REVIEWED';
     final statusColor = isReplied ? Colors.green : Colors.orange;
@@ -642,11 +613,11 @@ class _RecentFeedbackItem extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(8),
+            color: theme.shadowColor.withAlpha(8),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -660,10 +631,10 @@ class _RecentFeedbackItem extends StatelessWidget {
               Expanded(
                 child: Text(
                   feedback.subjectName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -704,7 +675,8 @@ class _RecentFeedbackItem extends StatelessWidget {
               Text(
                 _formatDate(feedback.createdAt),
                 style: TextStyle(
-                    fontSize: 11, color: Colors.grey.shade500),
+                    fontSize: 11,
+                    color: theme.colorScheme.onSurfaceVariant),
               ),
               const SizedBox(width: 12),
               Row(
@@ -715,7 +687,7 @@ class _RecentFeedbackItem extends StatelessWidget {
                     size: 14,
                     color: i < feedback.rating
                         ? Colors.amber
-                        : Colors.grey.shade300,
+                        : theme.colorScheme.outlineVariant,
                   ),
                 ),
               ),
@@ -723,7 +695,8 @@ class _RecentFeedbackItem extends StatelessWidget {
               Text(
                 '${feedback.rating}/5 Rating',
                 style: TextStyle(
-                    fontSize: 11, color: Colors.grey.shade500),
+                    fontSize: 11,
+                    color: theme.colorScheme.onSurfaceVariant),
               ),
             ],
           ),
@@ -734,7 +707,7 @@ class _RecentFeedbackItem extends StatelessWidget {
               '"${feedback.comment}"',
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey.shade700,
+                color: theme.colorScheme.onSurfaceVariant,
                 height: 1.4,
                 fontStyle: FontStyle.italic,
               ),
@@ -755,18 +728,20 @@ class _FeedbackHistoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return ListTile(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
       leading: CircleAvatar(
-        backgroundColor: AppColors.primary.withAlpha(20),
+        backgroundColor: theme.colorScheme.primary.withAlpha(20),
         child: Text(
           '${feedback.rating}',
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: AppColors.primary,
+            color: theme.colorScheme.primary,
           ),
         ),
       ),

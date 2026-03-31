@@ -69,6 +69,7 @@ class _StudentCalendarScreenState extends State<StudentCalendarScreen> {
   @override
   Widget build(BuildContext context) {
     final today = DateTime.now();
+    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Calendar')),
@@ -100,6 +101,7 @@ class _StudentCalendarScreenState extends State<StudentCalendarScreen> {
                         itemBuilder: (context, index) {
                           final day = today.add(Duration(days: index));
                           final isSelected = _isSameDate(day, _selectedDate);
+                          final isToday = _isSameDate(day, today);
                           final hasEvents = _hasEventsOnDate(day);
 
                           return Padding(
@@ -112,8 +114,10 @@ class _StudentCalendarScreenState extends State<StudentCalendarScreen> {
                                 width: 58,
                                 decoration: BoxDecoration(
                                   color: isSelected
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Colors.grey.shade100,
+                                      ? theme.colorScheme.primary
+                                      : isToday
+                                          ? theme.colorScheme.primaryContainer
+                                          : theme.colorScheme.surface,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Column(
@@ -125,8 +129,8 @@ class _StudentCalendarScreenState extends State<StudentCalendarScreen> {
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: isSelected
-                                            ? Colors.white
-                                            : Colors.black87,
+                                            ? theme.colorScheme.onPrimary
+                                            : theme.colorScheme.onSurface,
                                       ),
                                     ),
                                     const SizedBox(height: 4),
@@ -136,8 +140,8 @@ class _StudentCalendarScreenState extends State<StudentCalendarScreen> {
                                         fontSize: 18,
                                         fontWeight: FontWeight.w600,
                                         color: isSelected
-                                            ? Colors.white
-                                            : Colors.black,
+                                            ? theme.colorScheme.onPrimary
+                                            : theme.colorScheme.onSurface,
                                       ),
                                     ),
                                     if (hasEvents && !isSelected)
@@ -146,9 +150,7 @@ class _StudentCalendarScreenState extends State<StudentCalendarScreen> {
                                         width: 5,
                                         height: 5,
                                         decoration: BoxDecoration(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primary,
+                                          color: theme.colorScheme.primary,
                                           shape: BoxShape.circle,
                                         ),
                                       ),
@@ -163,10 +165,10 @@ class _StudentCalendarScreenState extends State<StudentCalendarScreen> {
                     const SizedBox(height: 8),
                     Expanded(
                       child: _eventsForDate.isEmpty
-                          ? const Center(
+                          ? Center(
                               child: Text(
                                 'No scheduled items for this day.',
-                                style: TextStyle(color: Colors.grey),
+                                style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
                               ),
                             )
                           : ListView.separated(
@@ -181,12 +183,10 @@ class _StudentCalendarScreenState extends State<StudentCalendarScreen> {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                     side: BorderSide(
-                                        color: Colors.grey.shade300),
+                                        color: theme.colorScheme.outlineVariant),
                                   ),
                                   leading: CircleAvatar(
-                                    backgroundColor: Theme.of(context)
-                                        .colorScheme
-                                        .primary
+                                    backgroundColor: theme.colorScheme.primary
                                         .withAlpha(24),
                                     child: Icon(
                                       eventType == 'exam'
@@ -196,9 +196,7 @@ class _StudentCalendarScreenState extends State<StudentCalendarScreen> {
                                               : eventType == 'personal'
                                                   ? Icons.person_outlined
                                                   : Icons.event,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primary,
+                                      color: theme.colorScheme.primary,
                                     ),
                                   ),
                                   title: Text(event.title),

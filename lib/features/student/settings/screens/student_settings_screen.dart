@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../core/routes/route_names.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_notifier.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../auth/services/auth_service.dart';
@@ -37,7 +36,8 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
   Future<void> _showLanguagePicker() async {
     final language = await showModalBottomSheet<String>(
       context: context,
-      builder: (context) {
+      builder: (sheetContext) {
+        final sheetTheme = Theme.of(sheetContext);
         const options = ['English', 'Amharic', 'Afaan Oromo'];
         return SafeArea(
           child: Column(
@@ -53,9 +53,12 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
                 (option) => ListTile(
                   title: Text(option),
                   trailing: option == _language
-                      ? const Icon(Icons.check, color: AppColors.primary)
+                      ? Icon(
+                          Icons.check,
+                          color: sheetTheme.colorScheme.primary,
+                        )
                       : null,
-                  onTap: () => Navigator.pop(context, option),
+                  onTap: () => Navigator.pop(sheetContext, option),
                 ),
               ),
               const SizedBox(height: 8),
@@ -120,7 +123,6 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
                   }
                   setState(() {});
                 },
-                activeTrackColor: AppColors.primary,
                 title: const Text('Dark Mode'),
                 subtitle:
                     const Text('Use a darker theme for low-light viewing.'),
@@ -137,7 +139,6 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
                   setState(() => _notificationsEnabled = value);
                   _storage.setBool('pushNotifications', value);
                 },
-                activeTrackColor: AppColors.primary,
                 title: const Text('Push Notifications'),
                 subtitle: const Text(
                     'Receive updates about classes and announcements.'),
@@ -163,7 +164,6 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
                     ),
                   );
                 },
-                activeTrackColor: AppColors.primary,
                 title: const Text('Biometric Lock'),
                 subtitle: const Text(
                     'Require biometric verification on app open.'),
@@ -201,11 +201,13 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -214,10 +216,10 @@ class _SectionCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
             child: Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: theme.colorScheme.onSurface,
               ),
             ),
           ),

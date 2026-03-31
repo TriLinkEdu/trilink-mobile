@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../core/routes/route_names.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../models/announcement_model.dart';
 import '../repositories/student_announcements_repository.dart';
 import '../repositories/mock_student_announcements_repository.dart';
@@ -83,8 +82,9 @@ class _StudentAnnouncementsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
       body: SafeArea(
         child: Column(
           children: [
@@ -98,21 +98,21 @@ class _StudentAnnouncementsScreenState
                     button: true,
                     child: GestureDetector(
                       onTap: () => Navigator.of(context).pop(),
-                      child: const Icon(
+                      child: Icon(
                         Icons.arrow_back_ios_new_rounded,
                         size: 20,
-                        color: AppColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Announcements',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -130,9 +130,9 @@ class _StudentAnnouncementsScreenState
                             ),
                           );
                         },
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.notifications_outlined,
-                          color: AppColors.primary,
+                          color: theme.colorScheme.primary,
                         ),
                       ),
                       if (_recentUnreadCount > 0)
@@ -186,13 +186,14 @@ class _StudentAnnouncementsScreenState
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color:
-                                isSelected ? AppColors.primary : Colors.white,
+                            color: isSelected
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.surface,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
                               color: isSelected
-                                  ? AppColors.primary
-                                  : Colors.grey.shade300,
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.outlineVariant,
                             ),
                           ),
                           child: Text(
@@ -201,8 +202,8 @@ class _StudentAnnouncementsScreenState
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
                               color: isSelected
-                                  ? Colors.white
-                                  : Colors.grey.shade600,
+                                  ? theme.colorScheme.onPrimary
+                                  : theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ),
@@ -242,11 +243,11 @@ class _StudentAnnouncementsScreenState
                           children: [
                             if (_visibleAnnouncements.isEmpty) ...[
                               const SizedBox(height: 60),
-                              const Center(
+                              Center(
                                 child: Text(
                                   'No announcements in this category yet.',
                                   style: TextStyle(
-                                      color: AppColors.textSecondary),
+                                      color: theme.colorScheme.onSurfaceVariant),
                                 ),
                               ),
                               const SizedBox(height: 40),
@@ -292,7 +293,7 @@ class _StudentAnnouncementsScreenState
                                 'You\'re all caught up',
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Colors.grey.shade400,
+                                  color: theme.colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ),
@@ -328,7 +329,9 @@ class _StudentAnnouncementsScreenState
   }
 
   Color _iconColorFor(AnnouncementModel model) {
-    if (model.category == 'calendar') return AppColors.primary;
+    if (model.category == 'calendar') {
+      return Theme.of(context).colorScheme.primary;
+    }
     if (model.authorRole.toLowerCase() == 'teacher') return Colors.amber;
     return Colors.red;
   }
@@ -348,12 +351,13 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Text(
       title,
       style: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w600,
-        color: Colors.grey.shade500,
+        color: theme.colorScheme.onSurfaceVariant,
         letterSpacing: 0.5,
       ),
     );
@@ -381,14 +385,16 @@ class _AnnouncementItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(8),
+            color: theme.shadowColor.withAlpha(8),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -416,10 +422,10 @@ class _AnnouncementItem extends StatelessWidget {
                     Expanded(
                       child: Text(
                         title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                          color: theme.colorScheme.onSurface,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -429,7 +435,7 @@ class _AnnouncementItem extends StatelessWidget {
                       time,
                       style: TextStyle(
                         fontSize: 11,
-                        color: Colors.grey.shade400,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -437,15 +443,14 @@ class _AnnouncementItem extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style:
-                      TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                  style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   body,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey.shade600,
+                    color: theme.colorScheme.onSurfaceVariant,
                     height: 1.4,
                   ),
                   maxLines: 2,

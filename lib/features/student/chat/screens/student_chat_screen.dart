@@ -288,11 +288,13 @@ class _ChatList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     if (items.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'No conversations yet.',
-          style: TextStyle(color: Colors.grey),
+          style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
         ),
       );
     }
@@ -318,19 +320,19 @@ class _ChatList extends StatelessWidget {
             children: [
               Text(
                 _timeLabel(item),
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant),
               ),
               const SizedBox(height: 4),
               if (item.unreadCount > 0)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
+                    color: theme.colorScheme.primary,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     '${item.unreadCount}',
-                    style: const TextStyle(color: Colors.white, fontSize: 11),
+                    style: TextStyle(color: theme.colorScheme.onPrimary, fontSize: 11),
                   ),
                 ),
             ],
