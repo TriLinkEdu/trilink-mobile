@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../screens/evaluate_me_screen.dart';
+import '../screens/learning_path_screen.dart';
+import '../screens/resource_recommendation_screen.dart';
 
 /// Floating button that opens the AI assistant popup.
 class AiAssistantFab extends StatelessWidget {
@@ -8,7 +11,6 @@ class AiAssistantFab extends StatelessWidget {
   Widget build(BuildContext context) {
     return FloatingActionButton(
       onPressed: () {
-        // TODO: Show AI assistant bottom sheet or navigate to AI screen
         showModalBottomSheet(
           context: context,
           builder: (_) => const _AiAssistantBottomSheet(),
@@ -38,21 +40,32 @@ class _AiAssistantBottomSheet extends StatelessWidget {
             leading: const Icon(Icons.route),
             title: const Text('Learning Path'),
             onTap: () {
-              // TODO: Navigate
+              Navigator.of(context).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const LearningPathScreen()),
+              );
             },
           ),
           ListTile(
             leading: const Icon(Icons.menu_book),
             title: const Text('Resource Recommendation'),
             onTap: () {
-              // TODO: Navigate
+              Navigator.of(context).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const ResourceRecommendationScreen(),
+                ),
+              );
             },
           ),
           ListTile(
             leading: const Icon(Icons.analytics),
             title: const Text('Evaluate Me'),
             onTap: () {
-              // TODO: Navigate
+              Navigator.of(context).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const EvaluateMeScreen()),
+              );
             },
           ),
         ],

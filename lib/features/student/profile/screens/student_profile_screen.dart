@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../../core/routes/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_notifier.dart';
+import '../../../auth/services/auth_service.dart';
 
 class StudentProfileScreen extends StatefulWidget {
   const StudentProfileScreen({super.key});
@@ -12,6 +14,8 @@ class StudentProfileScreen extends StatefulWidget {
 class _StudentProfileScreenState extends State<StudentProfileScreen> {
   bool _pushNotifications = true;
   bool _darkMode = ThemeNotifier.instance.isDark;
+  String _language = 'English';
+  String _textSize = 'Default';
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +29,19 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                  const SizedBox(width: 40),
+                  SizedBox(
+                    width: 40,
+                    child: Navigator.of(context).canPop()
+                        ? IconButton(
+                            tooltip: 'Back',
+                            onPressed: () => Navigator.of(context).pop(),
+                            icon: const Icon(
+                              Icons.arrow_back_ios_new_rounded,
+                              size: 18,
+                            ),
+                          )
+                        : null,
+                  ),
                   const Expanded(
                     child: Text(
                       'Profile',
@@ -38,7 +54,13 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                     ),
                   ),
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Profile editor will be available next.'),
+                        ),
+                      );
+                    },
                     child: const Text(
                       'Edit',
                       style: TextStyle(
@@ -152,10 +174,11 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                           ),
                         ),
                         _divider(),
-                        const _SettingsRow(
+                        _SettingsRow(
                           icon: Icons.lock_outline,
                           label: 'Password',
                           showChevron: true,
+                          onTap: _showChangePasswordDialog,
                         ),
                         _divider(),
                         _SettingsRow(
@@ -165,7 +188,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'English',
+                                _language,
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: Colors.grey.shade500,
@@ -179,6 +202,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                               ),
                             ],
                           ),
+                          onTap: _showLanguagePicker,
                         ),
                       ],
                     ),
@@ -220,7 +244,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'Default',
+                                _textSize,
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: Colors.grey.shade500,
@@ -234,6 +258,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                               ),
                             ],
                           ),
+                          onTap: _showTextSizePicker,
                         ),
                       ],
                     ),
@@ -244,16 +269,98 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                     const SizedBox(height: 8),
                     _SettingsCard(
                       children: [
-                        const _SettingsRow(
+                        _SettingsRow(
                           icon: Icons.help_outline_rounded,
                           label: 'Help Center',
                           showChevron: true,
+                          onTap: _showHelpCenter,
                         ),
                         _divider(),
-                        const _SettingsRow(
+                        _SettingsRow(
                           icon: Icons.bug_report_outlined,
                           label: 'Report a Bug',
                           showChevron: true,
+                          onTap: _showBugReport,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // NAVIGATION section
+                    _SectionHeader(title: 'NAVIGATION'),
+                    const SizedBox(height: 8),
+                    _SettingsCard(
+                      children: [
+                        _SettingsRow(
+                          icon: Icons.notifications_outlined,
+                          label: 'Notifications',
+                          showChevron: true,
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(RouteNames.studentNotifications),
+                        ),
+                        _divider(),
+                        _SettingsRow(
+                          icon: Icons.chat_outlined,
+                          label: 'Chat',
+                          showChevron: true,
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(RouteNames.studentChat),
+                        ),
+                        _divider(),
+                        _SettingsRow(
+                          icon: Icons.calendar_month_outlined,
+                          label: 'Calendar',
+                          showChevron: true,
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(RouteNames.studentCalendar),
+                        ),
+                        _divider(),
+                        _SettingsRow(
+                          icon: Icons.settings_outlined,
+                          label: 'App Settings',
+                          showChevron: true,
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(RouteNames.studentSettings),
+                        ),
+                        _divider(),
+                        _SettingsRow(
+                          icon: Icons.assignment_outlined,
+                          label: 'Assignments',
+                          showChevron: true,
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(RouteNames.studentAssignments),
+                        ),
+                        _divider(),
+                        _SettingsRow(
+                          icon: Icons.folder_outlined,
+                          label: 'Courses & Resources',
+                          showChevron: true,
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(RouteNames.studentCourseResources),
+                        ),
+                        _divider(),
+                        _SettingsRow(
+                          icon: Icons.fact_check_outlined,
+                          label: 'Exam Attempt',
+                          showChevron: true,
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(RouteNames.studentExamAttempt),
+                        ),
+                        _divider(),
+                        _SettingsRow(
+                          icon: Icons.sync_outlined,
+                          label: 'Sync Status',
+                          showChevron: true,
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(RouteNames.studentSyncStatus),
                         ),
                       ],
                     ),
@@ -264,8 +371,12 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                       width: double.infinity,
                       height: 48,
                       child: OutlinedButton(
-                        onPressed: () {
-                          // TODO: Implement logout
+                        onPressed: () async {
+                          await AuthService().logout();
+                          if (!context.mounted) return;
+                          Navigator.of(
+                            context,
+                          ).pushNamedAndRemoveUntil(RouteNames.login, (_) => false);
                         },
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.red,
@@ -308,6 +419,117 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
       thickness: 0.5,
       color: Colors.grey.shade200,
       indent: 50,
+    );
+  }
+
+  void _showChangePasswordDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Change Password'),
+        content: const Text(
+          'Password update flow is prepared and ready for API integration.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLanguagePicker() {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: const Text('English'),
+              onTap: () {
+                setState(() => _language = 'English');
+                Navigator.of(sheetContext).pop();
+              },
+            ),
+            ListTile(
+              title: const Text('Amharic'),
+              onTap: () {
+                setState(() => _language = 'Amharic');
+                Navigator.of(sheetContext).pop();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showTextSizePicker() {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: const Text('Small'),
+              onTap: () {
+                setState(() => _textSize = 'Small');
+                Navigator.of(sheetContext).pop();
+              },
+            ),
+            ListTile(
+              title: const Text('Default'),
+              onTap: () {
+                setState(() => _textSize = 'Default');
+                Navigator.of(sheetContext).pop();
+              },
+            ),
+            ListTile(
+              title: const Text('Large'),
+              onTap: () {
+                setState(() => _textSize = 'Large');
+                Navigator.of(sheetContext).pop();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showHelpCenter() {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Help Center'),
+        content: const Text('Support docs and FAQ screen is ready for content integration.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showBugReport() {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Report a Bug'),
+        content: const Text('Bug report form stub is ready for backend ticket submission integration.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -361,36 +583,41 @@ class _SettingsRow extends StatelessWidget {
   final String label;
   final Widget? trailing;
   final bool showChevron;
+  final VoidCallback? onTap;
 
   const _SettingsRow({
     required this.icon,
     required this.label,
     this.trailing,
     this.showChevron = false,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      child: Row(
-        children: [
-          Icon(icon, size: 22, color: Colors.grey.shade600),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        child: Row(
+          children: [
+            Icon(icon, size: 22, color: Colors.grey.shade600),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                ),
               ),
             ),
-          ),
-          if (trailing != null) trailing!,
-          if (showChevron)
-            Icon(Icons.chevron_right, size: 20, color: Colors.grey.shade400),
-        ],
+            if (trailing != null) ...[trailing!],
+            if (showChevron)
+              Icon(Icons.chevron_right, size: 20, color: Colors.grey.shade400),
+          ],
+        ),
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'submit_feedback_screen.dart';
 
 /// Anonymous feedback for each subject/teacher.
 class StudentFeedbackScreen extends StatefulWidget {
@@ -12,6 +13,7 @@ class StudentFeedbackScreen extends StatefulWidget {
 class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
   int _selectedRating = 4;
   String _selectedSubject = 'Mathematics 101';
+  bool _isSubmitting = false;
   final _whatWentWellController = TextEditingController();
   final _whatCouldImproveController = TextEditingController();
 
@@ -180,6 +182,26 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 10),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => SubmitFeedbackScreen(
+                                subjectId: _selectedSubject
+                                    .toLowerCase()
+                                    .replaceAll(' ', '_'),
+                                subjectName: _selectedSubject,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                        label: const Text('Open detailed form'),
+                      ),
+                    ),
                     const SizedBox(height: 22),
 
                     // Rating
@@ -340,9 +362,43 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton(
-                        onPressed: () {
-                          // TODO: Submit feedback
-                        },
+                        onPressed: _isSubmitting
+                            ? null
+                            : () async {
+                                final positive = _whatWentWellController.text
+                                    .trim();
+                                final improvement =
+                                    _whatCouldImproveController.text.trim();
+
+                                if (positive.isEmpty && improvement.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Please add at least one feedback comment.',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                setState(() => _isSubmitting = true);
+                                await Future<void>.delayed(
+                                  const Duration(milliseconds: 600),
+                                );
+                                if (!context.mounted) return;
+                                setState(() => _isSubmitting = false);
+
+                                _whatWentWellController.clear();
+                                _whatCouldImproveController.clear();
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Feedback submitted for $_selectedSubject.',
+                                    ),
+                                  ),
+                                );
+                              },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
@@ -355,12 +411,17 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text('Submit Feedback'),
-                            SizedBox(width: 6),
-                            Icon(Icons.arrow_forward_rounded, size: 18),
+                            Text(_isSubmitting ? 'Submitting...' : 'Submit Feedback'),
+                            const SizedBox(width: 6),
+                            Icon(
+                              _isSubmitting
+                                  ? Icons.hourglass_top_rounded
+                                  : Icons.arrow_forward_rounded,
+                              size: 18,
+                            ),
                           ],
                         ),
                       ),
@@ -380,7 +441,24 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                           ),
                         ),
                         TextButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            showDialog<void>(
+                              context: context,
+                              builder: (dialogContext) => AlertDialog(
+                                title: const Text('All Feedback History'),
+                                content: const Text(
+                                  '2 recent feedback items are currently available in this prototype view.',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(dialogContext).pop(),
+                                    child: const Text('Close'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
                           child: const Text(
                             'View all',
                             style: TextStyle(

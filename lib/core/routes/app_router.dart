@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'route_names.dart';
 import '../../features/auth/screens/login_screen.dart';
+import '../../features/auth/services/auth_service.dart';
 
 // Student imports
 import '../../features/student/dashboard/screens/student_main_screen.dart';
@@ -12,6 +13,15 @@ import '../../features/student/profile/screens/student_profile_screen.dart';
 import '../../features/student/ai_assistant/screens/ai_assistant_screen.dart';
 import '../../features/student/gamification/screens/gamification_screen.dart';
 import '../../features/student/feedback/screens/student_feedback_screen.dart';
+import '../../features/student/notifications/screens/student_notifications_screen.dart';
+import '../../features/student/chat/screens/student_chat_screen.dart';
+import '../../features/student/calendar/screens/student_calendar_screen.dart';
+import '../../features/student/settings/screens/student_settings_screen.dart';
+import '../../features/student/assignments/screens/student_assignments_screen.dart';
+import '../../features/student/assignments/screens/assignment_detail_screen.dart';
+import '../../features/student/courses/screens/student_courses_resources_screen.dart';
+import '../../features/student/exams/screens/student_exam_attempt_screen.dart';
+import '../../features/student/sync/screens/student_sync_status_screen.dart';
 
 // Teacher imports
 import '../../features/teacher/dashboard/screens/teacher_main_screen.dart';
@@ -52,7 +62,35 @@ import '../../features/parent/reports/screens/weekly_report_screen.dart';
 import '../../features/parent/reports/screens/report_comparison_screen.dart';
 
 class AppRouter {
+  static const Set<String> _studentAllowedRoutes = {
+    RouteNames.login,
+    RouteNames.studentDashboard,
+    RouteNames.studentAnnouncements,
+    RouteNames.studentGrades,
+    RouteNames.studentSubjectGrades,
+    RouteNames.studentAttendance,
+    RouteNames.studentNotifications,
+    RouteNames.studentChat,
+    RouteNames.studentAiAssistant,
+    RouteNames.studentFeedback,
+    RouteNames.studentGamification,
+    RouteNames.studentCalendar,
+    RouteNames.studentProfile,
+    RouteNames.studentSettings,
+    RouteNames.studentAssignments,
+    RouteNames.studentAssignmentDetail,
+    RouteNames.studentCourseResources,
+    RouteNames.studentExamAttempt,
+    RouteNames.studentSyncStatus,
+  };
+
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
+    final currentRole = AuthService().currentRole;
+    if (currentRole == 'student' &&
+        !_studentAllowedRoutes.contains(settings.name)) {
+      return _buildNoopRoute();
+    }
+
     switch (settings.name) {
       // Auth
       case RouteNames.login:
@@ -64,11 +102,14 @@ class AppRouter {
       case RouteNames.studentGrades:
         return MaterialPageRoute(builder: (_) => const StudentGradesScreen());
       case RouteNames.studentSubjectGrades:
-        final args = settings.arguments as Map<String, String>;
+        final args = settings.arguments;
+        final safeArgs = args is Map
+            ? Map<String, dynamic>.from(args)
+            : const <String, dynamic>{};
         return MaterialPageRoute(
           builder: (_) => SubjectGradesScreen(
-            subjectId: args['subjectId'] ?? '',
-            subjectName: args['subjectName'] ?? 'Subject',
+            subjectId: safeArgs['subjectId']?.toString() ?? '',
+            subjectName: safeArgs['subjectName']?.toString() ?? 'Subject',
           ),
         );
       case RouteNames.studentAnnouncements:
@@ -79,8 +120,42 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => const StudentAttendanceScreen(),
         );
+      case RouteNames.studentNotifications:
+        return MaterialPageRoute(
+          builder: (_) => const StudentNotificationsScreen(),
+        );
+      case RouteNames.studentChat:
+        return MaterialPageRoute(builder: (_) => const StudentChatScreen());
       case RouteNames.studentProfile:
         return MaterialPageRoute(builder: (_) => const StudentProfileScreen());
+      case RouteNames.studentCalendar:
+        return MaterialPageRoute(builder: (_) => const StudentCalendarScreen());
+      case RouteNames.studentSettings:
+        return MaterialPageRoute(builder: (_) => const StudentSettingsScreen());
+      case RouteNames.studentAssignments:
+        return MaterialPageRoute(builder: (_) => const StudentAssignmentsScreen());
+      case RouteNames.studentAssignmentDetail:
+        final args = settings.arguments;
+        final safeArgs = args is Map
+            ? Map<String, dynamic>.from(args)
+            : const <String, dynamic>{};
+        return MaterialPageRoute(
+          builder: (_) => AssignmentDetailScreen(
+            assignmentId: safeArgs['assignmentId']?.toString() ?? '',
+            title: safeArgs['title']?.toString() ?? 'Assignment',
+            subject: safeArgs['subject']?.toString() ?? 'Subject',
+            dueDateLabel: safeArgs['dueDateLabel']?.toString() ?? 'TBD',
+            statusLabel: safeArgs['statusLabel']?.toString() ?? 'Pending',
+          ),
+        );
+      case RouteNames.studentCourseResources:
+        return MaterialPageRoute(
+          builder: (_) => const StudentCoursesResourcesScreen(),
+        );
+      case RouteNames.studentExamAttempt:
+        return MaterialPageRoute(builder: (_) => const StudentExamAttemptScreen());
+      case RouteNames.studentSyncStatus:
+        return MaterialPageRoute(builder: (_) => const StudentSyncStatusScreen());
       case RouteNames.studentAiAssistant:
         return MaterialPageRoute(builder: (_) => const AiAssistantScreen());
       case RouteNames.studentGamification:
@@ -247,4 +322,37 @@ class AppRouter {
         );
     }
   }
+
+  static Route<dynamic> _buildNoopRoute() {
+    return PageRouteBuilder(
+      opaque: false,
+      barrierColor: Colors.transparent,
+      transitionDuration: Duration.zero,
+      reverseTransitionDuration: Duration.zero,
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          const _NavigationNoopScreen(),
+    );
+  }
+}
+
+class _NavigationNoopScreen extends StatefulWidget {
+  const _NavigationNoopScreen();
+
+  @override
+  State<_NavigationNoopScreen> createState() => _NavigationNoopScreenState();
+}
+
+class _NavigationNoopScreenState extends State<_NavigationNoopScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }

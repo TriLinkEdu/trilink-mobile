@@ -1,16 +1,31 @@
 import 'package:flutter/material.dart';
 
 class AnnouncementCard extends StatelessWidget {
-  const AnnouncementCard({super.key});
+  final String title;
+  final String body;
+  final String? timeLabel;
+  final VoidCallback? onTap;
+
+  const AnnouncementCard({
+    super.key,
+    required this.title,
+    required this.body,
+    this.timeLabel,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return const Card(
+    return Card(
       child: ListTile(
-        leading: Icon(Icons.campaign),
-        title: Text('Announcement Title'),
-        subtitle: Text('Announcement body preview...'),
-        // TODO: Complete with actual data
+        onTap: onTap,
+        leading: const Icon(Icons.campaign),
+        title: Text(title),
+        subtitle: Text(
+          timeLabel == null ? body : '$body\n$timeLabel',
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
       ),
     );
   }

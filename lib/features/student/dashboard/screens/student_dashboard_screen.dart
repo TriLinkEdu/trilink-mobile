@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as intl;
+import '../../../../core/routes/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../student/announcements/screens/student_announcements_screen.dart';
 
 class StudentDashboardScreen extends StatelessWidget {
   const StudentDashboardScreen({super.key});
@@ -101,7 +101,9 @@ class StudentDashboardScreen extends StatelessWidget {
                     ),
                   ),
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentCalendar),
                     child: const Text(
                       'View Calendar',
                       style: TextStyle(color: AppColors.primary, fontSize: 13),
@@ -110,7 +112,15 @@ class StudentDashboardScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              _NextUpCard(),
+              _NextUpCard(
+                onPrepareTap: () => Navigator.of(context).pushNamed(
+                  RouteNames.studentSubjectGrades,
+                  arguments: {
+                    'subjectId': 'physics',
+                    'subjectName': 'Physics',
+                  },
+                ),
+              ),
               const SizedBox(height: 28),
 
               // Quick Actions
@@ -130,26 +140,102 @@ class StudentDashboardScreen extends StatelessWidget {
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
                 childAspectRatio: 2.8,
-                children: const [
+                children: [
                   _QuickActionTile(
                     icon: Icons.quiz_rounded,
-                    label: 'Quizzes',
+                    label: 'Gamification',
                     color: AppColors.primary,
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentGamification),
                   ),
                   _QuickActionTile(
                     icon: Icons.menu_book_rounded,
-                    label: 'Resources',
+                    label: 'AI Assistant',
                     color: Colors.orange,
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentAiAssistant),
                   ),
                   _QuickActionTile(
-                    icon: Icons.chat_rounded,
-                    label: 'Chat',
+                    icon: Icons.feedback_rounded,
+                    label: 'Feedback',
                     color: Colors.green,
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentFeedback),
                   ),
                   _QuickActionTile(
                     icon: Icons.bar_chart_rounded,
                     label: 'Grades',
                     color: Colors.purple,
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentGrades),
+                  ),
+                  _QuickActionTile(
+                    icon: Icons.notifications_rounded,
+                    label: 'Notifications',
+                    color: Colors.redAccent,
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentNotifications),
+                  ),
+                  _QuickActionTile(
+                    icon: Icons.chat_rounded,
+                    label: 'Chat',
+                    color: Colors.teal,
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentChat),
+                  ),
+                  _QuickActionTile(
+                    icon: Icons.calendar_month_rounded,
+                    label: 'Calendar',
+                    color: Colors.indigo,
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentCalendar),
+                  ),
+                  _QuickActionTile(
+                    icon: Icons.settings_rounded,
+                    label: 'Settings',
+                    color: Colors.blueGrey,
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentSettings),
+                  ),
+                  _QuickActionTile(
+                    icon: Icons.assignment_rounded,
+                    label: 'Assignments',
+                    color: Colors.deepOrange,
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentAssignments),
+                  ),
+                  _QuickActionTile(
+                    icon: Icons.folder_open_rounded,
+                    label: 'Resources',
+                    color: Colors.lightBlue,
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentCourseResources),
+                  ),
+                  _QuickActionTile(
+                    icon: Icons.fact_check_rounded,
+                    label: 'Exam Attempt',
+                    color: Colors.pink,
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentExamAttempt),
+                  ),
+                  _QuickActionTile(
+                    icon: Icons.sync_rounded,
+                    label: 'Sync Status',
+                    color: Colors.green,
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentSyncStatus),
                   ),
                 ],
               ),
@@ -169,11 +255,9 @@ class StudentDashboardScreen extends StatelessWidget {
                   ),
                   TextButton(
                     onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const StudentAnnouncementsScreen(),
-                        ),
-                      );
+                      Navigator.of(
+                        context,
+                      ).pushNamed(RouteNames.studentAnnouncements);
                     },
                     child: const Text(
                       'See All',
@@ -206,9 +290,9 @@ class StudentDashboardScreen extends StatelessWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // TODO: Open AI assistant
-        },
+        tooltip: 'Open AI Assistant',
+        onPressed: () =>
+            Navigator.of(context).pushNamed(RouteNames.studentAiAssistant),
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.auto_awesome, color: Colors.white),
       ),
@@ -268,6 +352,10 @@ class _StatChip extends StatelessWidget {
 }
 
 class _NextUpCard extends StatelessWidget {
+  final VoidCallback onPrepareTap;
+
+  const _NextUpCard({required this.onPrepareTap});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -373,33 +461,37 @@ class _NextUpCard extends StatelessWidget {
                       ),
                     ),
                     const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Prepare',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
+                    InkWell(
+                      onTap: onPrepareTap,
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Prepare',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                          ),
-                          SizedBox(width: 4),
-                          Icon(
-                            Icons.arrow_forward,
-                            color: Colors.white,
-                            size: 14,
-                          ),
-                        ],
+                            SizedBox(width: 4),
+                            Icon(
+                              Icons.arrow_forward,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -417,11 +509,13 @@ class _QuickActionTile extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
+  final VoidCallback onTap;
 
   const _QuickActionTile({
     required this.icon,
     required this.label,
     required this.color,
+    required this.onTap,
   });
 
   @override
@@ -441,7 +535,7 @@ class _QuickActionTile extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {},
+          onTap: onTap,
           borderRadius: BorderRadius.circular(14),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
