@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'route_names.dart';
 import '../../features/auth/screens/login_screen.dart';
-import '../../features/auth/services/auth_service.dart';
+import '../di/injection_container.dart';
+import '../../features/auth/cubit/auth_cubit.dart';
 
 // Student imports
 import '../../features/student/dashboard/screens/student_main_screen.dart';
@@ -76,7 +77,7 @@ class AppRouter {
   };
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
-    final currentRole = AuthService().currentRole;
+    final currentRole = sl<AuthCubit>().currentRole;
     if (currentRole == 'student' &&
         !_studentAllowedRoutes.contains(settings.name)) {
       return _buildNoopRoute();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../cubit/auth_cubit.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -25,7 +26,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await AuthService().forgotPassword(email: _emailController.text.trim());
+      await context.read<AuthCubit>().forgotPassword(email: _emailController.text.trim());
       if (mounted) {
         setState(() {
           _isLoading = false;

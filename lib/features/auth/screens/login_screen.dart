@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/theme_notifier.dart';
 import '../../../core/routes/route_names.dart';
-import '../services/auth_service.dart';
+import '../cubit/auth_cubit.dart';
 
 enum _Role { student, teacher, parent }
 
@@ -33,24 +34,22 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
     try {
-      final authService = AuthService();
-      await authService.login(
+      final authCubit = context.read<AuthCubit>();
+      await authCubit.login(
         email: _emailController.text.trim(),
         password: _passwordController.text,
+        role: _selectedRole.name,
       );
 
       final String destinationRoute;
       switch (_selectedRole) {
         case _Role.student:
-          authService.setCurrentRole('student');
           destinationRoute = RouteNames.studentDashboard;
           break;
         case _Role.teacher:
-          authService.setCurrentRole('teacher');
           destinationRoute = RouteNames.teacherDashboard;
           break;
         case _Role.parent:
-          authService.setCurrentRole('parent');
           destinationRoute = RouteNames.parentHome;
           break;
       }
@@ -69,7 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleContinueOffline() async {
     setState(() => _isLoading = true);
     try {
-      await AuthService().loginOffline();
+      await context.read<AuthCubit>().loginOffline();
       if (!mounted) return;
       Navigator.of(context).pushReplacementNamed(RouteNames.studentDashboard);
     } catch (e) {
