@@ -4,6 +4,9 @@ import 'student_exams_repository.dart';
 class MockStudentExamsRepository implements StudentExamsRepository {
   static const Duration _latency = Duration(milliseconds: 350);
 
+  int _attemptCounter = 0;
+  final List<ExamAttemptModel> _attempts = [];
+
   static final List<ExamModel> _exams = [
     ExamModel(
       id: 'e1',
@@ -185,5 +188,57 @@ class MockStudentExamsRepository implements StudentExamsRepository {
       xpEarned: xp,
       answerMap: answers,
     );
+  }
+
+  @override
+  Future<ExamAttemptModel> startAttempt(String examId, String studentId) async {
+    await Future<void>.delayed(_latency);
+    _exams.firstWhere((e) => e.id == examId);
+    _attemptCounter++;
+    final attempt = ExamAttemptModel(
+      id: 'attempt-$_attemptCounter',
+      examId: examId,
+      studentId: studentId,
+      startedAt: DateTime.now(),
+      answers: const {},
+    );
+    _attempts.add(attempt);
+    return attempt;
+  }
+
+  @override
+  Future<ExamAttemptModel> submitAttempt(
+    String attemptId,
+    Map<String, int> answers,
+  ) async {
+    await Future<void>.delayed(_latency);
+    final idx = _attempts.indexWhere((a) => a.id == attemptId);
+    if (idx == -1) {
+      throw StateError('Attempt not found: $attemptId');
+    }
+    final attempt = _attempts[idx];
+    final exam = _exams.firstWhere((e) => e.id == attempt.examId);
+    int correct = 0;
+    for (final question in exam.questions) {
+      if (answers[question.id] == question.correctIndex) {
+        correct++;
+      }
+    }
+    final total = exam.questions.length;
+    final percentage = total > 0 ? (correct / total) * 100 : 0.0;
+    final completedAt = DateTime.now();
+    final timeSpentSeconds = completedAt.difference(attempt.startedAt).inSeconds;
+    final updated = ExamAttemptModel(
+      id: attempt.id,
+      examId: attempt.examId,
+      studentId: attempt.studentId,
+      startedAt: attempt.startedAt,
+      completedAt: completedAt,
+      timeSpentSeconds: timeSpentSeconds,
+      answers: answers,
+      score: percentage,
+    );
+    _attempts[idx] = updated;
+    return updated;
   }
 }

@@ -9,4 +9,6 @@ abstract class StudentGamificationRepository {
       String quizId, Map<String, int> answers);
   Future<StreakModel> fetchStreak();
   Future<List<QuizModel>> fetchAvailableQuizzes();
+  Future<List<BadgeModel>> fetchBadges();
+  Future<List<StudentBadgeModel>> fetchStudentBadges(String studentId);
 }

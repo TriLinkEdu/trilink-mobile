@@ -298,4 +298,27 @@ class MockStudentChatRepository implements StudentChatRepository {
     _messages[conversation.id] = [];
     return conversation;
   }
+
+  @override
+  Future<List<MessageReadReceipt>> fetchReadReceipts(String messageId) async {
+    await Future<void>.delayed(_latency);
+    final now = DateTime.now();
+    return [
+      MessageReadReceipt(
+        messageId: messageId,
+        userId: 'user_8f2a1c3e',
+        readAt: now.subtract(const Duration(minutes: 47, seconds: 12)),
+      ),
+      MessageReadReceipt(
+        messageId: messageId,
+        userId: 'student_4b91d702',
+        readAt: now.subtract(const Duration(minutes: 32, seconds: 8)),
+      ),
+      MessageReadReceipt(
+        messageId: messageId,
+        userId: 'prof_2e7c9a01',
+        readAt: now.subtract(const Duration(minutes: 5, seconds: 41)),
+      ),
+    ];
+  }
 }

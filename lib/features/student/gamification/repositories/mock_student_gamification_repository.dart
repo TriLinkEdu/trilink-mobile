@@ -314,6 +314,69 @@ class MockStudentGamificationRepository
     ),
   ];
 
+  static final List<BadgeModel> _badges = [
+    const BadgeModel(
+      id: 'badge-addis-attendance',
+      name: 'Addis Perfect Week',
+      description:
+          'No absences for a full school week at your Addis Ababa secondary school.',
+      iconUrl: 'assets/badges/addis_perfect_week.png',
+      xpValue: 75,
+    ),
+    const BadgeModel(
+      id: 'badge-ethiopian-studies',
+      name: 'Civics & Ethiopian History Star',
+      description:
+          'Earned top marks on the Ethiopian civics and history checkpoint quiz.',
+      iconUrl: 'assets/badges/ethiopian_studies.png',
+      xpValue: 120,
+    ),
+    const BadgeModel(
+      id: 'badge-amharic-english',
+      name: 'Bilingual Learner',
+      description:
+          'Completed Amharic and English language activities in the same term.',
+      iconUrl: 'assets/badges/bilingual_learner.png',
+      xpValue: 90,
+    ),
+    const BadgeModel(
+      id: 'badge-national-exam-prep',
+      name: 'Grade 12 Prep Streak',
+      description:
+          'Studied on TriLink for 14 consecutive days during national exam preparation.',
+      iconUrl: 'assets/badges/grade12_prep.png',
+      xpValue: 150,
+    ),
+    const BadgeModel(
+      id: 'badge-science-fair',
+      name: 'Regional Science Fair Participant',
+      description:
+          'Submitted a project for your school science fair and shared it with classmates.',
+      iconUrl: 'assets/badges/science_fair.png',
+      xpValue: 200,
+    ),
+  ];
+
+  static final Map<String, List<StudentBadgeModel>> _studentBadgesById = {
+    'student1': [
+      StudentBadgeModel(
+        studentId: 'student1',
+        badge: _badges[0],
+        awardedAt: DateTime(2025, 10, 6),
+      ),
+      StudentBadgeModel(
+        studentId: 'student1',
+        badge: _badges[1],
+        awardedAt: DateTime(2025, 11, 3),
+      ),
+      StudentBadgeModel(
+        studentId: 'student1',
+        badge: _badges[3],
+        awardedAt: DateTime(2026, 1, 20),
+      ),
+    ],
+  };
+
   @override
   Future<List<LeaderboardEntry>> fetchLeaderboard(String period) async {
     await Future<void>.delayed(_latency);
@@ -391,5 +454,19 @@ class MockStudentGamificationRepository
   Future<List<QuizModel>> fetchAvailableQuizzes() async {
     await Future<void>.delayed(_latency);
     return List<QuizModel>.from(_availableQuizzes);
+  }
+
+  @override
+  Future<List<BadgeModel>> fetchBadges() async {
+    await Future<void>.delayed(_latency);
+    return List<BadgeModel>.from(_badges);
+  }
+
+  @override
+  Future<List<StudentBadgeModel>> fetchStudentBadges(String studentId) async {
+    await Future<void>.delayed(_latency);
+    return List<StudentBadgeModel>.from(
+      _studentBadgesById[studentId] ?? const <StudentBadgeModel>[],
+    );
   }
 }
