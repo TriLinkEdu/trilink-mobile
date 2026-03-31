@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../models/announcement_model.dart';
+import '../repositories/mock_student_announcements_repository.dart';
+import '../repositories/student_announcements_repository.dart';
 
 class StudentAnnouncementsScreen extends StatefulWidget {
   const StudentAnnouncementsScreen({super.key});
@@ -13,6 +16,53 @@ class _StudentAnnouncementsScreenState
     extends State<StudentAnnouncementsScreen> {
   int _selectedFilter = 0;
   final List<String> _filters = ['All', 'Admin', 'Teacher', 'Calendar'];
+  final StudentAnnouncementsRepository _repository =
+      MockStudentAnnouncementsRepository();
+  bool _isLoading = true;
+  String? _error;
+  List<AnnouncementModel> _announcements = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAnnouncements();
+  }
+
+  Future<void> _loadAnnouncements() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final announcements = await _repository.fetchAnnouncements();
+      if (!mounted) return;
+      setState(() {
+        _announcements = announcements;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Unable to load announcements right now.';
+        _isLoading = false;
+      });
+    }
+  }
+
+  List<AnnouncementModel> get _visibleAnnouncements {
+    if (_selectedFilter == 0) return _announcements;
+    final selectedCategory = _filters[_selectedFilter].toLowerCase();
+    if (selectedCategory == 'calendar') {
+      return _announcements
+          .where((announcement) => announcement.category == 'calendar')
+          .toList();
+    }
+    return _announcements
+        .where((announcement) =>
+            announcement.authorRole.toLowerCase() == selectedCategory)
+        .toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,12 +76,16 @@ class _StudentAnnouncementsScreenState
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 20,
-                      color: AppColors.textPrimary,
+                  Semantics(
+                    label: 'Back',
+                    button: true,
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 20,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                   ),
                   const Expanded(
@@ -46,7 +100,14 @@ class _StudentAnnouncementsScreenState
                     ),
                   ),
                   IconButton(
-                    onPressed: () {},
+                    tooltip: 'Announcement notifications',
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('No unread announcement notifications.'),
+                        ),
+                      );
+                    },
                     icon: const Icon(
                       Icons.notifications_outlined,
                       color: AppColors.primary,
@@ -67,28 +128,33 @@ class _StudentAnnouncementsScreenState
                     padding: const EdgeInsets.only(right: 8),
                     child: GestureDetector(
                       onTap: () => setState(() => _selectedFilter = index),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isSelected ? AppColors.primary : Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isSelected
-                                ? AppColors.primary
-                                : Colors.grey.shade300,
+                      child: Semantics(
+                        selected: isSelected,
+                        button: true,
+                        label: 'Filter ${_filters[index]}',
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 8,
                           ),
-                        ),
-                        child: Text(
-                          _filters[index],
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: isSelected
-                                ? Colors.white
-                                : Colors.grey.shade600,
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppColors.primary : Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : Colors.grey.shade300,
+                            ),
+                          ),
+                          child: Text(
+                            _filters[index],
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.grey.shade600,
+                            ),
                           ),
                         ),
                       ),
@@ -101,70 +167,63 @@ class _StudentAnnouncementsScreenState
 
             // Announcements list
             Expanded(
-              child: ListView(
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        semanticsLabel: 'Loading announcements',
+                      ),
+                    )
+                  : _error != null
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(_error!, style: const TextStyle(color: Colors.red)),
+                          const SizedBox(height: 10),
+                          ElevatedButton(
+                            onPressed: _loadAnnouncements,
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 children: [
-                  // TODAY section
-                  _SectionHeader(title: 'TODAY'),
-                  const SizedBox(height: 10),
-                  const _AnnouncementItem(
-                    icon: Icons.warning_amber_rounded,
-                    iconColor: Colors.red,
-                    iconBgColor: Color(0xFFFEE2E2),
-                    title: 'Campus Closure Alert',
-                    subtitle: 'Administration',
-                    time: '20m ago',
-                    body:
-                        'Due to severe weather conditions expected this afternoon, all campus...',
-                  ),
-                  const SizedBox(height: 10),
-                  const _AnnouncementItem(
-                    icon: Icons.calendar_today_rounded,
-                    iconColor: AppColors.primary,
-                    iconBgColor: Color(0xFFDBEAFE),
-                    title: 'Final Exam Schedule',
-                    subtitle: 'Registrar Office',
-                    time: '2h ago',
-                    body:
-                        'The schedule for the Spring 2024 final exams has been posted. Please revie...',
-                  ),
-                  const SizedBox(height: 20),
-
-                  // YESTERDAY section
-                  _SectionHeader(title: 'YESTERDAY'),
-                  const SizedBox(height: 10),
-                  const _AnnouncementItem(
-                    icon: Icons.school_rounded,
-                    iconColor: Colors.amber,
-                    iconBgColor: Color(0xFFFEF3C7),
-                    title: 'Biology 101: Class Can...',
-                    subtitle: 'Dr. Sarah Johnson',
-                    time: 'Yesterday',
-                    body:
-                        'Due to an unforeseen emergency, today\'s lecture is cancelled. Please...',
-                  ),
-                  const SizedBox(height: 10),
-                  const _AnnouncementItem(
-                    icon: Icons.assignment_rounded,
-                    iconColor: Colors.purple,
-                    iconBgColor: Color(0xFFEDE9FE),
-                    title: 'New Assignment Posted',
-                    subtitle: 'Prof. Alan Turing',
-                    time: 'Yesterday',
-                    body:
-                        'The project requirements for "Intro to Algorithms" have been uploaded...',
-                  ),
-                  const SizedBox(height: 10),
-                  const _AnnouncementItem(
-                    icon: Icons.menu_book_rounded,
-                    iconColor: Colors.green,
-                    iconBgColor: Color(0xFFD1FAE5),
-                    title: 'Library Hours Extended',
-                    subtitle: 'Student Services',
-                    time: '2d ago',
-                    body:
-                        'To help with finals preparation, the main library will remain open 24/7...',
-                  ),
+                  if (_visibleAnnouncements.isEmpty) ...[
+                    const SizedBox(height: 60),
+                    const Center(
+                      child: Text(
+                        'No announcements in this category yet.',
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                  ] else ...[
+                    for (final section in {'TODAY', 'YESTERDAY'}) ...[
+                      if (_visibleAnnouncements.any(
+                        (announcement) => _sectionFor(announcement) == section,
+                      )) ...[
+                        _SectionHeader(title: section),
+                        const SizedBox(height: 10),
+                        for (final announcement in _visibleAnnouncements.where(
+                          (item) => _sectionFor(item) == section,
+                        )) ...[
+                          _AnnouncementItem(
+                            icon: _iconFor(announcement),
+                            iconColor: _iconColorFor(announcement),
+                            iconBgColor: _iconBgFor(announcement),
+                            title: announcement.title,
+                            subtitle: announcement.authorName,
+                            time: _timeLabel(announcement.createdAt),
+                            body: announcement.body,
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                        const SizedBox(height: 10),
+                      ],
+                    ],
+                  ],
                   const SizedBox(height: 24),
                   Center(
                     child: Text(
@@ -183,6 +242,39 @@ class _StudentAnnouncementsScreenState
         ),
       ),
     );
+  }
+
+  String _sectionFor(AnnouncementModel model) {
+    final daysAgo = DateTime.now().difference(model.createdAt).inDays;
+    return daysAgo <= 0 ? 'TODAY' : 'YESTERDAY';
+  }
+
+  String _timeLabel(DateTime createdAt) {
+    final difference = DateTime.now().difference(createdAt);
+    if (difference.inMinutes < 60) return '${difference.inMinutes}m ago';
+    if (difference.inHours < 24) return '${difference.inHours}h ago';
+    if (difference.inDays == 1) return 'Yesterday';
+    return '${difference.inDays}d ago';
+  }
+
+  IconData _iconFor(AnnouncementModel model) {
+    if (model.category == 'calendar') return Icons.calendar_today_rounded;
+    if (model.authorRole.toLowerCase() == 'teacher') return Icons.school_rounded;
+    return Icons.warning_amber_rounded;
+  }
+
+  Color _iconColorFor(AnnouncementModel model) {
+    if (model.category == 'calendar') return AppColors.primary;
+    if (model.authorRole.toLowerCase() == 'teacher') return Colors.amber;
+    return Colors.red;
+  }
+
+  Color _iconBgFor(AnnouncementModel model) {
+    if (model.category == 'calendar') return const Color(0xFFDBEAFE);
+    if (model.authorRole.toLowerCase() == 'teacher') {
+      return const Color(0xFFFEF3C7);
+    }
+    return const Color(0xFFFEE2E2);
   }
 }
 

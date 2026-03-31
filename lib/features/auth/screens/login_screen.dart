@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/theme_notifier.dart';
-import '../../student/dashboard/screens/student_main_screen.dart';
-import '../../teacher/dashboard/screens/teacher_main_screen.dart';
-import '../../parent/home/screens/parent_home_screen.dart';
+import '../../../core/routes/route_names.dart';
+import '../services/auth_service.dart';
 
 enum _Role { student, teacher, parent }
 
@@ -30,21 +29,23 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _handleLogin() {
     if (_formKey.currentState?.validate() ?? false) {
-      final Widget destination;
+      final String destinationRoute;
+      final authService = AuthService();
       switch (_selectedRole) {
         case _Role.student:
-          destination = const StudentMainScreen();
+          authService.setCurrentRole('student');
+          destinationRoute = RouteNames.studentDashboard;
           break;
         case _Role.teacher:
-          destination = const TeacherMainScreen();
+          authService.setCurrentRole('teacher');
+          destinationRoute = RouteNames.teacherDashboard;
           break;
         case _Role.parent:
-          destination = const ParentHomeScreen();
+          authService.setCurrentRole('parent');
+          destinationRoute = RouteNames.parentHome;
           break;
       }
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => destination),
-      );
+      Navigator.of(context).pushReplacementNamed(destinationRoute);
     }
   }
 
