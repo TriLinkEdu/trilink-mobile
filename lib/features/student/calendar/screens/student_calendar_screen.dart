@@ -3,6 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/routes/route_names.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/calendar_cubit.dart';
 import '../models/calendar_event_model.dart';
 import '../repositories/student_calendar_repository.dart';
@@ -60,7 +63,10 @@ class _CalendarViewState extends State<_CalendarView> {
           final loading = state.status == CalendarStatus.initial ||
               state.status == CalendarStatus.loading;
           if (loading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Padding(
+              padding: AppSpacing.paddingLg,
+              child: ShimmerList(),
+            );
           }
           if (state.status == CalendarStatus.error) {
             return Center(
@@ -69,9 +75,9 @@ class _CalendarViewState extends State<_CalendarView> {
                 children: [
                   Text(
                     state.errorMessage ?? 'Unable to load calendar events.',
-                    style: const TextStyle(color: Colors.red),
+                    style: TextStyle(color: theme.colorScheme.error),
                   ),
-                  const SizedBox(height: 10),
+                  AppSpacing.gapMd,
                   ElevatedButton(
                     onPressed: () => context
                         .read<CalendarCubit>()
@@ -88,7 +94,7 @@ class _CalendarViewState extends State<_CalendarView> {
 
           return Column(
             children: [
-              const SizedBox(height: 12),
+              AppSpacing.gapMd,
               SizedBox(
                 height: 74,
                 child: ListView.builder(
@@ -104,7 +110,7 @@ class _CalendarViewState extends State<_CalendarView> {
                     return Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: AppRadius.borderSm,
                         onTap: () =>
                             setState(() => _selectedDate = day),
                         child: Container(
@@ -115,7 +121,7 @@ class _CalendarViewState extends State<_CalendarView> {
                                 : isToday
                                     ? theme.colorScheme.primaryContainer
                                     : theme.colorScheme.surface,
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: AppRadius.borderSm,
                           ),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -130,7 +136,7 @@ class _CalendarViewState extends State<_CalendarView> {
                                       : theme.colorScheme.onSurface,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              AppSpacing.gapXs,
                               Text(
                                 '${day.day}',
                                 style: TextStyle(
@@ -159,7 +165,7 @@ class _CalendarViewState extends State<_CalendarView> {
                   },
                 ),
               ),
-              const SizedBox(height: 8),
+              AppSpacing.gapSm,
               Expanded(
                 child: eventsForDate.isEmpty
                     ? Center(
@@ -172,13 +178,13 @@ class _CalendarViewState extends State<_CalendarView> {
                         padding: const EdgeInsets.all(16),
                         itemCount: eventsForDate.length,
                         separatorBuilder: (_, __) =>
-                            const SizedBox(height: 10),
+                            AppSpacing.gapMd,
                         itemBuilder: (context, index) {
                           final event = eventsForDate[index];
                           final eventType = event.type.toLowerCase();
                           return ListTile(
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: AppRadius.borderMd,
                               side: BorderSide(
                                   color: theme.colorScheme.outlineVariant),
                             ),

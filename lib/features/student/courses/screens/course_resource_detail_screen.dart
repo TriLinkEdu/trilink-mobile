@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/course_resource_detail_cubit.dart';
 import '../models/course_resource_model.dart';
 import '../repositories/student_courses_repository.dart';
@@ -73,7 +76,10 @@ class _CourseResourceDetailViewState extends State<_CourseResourceDetailView> {
             state.status == CourseResourceDetailStatus.initial) {
           return Scaffold(
             appBar: AppBar(title: const Text('Resource'), centerTitle: true),
-            body: const Center(child: CircularProgressIndicator()),
+            body: const Padding(
+              padding: EdgeInsets.all(16),
+              child: ShimmerList(),
+            ),
           );
         }
         if (state.status == CourseResourceDetailStatus.error) {
@@ -108,24 +114,24 @@ class _CourseResourceDetailViewState extends State<_CourseResourceDetailView> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadius.borderMd,
                 ),
                 child: Icon(_iconForType(r.type), size: 32, color: theme.colorScheme.primary),
               ),
-              const SizedBox(width: 16),
+              AppSpacing.hGapLg,
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(r.title, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
+                    AppSpacing.gapXs,
                     Text(r.subjectName, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          AppSpacing.gapXxl,
           _InfoRow(icon: Icons.category_rounded, label: 'Type', value: r.typeLabel),
           if (r.fileSize != null)
             _InfoRow(icon: Icons.storage_rounded, label: 'Size', value: r.fileSize!),
@@ -168,7 +174,7 @@ class _InfoRow extends StatelessWidget {
       child: Row(
         children: [
           Icon(icon, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
-          const SizedBox(width: 10),
+          AppSpacing.hGapMd,
           Text('$label: ', style: const TextStyle(fontWeight: FontWeight.w500)),
           Text(value),
         ],

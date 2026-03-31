@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/routes/route_names.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_shadows.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/pressable.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/announcements_cubit.dart';
 import '../models/announcement_model.dart';
 import '../repositories/student_announcements_repository.dart';
@@ -76,7 +82,7 @@ class _StudentAnnouncementsViewState extends State<_StudentAnnouncementsView> {
                   Semantics(
                     label: 'Back',
                     button: true,
-                    child: GestureDetector(
+                    child: Pressable(
                       onTap: () => Navigator.of(context).pop(),
                       child: Icon(
                         Icons.arrow_back_ios_new_rounded,
@@ -126,7 +132,7 @@ class _StudentAnnouncementsViewState extends State<_StudentAnnouncementsView> {
                               child: Container(
                                 padding: const EdgeInsets.all(4),
                                 decoration: const BoxDecoration(
-                                  color: Colors.red,
+                                  color: AppColors.danger,
                                   shape: BoxShape.circle,
                                 ),
                                 constraints: const BoxConstraints(
@@ -160,7 +166,7 @@ class _StudentAnnouncementsViewState extends State<_StudentAnnouncementsView> {
                   final isSelected = _selectedFilter == index;
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
-                    child: GestureDetector(
+                    child: Pressable(
                       onTap: () => setState(() => _selectedFilter = index),
                       child: Semantics(
                         selected: isSelected,
@@ -175,7 +181,7 @@ class _StudentAnnouncementsViewState extends State<_StudentAnnouncementsView> {
                             color: isSelected
                                 ? theme.colorScheme.primary
                                 : theme.colorScheme.surface,
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: AppRadius.borderXl,
                             border: Border.all(
                               color: isSelected
                                   ? theme.colorScheme.primary
@@ -199,17 +205,16 @@ class _StudentAnnouncementsViewState extends State<_StudentAnnouncementsView> {
                 }),
               ),
             ),
-            const SizedBox(height: 16),
+            AppSpacing.gapLg,
 
             Expanded(
               child: BlocBuilder<AnnouncementsCubit, AnnouncementsState>(
                 builder: (context, state) {
                   if (state.status == AnnouncementsStatus.loading ||
                       state.status == AnnouncementsStatus.initial) {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        semanticsLabel: 'Loading announcements',
-                      ),
+                    return const Padding(
+                      padding: EdgeInsets.all(20),
+                      child: ShimmerList(),
                     );
                   }
                   if (state.status == AnnouncementsStatus.error) {
@@ -218,8 +223,8 @@ class _StudentAnnouncementsViewState extends State<_StudentAnnouncementsView> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(state.errorMessage ?? '',
-                              style: const TextStyle(color: Colors.red)),
-                          const SizedBox(height: 10),
+                              style: const TextStyle(color: AppColors.danger)),
+                          AppSpacing.gapSm,
                           ElevatedButton(
                             onPressed: () => context
                                 .read<AnnouncementsCubit>()
@@ -237,7 +242,7 @@ class _StudentAnnouncementsViewState extends State<_StudentAnnouncementsView> {
                         const EdgeInsets.symmetric(horizontal: 20),
                     children: [
                       if (visible.isEmpty) ...[
-                        const SizedBox(height: 60),
+                        AppSpacing.gapHuge,
                         Center(
                           child: Text(
                             'No announcements in this category yet.',
@@ -245,7 +250,7 @@ class _StudentAnnouncementsViewState extends State<_StudentAnnouncementsView> {
                                 color: theme.colorScheme.onSurfaceVariant),
                           ),
                         ),
-                        const SizedBox(height: 40),
+                        AppSpacing.gapHuge,
                       ] else ...[
                         for (final section
                             in {'TODAY', 'YESTERDAY'}) ...[
@@ -254,13 +259,13 @@ class _StudentAnnouncementsViewState extends State<_StudentAnnouncementsView> {
                                 _sectionFor(announcement) == section,
                           )) ...[
                             _SectionHeader(title: section),
-                            const SizedBox(height: 10),
+                            AppSpacing.gapSm,
                             for (final announcement
                                 in visible.where(
                               (item) =>
                                   _sectionFor(item) == section,
                             )) ...[
-                              GestureDetector(
+                              Pressable(
                                 onTap: () => _openAnnouncementDetail(
                                     announcement),
                                 child: _AnnouncementItem(
@@ -276,13 +281,13 @@ class _StudentAnnouncementsViewState extends State<_StudentAnnouncementsView> {
                                   body: announcement.body,
                                 ),
                               ),
-                              const SizedBox(height: 10),
+                              AppSpacing.gapSm,
                             ],
-                            const SizedBox(height: 10),
+                            AppSpacing.gapSm,
                           ],
                         ],
                       ],
-                      const SizedBox(height: 24),
+                      AppSpacing.gapXxl,
                       Center(
                         child: Text(
                           'You\'re all caught up',
@@ -292,7 +297,7 @@ class _StudentAnnouncementsViewState extends State<_StudentAnnouncementsView> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      AppSpacing.gapXl,
                     ],
                   );
                 },
@@ -329,8 +334,8 @@ class _StudentAnnouncementsViewState extends State<_StudentAnnouncementsView> {
     if (model.category == 'calendar') {
       return Theme.of(context).colorScheme.primary;
     }
-    if (model.authorRole.toLowerCase() == 'teacher') return Colors.amber;
-    return Colors.red;
+    if (model.authorRole.toLowerCase() == 'teacher') return AppColors.warning;
+    return AppColors.danger;
   }
 
   Color _iconBgFor(AnnouncementModel model) {
@@ -388,14 +393,8 @@ class _AnnouncementItem extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: theme.shadowColor.withAlpha(8),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: AppRadius.borderLg,
+        boxShadow: AppShadows.subtle(theme.shadowColor),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -405,11 +404,11 @@ class _AnnouncementItem extends StatelessWidget {
             height: 42,
             decoration: BoxDecoration(
               color: iconBgColor,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: AppRadius.borderSm,
             ),
             child: Icon(icon, color: iconColor, size: 22),
           ),
-          const SizedBox(width: 12),
+          AppSpacing.hGapMd,
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -427,7 +426,7 @@ class _AnnouncementItem extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    AppSpacing.hGapSm,
                     Text(
                       time,
                       style: TextStyle(
@@ -437,12 +436,12 @@ class _AnnouncementItem extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 2),
+                AppSpacing.gapXxs,
                 Text(
                   subtitle,
                   style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
                 ),
-                const SizedBox(height: 6),
+                AppSpacing.gapSm,
                 Text(
                   body,
                   style: TextStyle(

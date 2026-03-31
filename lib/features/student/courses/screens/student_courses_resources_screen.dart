@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/routes/route_names.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/course_resources_cubit.dart';
 import '../models/course_resource_model.dart';
 import '../repositories/student_courses_repository.dart';
@@ -40,15 +44,15 @@ class _StudentCoursesResourcesView extends StatelessWidget {
   Color _colorForType(ResourceType type) {
     switch (type) {
       case ResourceType.pdf:
-        return Colors.red;
+        return AppColors.danger;
       case ResourceType.video:
-        return Colors.purple;
+        return AppColors.levelPurple;
       case ResourceType.link:
-        return Colors.blue;
+        return AppColors.info;
       case ResourceType.document:
-        return Colors.teal;
+        return AppColors.computerScience;
       case ResourceType.presentation:
-        return Colors.orange;
+        return AppColors.warning;
     }
   }
 
@@ -60,15 +64,18 @@ class _StudentCoursesResourcesView extends StatelessWidget {
           appBar: AppBar(title: const Text('Courses & Resources')),
           body: state.status == CourseResourcesStatus.loading ||
                   state.status == CourseResourcesStatus.initial
-              ? const Center(child: CircularProgressIndicator())
+              ? const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: ShimmerList(),
+                )
               : state.status == CourseResourcesStatus.error
                   ? Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(state.errorMessage ?? '',
-                              style: const TextStyle(color: Colors.red)),
-                          const SizedBox(height: 10),
+                              style: const TextStyle(color: AppColors.danger)),
+                          AppSpacing.gapSm,
                           ElevatedButton(
                             onPressed: () => context
                                 .read<CourseResourcesCubit>()
@@ -109,7 +116,7 @@ class _StudentCoursesResourcesView extends StatelessWidget {
                                   decoration: BoxDecoration(
                                     color: _colorForType(resource.type)
                                         .withAlpha(20),
-                                    borderRadius: BorderRadius.circular(6),
+                                    borderRadius: AppRadius.borderSm,
                                   ),
                                   child: Text(
                                     resource.typeLabel,

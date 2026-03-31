@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_shadows.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/attendance_cubit.dart';
 import '../models/attendance_model.dart' as am;
 import '../repositories/student_attendance_repository.dart';
@@ -68,8 +73,8 @@ class _AttendanceViewState extends State<_AttendanceView> {
 
     showModalBottomSheet<void>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       builder: (_) => SafeArea(
         child: Padding(
@@ -78,15 +83,15 @@ class _AttendanceViewState extends State<_AttendanceView> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Attendance Summary',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 16),
-              _buildSummaryRow('Present', '$present', dotColor: Colors.green),
-              _buildSummaryRow('Absent', '$absent', dotColor: Colors.red),
-              _buildSummaryRow('Late', '$late_', dotColor: Colors.orange),
-              _buildSummaryRow('Excused', '$excused', dotColor: Colors.blue),
+              AppSpacing.gapLg,
+              _buildSummaryRow('Present', '$present', dotColor: AppColors.success),
+              _buildSummaryRow('Absent', '$absent', dotColor: AppColors.danger),
+              _buildSummaryRow('Late', '$late_', dotColor: AppColors.warning),
+              _buildSummaryRow('Excused', '$excused', dotColor: AppColors.info),
               const Divider(height: 24),
               _buildSummaryRow('Total Classes', '$total'),
               _buildSummaryRow(
@@ -110,7 +115,7 @@ class _AttendanceViewState extends State<_AttendanceView> {
               decoration:
                   BoxDecoration(color: dotColor, shape: BoxShape.circle),
             ),
-            const SizedBox(width: 8),
+            AppSpacing.hGapSm,
           ],
           Expanded(child: Text(label, style: const TextStyle(fontSize: 14))),
           Text(value,
@@ -187,10 +192,9 @@ class _AttendanceViewState extends State<_AttendanceView> {
                   final loading = state.status == AttendanceStatus.initial ||
                       state.status == AttendanceStatus.loading;
                   if (loading) {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        semanticsLabel: 'Loading attendance records',
-                      ),
+                    return const Padding(
+                      padding: EdgeInsets.all(20),
+                      child: ShimmerList(),
                     );
                   }
                   if (state.status == AttendanceStatus.error) {
@@ -201,9 +205,9 @@ class _AttendanceViewState extends State<_AttendanceView> {
                           Text(
                             state.errorMessage ??
                                 'Unable to load attendance records.',
-                            style: const TextStyle(color: Colors.red),
+                            style: const TextStyle(color: AppColors.danger),
                           ),
-                          const SizedBox(height: 10),
+                          AppSpacing.gapSm,
                           ElevatedButton(
                             onPressed: () => context
                                 .read<AttendanceCubit>()
@@ -246,7 +250,7 @@ class _AttendanceViewState extends State<_AttendanceView> {
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: AppRadius.borderXl,
                           ),
                           child: Column(
                             children: [
@@ -257,7 +261,7 @@ class _AttendanceViewState extends State<_AttendanceView> {
                                   color: Colors.white70,
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              AppSpacing.gapSm,
                               Text(
                                 '${_overallAttendance(records).toStringAsFixed(0)}%',
                                 style: const TextStyle(
@@ -266,7 +270,7 @@ class _AttendanceViewState extends State<_AttendanceView> {
                                   color: Colors.white,
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              AppSpacing.gapSm,
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 12,
@@ -276,7 +280,7 @@ class _AttendanceViewState extends State<_AttendanceView> {
                                   color:
                                       Colors.white.withAlpha(40),
                                   borderRadius:
-                                      BorderRadius.circular(20),
+                                      AppRadius.borderXl,
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -284,9 +288,9 @@ class _AttendanceViewState extends State<_AttendanceView> {
                                     const Icon(
                                       Icons.check_circle_rounded,
                                       size: 14,
-                                      color: Colors.greenAccent,
+                                      color: AppColors.success,
                                     ),
-                                    const SizedBox(width: 4),
+                                    AppSpacing.hGapXs,
                                     Text(
                                       '${_currentStreak(records)} Day Streak',
                                       style: const TextStyle(
@@ -298,7 +302,7 @@ class _AttendanceViewState extends State<_AttendanceView> {
                                   ],
                                 ),
                               ),
-                              const SizedBox(height: 20),
+                              AppSpacing.gapXl,
                               Wrap(
                                 spacing: 8,
                                 runSpacing: 8,
@@ -333,7 +337,7 @@ class _AttendanceViewState extends State<_AttendanceView> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        AppSpacing.gapXxl,
                         Row(
                           mainAxisAlignment:
                               MainAxisAlignment.spaceBetween,
@@ -384,7 +388,7 @@ class _AttendanceViewState extends State<_AttendanceView> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        AppSpacing.gapSm,
                         for (int index = 0;
                             index < subjectSummaries.length;
                             index++) ...[
@@ -402,31 +406,31 @@ class _AttendanceViewState extends State<_AttendanceView> {
                           ),
                           if (index <
                               subjectSummaries.length - 1)
-                            const SizedBox(height: 16),
+                            AppSpacing.gapLg,
                         ],
-                        const SizedBox(height: 24),
+                        AppSpacing.gapXxl,
                         const Row(
                           mainAxisAlignment:
                               MainAxisAlignment.center,
                           children: [
                             _LegendItem(
-                                color: Colors.green,
+                                color: AppColors.success,
                                 label: 'Present'),
-                            SizedBox(width: 12),
+                            AppSpacing.hGapMd,
                             _LegendItem(
-                                color: Colors.orange,
+                                color: AppColors.warning,
                                 label: 'Late'),
-                            SizedBox(width: 12),
+                            AppSpacing.hGapMd,
                             _LegendItem(
-                                color: Colors.red,
+                                color: AppColors.danger,
                                 label: 'Absent'),
-                            SizedBox(width: 12),
+                            AppSpacing.hGapMd,
                             _LegendItem(
-                                color: Colors.blue,
+                                color: AppColors.info,
                                 label: 'Excused'),
                           ],
                         ),
-                        const SizedBox(height: 20),
+                        AppSpacing.gapXl,
                       ],
                     ),
                   );
@@ -521,10 +525,10 @@ class _AttendanceViewState extends State<_AttendanceView> {
 
   Color _colorForSubject(String subjectName) {
     return switch (subjectName.toLowerCase()) {
-      'mathematics' => Theme.of(context).colorScheme.primary,
-      'physics' => Colors.purple,
-      'english literature' || 'literature' => Colors.orange,
-      _ => Colors.grey,
+      'mathematics' => AppColors.mathematics,
+      'physics' => AppColors.physics,
+      'english literature' || 'literature' => AppColors.literature,
+      _ => Theme.of(context).colorScheme.onSurfaceVariant,
     };
   }
 }
@@ -564,7 +568,7 @@ class _AttendanceStat extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.borderMd,
       ),
       child: Column(
         children: [
@@ -576,7 +580,7 @@ class _AttendanceStat extends StatelessWidget {
               color: Colors.white,
             ),
           ),
-          const SizedBox(height: 2),
+          AppSpacing.gapXxs,
           Text(
             label,
             style: const TextStyle(
@@ -617,14 +621,8 @@ class _SubjectAttendanceRow extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: theme.shadowColor.withAlpha(8),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: AppRadius.borderLg,
+        boxShadow: AppShadows.subtle(theme.shadowColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -636,11 +634,11 @@ class _SubjectAttendanceRow extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   color: iconColor.withAlpha(25),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: AppRadius.borderSm,
                 ),
                 child: Icon(icon, color: iconColor, size: 20),
               ),
-              const SizedBox(width: 12),
+              AppSpacing.hGapMd,
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -673,7 +671,7 @@ class _SubjectAttendanceRow extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          AppSpacing.gapMd,
           Wrap(
             spacing: 6,
             runSpacing: 6,
@@ -681,13 +679,13 @@ class _SubjectAttendanceRow extends StatelessWidget {
               Color color;
               switch (dot) {
                 case _DotStatus.present:
-                  color = Colors.green;
+                  color = AppColors.success;
                 case _DotStatus.absent:
-                  color = Colors.red;
+                  color = AppColors.danger;
                 case _DotStatus.late:
-                  color = Colors.orange;
+                  color = AppColors.warning;
                 case _DotStatus.excused:
-                  color = Colors.blue;
+                  color = AppColors.info;
                 case _DotStatus.future:
                   color = theme.colorScheme.outlineVariant;
               }
@@ -720,7 +718,7 @@ class _LegendItem extends StatelessWidget {
           height: 10,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
-        const SizedBox(width: 4),
+        AppSpacing.hGapXs,
         Text(
           label,
           style: TextStyle(

@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/chat_conversation_cubit.dart';
 import '../repositories/student_chat_repository.dart';
 
@@ -110,13 +113,16 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
                 final loading = state.status == ConversationStatus.initial ||
                     state.status == ConversationStatus.loading;
                 if (loading) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Padding(
+                    padding: AppSpacing.paddingLg,
+                    child: ShimmerList(),
+                  );
                 }
 
                 final messages = state.messages;
                 return ListView.builder(
                   controller: _scrollController,
-                  padding: const EdgeInsets.all(12),
+                  padding: AppSpacing.paddingMd,
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final message = messages[index];
@@ -136,7 +142,7 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
                           color: isMine
                               ? theme.colorScheme.primaryContainer
                               : theme.colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: AppRadius.borderMd,
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -186,7 +192,7 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
                         filled: true,
                         fillColor: theme.colorScheme.surfaceContainerLow,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: AppRadius.borderXxl,
                           borderSide: BorderSide.none,
                         ),
                         contentPadding: const EdgeInsets.symmetric(
@@ -196,7 +202,7 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  AppSpacing.hGapSm,
                   FloatingActionButton.small(
                     tooltip: 'Send message',
                     onPressed: _isSending ? null : _sendMessage,

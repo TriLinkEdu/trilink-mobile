@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/announcement_detail_cubit.dart';
 import '../models/announcement_model.dart';
 import '../repositories/student_announcements_repository.dart';
@@ -39,7 +41,10 @@ class _AnnouncementDetailView extends StatelessWidget {
             state.status == AnnouncementDetailStatus.initial) {
           return Scaffold(
             appBar: AppBar(title: const Text('Announcement'), centerTitle: true),
-            body: const Center(child: CircularProgressIndicator()),
+            body: const Padding(
+              padding: EdgeInsets.all(16),
+              child: ShimmerList(),
+            ),
           );
         }
         if (state.status == AnnouncementDetailStatus.error) {
@@ -73,9 +78,9 @@ class _AnnouncementDetailView extends StatelessWidget {
               label: Text(a.category!.toUpperCase(), style: const TextStyle(fontSize: 11)),
               visualDensity: VisualDensity.compact,
             ),
-          const SizedBox(height: 8),
+          AppSpacing.gapSm,
           Text(a.title, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
+          AppSpacing.gapMd,
           Row(
             children: [
               CircleAvatar(
@@ -83,7 +88,7 @@ class _AnnouncementDetailView extends StatelessWidget {
                 backgroundColor: theme.colorScheme.primaryContainer,
                 child: Text(a.authorName[0], style: TextStyle(color: theme.colorScheme.primary)),
               ),
-              const SizedBox(width: 10),
+              AppSpacing.hGapSm,
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

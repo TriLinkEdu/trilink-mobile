@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/routes/route_names.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/chat_cubit.dart';
 import '../models/chat_models.dart';
 import '../repositories/student_chat_repository.dart';
-import 'chat_conversation_screen.dart';
 
 class StudentChatScreen extends StatelessWidget {
   const StudentChatScreen({super.key});
@@ -31,14 +34,13 @@ class _ChatViewState extends State<_ChatView> {
   void _openConversation(ChatConversationModel conversation) {
     final cubit = context.read<ChatCubit>();
     Navigator.of(context)
-        .push(
-      MaterialPageRoute(
-        builder: (_) => ChatConversationScreen(
-          conversationId: conversation.id,
-          title: conversation.title,
-        ),
-      ),
-    )
+        .pushNamed(
+          RouteNames.studentChatConversation,
+          arguments: {
+            'conversationId': conversation.id,
+            'title': conversation.title,
+          },
+        )
         .then((_) => cubit.loadConversations());
   }
 
@@ -98,7 +100,7 @@ class _ChatViewState extends State<_ChatView> {
                     hintText: 'Enter group name',
                   ),
                 ),
-                const SizedBox(height: 16),
+                AppSpacing.gapLg,
                 const Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -187,7 +189,7 @@ class _ChatViewState extends State<_ChatView> {
                   radius: 16,
                   child: Text(entry.value.characters.first.toUpperCase()),
                 ),
-                const SizedBox(width: 12),
+                AppSpacing.hGapMd,
                 Text(entry.value),
               ],
             ),
@@ -216,7 +218,10 @@ class _ChatViewState extends State<_ChatView> {
             final loading = state.status == ChatStatus.initial ||
                 state.status == ChatStatus.loading;
             if (loading) {
-              return const Center(child: CircularProgressIndicator());
+              return const Padding(
+                padding: AppSpacing.paddingLg,
+                child: ShimmerList(),
+              );
             }
             if (state.status == ChatStatus.error) {
               return Center(
@@ -225,9 +230,9 @@ class _ChatViewState extends State<_ChatView> {
                   children: [
                     Text(
                       state.errorMessage ?? 'Unable to load conversations.',
-                      style: const TextStyle(color: Colors.red),
+                      style: TextStyle(color: Theme.of(context).colorScheme.error),
                     ),
-                    const SizedBox(height: 10),
+                    AppSpacing.gapMd,
                     ElevatedButton(
                       onPressed: () =>
                           context.read<ChatCubit>().loadConversations(),
@@ -320,13 +325,13 @@ class _ChatList extends StatelessWidget {
                 _timeLabel(item),
                 style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant),
               ),
-              const SizedBox(height: 4),
+              AppSpacing.gapXs,
               if (item.unreadCount > 0)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primary,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: AppRadius.borderSm,
                   ),
                   child: Text(
                     '${item.unreadCount}',

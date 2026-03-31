@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/assignment_detail_cubit.dart';
 import '../models/assignment_model.dart';
 import '../repositories/student_assignments_repository.dart';
@@ -36,7 +39,10 @@ class _AssignmentDetailView extends StatelessWidget {
           appBar: AppBar(title: const Text('Assignment Details')),
           body: state.status == AssignmentDetailStatus.loading ||
                   state.status == AssignmentDetailStatus.initial
-              ? const Center(child: CircularProgressIndicator())
+              ? const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: ShimmerList(),
+                )
               : state.status == AssignmentDetailStatus.error
                   ? Center(
                       child: Column(
@@ -44,9 +50,9 @@ class _AssignmentDetailView extends StatelessWidget {
                         children: [
                           Text(
                             state.errorMessage ?? '',
-                            style: const TextStyle(color: Colors.red),
+                            style: const TextStyle(color: AppColors.danger),
                           ),
-                          const SizedBox(height: 10),
+                          AppSpacing.gapSm,
                           ElevatedButton(
                             onPressed: () => context
                                 .read<AssignmentDetailCubit>()
@@ -104,13 +110,13 @@ class _AssignmentDetailBodyState extends State<_AssignmentDetailBody> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(a.title, style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 8),
+          AppSpacing.gapSm,
           Text(a.subject, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
+          AppSpacing.gapSm,
           Text(a.dueDateLabel),
-          const SizedBox(height: 4),
+          AppSpacing.gapXs,
           Text('Status: ${a.statusLabel}'),
-          const SizedBox(height: 24),
+          AppSpacing.gapXxl,
           Card(
             child: Padding(
               padding: const EdgeInsets.all(14),
@@ -119,22 +125,22 @@ class _AssignmentDetailBodyState extends State<_AssignmentDetailBody> {
                 children: [
                   Text('Description',
                       style: Theme.of(context).textTheme.titleSmall),
-                  const SizedBox(height: 8),
+                  AppSpacing.gapSm,
                   Text(a.description),
                 ],
               ),
             ),
           ),
           if (a.score != null && a.maxScore != null) ...[
-            const SizedBox(height: 16),
+            AppSpacing.gapLg,
             Card(
-              color: Colors.green.shade50,
+              color: AppColors.success.withAlpha(20),
               child: Padding(
                 padding: const EdgeInsets.all(14),
                 child: Row(
                   children: [
-                    const Icon(Icons.grade_rounded, color: Colors.green),
-                    const SizedBox(width: 12),
+                    const Icon(Icons.grade_rounded, color: AppColors.success),
+                    AppSpacing.hGapMd,
                     Text(
                       'Score: ${a.score!.toStringAsFixed(0)}/${a.maxScore!.toStringAsFixed(0)}',
                       style: const TextStyle(
@@ -148,9 +154,9 @@ class _AssignmentDetailBodyState extends State<_AssignmentDetailBody> {
             ),
           ],
           if (a.feedback != null) ...[
-            const SizedBox(height: 16),
+            AppSpacing.gapLg,
             Card(
-              color: Colors.blue.shade50,
+              color: AppColors.info.withAlpha(20),
               child: Padding(
                 padding: const EdgeInsets.all(14),
                 child: Column(
@@ -158,7 +164,7 @@ class _AssignmentDetailBodyState extends State<_AssignmentDetailBody> {
                   children: [
                     Text('Feedback',
                         style: Theme.of(context).textTheme.titleSmall),
-                    const SizedBox(height: 8),
+                    AppSpacing.gapSm,
                     Text(a.feedback!),
                   ],
                 ),

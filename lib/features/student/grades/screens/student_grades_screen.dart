@@ -3,6 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/routes/route_names.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_shadows.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/grades_cubit.dart';
 import '../models/grade_model.dart';
 import '../repositories/student_grades_repository.dart';
@@ -38,7 +43,7 @@ class _GradesView extends StatelessWidget {
               children: [
                 Padding(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
                   child: Row(
                     children: [
                       SizedBox(
@@ -83,19 +88,18 @@ class _GradesView extends StatelessWidget {
                 ),
                 Expanded(
                   child: isLoading
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                            semanticsLabel: 'Loading grades',
-                          ),
+                      ? const Padding(
+                          padding: AppSpacing.horizontalXl,
+                          child: ShimmerList(itemCount: 6, itemHeight: 72),
                         )
                       : state.status == GradesStatus.error
                           ? Center(
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Text('Unable to load grades right now.',
-                                      style: TextStyle(color: Colors.red)),
-                                  const SizedBox(height: 10),
+                                  Text('Unable to load grades right now.',
+                                      style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                                  AppSpacing.gapSm,
                                   ElevatedButton(
                                     onPressed: () => context
                                         .read<GradesCubit>()
@@ -115,8 +119,7 @@ class _GradesView extends StatelessWidget {
                                   ),
                                 )
                               : SingleChildScrollView(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 20),
+                                  padding: AppSpacing.horizontalXl,
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
@@ -127,8 +130,7 @@ class _GradesView extends StatelessWidget {
                                         decoration: BoxDecoration(
                                           color: theme.colorScheme.primary
                                               .withAlpha(20),
-                                          borderRadius:
-                                              BorderRadius.circular(20),
+                                          borderRadius: AppRadius.borderXl,
                                         ),
                                         child: Column(
                                           children: [
@@ -140,7 +142,7 @@ class _GradesView extends StatelessWidget {
                                                     .onSurfaceVariant,
                                               ),
                                             ),
-                                            const SizedBox(height: 8),
+                                            AppSpacing.gapSm,
                                             Text(
                                               '${overallAverage.toStringAsFixed(0)}%',
                                               style: TextStyle(
@@ -149,7 +151,7 @@ class _GradesView extends StatelessWidget {
                                                 color: theme.colorScheme.primary,
                                               ),
                                             ),
-                                            const SizedBox(height: 6),
+                                            AppSpacing.gapXs,
                                             Container(
                                               padding:
                                                   const EdgeInsets.symmetric(
@@ -159,8 +161,7 @@ class _GradesView extends StatelessWidget {
                                               decoration: BoxDecoration(
                                                 color: theme.colorScheme.primary
                                                     .withAlpha(30),
-                                                borderRadius:
-                                                    BorderRadius.circular(20),
+                                                borderRadius: AppRadius.borderXl,
                                               ),
                                               child: Row(
                                                 mainAxisSize: MainAxisSize.min,
@@ -171,7 +172,7 @@ class _GradesView extends StatelessWidget {
                                                     color: theme
                                                         .colorScheme.primary,
                                                   ),
-                                                  const SizedBox(width: 4),
+                                                  AppSpacing.hGapXs,
                                                   Text(
                                                     'Performance Updated',
                                                     style: TextStyle(
@@ -188,7 +189,7 @@ class _GradesView extends StatelessWidget {
                                           ],
                                         ),
                                       ),
-                                      const SizedBox(height: 24),
+                                      AppSpacing.gapXxl,
                                       Row(
                                         mainAxisAlignment:
                                             MainAxisAlignment.spaceBetween,
@@ -219,7 +220,7 @@ class _GradesView extends StatelessWidget {
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 8),
+                                      AppSpacing.gapSm,
                                       for (int index = 0;
                                           index < summaries.length;
                                           index++) ...[
@@ -250,9 +251,9 @@ class _GradesView extends StatelessWidget {
                                           ),
                                         ),
                                         if (index < summaries.length - 1)
-                                          const SizedBox(height: 10),
+                                          AppSpacing.gapSm,
                                       ],
-                                      const SizedBox(height: 20),
+                                      AppSpacing.gapXl,
                                     ],
                                   ),
                                 ),
@@ -319,14 +320,7 @@ IconData _iconForSubject(String subjectName) {
 }
 
 Color _colorForSubject(String subjectName) {
-  return switch (subjectName.toLowerCase()) {
-    'mathematics' => const Color(0xFF1A73E8),
-    'physics' => const Color(0xFF5F6368),
-    'literature' || 'english literature' => const Color(0xFFEF6C00),
-    'history' => const Color(0xFF6D4C41),
-    'computer science' => const Color(0xFF0F9D58),
-    _ => const Color(0xFF5F6368),
-  };
+  return AppColors.subjectColor(subjectName);
 }
 
 class _SubjectSummary {
@@ -376,21 +370,15 @@ class _SubjectGradeRow extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppRadius.borderLg,
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: AppSpacing.paddingMd,
           decoration: BoxDecoration(
             color: isHighlighted
                 ? theme.colorScheme.primary
                 : theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: theme.shadowColor.withAlpha(8),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            borderRadius: AppRadius.borderLg,
+            boxShadow: AppShadows.subtle(theme.shadowColor),
           ),
           child: Row(
             children: [
@@ -401,7 +389,7 @@ class _SubjectGradeRow extends StatelessWidget {
                   color: isHighlighted
                       ? theme.colorScheme.onPrimary.withAlpha(40)
                       : iconBgColor.withAlpha(20),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: AppRadius.borderMd,
                 ),
                 child: Icon(
                   icon,
@@ -411,7 +399,7 @@ class _SubjectGradeRow extends StatelessWidget {
                   size: 22,
                 ),
               ),
-              const SizedBox(width: 14),
+              AppSpacing.hGapMd,
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -426,7 +414,7 @@ class _SubjectGradeRow extends StatelessWidget {
                             : theme.colorScheme.onSurface,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    AppSpacing.gapXxs,
                     Text(
                       detail,
                       style: TextStyle(
@@ -452,7 +440,7 @@ class _SubjectGradeRow extends StatelessWidget {
                           : theme.colorScheme.onSurface,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  AppSpacing.gapXxs,
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -464,10 +452,10 @@ class _SubjectGradeRow extends StatelessWidget {
                         color: isHighlighted
                             ? theme.colorScheme.onPrimary.withAlpha(180)
                             : isPositive
-                                ? Colors.green
-                                : Colors.red,
+                                ? AppColors.success
+                                : AppColors.danger,
                       ),
-                      const SizedBox(width: 2),
+                      AppSpacing.hGapXs,
                       Text(
                         change,
                         style: TextStyle(
@@ -475,8 +463,8 @@ class _SubjectGradeRow extends StatelessWidget {
                           color: isHighlighted
                               ? theme.colorScheme.onPrimary.withAlpha(180)
                               : isPositive
-                                  ? Colors.green
-                                  : Colors.red,
+                                  ? AppColors.success
+                                  : AppColors.danger,
                         ),
                       ),
                     ],

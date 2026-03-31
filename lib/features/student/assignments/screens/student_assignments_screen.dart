@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/routes/route_names.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/assignments_cubit.dart';
 import '../models/assignment_model.dart';
 import '../repositories/student_assignments_repository.dart';
@@ -25,13 +29,13 @@ class _StudentAssignmentsView extends StatelessWidget {
   Color _statusColor(AssignmentStatus status) {
     switch (status) {
       case AssignmentStatus.pending:
-        return Colors.orange;
+        return AppColors.warning;
       case AssignmentStatus.submitted:
-        return Colors.blue;
+        return AppColors.info;
       case AssignmentStatus.graded:
-        return Colors.green;
+        return AppColors.success;
       case AssignmentStatus.overdue:
-        return Colors.red;
+        return AppColors.danger;
     }
   }
 
@@ -43,7 +47,10 @@ class _StudentAssignmentsView extends StatelessWidget {
           appBar: AppBar(title: const Text('Assignments')),
           body: state.status == AssignmentsStatus.loading ||
                   state.status == AssignmentsStatus.initial
-              ? const Center(child: CircularProgressIndicator())
+              ? const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: ShimmerList(),
+                )
               : state.status == AssignmentsStatus.error
                   ? Center(
                       child: Column(
@@ -51,9 +58,9 @@ class _StudentAssignmentsView extends StatelessWidget {
                         children: [
                           Text(
                             state.errorMessage ?? '',
-                            style: const TextStyle(color: Colors.red),
+                            style: const TextStyle(color: AppColors.danger),
                           ),
-                          const SizedBox(height: 10),
+                          AppSpacing.gapSm,
                           ElevatedButton(
                             onPressed: () => context
                                 .read<AssignmentsCubit>()
@@ -69,7 +76,7 @@ class _StudentAssignmentsView extends StatelessWidget {
                           padding: const EdgeInsets.all(16),
                           itemCount: state.assignments.length,
                           separatorBuilder: (_, __) =>
-                              const SizedBox(height: 12),
+                              AppSpacing.gapMd,
                           itemBuilder: (context, index) {
                             final assignment = state.assignments[index];
                             return Card(
@@ -92,7 +99,7 @@ class _StudentAssignmentsView extends StatelessWidget {
                                   decoration: BoxDecoration(
                                     color: _statusColor(assignment.status)
                                         .withAlpha(30),
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: AppRadius.borderSm,
                                   ),
                                   child: Text(
                                     assignment.statusLabel,

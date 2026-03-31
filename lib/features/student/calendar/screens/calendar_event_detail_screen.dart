@@ -3,6 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/calendar_event_detail_cubit.dart';
 import '../models/calendar_event_model.dart';
 import '../repositories/student_calendar_repository.dart';
@@ -48,13 +52,13 @@ class _CalendarEventDetailView extends StatelessWidget {
   static Color _colorForType(String type, ThemeData theme) {
     switch (type) {
       case 'exam':
-        return Colors.red;
+        return AppColors.danger;
       case 'class':
         return theme.colorScheme.primary;
       case 'event':
-        return Colors.orange;
+        return AppColors.warning;
       case 'personal':
-        return Colors.teal;
+        return AppColors.secondary;
       default:
         return theme.colorScheme.secondary;
     }
@@ -70,7 +74,10 @@ class _CalendarEventDetailView extends StatelessWidget {
         builder: (context, state) {
           if (state.status == CalendarEventDetailStatus.initial ||
               state.status == CalendarEventDetailStatus.loading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Padding(
+              padding: AppSpacing.paddingLg,
+              child: ShimmerList(),
+            );
           }
           if (state.status == CalendarEventDetailStatus.error) {
             return Center(
@@ -94,27 +101,27 @@ class _CalendarEventDetailView extends StatelessWidget {
     final timeFormat = DateFormat('hh:mm a');
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: AppSpacing.paddingXl,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: AppSpacing.paddingMd,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadius.borderMd,
                 ),
                 child: Icon(_iconForType(e.type), color: color, size: 28),
               ),
-              const SizedBox(width: 16),
+              AppSpacing.hGapLg,
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(e.title, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
+                    AppSpacing.gapXs,
                     Chip(
                       label: Text(e.type.toUpperCase(), style: TextStyle(fontSize: 11, color: color)),
                       backgroundColor: color.withValues(alpha: 0.08),
@@ -126,20 +133,20 @@ class _CalendarEventDetailView extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          AppSpacing.gapXxl,
           _DetailRow(
             icon: Icons.calendar_today_rounded,
             label: 'Date',
             value: dateFormat.format(e.startTime),
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLg,
           _DetailRow(
             icon: Icons.access_time_rounded,
             label: 'Time',
             value: '${timeFormat.format(e.startTime)} - ${timeFormat.format(e.endTime)}',
           ),
           if (e.location != null) ...[
-            const SizedBox(height: 16),
+            AppSpacing.gapLg,
             _DetailRow(
               icon: Icons.location_on_rounded,
               label: 'Location',
@@ -149,7 +156,7 @@ class _CalendarEventDetailView extends StatelessWidget {
           if (e.description != null) ...[
             const Divider(height: 32),
             Text('Description', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
+            AppSpacing.gapSm,
             Text(e.description!, style: theme.textTheme.bodyLarge?.copyWith(height: 1.5)),
           ],
         ],
@@ -171,7 +178,7 @@ class _DetailRow extends StatelessWidget {
     return Row(
       children: [
         Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant),
-        const SizedBox(width: 12),
+        AppSpacing.hGapMd,
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

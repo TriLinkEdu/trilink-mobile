@@ -1,4 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_shadows.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/pressable.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../models/grade_model.dart';
 import '../repositories/mock_student_grades_repository.dart';
 import '../repositories/student_grades_repository.dart';
@@ -75,10 +82,10 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
           children: [
             Padding(
               padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
               child: Row(
                 children: [
-                  GestureDetector(
+                  Pressable(
                     onTap: () => Navigator.of(context).pop(),
                     child: Icon(
                       Icons.arrow_back_ios_new_rounded,
@@ -103,15 +110,18 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
             ),
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const Padding(
+                      padding: AppSpacing.horizontalXl,
+                      child: ShimmerList(itemCount: 6, itemHeight: 72),
+                    )
                   : _error != null
                       ? Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(_error!,
-                                  style: const TextStyle(color: Colors.red)),
-                              const SizedBox(height: 10),
+                                  style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                              AppSpacing.gapSm,
                               ElevatedButton(
                                 onPressed: _loadSubjectGrades,
                                 child: const Text('Retry'),
@@ -129,8 +139,7 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                               ),
                             )
                           : SingleChildScrollView(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 20),
+                              padding: AppSpacing.horizontalXl,
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -139,15 +148,8 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                                     padding: const EdgeInsets.symmetric(
                                         vertical: 24),
                                     decoration: BoxDecoration(
-                                      gradient: const LinearGradient(
-                                        colors: [
-                                          Color(0xFF1A73E8),
-                                          Color(0xFF4A90E2),
-                                        ],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                      ),
-                                      borderRadius: BorderRadius.circular(20),
+                                      gradient: Theme.of(context).ext.heroGradient,
+                                      borderRadius: AppRadius.borderXl,
                                     ),
                                     child: Column(
                                       children: [
@@ -161,7 +163,7 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                                             letterSpacing: 1,
                                           ),
                                         ),
-                                        const SizedBox(height: 8),
+                                        AppSpacing.gapSm,
                                         Row(
                                           mainAxisAlignment:
                                               MainAxisAlignment.center,
@@ -191,7 +193,7 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(height: 8),
+                                        AppSpacing.gapSm,
                                         Container(
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 14,
@@ -202,8 +204,7 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                                                     _letterGradeForAverage(
                                                         _average))
                                                 .withAlpha(180),
-                                            borderRadius:
-                                                BorderRadius.circular(8),
+                                            borderRadius: AppRadius.borderSm,
                                           ),
                                           child: Text(
                                             'Grade ${_letterGradeForAverage(_average)}',
@@ -214,7 +215,7 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(height: 18),
+                                        AppSpacing.gapLg,
                                         Row(
                                           mainAxisAlignment:
                                               MainAxisAlignment.spaceEvenly,
@@ -234,7 +235,7 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                                       ],
                                     ),
                                   ),
-                                  const SizedBox(height: 24),
+                                  AppSpacing.gapXxl,
                                   Text(
                                     'Grade Distribution',
                                     style: TextStyle(
@@ -243,35 +244,35 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                                       color: theme.colorScheme.onSurface,
                                     ),
                                   ),
-                                  const SizedBox(height: 14),
+                                  AppSpacing.gapMd,
                                   _GradeBar(
                                     grade: 'A',
                                     count: _bucketCount(
                                         _subjectGrades, (p) => p >= 90),
                                     maxCount: _subjectGrades.length,
                                   ),
-                                  const SizedBox(height: 8),
+                                  AppSpacing.gapSm,
                                   _GradeBar(
                                     grade: 'B',
                                     count: _bucketCount(_subjectGrades,
                                         (p) => p >= 80 && p < 90),
                                     maxCount: _subjectGrades.length,
                                   ),
-                                  const SizedBox(height: 8),
+                                  AppSpacing.gapSm,
                                   _GradeBar(
                                     grade: 'C',
                                     count: _bucketCount(_subjectGrades,
                                         (p) => p >= 70 && p < 80),
                                     maxCount: _subjectGrades.length,
                                   ),
-                                  const SizedBox(height: 8),
+                                  AppSpacing.gapSm,
                                   _GradeBar(
                                     grade: 'D',
                                     count: _bucketCount(
                                         _subjectGrades, (p) => p < 70),
                                     maxCount: _subjectGrades.length,
                                   ),
-                                  const SizedBox(height: 28),
+                                  AppSpacing.gapXxxl,
                                   Row(
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
@@ -302,7 +303,7 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 8),
+                                  AppSpacing.gapSm,
                                   for (final assessment
                                       in _sortedAssessments) ...[
                                     _AssessmentRow(
@@ -319,9 +320,9 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                                       gradeColor: _gradeColor(
                                           assessment.percentage),
                                     ),
-                                    const SizedBox(height: 8),
+                                    AppSpacing.gapSm,
                                   ],
-                                  const SizedBox(height: 24),
+                                  AppSpacing.gapXxl,
                                   SizedBox(
                                     width: double.infinity,
                                     height: 50,
@@ -352,8 +353,7 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                                         foregroundColor:
                                             theme.colorScheme.onPrimary,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
+                                          borderRadius: AppRadius.borderMd,
                                         ),
                                         elevation: 0,
                                         textStyle: const TextStyle(
@@ -363,7 +363,7 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(height: 24),
+                                  AppSpacing.gapXxl,
                                 ],
                               ),
                             ),
@@ -417,13 +417,13 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
   Color _gradeChipColor(String grade) {
     switch (grade) {
       case 'A':
-        return Colors.green;
+        return AppColors.success;
       case 'B':
         return Theme.of(context).colorScheme.primary;
       case 'C':
-        return Colors.orange;
+        return AppColors.warning;
       default:
-        return Colors.red;
+        return AppColors.danger;
     }
   }
 
@@ -436,10 +436,10 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
   }
 
   Color _gradeColor(double percentage) {
-    if (percentage >= 90) return Colors.green;
+    if (percentage >= 90) return AppColors.success;
     if (percentage >= 80) return Theme.of(context).colorScheme.primary;
-    if (percentage >= 70) return Colors.orange;
-    return Colors.red;
+    if (percentage >= 70) return AppColors.warning;
+    return AppColors.danger;
   }
 }
 
@@ -457,7 +457,7 @@ class _StatBox extends StatelessWidget {
           label,
           style: TextStyle(fontSize: 11, color: Colors.white.withAlpha(180)),
         ),
-        const SizedBox(height: 4),
+        AppSpacing.gapXs,
         Text(
           value,
           style: const TextStyle(
@@ -499,7 +499,7 @@ class _GradeBar extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        AppSpacing.hGapMd,
         Expanded(
           child: Stack(
             children: [
@@ -507,7 +507,7 @@ class _GradeBar extends StatelessWidget {
                 height: 10,
                 decoration: BoxDecoration(
                   color: theme.colorScheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(5),
+                  borderRadius: AppRadius.borderSm,
                 ),
               ),
               FractionallySizedBox(
@@ -516,14 +516,14 @@ class _GradeBar extends StatelessWidget {
                   height: 10,
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primary,
-                    borderRadius: BorderRadius.circular(5),
+                    borderRadius: AppRadius.borderSm,
                   ),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(width: 12),
+        AppSpacing.hGapMd,
         SizedBox(
           width: 20,
           child: Text(
@@ -562,22 +562,16 @@ class _AssessmentRow extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: theme.shadowColor.withAlpha(8),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: AppRadius.borderMd,
+        boxShadow: AppShadows.subtle(theme.shadowColor),
       ),
       child: Row(
         children: [
           Icon(icon, color: theme.colorScheme.primary, size: 22),
-          const SizedBox(width: 12),
+          AppSpacing.hGapMd,
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -590,7 +584,7 @@ class _AssessmentRow extends StatelessWidget {
                     color: theme.colorScheme.onSurface,
                   ),
                 ),
-                const SizedBox(height: 2),
+                AppSpacing.gapXxs,
                 Text(
                   date,
                   style: TextStyle(
