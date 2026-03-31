@@ -1,39 +1,39 @@
-class StorageService {
-  static final StorageService _instance = StorageService._internal();
-  factory StorageService() => _instance;
-  StorageService._internal();
+import 'package:hive/hive.dart';
 
-  final Map<String, dynamic> _store = {};
+class StorageService {
+  final Box _box;
+
+  StorageService(this._box);
 
   Future<void> setString(String key, String value) async {
-    _store[key] = value;
+    await _box.put(key, value);
   }
 
   String? getString(String key) {
-    return _store[key] as String?;
+    return _box.get(key) as String?;
   }
 
   Future<void> setBool(String key, bool value) async {
-    _store[key] = value;
+    await _box.put(key, value);
   }
 
   bool getBool(String key, {bool defaultValue = false}) {
-    return _store[key] as bool? ?? defaultValue;
+    return _box.get(key, defaultValue: defaultValue) as bool? ?? defaultValue;
   }
 
   Future<void> setInt(String key, int value) async {
-    _store[key] = value;
+    await _box.put(key, value);
   }
 
   int getInt(String key, {int defaultValue = 0}) {
-    return _store[key] as int? ?? defaultValue;
+    return _box.get(key, defaultValue: defaultValue) as int? ?? defaultValue;
   }
 
   Future<void> remove(String key) async {
-    _store.remove(key);
+    await _box.delete(key);
   }
 
   Future<void> clear() async {
-    _store.clear();
+    await _box.clear();
   }
 }
