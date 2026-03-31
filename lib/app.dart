@@ -17,15 +17,26 @@ class App extends StatelessWidget {
       child: ListenableBuilder(
         listenable: sl<ThemeNotifier>(),
         builder: (context, _) {
-          final themeNotifier = sl<ThemeNotifier>();
+          final tn = sl<ThemeNotifier>();
+          final font = tn.fontFamily;
           return MaterialApp(
             title: 'TriLink',
             debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: themeNotifier.themeMode,
+            theme: AppTheme.lightThemeWith(fontFamily: font),
+            darkTheme: AppTheme.darkThemeWith(fontFamily: font),
+            themeMode: tn.themeMode,
             initialRoute: RouteNames.login,
             onGenerateRoute: AppRouter.onGenerateRoute,
+            builder: (context, child) {
+              final scale = tn.textScaleFactor;
+              final mq = MediaQuery.of(context);
+              return MediaQuery(
+                data: mq.copyWith(
+                  textScaler: TextScaler.linear(scale),
+                ),
+                child: child!,
+              );
+            },
           );
         },
       ),
