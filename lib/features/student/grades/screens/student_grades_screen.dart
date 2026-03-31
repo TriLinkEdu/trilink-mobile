@@ -240,16 +240,12 @@ class _StudentGradesScreenState extends State<StudentGradesScreen> {
                               ),
                               TextButton(
                                 onPressed: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Progress report preview is ready.',
-                                      ),
-                                    ),
-                                  );
+                                  Navigator.of(
+                                    context,
+                                  ).pushNamed(RouteNames.studentAssignments);
                                 },
                                 child: const Text(
-                                  'View Report',
+                                  'Assignments',
                                   style: TextStyle(
                                     color: AppColors.primary,
                                     fontSize: 13,

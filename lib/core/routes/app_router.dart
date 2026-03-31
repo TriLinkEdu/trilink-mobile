@@ -17,6 +17,11 @@ import '../../features/student/notifications/screens/student_notifications_scree
 import '../../features/student/chat/screens/student_chat_screen.dart';
 import '../../features/student/calendar/screens/student_calendar_screen.dart';
 import '../../features/student/settings/screens/student_settings_screen.dart';
+import '../../features/student/assignments/screens/student_assignments_screen.dart';
+import '../../features/student/assignments/screens/assignment_detail_screen.dart';
+import '../../features/student/courses/screens/student_courses_resources_screen.dart';
+import '../../features/student/exams/screens/student_exam_attempt_screen.dart';
+import '../../features/student/sync/screens/student_sync_status_screen.dart';
 
 // Teacher imports
 import '../../features/teacher/dashboard/screens/teacher_main_screen.dart';
@@ -51,6 +56,11 @@ class AppRouter {
     RouteNames.studentCalendar,
     RouteNames.studentProfile,
     RouteNames.studentSettings,
+    RouteNames.studentAssignments,
+    RouteNames.studentAssignmentDetail,
+    RouteNames.studentCourseResources,
+    RouteNames.studentExamAttempt,
+    RouteNames.studentSyncStatus,
   };
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -101,6 +111,30 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const StudentCalendarScreen());
       case RouteNames.studentSettings:
         return MaterialPageRoute(builder: (_) => const StudentSettingsScreen());
+      case RouteNames.studentAssignments:
+        return MaterialPageRoute(builder: (_) => const StudentAssignmentsScreen());
+      case RouteNames.studentAssignmentDetail:
+        final args = settings.arguments;
+        final safeArgs = args is Map
+            ? Map<String, dynamic>.from(args)
+            : const <String, dynamic>{};
+        return MaterialPageRoute(
+          builder: (_) => AssignmentDetailScreen(
+            assignmentId: safeArgs['assignmentId']?.toString() ?? '',
+            title: safeArgs['title']?.toString() ?? 'Assignment',
+            subject: safeArgs['subject']?.toString() ?? 'Subject',
+            dueDateLabel: safeArgs['dueDateLabel']?.toString() ?? 'TBD',
+            statusLabel: safeArgs['statusLabel']?.toString() ?? 'Pending',
+          ),
+        );
+      case RouteNames.studentCourseResources:
+        return MaterialPageRoute(
+          builder: (_) => const StudentCoursesResourcesScreen(),
+        );
+      case RouteNames.studentExamAttempt:
+        return MaterialPageRoute(builder: (_) => const StudentExamAttemptScreen());
+      case RouteNames.studentSyncStatus:
+        return MaterialPageRoute(builder: (_) => const StudentSyncStatusScreen());
       case RouteNames.studentAiAssistant:
         return MaterialPageRoute(builder: (_) => const AiAssistantScreen());
       case RouteNames.studentGamification:

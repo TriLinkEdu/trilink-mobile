@@ -205,6 +205,38 @@ class StudentDashboardScreen extends StatelessWidget {
                       context,
                     ).pushNamed(RouteNames.studentSettings),
                   ),
+                  _QuickActionTile(
+                    icon: Icons.assignment_rounded,
+                    label: 'Assignments',
+                    color: Colors.deepOrange,
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentAssignments),
+                  ),
+                  _QuickActionTile(
+                    icon: Icons.folder_open_rounded,
+                    label: 'Resources',
+                    color: Colors.lightBlue,
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentCourseResources),
+                  ),
+                  _QuickActionTile(
+                    icon: Icons.fact_check_rounded,
+                    label: 'Exam Attempt',
+                    color: Colors.pink,
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentExamAttempt),
+                  ),
+                  _QuickActionTile(
+                    icon: Icons.sync_rounded,
+                    label: 'Sync Status',
+                    color: Colors.green,
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentSyncStatus),
+                  ),
                 ],
               ),
               const SizedBox(height: 28),

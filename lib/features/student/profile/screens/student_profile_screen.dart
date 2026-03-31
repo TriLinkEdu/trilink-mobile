@@ -326,6 +326,42 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                             context,
                           ).pushNamed(RouteNames.studentSettings),
                         ),
+                        _divider(),
+                        _SettingsRow(
+                          icon: Icons.assignment_outlined,
+                          label: 'Assignments',
+                          showChevron: true,
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(RouteNames.studentAssignments),
+                        ),
+                        _divider(),
+                        _SettingsRow(
+                          icon: Icons.folder_outlined,
+                          label: 'Courses & Resources',
+                          showChevron: true,
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(RouteNames.studentCourseResources),
+                        ),
+                        _divider(),
+                        _SettingsRow(
+                          icon: Icons.fact_check_outlined,
+                          label: 'Exam Attempt',
+                          showChevron: true,
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(RouteNames.studentExamAttempt),
+                        ),
+                        _divider(),
+                        _SettingsRow(
+                          icon: Icons.sync_outlined,
+                          label: 'Sync Status',
+                          showChevron: true,
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(RouteNames.studentSyncStatus),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 24),
