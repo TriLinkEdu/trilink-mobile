@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'teacher_dashboard_screen.dart';
-import '../../attendance/screens/teacher_attendance_screen.dart';
+import '../../classes/screens/class_list_screen.dart';
 import '../../student_analytics/screens/student_list_screen.dart';
 import '../../calendar/screens/teacher_calendar_screen.dart';
 import '../../settings/screens/teacher_settings_screen.dart';
@@ -18,7 +18,7 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
 
   final List<Widget> _screens = const [
     TeacherDashboardScreen(),
-    TeacherAttendanceScreen(),
+    ClassListScreen(),
     StudentListScreen(),
     TeacherCalendarScreen(),
     TeacherSettingsScreen(),
