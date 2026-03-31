@@ -1,9 +1,16 @@
+enum LeaderboardScope { classScope, school, national }
+
+enum LeaderboardPeriod { weekly, monthly, term }
+
 class LeaderboardEntry {
   final String studentId;
   final String studentName;
   final int rank;
   final int points;
   final String? avatarUrl;
+  final LeaderboardScope scope;
+  final LeaderboardPeriod period;
+  final DateTime? calculatedAt;
 
   const LeaderboardEntry({
     required this.studentId,
@@ -11,6 +18,9 @@ class LeaderboardEntry {
     required this.rank,
     required this.points,
     this.avatarUrl,
+    this.scope = LeaderboardScope.school,
+    this.period = LeaderboardPeriod.weekly,
+    this.calculatedAt,
   });
 
   factory LeaderboardEntry.fromJson(Map<String, dynamic> json) {
@@ -20,6 +30,17 @@ class LeaderboardEntry {
       rank: json['rank'] as int,
       points: json['points'] as int,
       avatarUrl: json['avatarUrl'] as String?,
+      scope: LeaderboardScope.values.firstWhere(
+        (s) => s.name == json['scope'],
+        orElse: () => LeaderboardScope.school,
+      ),
+      period: LeaderboardPeriod.values.firstWhere(
+        (p) => p.name == json['period'],
+        orElse: () => LeaderboardPeriod.weekly,
+      ),
+      calculatedAt: json['calculatedAt'] != null
+          ? DateTime.parse(json['calculatedAt'] as String)
+          : null,
     );
   }
 
@@ -29,6 +50,69 @@ class LeaderboardEntry {
         'rank': rank,
         'points': points,
         'avatarUrl': avatarUrl,
+        'scope': scope.name,
+        'period': period.name,
+        'calculatedAt': calculatedAt?.toIso8601String(),
+      };
+}
+
+class BadgeModel {
+  final String id;
+  final String name;
+  final String description;
+  final String iconUrl;
+  final int xpValue;
+
+  const BadgeModel({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.iconUrl,
+    required this.xpValue,
+  });
+
+  factory BadgeModel.fromJson(Map<String, dynamic> json) {
+    return BadgeModel(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      description: json['description'] as String,
+      iconUrl: json['iconUrl'] as String,
+      xpValue: json['xpValue'] as int,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'description': description,
+        'iconUrl': iconUrl,
+        'xpValue': xpValue,
+      };
+}
+
+class StudentBadgeModel {
+  final String studentId;
+  final BadgeModel badge;
+  final DateTime awardedAt;
+
+  const StudentBadgeModel({
+    required this.studentId,
+    required this.badge,
+    required this.awardedAt,
+  });
+
+  factory StudentBadgeModel.fromJson(Map<String, dynamic> json) {
+    return StudentBadgeModel(
+      studentId: json['studentId'] as String,
+      badge: BadgeModel.fromJson(json['badge'] as Map<String, dynamic>),
+      awardedAt: DateTime.parse(json['awardedAt'] as String),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'studentId': studentId,
+        'badge': badge.toJson(),
+        'awardedAt': awardedAt.toIso8601String(),
       };
 }
 
@@ -37,6 +121,7 @@ class AchievementModel {
   final String title;
   final String description;
   final String iconUrl;
+  final int xpValue;
   final bool isUnlocked;
   final DateTime? unlockedAt;
 
@@ -45,6 +130,7 @@ class AchievementModel {
     required this.title,
     required this.description,
     required this.iconUrl,
+    this.xpValue = 0,
     required this.isUnlocked,
     this.unlockedAt,
   });
@@ -55,6 +141,7 @@ class AchievementModel {
       title: json['title'] as String,
       description: json['description'] as String,
       iconUrl: json['iconUrl'] as String,
+      xpValue: json['xpValue'] as int? ?? 0,
       isUnlocked: json['isUnlocked'] as bool,
       unlockedAt: json['unlockedAt'] != null
           ? DateTime.parse(json['unlockedAt'] as String)
@@ -67,6 +154,7 @@ class AchievementModel {
         'title': title,
         'description': description,
         'iconUrl': iconUrl,
+        'xpValue': xpValue,
         'isUnlocked': isUnlocked,
         'unlockedAt': unlockedAt?.toIso8601String(),
       };
