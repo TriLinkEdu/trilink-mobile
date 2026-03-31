@@ -1,73 +1,68 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/di/injection_container.dart';
+import '../cubit/announcement_detail_cubit.dart';
 import '../models/announcement_model.dart';
 import '../repositories/student_announcements_repository.dart';
-import '../repositories/mock_student_announcements_repository.dart';
 
-class AnnouncementDetailScreen extends StatefulWidget {
+class AnnouncementDetailScreen extends StatelessWidget {
   final String announcementId;
-  final StudentAnnouncementsRepository? repository;
 
   const AnnouncementDetailScreen({
     super.key,
     required this.announcementId,
-  }) : repository = null;
-
-  const AnnouncementDetailScreen.withRepo({
-    super.key,
-    required this.announcementId,
-    required this.repository,
   });
 
   @override
-  State<AnnouncementDetailScreen> createState() => _AnnouncementDetailScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => AnnouncementDetailCubit(
+        sl<StudentAnnouncementsRepository>(),
+        announcementId,
+      )..loadAnnouncement(),
+      child: const _AnnouncementDetailView(),
+    );
+  }
 }
 
-class _AnnouncementDetailScreenState extends State<AnnouncementDetailScreen> {
-  late final StudentAnnouncementsRepository _repo;
-  AnnouncementModel? _announcement;
-  bool _isLoading = true;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _repo = widget.repository ?? MockStudentAnnouncementsRepository();
-    _loadAnnouncement();
-  }
-
-  Future<void> _loadAnnouncement() async {
-    setState(() { _isLoading = true; _error = null; });
-    try {
-      final all = await _repo.fetchAnnouncements();
-      final match = all.where((a) => a.id == widget.announcementId);
-      if (match.isNotEmpty) {
-        _announcement = match.first;
-      } else {
-        _error = 'Announcement not found';
-      }
-    } catch (e) {
-      _error = e.toString();
-    }
-    if (mounted) setState(() => _isLoading = false);
-  }
+class _AnnouncementDetailView extends StatelessWidget {
+  const _AnnouncementDetailView();
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Announcement'), centerTitle: true),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(child: Text(_error!, style: TextStyle(color: theme.colorScheme.error)))
-              : _buildContent(theme),
+    return BlocBuilder<AnnouncementDetailCubit, AnnouncementDetailState>(
+      builder: (context, state) {
+        if (state.status == AnnouncementDetailStatus.loading ||
+            state.status == AnnouncementDetailStatus.initial) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Announcement'), centerTitle: true),
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (state.status == AnnouncementDetailStatus.error) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Announcement'), centerTitle: true),
+            body: Center(
+              child: Text(
+                state.errorMessage ?? '',
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+            ),
+          );
+        }
+        final a = state.announcement!;
+        return Scaffold(
+          appBar: AppBar(title: const Text('Announcement'), centerTitle: true),
+          body: _buildContent(theme, a),
+        );
+      },
     );
   }
 
-  Widget _buildContent(ThemeData theme) {
-    final a = _announcement!;
+  Widget _buildContent(ThemeData theme, AnnouncementModel a) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(

@@ -1,56 +1,47 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/di/injection_container.dart';
+import '../cubit/sync_cubit.dart';
 import '../models/sync_status_model.dart';
 import '../repositories/student_sync_repository.dart';
-import '../repositories/mock_student_sync_repository.dart';
 
-class StudentSyncStatusScreen extends StatefulWidget {
-  final StudentSyncRepository? repository;
-
-  const StudentSyncStatusScreen({super.key, this.repository});
+class StudentSyncStatusScreen extends StatelessWidget {
+  const StudentSyncStatusScreen({super.key});
 
   @override
-  State<StudentSyncStatusScreen> createState() =>
-      _StudentSyncStatusScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          SyncCubit(sl<StudentSyncRepository>())..loadSyncStatus(),
+      child: const _StudentSyncStatusView(),
+    );
+  }
 }
 
-class _StudentSyncStatusScreenState extends State<StudentSyncStatusScreen> {
-  late final StudentSyncRepository _repository;
-  List<SyncItemModel> _items = [];
-  bool _isLoading = true;
-  bool _isSyncing = false;
+class _StudentSyncStatusView extends StatefulWidget {
+  const _StudentSyncStatusView();
 
   @override
-  void initState() {
-    super.initState();
-    _repository = widget.repository ?? MockStudentSyncRepository();
-    _loadSyncStatus();
-  }
+  State<_StudentSyncStatusView> createState() =>
+      _StudentSyncStatusViewState();
+}
 
-  Future<void> _loadSyncStatus() async {
-    setState(() => _isLoading = true);
-    try {
-      final items = await _repository.fetchSyncStatus();
-      if (!mounted) return;
-      setState(() => _items = items);
-    } catch (_) {
-      if (!mounted) return;
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
+class _StudentSyncStatusViewState extends State<_StudentSyncStatusView> {
+  bool _isSyncing = false;
 
   Future<void> _triggerSync() async {
     setState(() => _isSyncing = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final cubit = context.read<SyncCubit>();
     try {
-      final items = await _repository.triggerSync();
+      await cubit.triggerSync();
       if (!mounted) return;
-      setState(() => _items = items);
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('Sync completed successfully.')),
       );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('Sync failed. Please try again.')),
       );
     } finally {
@@ -85,67 +76,93 @@ class _StudentSyncStatusScreenState extends State<StudentSyncStatusScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Sync Status')),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Offline Access & Sync',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: _items.isEmpty
-                        ? const Center(
-                            child: Text('No sync items available.'))
-                        : ListView.separated(
-                            itemCount: _items.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 10),
-                            itemBuilder: (context, index) {
-                              final item = _items[index];
-                              return Card(
-                                child: ListTile(
-                                  title: Text(item.category),
-                                  subtitle: Text(
-                                    '${item.description}\nLast synced: ${_formatTime(item.lastSyncedAt)}'
-                                    '${item.pendingCount > 0 ? ' • ${item.pendingCount} pending' : ''}',
-                                  ),
-                                  isThreeLine: true,
-                                  trailing: Icon(
-                                    _statusIcon(item.status),
-                                    color: _statusColor(item.status),
-                                  ),
-                                ),
-                              );
-                            },
+    return BlocBuilder<SyncCubit, SyncState>(
+      builder: (context, state) {
+        final isLoading = state.status == SyncStatus.loading ||
+            state.status == SyncStatus.initial;
+        final items = state.items;
+        return Scaffold(
+          appBar: AppBar(title: const Text('Sync Status')),
+          body: isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : state.status == SyncStatus.error
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            state.errorMessage ?? '',
+                            style: const TextStyle(color: Colors.red),
                           ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _isSyncing ? null : _triggerSync,
-                      icon: _isSyncing
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
+                          const SizedBox(height: 10),
+                          ElevatedButton(
+                            onPressed: () => context
+                                .read<SyncCubit>()
+                                .loadSyncStatus(),
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Offline Access & Sync',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 16),
+                      Expanded(
+                        child: items.isEmpty
+                            ? const Center(
+                                child: Text('No sync items available.'))
+                            : ListView.separated(
+                                itemCount: items.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 10),
+                                itemBuilder: (context, index) {
+                                  final item = items[index];
+                                  return Card(
+                                    child: ListTile(
+                                      title: Text(item.category),
+                                      subtitle: Text(
+                                        '${item.description}\nLast synced: ${_formatTime(item.lastSyncedAt)}'
+                                        '${item.pendingCount > 0 ? ' • ${item.pendingCount} pending' : ''}',
+                                      ),
+                                      isThreeLine: true,
+                                      trailing: Icon(
+                                        _statusIcon(item.status),
+                                        color: _statusColor(item.status),
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
-                            )
-                          : const Icon(Icons.sync),
-                      label: Text(_isSyncing ? 'Syncing...' : 'Sync Now'),
-                    ),
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _isSyncing ? null : _triggerSync,
+                          icon: _isSyncing
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.sync),
+                          label: Text(_isSyncing ? 'Syncing...' : 'Sync Now'),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                ),
+        );
+      },
     );
   }
 }

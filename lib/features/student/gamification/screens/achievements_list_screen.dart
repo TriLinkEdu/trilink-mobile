@@ -1,64 +1,67 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../../core/di/injection_container.dart';
+import '../cubit/achievements_list_cubit.dart';
 import '../models/gamification_models.dart';
 import '../repositories/student_gamification_repository.dart';
-import '../repositories/mock_student_gamification_repository.dart';
 
-class AchievementsListScreen extends StatefulWidget {
-  final StudentGamificationRepository? repository;
-  const AchievementsListScreen({super.key, this.repository});
+class AchievementsListScreen extends StatelessWidget {
+  const AchievementsListScreen({super.key});
 
   @override
-  State<AchievementsListScreen> createState() => _AchievementsListScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => AchievementsListCubit(sl<StudentGamificationRepository>())
+        ..loadAchievements(),
+      child: const _AchievementsListView(),
+    );
+  }
 }
 
-class _AchievementsListScreenState extends State<AchievementsListScreen> {
-  late final StudentGamificationRepository _repo;
-  List<AchievementModel> _achievements = [];
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _repo = widget.repository ?? MockStudentGamificationRepository();
-    _load();
-  }
-
-  Future<void> _load() async {
-    setState(() => _isLoading = true);
-    try {
-      _achievements = await _repo.fetchAchievements();
-    } catch (_) {}
-    if (mounted) setState(() => _isLoading = false);
-  }
+class _AchievementsListView extends StatelessWidget {
+  const _AchievementsListView();
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final unlocked = _achievements.where((a) => a.isUnlocked).toList();
-    final locked = _achievements.where((a) => !a.isUnlocked).toList();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Achievements'), centerTitle: true),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                if (unlocked.isNotEmpty) ...[
-                  Text('Unlocked (${unlocked.length})',
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  ...unlocked.map((a) => _AchievementTile(achievement: a)),
-                  const SizedBox(height: 24),
-                ],
-                if (locked.isNotEmpty) ...[
-                  Text('Locked (${locked.length})',
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  ...locked.map((a) => _AchievementTile(achievement: a)),
-                ],
+      body: BlocBuilder<AchievementsListCubit, AchievementsListState>(
+        builder: (context, state) {
+          final loading = state.status == AchievementsListStatus.initial ||
+              state.status == AchievementsListStatus.loading;
+          if (loading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final unlocked =
+              state.achievements.where((a) => a.isUnlocked).toList();
+          final locked =
+              state.achievements.where((a) => !a.isUnlocked).toList();
+
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              if (unlocked.isNotEmpty) ...[
+                Text('Unlocked (${unlocked.length})',
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                ...unlocked.map((a) => _AchievementTile(achievement: a)),
+                const SizedBox(height: 24),
               ],
-            ),
+              if (locked.isNotEmpty) ...[
+                Text('Locked (${locked.length})',
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                ...locked.map((a) => _AchievementTile(achievement: a)),
+              ],
+            ],
+          );
+        },
+      ),
     );
   }
 }
@@ -99,7 +102,9 @@ class _AchievementTile extends StatelessWidget {
         subtitle: Text(
           achievement.description,
           style: TextStyle(
-            color: isUnlocked ? null : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+            color: isUnlocked
+                ? null
+                : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
           ),
         ),
         trailing: isUnlocked

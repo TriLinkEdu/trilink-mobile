@@ -1,83 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../../core/di/injection_container.dart';
+import '../cubit/ai_assistant_cubit.dart';
 import 'evaluate_me_screen.dart';
 import 'learning_path_screen.dart';
 import '../models/ai_assistant_models.dart';
 import 'resource_recommendation_screen.dart';
-import '../repositories/mock_student_ai_assistant_repository.dart';
 import '../repositories/student_ai_assistant_repository.dart';
 
 /// AI Assistant with Learning Path, Resources, and Evaluate Me tabs.
-class AiAssistantScreen extends StatefulWidget {
-  final StudentAiAssistantRepository? repository;
-
-  const AiAssistantScreen({super.key, this.repository});
+class AiAssistantScreen extends StatelessWidget {
+  const AiAssistantScreen({super.key});
 
   @override
-  State<AiAssistantScreen> createState() => _AiAssistantScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          AiAssistantCubit(sl<StudentAiAssistantRepository>())..loadAssistantData(),
+      child: const _AiAssistantView(),
+    );
+  }
 }
 
-class _AiAssistantScreenState extends State<AiAssistantScreen> {
-  int _selectedTab = 0;
-  final List<String> _tabs = ['Learning Path', 'Resources', 'Evaluate M...'];
-  late final StudentAiAssistantRepository _repository;
-
-  bool _isLoading = true;
-  String? _error;
-  AiAssistantData? _assistantData;
+class _AiAssistantView extends StatefulWidget {
+  const _AiAssistantView();
 
   @override
-  void initState() {
-    super.initState();
-    _repository = widget.repository ?? MockStudentAiAssistantRepository();
-    _loadAssistantData();
-  }
+  State<_AiAssistantView> createState() => _AiAssistantViewState();
+}
 
-  Future<void> _loadAssistantData() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final data = await _repository.fetchAssistantData();
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _assistantData = data;
-      });
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _error = 'Unable to load AI assistant content right now.';
-      });
-    } finally {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
+class _AiAssistantViewState extends State<_AiAssistantView> {
+  int _selectedTab = 0;
+  final List<String> _tabs = ['Learning Path', 'Resources', 'Evaluate M...'];
 
   void _openDetailedPage(int tabIndex) {
-    final data = _assistantData;
+    final data = context.read<AiAssistantCubit>().state.data;
     final page = switch (tabIndex) {
-      0 => LearningPathScreen(
-          items: data?.learningPath,
-          repository: _repository,
-        ),
-      1 => ResourceRecommendationScreen(
-          resources: data?.resources,
-          repository: _repository,
-        ),
-      _ => EvaluateMeScreen(
-          insights: data?.insights,
-          repository: _repository,
-        ),
+      0 => LearningPathScreen(items: data?.learningPath),
+      1 => ResourceRecommendationScreen(resources: data?.resources),
+      _ => EvaluateMeScreen(insights: data?.insights),
     };
 
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
@@ -86,66 +48,74 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   Widget _buildContent() {
     final theme = Theme.of(context);
 
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(
-          semanticsLabel: 'Loading AI assistant data',
-        ),
-      );
-    }
+    return BlocBuilder<AiAssistantCubit, AiAssistantState>(
+      builder: (context, state) {
+        final loading = state.status == AiAssistantStatus.initial ||
+            state.status == AiAssistantStatus.loading;
+        if (loading) {
+          return const Center(
+            child: CircularProgressIndicator(
+              semanticsLabel: 'Loading AI assistant data',
+            ),
+          );
+        }
 
-    if (_error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.error_outline,
-                color: theme.colorScheme.onSurfaceVariant,
-                size: 34,
+        if (state.status == AiAssistantStatus.error) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    color: theme.colorScheme.onSurfaceVariant,
+                    size: 34,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    state.errorMessage ??
+                        'Unable to load AI assistant content right now.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: 14),
+                  OutlinedButton(
+                    onPressed: () =>
+                        context.read<AiAssistantCubit>().loadAssistantData(),
+                    child: const Text('Retry'),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              Text(
-                _error!,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-              ),
-              const SizedBox(height: 14),
-              OutlinedButton(
-                onPressed: _loadAssistantData,
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
+            ),
+          );
+        }
 
-    final data = _assistantData;
-    if (data == null) {
-      return Center(
-        child: Text(
-          'No AI assistant data available.',
-          style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-        ),
-      );
-    }
+        final data = state.data;
+        if (data == null) {
+          return Center(
+            child: Text(
+              'No AI assistant data available.',
+              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          );
+        }
 
-    return IndexedStack(
-      index: _selectedTab,
-      children: [
-        _LearningPathTab(
-          pathItems: data.learningPath,
-          onNavigateToPath: () => _openDetailedPage(0),
-        ),
-        _ResourcesTab(
-          resources: data.resources,
-          onNavigateToResources: () => _openDetailedPage(1),
-        ),
-        _EvaluateTab(insights: data.insights),
-      ],
+        return IndexedStack(
+          index: _selectedTab,
+          children: [
+            _LearningPathTab(
+              pathItems: data.learningPath,
+              onNavigateToPath: () => _openDetailedPage(0),
+            ),
+            _ResourcesTab(
+              resources: data.resources,
+              onNavigateToResources: () => _openDetailedPage(1),
+            ),
+            _EvaluateTab(insights: data.insights),
+          ],
+        );
+      },
     );
   }
 
@@ -246,7 +216,8 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       ),
       floatingActionButton: FloatingActionButton.small(
         tooltip: 'Refresh AI suggestions',
-        onPressed: _loadAssistantData,
+        onPressed: () =>
+            context.read<AiAssistantCubit>().loadAssistantData(),
         backgroundColor: theme.colorScheme.primary,
         child: Icon(Icons.auto_awesome, color: theme.colorScheme.onPrimary, size: 20),
       ),
@@ -710,7 +681,7 @@ class _ResourcesTab extends StatelessWidget {
           ),
         );
       },
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemCount: resources.length,
     );
   }
@@ -791,7 +762,7 @@ class _EvaluateTab extends StatelessWidget {
           ),
         );
       },
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemCount: insights.length,
     );
   }

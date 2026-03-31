@@ -1,54 +1,67 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../../core/di/injection_container.dart';
+import '../cubit/ai_assistant_cubit.dart';
 import '../models/ai_assistant_models.dart';
-import '../repositories/mock_student_ai_assistant_repository.dart';
 import '../repositories/student_ai_assistant_repository.dart';
 
-/// Curated list of PDFs, videos, and other study resources.
-class ResourceRecommendationScreen extends StatefulWidget {
+class ResourceRecommendationScreen extends StatelessWidget {
   final List<ResourceRecommendationModel>? resources;
-  final StudentAiAssistantRepository? repository;
 
-  const ResourceRecommendationScreen({
-    super.key,
-    this.resources,
-    this.repository,
-  });
+  const ResourceRecommendationScreen({super.key, this.resources});
 
   @override
-  State<ResourceRecommendationScreen> createState() =>
-      _ResourceRecommendationScreenState();
+  Widget build(BuildContext context) {
+    if (resources != null && resources!.isNotEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Resources')),
+        body: _ResourceListPage(resources: resources!),
+      );
+    }
+    return BlocProvider(
+      create: (_) => AiAssistantCubit(sl<StudentAiAssistantRepository>())
+        ..loadAssistantData(suppressError: true),
+      child: const _ResourceRecommendationBlocView(),
+    );
+  }
 }
 
-class _ResourceRecommendationScreenState
-    extends State<ResourceRecommendationScreen> {
-  late final StudentAiAssistantRepository _repository;
-  List<ResourceRecommendationModel> _resources = [];
-  bool _isLoading = false;
+class _ResourceRecommendationBlocView extends StatelessWidget {
+  const _ResourceRecommendationBlocView();
 
   @override
-  void initState() {
-    super.initState();
-    _repository = widget.repository ?? MockStudentAiAssistantRepository();
-    if (widget.resources != null && widget.resources!.isNotEmpty) {
-      _resources = List.of(widget.resources!);
-    } else {
-      _loadFromRepository();
-    }
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Resources')),
+      body: BlocBuilder<AiAssistantCubit, AiAssistantState>(
+        builder: (context, state) {
+          final loading = state.status == AiAssistantStatus.initial ||
+              state.status == AiAssistantStatus.loading;
+          if (loading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final list = state.data?.resources ?? [];
+          if (list.isEmpty) {
+            return const Center(child: Text('No resources available.'));
+          }
+          return _ResourceListPage(resources: list);
+        },
+      ),
+    );
   }
+}
 
-  Future<void> _loadFromRepository() async {
-    setState(() => _isLoading = true);
-    try {
-      final data = await _repository.fetchAssistantData();
-      if (!mounted) return;
-      setState(() => _resources = List.of(data.resources));
-    } catch (_) {
-      if (!mounted) return;
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
+class _ResourceListPage extends StatefulWidget {
+  final List<ResourceRecommendationModel> resources;
 
+  const _ResourceListPage({required this.resources});
+
+  @override
+  State<_ResourceListPage> createState() => _ResourceListPageState();
+}
+
+class _ResourceListPageState extends State<_ResourceListPage> {
   Future<void> _openResource(ResourceRecommendationModel resource) async {
     showDialog(
       context: context,
@@ -68,34 +81,27 @@ class _ResourceRecommendationScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Resources')),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _resources.isEmpty
-              ? const Center(child: Text('No resources available.'))
-              : ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _resources.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final resource = _resources[index];
-                    final icon = switch (resource.type.toLowerCase()) {
-                      'video' => Icons.ondemand_video_rounded,
-                      'worksheet' => Icons.assignment_rounded,
-                      'article' => Icons.article_rounded,
-                      _ => Icons.menu_book_rounded,
-                    };
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: widget.resources.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
+      itemBuilder: (context, index) {
+        final resource = widget.resources[index];
+        final icon = switch (resource.type.toLowerCase()) {
+          'video' => Icons.ondemand_video_rounded,
+          'worksheet' => Icons.assignment_rounded,
+          'article' => Icons.article_rounded,
+          _ => Icons.menu_book_rounded,
+        };
 
-                    return _ResourceTile(
-                      title: resource.title,
-                      subtitle:
-                          '${resource.type} • ${resource.estimatedTime} • ${resource.level}',
-                      icon: icon,
-                      onOpen: () => _openResource(resource),
-                    );
-                  },
-                ),
+        return _ResourceTile(
+          title: resource.title,
+          subtitle:
+              '${resource.type} • ${resource.estimatedTime} • ${resource.level}',
+          icon: icon,
+          onOpen: () => _openResource(resource),
+        );
+      },
     );
   }
 }

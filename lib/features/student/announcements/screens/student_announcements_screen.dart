@@ -1,74 +1,54 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/di/injection_container.dart';
 import '../../../../core/routes/route_names.dart';
+import '../cubit/announcements_cubit.dart';
 import '../models/announcement_model.dart';
 import '../repositories/student_announcements_repository.dart';
-import '../repositories/mock_student_announcements_repository.dart';
 
-class StudentAnnouncementsScreen extends StatefulWidget {
-  final StudentAnnouncementsRepository? repository;
-
-  const StudentAnnouncementsScreen({super.key, this.repository});
+class StudentAnnouncementsScreen extends StatelessWidget {
+  const StudentAnnouncementsScreen({super.key});
 
   @override
-  State<StudentAnnouncementsScreen> createState() =>
-      _StudentAnnouncementsScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          AnnouncementsCubit(sl<StudentAnnouncementsRepository>())
+            ..loadAnnouncements(),
+      child: const _StudentAnnouncementsView(),
+    );
+  }
 }
 
-class _StudentAnnouncementsScreenState
-    extends State<StudentAnnouncementsScreen> {
-  int _selectedFilter = 0;
-  final List<String> _filters = ['All', 'Admin', 'Teacher', 'Calendar'];
-  late final StudentAnnouncementsRepository _repository;
-  bool _isLoading = true;
-  String? _error;
-  List<AnnouncementModel> _announcements = const [];
+class _StudentAnnouncementsView extends StatefulWidget {
+  const _StudentAnnouncementsView();
 
   @override
-  void initState() {
-    super.initState();
-    _repository = widget.repository ?? MockStudentAnnouncementsRepository();
-    _loadAnnouncements();
-  }
+  State<_StudentAnnouncementsView> createState() =>
+      _StudentAnnouncementsViewState();
+}
 
-  Future<void> _loadAnnouncements() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+class _StudentAnnouncementsViewState extends State<_StudentAnnouncementsView> {
+  int _selectedFilter = 0;
+  final List<String> _filters = ['All', 'Admin', 'Teacher', 'Calendar'];
 
-    try {
-      final announcements = await _repository.fetchAnnouncements();
-      if (!mounted) return;
-      setState(() {
-        _announcements = announcements;
-        _isLoading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'Unable to load announcements right now.';
-        _isLoading = false;
-      });
-    }
-  }
-
-  List<AnnouncementModel> get _visibleAnnouncements {
-    if (_selectedFilter == 0) return _announcements;
+  List<AnnouncementModel> _visibleAnnouncements(List<AnnouncementModel> announcements) {
+    if (_selectedFilter == 0) return announcements;
     final selectedCategory = _filters[_selectedFilter].toLowerCase();
     if (selectedCategory == 'calendar') {
-      return _announcements
+      return announcements
           .where((announcement) => announcement.category == 'calendar')
           .toList();
     }
-    return _announcements
+    return announcements
         .where((announcement) =>
             announcement.authorRole.toLowerCase() == selectedCategory)
         .toList();
   }
 
-  int get _recentUnreadCount {
+  int _recentUnreadCount(List<AnnouncementModel> announcements) {
     final oneDayAgo = DateTime.now().subtract(const Duration(hours: 24));
-    return _announcements
+    return announcements
         .where((a) => a.createdAt.isAfter(oneDayAgo))
         .length;
   }
@@ -116,51 +96,57 @@ class _StudentAnnouncementsScreenState
                       ),
                     ),
                   ),
-                  Stack(
-                    children: [
-                      IconButton(
-                        tooltip: 'Announcement notifications',
-                        onPressed: () {
-                          final count = _recentUnreadCount;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(count > 0
-                                  ? '$count announcement${count == 1 ? '' : 's'} in the last 24 hours.'
-                                  : 'No recent announcements.'),
-                            ),
-                          );
-                        },
-                        icon: Icon(
-                          Icons.notifications_outlined,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                      if (_recentUnreadCount > 0)
-                        Positioned(
-                          right: 6,
-                          top: 6,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 18,
-                              minHeight: 18,
-                            ),
-                            child: Text(
-                              '$_recentUnreadCount',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              textAlign: TextAlign.center,
+                  BlocBuilder<AnnouncementsCubit, AnnouncementsState>(
+                    buildWhen: (previous, current) =>
+                        previous.announcements != current.announcements,
+                    builder: (context, state) {
+                      final count = _recentUnreadCount(state.announcements);
+                      return Stack(
+                        children: [
+                          IconButton(
+                            tooltip: 'Announcement notifications',
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(count > 0
+                                      ? '$count announcement${count == 1 ? '' : 's'} in the last 24 hours.'
+                                      : 'No recent announcements.'),
+                                ),
+                              );
+                            },
+                            icon: Icon(
+                              Icons.notifications_outlined,
+                              color: theme.colorScheme.primary,
                             ),
                           ),
-                        ),
-                    ],
+                          if (count > 0)
+                            Positioned(
+                              right: 6,
+                              top: 6,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 18,
+                                  minHeight: 18,
+                                ),
+                                child: Text(
+                                  '$count',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
@@ -216,90 +202,101 @@ class _StudentAnnouncementsScreenState
             const SizedBox(height: 16),
 
             Expanded(
-              child: _isLoading
-                  ? const Center(
+              child: BlocBuilder<AnnouncementsCubit, AnnouncementsState>(
+                builder: (context, state) {
+                  if (state.status == AnnouncementsStatus.loading ||
+                      state.status == AnnouncementsStatus.initial) {
+                    return const Center(
                       child: CircularProgressIndicator(
                         semanticsLabel: 'Loading announcements',
                       ),
-                    )
-                  : _error != null
-                      ? Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(_error!,
-                                  style: const TextStyle(color: Colors.red)),
-                              const SizedBox(height: 10),
-                              ElevatedButton(
-                                onPressed: _loadAnnouncements,
-                                child: const Text('Retry'),
-                              ),
-                            ],
+                    );
+                  }
+                  if (state.status == AnnouncementsStatus.error) {
+                    return Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(state.errorMessage ?? '',
+                              style: const TextStyle(color: Colors.red)),
+                          const SizedBox(height: 10),
+                          ElevatedButton(
+                            onPressed: () => context
+                                .read<AnnouncementsCubit>()
+                                .loadAnnouncements(),
+                            child: const Text('Retry'),
                           ),
-                        )
-                      : ListView(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 20),
-                          children: [
-                            if (_visibleAnnouncements.isEmpty) ...[
-                              const SizedBox(height: 60),
-                              Center(
-                                child: Text(
-                                  'No announcements in this category yet.',
-                                  style: TextStyle(
-                                      color: theme.colorScheme.onSurfaceVariant),
-                                ),
-                              ),
-                              const SizedBox(height: 40),
-                            ] else ...[
-                              for (final section
-                                  in {'TODAY', 'YESTERDAY'}) ...[
-                                if (_visibleAnnouncements.any(
-                                  (announcement) =>
-                                      _sectionFor(announcement) == section,
-                                )) ...[
-                                  _SectionHeader(title: section),
-                                  const SizedBox(height: 10),
-                                  for (final announcement
-                                      in _visibleAnnouncements.where(
-                                    (item) =>
-                                        _sectionFor(item) == section,
-                                  )) ...[
-                                    GestureDetector(
-                                      onTap: () => _openAnnouncementDetail(
-                                          announcement),
-                                      child: _AnnouncementItem(
-                                        icon: _iconFor(announcement),
-                                        iconColor:
-                                            _iconColorFor(announcement),
-                                        iconBgColor:
-                                            _iconBgFor(announcement),
-                                        title: announcement.title,
-                                        subtitle: announcement.authorName,
-                                        time: _timeLabel(
-                                            announcement.createdAt),
-                                        body: announcement.body,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                  ],
-                                  const SizedBox(height: 10),
-                                ],
-                              ],
-                            ],
-                            const SizedBox(height: 24),
-                            Center(
-                              child: Text(
-                                'You\'re all caught up',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                          ],
+                        ],
+                      ),
+                    );
+                  }
+                  final announcements = state.announcements;
+                  final visible = _visibleAnnouncements(announcements);
+                  return ListView(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 20),
+                    children: [
+                      if (visible.isEmpty) ...[
+                        const SizedBox(height: 60),
+                        Center(
+                          child: Text(
+                            'No announcements in this category yet.',
+                            style: TextStyle(
+                                color: theme.colorScheme.onSurfaceVariant),
+                          ),
                         ),
+                        const SizedBox(height: 40),
+                      ] else ...[
+                        for (final section
+                            in {'TODAY', 'YESTERDAY'}) ...[
+                          if (visible.any(
+                            (announcement) =>
+                                _sectionFor(announcement) == section,
+                          )) ...[
+                            _SectionHeader(title: section),
+                            const SizedBox(height: 10),
+                            for (final announcement
+                                in visible.where(
+                              (item) =>
+                                  _sectionFor(item) == section,
+                            )) ...[
+                              GestureDetector(
+                                onTap: () => _openAnnouncementDetail(
+                                    announcement),
+                                child: _AnnouncementItem(
+                                  icon: _iconFor(announcement),
+                                  iconColor:
+                                      _iconColorFor(announcement),
+                                  iconBgColor:
+                                      _iconBgFor(announcement),
+                                  title: announcement.title,
+                                  subtitle: announcement.authorName,
+                                  time: _timeLabel(
+                                      announcement.createdAt),
+                                  body: announcement.body,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                            ],
+                            const SizedBox(height: 10),
+                          ],
+                        ],
+                      ],
+                      const SizedBox(height: 24),
+                      Center(
+                        child: Text(
+                          'You\'re all caught up',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                  );
+                },
+              ),
             ),
           ],
         ),

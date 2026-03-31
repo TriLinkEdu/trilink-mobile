@@ -1,45 +1,82 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../../core/di/injection_container.dart';
+import '../cubit/ai_assistant_cubit.dart';
 import '../models/ai_assistant_models.dart';
-import '../repositories/mock_student_ai_assistant_repository.dart';
 import '../repositories/student_ai_assistant_repository.dart';
 
-/// Generate personalized subject learning paths; export as PDF.
-class LearningPathScreen extends StatefulWidget {
+class LearningPathScreen extends StatelessWidget {
   final List<LearningPathItemModel>? items;
-  final StudentAiAssistantRepository? repository;
 
-  const LearningPathScreen({super.key, this.items, this.repository});
+  const LearningPathScreen({super.key, this.items});
 
   @override
-  State<LearningPathScreen> createState() => _LearningPathScreenState();
+  Widget build(BuildContext context) {
+    if (items != null && items!.isNotEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Learning Path')),
+        body: _LearningPathContent(initialItems: items!),
+      );
+    }
+    return BlocProvider(
+      create: (_) => AiAssistantCubit(sl<StudentAiAssistantRepository>())
+        ..loadAssistantData(suppressError: true),
+      child: const _LearningPathBlocView(),
+    );
+  }
 }
 
-class _LearningPathScreenState extends State<LearningPathScreen> {
-  late final StudentAiAssistantRepository _repository;
-  List<LearningPathItemModel> _items = [];
-  bool _isLoading = false;
+class _LearningPathBlocView extends StatelessWidget {
+  const _LearningPathBlocView();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Learning Path')),
+      body: BlocBuilder<AiAssistantCubit, AiAssistantState>(
+        builder: (context, state) {
+          final loading = state.status == AiAssistantStatus.initial ||
+              state.status == AiAssistantStatus.loading;
+          if (loading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final list = state.data?.learningPath ?? [];
+          if (list.isEmpty) {
+            return const Center(
+              child: Text('No learning path items available.'),
+            );
+          }
+          return _LearningPathContent(initialItems: list);
+        },
+      ),
+    );
+  }
+}
+
+class _LearningPathContent extends StatefulWidget {
+  final List<LearningPathItemModel> initialItems;
+
+  const _LearningPathContent({required this.initialItems});
+
+  @override
+  State<_LearningPathContent> createState() => _LearningPathContentState();
+}
+
+class _LearningPathContentState extends State<_LearningPathContent> {
+  late List<LearningPathItemModel> _items;
 
   @override
   void initState() {
     super.initState();
-    _repository = widget.repository ?? MockStudentAiAssistantRepository();
-    if (widget.items != null && widget.items!.isNotEmpty) {
-      _items = List.of(widget.items!);
-    } else {
-      _loadFromRepository();
-    }
+    _items = List.of(widget.initialItems);
   }
 
-  Future<void> _loadFromRepository() async {
-    setState(() => _isLoading = true);
-    try {
-      final data = await _repository.fetchAssistantData();
-      if (!mounted) return;
-      setState(() => _items = List.of(data.learningPath));
-    } catch (_) {
-      if (!mounted) return;
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+  @override
+  void didUpdateWidget(covariant _LearningPathContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialItems != widget.initialItems) {
+      _items = List.of(widget.initialItems);
     }
   }
 
@@ -95,27 +132,20 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Learning Path')),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _items.isEmpty
-              ? const Center(child: Text('No learning path items available.'))
-              : ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _items.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (context, index) {
-                    final item = _items[index];
-                    return _LearningStepCard(
-                      title: item.title,
-                      subtitle: '${item.subject} • ${item.duration}',
-                      isActive: item.isActive,
-                      isComplete: item.progress >= 1.0,
-                      onTap: () => _showItemDetail(index),
-                    );
-                  },
-                ),
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: _items.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemBuilder: (context, index) {
+        final item = _items[index];
+        return _LearningStepCard(
+          title: item.title,
+          subtitle: '${item.subject} • ${item.duration}',
+          isActive: item.isActive,
+          isComplete: item.progress >= 1.0,
+          onTap: () => _showItemDetail(index),
+        );
+      },
     );
   }
 }

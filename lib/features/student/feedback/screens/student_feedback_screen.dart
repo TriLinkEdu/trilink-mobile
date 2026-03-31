@@ -1,28 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/di/injection_container.dart';
+import '../cubit/feedback_cubit.dart';
 import '../models/feedback_model.dart';
 import '../repositories/student_feedback_repository.dart';
-import '../repositories/mock_student_feedback_repository.dart';
 import 'submit_feedback_screen.dart';
 
-class StudentFeedbackScreen extends StatefulWidget {
-  final StudentFeedbackRepository? repository;
-
-  const StudentFeedbackScreen({super.key, this.repository});
+class StudentFeedbackScreen extends StatelessWidget {
+  const StudentFeedbackScreen({super.key});
 
   @override
-  State<StudentFeedbackScreen> createState() => _StudentFeedbackScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          FeedbackCubit(sl<StudentFeedbackRepository>())..loadFeedbackHistory(),
+      child: const _StudentFeedbackView(),
+    );
+  }
 }
 
-class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
-  late final StudentFeedbackRepository _repository;
+class _StudentFeedbackView extends StatefulWidget {
+  const _StudentFeedbackView();
+
+  @override
+  State<_StudentFeedbackView> createState() => _StudentFeedbackViewState();
+}
+
+class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
   int _selectedRating = 4;
   String _selectedSubject = 'Mathematics 101';
   bool _isSubmitting = false;
-  bool _isLoading = true;
   bool _showBanner = true;
   final _whatWentWellController = TextEditingController();
   final _whatCouldImproveController = TextEditingController();
-  List<FeedbackModel> _feedbackHistory = [];
 
   final List<String> _subjects = [
     'Mathematics 101',
@@ -33,32 +43,10 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _repository = widget.repository ?? MockStudentFeedbackRepository();
-    _loadFeedbackHistory();
-  }
-
-  @override
   void dispose() {
     _whatWentWellController.dispose();
     _whatCouldImproveController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadFeedbackHistory() async {
-    setState(() => _isLoading = true);
-    try {
-      final history = await _repository.fetchFeedbackHistory();
-      if (!mounted) return;
-      setState(() {
-        _feedbackHistory = history;
-        _isLoading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-    }
   }
 
   Future<void> _submitFeedback() async {
@@ -82,7 +70,7 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
         if (improvement.isNotEmpty) 'Could improve: $improvement',
       ].join('\n');
 
-      await _repository.submitFeedback(
+      await sl<StudentFeedbackRepository>().submitFeedback(
         subjectId: _selectedSubject.toLowerCase().replaceAll(' ', '_'),
         subjectName: _selectedSubject,
         rating: _selectedRating,
@@ -99,7 +87,7 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
         SnackBar(content: Text('Feedback submitted for $_selectedSubject.')),
       );
 
-      _loadFeedbackHistory();
+      context.read<FeedbackCubit>().loadFeedbackHistory();
     } catch (_) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
@@ -111,6 +99,7 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
 
   void _showAllFeedbackHistory() {
     final theme = Theme.of(context);
+    final feedbackHistory = context.read<FeedbackCubit>().state.feedbackHistory;
 
     showModalBottomSheet<void>(
       context: context,
@@ -147,7 +136,7 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
             ),
             const Divider(),
             Expanded(
-              child: _feedbackHistory.isEmpty
+              child: feedbackHistory.isEmpty
                   ? Center(
                       child: Text(
                         'No feedback submitted yet.',
@@ -158,11 +147,11 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                   : ListView.separated(
                       controller: controller,
                       padding: const EdgeInsets.all(16),
-                      itemCount: _feedbackHistory.length,
+                      itemCount: feedbackHistory.length,
                       separatorBuilder: (_, __) =>
                           const SizedBox(height: 12),
                       itemBuilder: (context, index) {
-                        final fb = _feedbackHistory[index];
+                        final fb = feedbackHistory[index];
                         return _FeedbackHistoryTile(feedback: fb);
                       },
                     ),
@@ -175,12 +164,17 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final recentItems = _feedbackHistory.length > 2
-        ? _feedbackHistory.sublist(_feedbackHistory.length - 2)
-        : _feedbackHistory;
+    return BlocBuilder<FeedbackCubit, FeedbackState>(
+      builder: (context, feedbackState) {
+        final theme = Theme.of(context);
+        final feedbackHistory = feedbackState.feedbackHistory;
+        final historyLoading = feedbackState.status == FeedbackStatus.loading ||
+            feedbackState.status == FeedbackStatus.initial;
+        final recentItems = feedbackHistory.length > 2
+            ? feedbackHistory.sublist(feedbackHistory.length - 2)
+            : feedbackHistory;
 
-    return Scaffold(
+        return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
@@ -343,6 +337,7 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                       alignment: Alignment.centerRight,
                       child: TextButton.icon(
                         onPressed: () async {
+                          final cubit = context.read<FeedbackCubit>();
                           final result =
                               await Navigator.of(context).push<bool>(
                             MaterialPageRoute(
@@ -351,11 +346,12 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                                     .toLowerCase()
                                     .replaceAll(' ', '_'),
                                 subjectName: _selectedSubject,
-                                repository: _repository,
                               ),
                             ),
                           );
-                          if (result == true) _loadFeedbackHistory();
+                          if (result == true && mounted) {
+                            cubit.loadFeedbackHistory();
+                          }
                         },
                         icon: const Icon(Icons.open_in_new_rounded,
                             size: 16),
@@ -553,11 +549,34 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
                     ),
                     const SizedBox(height: 8),
 
-                    if (_isLoading)
+                    if (historyLoading)
                       const Center(
                         child: Padding(
                           padding: EdgeInsets.all(20),
                           child: CircularProgressIndicator(),
+                        ),
+                      )
+                    else if (feedbackState.status == FeedbackStatus.error)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                feedbackState.errorMessage ?? '',
+                                style: const TextStyle(color: Colors.red),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 10),
+                              ElevatedButton(
+                                onPressed: () => context
+                                    .read<FeedbackCubit>()
+                                    .loadFeedbackHistory(),
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
                         ),
                       )
                     else if (recentItems.isEmpty)
@@ -586,6 +605,8 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
           ],
         ),
       ),
+    );
+      },
     );
   }
 }

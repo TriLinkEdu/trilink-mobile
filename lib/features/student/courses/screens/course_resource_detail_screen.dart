@@ -1,56 +1,49 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/di/injection_container.dart';
+import '../cubit/course_resource_detail_cubit.dart';
 import '../models/course_resource_model.dart';
 import '../repositories/student_courses_repository.dart';
-import '../repositories/mock_student_courses_repository.dart';
 
-class CourseResourceDetailScreen extends StatefulWidget {
+class CourseResourceDetailScreen extends StatelessWidget {
   final String resourceId;
-  final StudentCoursesRepository? repository;
 
   const CourseResourceDetailScreen({
     super.key,
     required this.resourceId,
-  }) : repository = null;
+  });
 
   @override
-  State<CourseResourceDetailScreen> createState() => _CourseResourceDetailScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => CourseResourceDetailCubit(
+        sl<StudentCoursesRepository>(),
+        resourceId,
+      )..loadResource(),
+      child: const _CourseResourceDetailView(),
+    );
+  }
 }
 
-class _CourseResourceDetailScreenState extends State<CourseResourceDetailScreen> {
-  late final StudentCoursesRepository _repo;
-  CourseResourceModel? _resource;
-  bool _isLoading = true;
-  bool _isOpening = false;
-  String? _error;
+class _CourseResourceDetailView extends StatefulWidget {
+  const _CourseResourceDetailView();
 
   @override
-  void initState() {
-    super.initState();
-    _repo = widget.repository ?? MockStudentCoursesRepository();
-    _load();
-  }
+  State<_CourseResourceDetailView> createState() =>
+      _CourseResourceDetailViewState();
+}
 
-  Future<void> _load() async {
-    setState(() { _isLoading = true; _error = null; });
-    try {
-      final all = await _repo.fetchCourseResources();
-      final match = all.where((r) => r.id == widget.resourceId);
-      _resource = match.isNotEmpty ? match.first : null;
-      if (_resource == null) _error = 'Resource not found';
-    } catch (e) {
-      _error = e.toString();
-    }
-    if (mounted) setState(() => _isLoading = false);
-  }
+class _CourseResourceDetailViewState extends State<_CourseResourceDetailView> {
+  bool _isOpening = false;
 
-  Future<void> _openResource() async {
+  Future<void> _openResource(CourseResourceModel resource) async {
     setState(() => _isOpening = true);
     await Future<void>.delayed(const Duration(seconds: 1));
     if (mounted) {
       setState(() => _isOpening = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Opened "${_resource!.title}" (${_resource!.typeLabel})')),
+        SnackBar(content: Text('Opened "${resource.title}" (${resource.typeLabel})')),
       );
     }
   }
@@ -74,19 +67,36 @@ class _CourseResourceDetailScreenState extends State<CourseResourceDetailScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Resource'), centerTitle: true),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(child: Text(_error!, style: TextStyle(color: theme.colorScheme.error)))
-              : _buildContent(theme),
+    return BlocBuilder<CourseResourceDetailCubit, CourseResourceDetailState>(
+      builder: (context, state) {
+        if (state.status == CourseResourceDetailStatus.loading ||
+            state.status == CourseResourceDetailStatus.initial) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Resource'), centerTitle: true),
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (state.status == CourseResourceDetailStatus.error) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Resource'), centerTitle: true),
+            body: Center(
+              child: Text(
+                state.errorMessage ?? '',
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+            ),
+          );
+        }
+        final r = state.resource!;
+        return Scaffold(
+          appBar: AppBar(title: const Text('Resource'), centerTitle: true),
+          body: _buildContent(theme, r),
+        );
+      },
     );
   }
 
-  Widget _buildContent(ThemeData theme) {
-    final r = _resource!;
-
+  Widget _buildContent(ThemeData theme, CourseResourceModel r) {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -132,7 +142,7 @@ class _CourseResourceDetailScreenState extends State<CourseResourceDetailScreen>
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: _isOpening ? null : _openResource,
+              onPressed: _isOpening ? null : () => _openResource(r),
               icon: _isOpening
                   ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.open_in_new_rounded),

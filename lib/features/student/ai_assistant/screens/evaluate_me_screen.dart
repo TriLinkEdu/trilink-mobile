@@ -1,70 +1,78 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../../core/di/injection_container.dart';
+import '../cubit/ai_assistant_cubit.dart';
 import '../models/ai_assistant_models.dart';
-import '../repositories/mock_student_ai_assistant_repository.dart';
 import '../repositories/student_ai_assistant_repository.dart';
 
-/// AI-generated general feedback about performance and learning habits.
-class EvaluateMeScreen extends StatefulWidget {
+class EvaluateMeScreen extends StatelessWidget {
   final List<EvaluateInsightModel>? insights;
-  final StudentAiAssistantRepository? repository;
 
-  const EvaluateMeScreen({super.key, this.insights, this.repository});
+  const EvaluateMeScreen({super.key, this.insights});
 
   @override
-  State<EvaluateMeScreen> createState() => _EvaluateMeScreenState();
+  Widget build(BuildContext context) {
+    if (insights != null && insights!.isNotEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Evaluate Me')),
+        body: _EvaluateMeList(insights: insights!),
+      );
+    }
+    return BlocProvider(
+      create: (_) => AiAssistantCubit(sl<StudentAiAssistantRepository>())
+        ..loadAssistantData(suppressError: true),
+      child: const _EvaluateMeBlocView(),
+    );
+  }
 }
 
-class _EvaluateMeScreenState extends State<EvaluateMeScreen> {
-  late final StudentAiAssistantRepository _repository;
-  List<EvaluateInsightModel> _insights = [];
-  bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _repository = widget.repository ?? MockStudentAiAssistantRepository();
-    if (widget.insights != null && widget.insights!.isNotEmpty) {
-      _insights = List.of(widget.insights!);
-    } else {
-      _loadFromRepository();
-    }
-  }
-
-  Future<void> _loadFromRepository() async {
-    setState(() => _isLoading = true);
-    try {
-      final data = await _repository.fetchAssistantData();
-      if (!mounted) return;
-      setState(() => _insights = List.of(data.insights));
-    } catch (_) {
-      if (!mounted) return;
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
+class _EvaluateMeBlocView extends StatelessWidget {
+  const _EvaluateMeBlocView();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Evaluate Me')),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _insights.isEmpty
-              ? const Center(
-                  child: Text('No evaluation insights available.'))
-              : ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _insights.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (context, index) {
-                    final insight = _insights[index];
-                    return _InsightCard(
-                      title: insight.title,
-                      summary: insight.summary,
-                      recommendation: insight.recommendation,
-                    );
-                  },
-                ),
+      body: BlocBuilder<AiAssistantCubit, AiAssistantState>(
+        builder: (context, state) {
+          final loading = state.status == AiAssistantStatus.initial ||
+              state.status == AiAssistantStatus.loading;
+          if (loading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final list = state.data?.insights ?? [];
+          if (list.isEmpty) {
+            return const Center(
+              child: Text('No evaluation insights available.'),
+            );
+          }
+          return _EvaluateMeList(insights: list);
+        },
+      ),
+    );
+  }
+}
+
+class _EvaluateMeList extends StatelessWidget {
+  final List<EvaluateInsightModel> insights;
+
+  const _EvaluateMeList({required this.insights});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: insights.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemBuilder: (context, index) {
+        final insight = insights[index];
+        return _InsightCard(
+          title: insight.title,
+          summary: insight.summary,
+          recommendation: insight.recommendation,
+        );
+      },
     );
   }
 }

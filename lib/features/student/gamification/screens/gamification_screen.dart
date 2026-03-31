@@ -1,75 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../../core/di/injection_container.dart';
 import '../../../../core/routes/route_names.dart';
+import '../cubit/gamification_cubit.dart';
 import '../models/gamification_models.dart';
 import '../repositories/student_gamification_repository.dart';
-import '../repositories/mock_student_gamification_repository.dart';
 import 'leaderboard_screen.dart';
 import 'quiz_screen.dart';
 
 /// Gamification hub: streaks, achievements, quick quizzes, leaderboard.
-class GamificationScreen extends StatefulWidget {
-  final StudentGamificationRepository? repository;
-
-  const GamificationScreen({super.key, this.repository});
+class GamificationScreen extends StatelessWidget {
+  const GamificationScreen({super.key});
 
   @override
-  State<GamificationScreen> createState() => _GamificationScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          GamificationCubit(sl<StudentGamificationRepository>())..loadAll(),
+      child: const _GamificationView(),
+    );
+  }
 }
 
-class _GamificationScreenState extends State<GamificationScreen> {
-  late final StudentGamificationRepository _repository;
-  bool _isWeeklyRanking = true;
-  bool _isLoading = true;
+class _GamificationView extends StatefulWidget {
+  const _GamificationView();
 
-  StreakModel? _streak;
-  List<AchievementModel> _achievements = [];
-  List<LeaderboardEntry> _leaderboardEntries = [];
-  List<QuizModel> _availableQuizzes = [];
+  @override
+  State<_GamificationView> createState() => _GamificationViewState();
+}
 
+class _GamificationViewState extends State<_GamificationView> {
   bool _notifyQuizReminders = true;
   bool _notifyLeaderboard = true;
   bool _notifyAchievements = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _repository = widget.repository ?? MockStudentGamificationRepository();
-    _loadAll();
-  }
-
-  Future<void> _loadAll() async {
-    setState(() => _isLoading = true);
-    try {
-      final results = await Future.wait([
-        _repository.fetchStreak(),
-        _repository.fetchAchievements(),
-        _repository.fetchLeaderboard(_isWeeklyRanking ? 'weekly' : 'monthly'),
-        _repository.fetchAvailableQuizzes(),
-      ]);
-      if (!mounted) return;
-      setState(() {
-        _streak = results[0] as StreakModel;
-        _achievements = results[1] as List<AchievementModel>;
-        _leaderboardEntries = results[2] as List<LeaderboardEntry>;
-        _availableQuizzes = results[3] as List<QuizModel>;
-      });
-    } catch (_) {
-      if (!mounted) return;
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _toggleLeaderboardPeriod() async {
-    setState(() => _isWeeklyRanking = !_isWeeklyRanking);
-    try {
-      final entries = await _repository.fetchLeaderboard(
-        _isWeeklyRanking ? 'weekly' : 'monthly',
-      );
-      if (!mounted) return;
-      setState(() => _leaderboardEntries = entries);
-    } catch (_) {}
-  }
 
   void _showSettingsSheet() {
     final theme = Theme.of(context);
@@ -130,7 +94,7 @@ class _GamificationScreenState extends State<GamificationScreen> {
   }
 
   void _showStreakHistory() {
-    final streak = _streak;
+    final streak = context.read<GamificationCubit>().state.streak;
     if (streak == null) return;
 
     showDialog(
@@ -255,24 +219,34 @@ class _GamificationScreenState extends State<GamificationScreen> {
             ),
 
             Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildStreakCard(),
-                          const SizedBox(height: 24),
-                          _buildAchievementsSection(),
-                          const SizedBox(height: 24),
-                          _buildQuickQuizSection(),
-                          const SizedBox(height: 24),
-                          _buildLeaderboardSection(),
-                          const SizedBox(height: 24),
-                        ],
-                      ),
+              child: BlocBuilder<GamificationCubit, GamificationState>(
+                builder: (context, state) {
+                  final loading = state.status == GamificationStatus.initial ||
+                      state.status == GamificationStatus.loading;
+                  if (loading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildStreakCard(state.streak),
+                        const SizedBox(height: 24),
+                        _buildAchievementsSection(state.achievements),
+                        const SizedBox(height: 24),
+                        _buildQuickQuizSection(state.availableQuizzes),
+                        const SizedBox(height: 24),
+                        _buildLeaderboardSection(
+                          state.leaderboardEntries,
+                          state.isWeeklyRanking,
+                        ),
+                        const SizedBox(height: 24),
+                      ],
                     ),
+                  );
+                },
+              ),
             ),
           ],
         ),
@@ -280,8 +254,7 @@ class _GamificationScreenState extends State<GamificationScreen> {
     );
   }
 
-  Widget _buildStreakCard() {
-    final streak = _streak;
+  Widget _buildStreakCard(StreakModel? streak) {
     return GestureDetector(
       onTap: _showStreakHistory,
       child: Container(
@@ -354,9 +327,9 @@ class _GamificationScreenState extends State<GamificationScreen> {
     );
   }
 
-  Widget _buildAchievementsSection() {
+  Widget _buildAchievementsSection(List<AchievementModel> achievements) {
     final theme = Theme.of(context);
-    final displayAchievements = _achievements.take(4).toList();
+    final displayAchievements = achievements.take(4).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -395,7 +368,7 @@ class _GamificationScreenState extends State<GamificationScreen> {
               : ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: displayAchievements.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 14),
+                  separatorBuilder: (_, _) => const SizedBox(width: 14),
                   itemBuilder: (_, i) {
                     final a = displayAchievements[i];
                     final color = a.isUnlocked ? Colors.amber : Colors.grey;
@@ -416,7 +389,7 @@ class _GamificationScreenState extends State<GamificationScreen> {
     );
   }
 
-  Widget _buildQuickQuizSection() {
+  Widget _buildQuickQuizSection(List<QuizModel> availableQuizzes) {
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -430,14 +403,14 @@ class _GamificationScreenState extends State<GamificationScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        if (_availableQuizzes.isEmpty)
+        if (availableQuizzes.isEmpty)
           const Center(child: Text('No quizzes available.'))
         else
-          ...List.generate(_availableQuizzes.length, (i) {
-            final quiz = _availableQuizzes[i];
+          ...List.generate(availableQuizzes.length, (i) {
+            final quiz = availableQuizzes[i];
             return Padding(
               padding: EdgeInsets.only(
-                bottom: i < _availableQuizzes.length - 1 ? 10 : 0,
+                bottom: i < availableQuizzes.length - 1 ? 10 : 0,
               ),
               child: _QuickQuizTile(
                 icon: _iconForSubject(quiz.subjectName),
@@ -449,7 +422,6 @@ class _GamificationScreenState extends State<GamificationScreen> {
                     MaterialPageRoute(
                       builder: (_) => QuizScreen(
                         subjectId: quiz.subjectId,
-                        repository: _repository,
                       ),
                     ),
                   );
@@ -461,9 +433,12 @@ class _GamificationScreenState extends State<GamificationScreen> {
     );
   }
 
-  Widget _buildLeaderboardSection() {
+  Widget _buildLeaderboardSection(
+    List<LeaderboardEntry> leaderboardEntries,
+    bool isWeeklyRanking,
+  ) {
     final theme = Theme.of(context);
-    final topEntries = _leaderboardEntries.take(3).toList();
+    final topEntries = leaderboardEntries.take(3).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -479,7 +454,8 @@ class _GamificationScreenState extends State<GamificationScreen> {
               ),
             ),
             InkWell(
-              onTap: _toggleLeaderboardPeriod,
+              onTap: () =>
+                  context.read<GamificationCubit>().toggleLeaderboardPeriod(),
               borderRadius: BorderRadius.circular(8),
               child: Row(
                 children: [
@@ -487,9 +463,7 @@ class _GamificationScreenState extends State<GamificationScreen> {
                     onPressed: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => LeaderboardScreen(
-                            repository: _repository,
-                          ),
+                          builder: (_) => const LeaderboardScreen(),
                         ),
                       );
                     },
@@ -502,7 +476,7 @@ class _GamificationScreenState extends State<GamificationScreen> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    _isWeeklyRanking ? 'Weekly' : 'Monthly',
+                    isWeeklyRanking ? 'Weekly' : 'Monthly',
                     style: TextStyle(
                       fontSize: 13,
                       color: theme.colorScheme.onSurfaceVariant,
@@ -696,7 +670,6 @@ class _LeaderboardRow extends StatelessWidget {
   final String xp;
   final Color avatarColor;
   final Color rankColor;
-  final bool isCurrentUser;
 
   const _LeaderboardRow({
     required this.rank,
@@ -705,7 +678,6 @@ class _LeaderboardRow extends StatelessWidget {
     required this.xp,
     required this.avatarColor,
     required this.rankColor,
-    this.isCurrentUser = false,
   });
 
   @override
@@ -715,13 +687,8 @@ class _LeaderboardRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: isCurrentUser
-            ? theme.colorScheme.primary.withAlpha(15)
-            : theme.colorScheme.surface,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
-        border: isCurrentUser
-            ? Border.all(color: theme.colorScheme.primary.withAlpha(50))
-            : null,
         boxShadow: [
           BoxShadow(
             color: theme.shadowColor.withAlpha(8),
@@ -766,9 +733,7 @@ class _LeaderboardRow extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: isCurrentUser
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurface,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 if (classLabel.isNotEmpty)

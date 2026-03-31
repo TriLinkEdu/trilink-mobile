@@ -1,53 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/di/injection_container.dart';
 import '../../../../core/routes/route_names.dart';
+import '../cubit/course_resources_cubit.dart';
 import '../models/course_resource_model.dart';
-import '../repositories/mock_student_courses_repository.dart';
 import '../repositories/student_courses_repository.dart';
 
-class StudentCoursesResourcesScreen extends StatefulWidget {
-  final StudentCoursesRepository? repository;
-
-  const StudentCoursesResourcesScreen({super.key, this.repository});
+class StudentCoursesResourcesScreen extends StatelessWidget {
+  const StudentCoursesResourcesScreen({super.key});
 
   @override
-  State<StudentCoursesResourcesScreen> createState() =>
-      _StudentCoursesResourcesScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          CourseResourcesCubit(sl<StudentCoursesRepository>())..loadResources(),
+      child: const _StudentCoursesResourcesView(),
+    );
+  }
 }
 
-class _StudentCoursesResourcesScreenState
-    extends State<StudentCoursesResourcesScreen> {
-  late final StudentCoursesRepository _repository =
-      widget.repository ?? MockStudentCoursesRepository();
-  bool _isLoading = true;
-  String? _error;
-  List<CourseResourceModel> _resources = const [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadResources();
-  }
-
-  Future<void> _loadResources() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-    try {
-      final resources = await _repository.fetchCourseResources();
-      if (!mounted) return;
-      setState(() {
-        _resources = resources;
-        _isLoading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'Unable to load resources.';
-        _isLoading = false;
-      });
-    }
-  }
+class _StudentCoursesResourcesView extends StatelessWidget {
+  const _StudentCoursesResourcesView();
 
   IconData _iconForType(ResourceType type) {
     switch (type) {
@@ -81,77 +54,84 @@ class _StudentCoursesResourcesScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Courses & Resources')),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(_error!,
-                          style: const TextStyle(color: Colors.red)),
-                      const SizedBox(height: 10),
-                      ElevatedButton(
-                        onPressed: _loadResources,
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
-              : _resources.isEmpty
-                  ? const Center(child: Text('No resources available.'))
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _resources.length,
-                      itemBuilder: (context, index) {
-                        final resource = _resources[index];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor:
-                                  _colorForType(resource.type).withAlpha(30),
-                              child: Icon(
-                                _iconForType(resource.type),
-                                color: _colorForType(resource.type),
-                                size: 22,
-                              ),
-                            ),
-                            title: Text(
-                              resource.title,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w600),
-                            ),
-                            subtitle: Text(resource.subjectName),
-                            trailing: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: _colorForType(resource.type)
-                                    .withAlpha(20),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                resource.typeLabel,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: _colorForType(resource.type),
-                                ),
-                              ),
-                            ),
-                            onTap: () {
-                              Navigator.of(context).pushNamed(
-                                RouteNames.studentCourseResourceDetail,
-                                arguments: {'resourceId': resource.id},
-                              );
-                            },
+    return BlocBuilder<CourseResourcesCubit, CourseResourcesState>(
+      builder: (context, state) {
+        return Scaffold(
+          appBar: AppBar(title: const Text('Courses & Resources')),
+          body: state.status == CourseResourcesStatus.loading ||
+                  state.status == CourseResourcesStatus.initial
+              ? const Center(child: CircularProgressIndicator())
+              : state.status == CourseResourcesStatus.error
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(state.errorMessage ?? '',
+                              style: const TextStyle(color: Colors.red)),
+                          const SizedBox(height: 10),
+                          ElevatedButton(
+                            onPressed: () => context
+                                .read<CourseResourcesCubit>()
+                                .loadResources(),
+                            child: const Text('Retry'),
                           ),
-                        );
-                      },
-                    ),
+                        ],
+                      ),
+                    )
+                  : state.resources.isEmpty
+                      ? const Center(child: Text('No resources available.'))
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: state.resources.length,
+                          itemBuilder: (context, index) {
+                            final resource = state.resources[index];
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor:
+                                      _colorForType(resource.type).withAlpha(30),
+                                  child: Icon(
+                                    _iconForType(resource.type),
+                                    color: _colorForType(resource.type),
+                                    size: 22,
+                                  ),
+                                ),
+                                title: Text(
+                                  resource.title,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600),
+                                ),
+                                subtitle: Text(resource.subjectName),
+                                trailing: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: _colorForType(resource.type)
+                                        .withAlpha(20),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    resource.typeLabel,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: _colorForType(resource.type),
+                                    ),
+                                  ),
+                                ),
+                                onTap: () {
+                                  Navigator.of(context).pushNamed(
+                                    RouteNames.studentCourseResourceDetail,
+                                    arguments: {'resourceId': resource.id},
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                        ),
+        );
+      },
     );
   }
 }

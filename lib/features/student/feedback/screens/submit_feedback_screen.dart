@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
+import '../../../../core/di/injection_container.dart';
 import '../repositories/student_feedback_repository.dart';
-import '../repositories/mock_student_feedback_repository.dart';
 
 class SubmitFeedbackScreen extends StatefulWidget {
   final String subjectId;
   final String subjectName;
-  final StudentFeedbackRepository? repository;
 
   const SubmitFeedbackScreen({
     super.key,
     required this.subjectId,
     required this.subjectName,
-    this.repository,
   });
 
   @override
@@ -19,16 +17,9 @@ class SubmitFeedbackScreen extends StatefulWidget {
 }
 
 class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> {
-  late final StudentFeedbackRepository _repository;
   final TextEditingController _commentController = TextEditingController();
   int _rating = 0;
   bool _isSubmitting = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _repository = widget.repository ?? MockStudentFeedbackRepository();
-  }
 
   @override
   void dispose() {
@@ -47,7 +38,7 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      await _repository.submitFeedback(
+      await sl<StudentFeedbackRepository>().submitFeedback(
         subjectId: widget.subjectId,
         subjectName: widget.subjectName,
         rating: _rating,
