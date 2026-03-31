@@ -1,79 +1,48 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../../core/di/injection_container.dart';
+import '../cubit/notifications_cubit.dart';
 import '../models/notification_model.dart';
 import '../repositories/student_notifications_repository.dart';
-import '../repositories/mock_student_notifications_repository.dart';
 import '../widgets/notification_tile.dart';
 
-class StudentNotificationsScreen extends StatefulWidget {
-  final StudentNotificationsRepository? repository;
-
-  const StudentNotificationsScreen({super.key, this.repository});
+class StudentNotificationsScreen extends StatelessWidget {
+  const StudentNotificationsScreen({super.key});
 
   @override
-  State<StudentNotificationsScreen> createState() =>
-      _StudentNotificationsScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => NotificationsCubit(sl<StudentNotificationsRepository>())
+        ..loadNotifications(),
+      child: const _NotificationsView(),
+    );
+  }
 }
 
-class _StudentNotificationsScreenState
-    extends State<StudentNotificationsScreen> {
-  late final StudentNotificationsRepository _repository;
-  int _filterIndex = 0;
-  bool _isLoading = true;
-  String? _error;
-  List<NotificationModel> _items = [];
+class _NotificationsView extends StatefulWidget {
+  const _NotificationsView();
 
   @override
-  void initState() {
-    super.initState();
-    _repository = widget.repository ?? MockStudentNotificationsRepository();
-    _loadNotifications();
-  }
+  State<_NotificationsView> createState() => _NotificationsViewState();
+}
 
-  Future<void> _loadNotifications() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-    try {
-      final items = await _repository.fetchNotifications();
-      if (!mounted) return;
-      setState(() {
-        _items = items;
-        _isLoading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'Unable to load notifications.';
-        _isLoading = false;
-      });
-    }
-  }
+class _NotificationsViewState extends State<_NotificationsView> {
+  int _filterIndex = 0;
 
-  List<NotificationModel> get _visibleItems {
+  List<NotificationModel> _visibleItems(List<NotificationModel> items) {
     if (_filterIndex == 1) {
-      return _items.where((item) => !item.isRead).toList();
+      return items.where((item) => !item.isRead).toList();
     }
-    return _items;
+    return items;
   }
 
   Future<void> _markAllRead() async {
-    await _repository.markAllAsRead();
-    if (!mounted) return;
-    setState(() {
-      _items = _items.map((n) => n.copyWith(isRead: true)).toList();
-    });
+    await context.read<NotificationsCubit>().markAllAsRead();
   }
 
   Future<void> _onTapNotification(NotificationModel notification) async {
-    await _repository.markAsRead(notification.id);
-    if (!mounted) return;
-    setState(() {
-      _items = _items.map((n) {
-        if (n.id == notification.id) return n.copyWith(isRead: true);
-        return n;
-      }).toList();
-    });
+    await context.read<NotificationsCubit>().markNotificationRead(notification.id);
 
     if (!mounted) return;
     if (notification.routeName != null) {
@@ -99,18 +68,7 @@ class _StudentNotificationsScreenState
   }
 
   Future<void> _onToggleRead(NotificationModel notification) async {
-    if (!notification.isRead) {
-      await _repository.markAsRead(notification.id);
-    }
-    if (!mounted) return;
-    setState(() {
-      _items = _items.map((n) {
-        if (n.id == notification.id) {
-          return n.copyWith(isRead: !notification.isRead);
-        }
-        return n;
-      }).toList();
-    });
+    await context.read<NotificationsCubit>().toggleRead(notification);
   }
 
   String _timeLabel(DateTime createdAt) {
@@ -124,7 +82,6 @@ class _StudentNotificationsScreenState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final visibleItems = _visibleItems;
 
     return Scaffold(
       appBar: AppBar(
@@ -136,74 +93,88 @@ class _StudentNotificationsScreenState
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(_error!,
-                          style: const TextStyle(color: Colors.red)),
-                      const SizedBox(height: 10),
-                      ElevatedButton(
-                        onPressed: _loadNotifications,
-                        child: const Text('Retry'),
-                      ),
-                    ],
+      body: BlocBuilder<NotificationsCubit, NotificationsState>(
+        builder: (context, state) {
+          final loading = state.status == NotificationsStatus.initial ||
+              state.status == NotificationsStatus.loading;
+          if (loading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (state.status == NotificationsStatus.error) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    state.errorMessage ?? 'Unable to load notifications.',
+                    style: const TextStyle(color: Colors.red),
                   ),
-                )
-              : Column(
+                  const SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: () =>
+                        context.read<NotificationsCubit>().loadNotifications(),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final visibleItems = _visibleItems(state.items);
+
+          return Column(
+            children: [
+              const SizedBox(height: 10),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
                   children: [
-                    const SizedBox(height: 10),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        children: [
-                          ChoiceChip(
-                            label: const Text('All'),
-                            selected: _filterIndex == 0,
-                            onSelected: (_) =>
-                                setState(() => _filterIndex = 0),
-                          ),
-                          const SizedBox(width: 8),
-                          ChoiceChip(
-                            label: const Text('Unread'),
-                            selected: _filterIndex == 1,
-                            onSelected: (_) =>
-                                setState(() => _filterIndex = 1),
-                          ),
-                        ],
-                      ),
+                    ChoiceChip(
+                      label: const Text('All'),
+                      selected: _filterIndex == 0,
+                      onSelected: (_) =>
+                          setState(() => _filterIndex = 0),
                     ),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: visibleItems.isEmpty
-                          ? Center(
-                              child: Text(
-                                'No notifications in this view.',
-                                style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-                              ),
-                            )
-                          : ListView.separated(
-                              itemCount: visibleItems.length,
-                              separatorBuilder: (_, __) =>
-                                  const Divider(height: 1),
-                              itemBuilder: (context, index) {
-                                final item = visibleItems[index];
-                                return NotificationTile(
-                                  isRead: item.isRead,
-                                  title: item.title,
-                                  body: item.body,
-                                  time: _timeLabel(item.createdAt),
-                                  onTap: () => _onTapNotification(item),
-                                  onToggleRead: () => _onToggleRead(item),
-                                );
-                              },
-                            ),
+                    const SizedBox(width: 8),
+                    ChoiceChip(
+                      label: const Text('Unread'),
+                      selected: _filterIndex == 1,
+                      onSelected: (_) =>
+                          setState(() => _filterIndex = 1),
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: visibleItems.isEmpty
+                    ? Center(
+                        child: Text(
+                          'No notifications in this view.',
+                          style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                        ),
+                      )
+                    : ListView.separated(
+                        itemCount: visibleItems.length,
+                        separatorBuilder: (_, __) =>
+                            const Divider(height: 1),
+                        itemBuilder: (context, index) {
+                          final item = visibleItems[index];
+                          return NotificationTile(
+                            isRead: item.isRead,
+                            title: item.title,
+                            body: item.body,
+                            time: _timeLabel(item.createdAt),
+                            onTap: () => _onTapNotification(item),
+                            onToggleRead: () => _onToggleRead(item),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }

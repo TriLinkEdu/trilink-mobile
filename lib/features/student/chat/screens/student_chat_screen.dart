@@ -1,68 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../../core/di/injection_container.dart';
+import '../cubit/chat_cubit.dart';
 import '../models/chat_models.dart';
 import '../repositories/student_chat_repository.dart';
-import '../repositories/mock_student_chat_repository.dart';
 import 'chat_conversation_screen.dart';
 
-class StudentChatScreen extends StatefulWidget {
-  final StudentChatRepository? repository;
-
-  const StudentChatScreen({super.key, this.repository});
+class StudentChatScreen extends StatelessWidget {
+  const StudentChatScreen({super.key});
 
   @override
-  State<StudentChatScreen> createState() => _StudentChatScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          ChatCubit(sl<StudentChatRepository>())..loadConversations(),
+      child: const _ChatView(),
+    );
+  }
 }
 
-class _StudentChatScreenState extends State<StudentChatScreen> {
-  late final StudentChatRepository _repository;
-  bool _isLoading = true;
-  String? _error;
-  List<ChatConversationModel> _conversations = [];
+class _ChatView extends StatefulWidget {
+  const _ChatView();
 
   @override
-  void initState() {
-    super.initState();
-    _repository = widget.repository ?? MockStudentChatRepository();
-    _loadConversations();
-  }
+  State<_ChatView> createState() => _ChatViewState();
+}
 
-  Future<void> _loadConversations() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-    try {
-      final conversations = await _repository.fetchConversations();
-      if (!mounted) return;
-      setState(() {
-        _conversations = conversations;
-        _isLoading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'Unable to load conversations.';
-        _isLoading = false;
-      });
-    }
-  }
-
-  List<ChatConversationModel> get _groups =>
-      _conversations.where((c) => c.isGroup).toList();
-
-  List<ChatConversationModel> get _inbox =>
-      _conversations.where((c) => !c.isGroup).toList();
-
+class _ChatViewState extends State<_ChatView> {
   void _openConversation(ChatConversationModel conversation) {
-    Navigator.of(context).push(
+    final cubit = context.read<ChatCubit>();
+    Navigator.of(context)
+        .push(
       MaterialPageRoute(
         builder: (_) => ChatConversationScreen(
           conversationId: conversation.id,
           title: conversation.title,
-          repository: _repository,
         ),
       ),
-    ).then((_) => _loadConversations());
+    )
+        .then((_) => cubit.loadConversations());
   }
 
   void _showComposeOptions() {
@@ -159,7 +136,8 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
                 final name = nameController.text.trim();
                 if (name.isEmpty || selected.isEmpty) return;
                 Navigator.pop(dialogContext);
-                final conversation = await _repository.createConversation(
+                final conversation = await sl<StudentChatRepository>()
+                    .createConversation(
                   title: name,
                   participantIds: ['student1', ...selected],
                   isGroup: true,
@@ -194,7 +172,8 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
           return SimpleDialogOption(
             onPressed: () async {
               Navigator.pop(dialogContext);
-              final conversation = await _repository.createConversation(
+              final conversation = await sl<StudentChatRepository>()
+                  .createConversation(
                 title: entry.value,
                 participantIds: ['student1', entry.key],
                 isGroup: false,
@@ -232,28 +211,47 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
             ],
           ),
         ),
-        body: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(_error!, style: const TextStyle(color: Colors.red)),
-                        const SizedBox(height: 10),
-                        ElevatedButton(
-                          onPressed: _loadConversations,
-                          child: const Text('Retry'),
-                        ),
-                      ],
+        body: BlocBuilder<ChatCubit, ChatState>(
+          builder: (context, state) {
+            final loading = state.status == ChatStatus.initial ||
+                state.status == ChatStatus.loading;
+            if (loading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (state.status == ChatStatus.error) {
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      state.errorMessage ?? 'Unable to load conversations.',
+                      style: const TextStyle(color: Colors.red),
                     ),
-                  )
-                : TabBarView(
-                    children: [
-                      _ChatList(items: _groups, onTapItem: _openConversation),
-                      _ChatList(items: _inbox, onTapItem: _openConversation),
-                    ],
-                  ),
+                    const SizedBox(height: 10),
+                    ElevatedButton(
+                      onPressed: () =>
+                          context.read<ChatCubit>().loadConversations(),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            final conversations = state.conversations;
+            final groups =
+                conversations.where((c) => c.isGroup).toList();
+            final inbox =
+                conversations.where((c) => !c.isGroup).toList();
+
+            return TabBarView(
+              children: [
+                _ChatList(items: groups, onTapItem: _openConversation),
+                _ChatList(items: inbox, onTapItem: _openConversation),
+              ],
+            );
+          },
+        ),
         floatingActionButton: FloatingActionButton(
           tooltip: 'Start conversation',
           onPressed: _showComposeOptions,

@@ -1,46 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+
+import '../../../../core/di/injection_container.dart';
+import '../cubit/calendar_event_detail_cubit.dart';
 import '../models/calendar_event_model.dart';
 import '../repositories/student_calendar_repository.dart';
-import '../repositories/mock_student_calendar_repository.dart';
 
-class CalendarEventDetailScreen extends StatefulWidget {
+class CalendarEventDetailScreen extends StatelessWidget {
   final String eventId;
-  final StudentCalendarRepository? repository;
 
   const CalendarEventDetailScreen({
     super.key,
     required this.eventId,
-  }) : repository = null;
+  });
 
   @override
-  State<CalendarEventDetailScreen> createState() => _CalendarEventDetailScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => CalendarEventDetailCubit(
+        sl<StudentCalendarRepository>(),
+        eventId,
+      )..loadEvent(),
+      child: const _CalendarEventDetailView(),
+    );
+  }
 }
 
-class _CalendarEventDetailScreenState extends State<CalendarEventDetailScreen> {
-  late final StudentCalendarRepository _repo;
-  CalendarEventModel? _event;
-  bool _isLoading = true;
-  String? _error;
+class _CalendarEventDetailView extends StatelessWidget {
+  const _CalendarEventDetailView();
 
-  @override
-  void initState() {
-    super.initState();
-    _repo = widget.repository ?? MockStudentCalendarRepository();
-    _loadEvent();
-  }
-
-  Future<void> _loadEvent() async {
-    setState(() { _isLoading = true; _error = null; });
-    try {
-      _event = await _repo.fetchEventById(widget.eventId);
-    } catch (e) {
-      _error = e.toString();
-    }
-    if (mounted) setState(() => _isLoading = false);
-  }
-
-  IconData _iconForType(String type) {
+  static IconData _iconForType(String type) {
     switch (type) {
       case 'exam':
         return Icons.quiz_rounded;
@@ -55,7 +45,7 @@ class _CalendarEventDetailScreenState extends State<CalendarEventDetailScreen> {
     }
   }
 
-  Color _colorForType(String type, ThemeData theme) {
+  static Color _colorForType(String type, ThemeData theme) {
     switch (type) {
       case 'exam':
         return Colors.red;
@@ -76,16 +66,29 @@ class _CalendarEventDetailScreenState extends State<CalendarEventDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Event Details'), centerTitle: true),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(child: Text(_error!, style: TextStyle(color: theme.colorScheme.error)))
-              : _buildContent(theme),
+      body: BlocBuilder<CalendarEventDetailCubit, CalendarEventDetailState>(
+        builder: (context, state) {
+          if (state.status == CalendarEventDetailStatus.initial ||
+              state.status == CalendarEventDetailStatus.loading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (state.status == CalendarEventDetailStatus.error) {
+            return Center(
+              child: Text(
+                state.errorMessage ?? '',
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+            );
+          }
+
+          final e = state.event!;
+          return _buildContent(theme, e);
+        },
+      ),
     );
   }
 
-  Widget _buildContent(ThemeData theme) {
-    final e = _event!;
+  Widget _buildContent(ThemeData theme, CalendarEventModel e) {
     final color = _colorForType(e.type, theme);
     final dateFormat = DateFormat('EEEE, MMM dd, yyyy');
     final timeFormat = DateFormat('hh:mm a');

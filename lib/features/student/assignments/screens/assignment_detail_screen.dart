@@ -1,64 +1,85 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/di/injection_container.dart';
+import '../cubit/assignment_detail_cubit.dart';
 import '../models/assignment_model.dart';
-import '../repositories/mock_student_assignments_repository.dart';
 import '../repositories/student_assignments_repository.dart';
 
-class AssignmentDetailScreen extends StatefulWidget {
+class AssignmentDetailScreen extends StatelessWidget {
   final String assignmentId;
-  final StudentAssignmentsRepository? repository;
 
   const AssignmentDetailScreen({
     super.key,
     required this.assignmentId,
-    this.repository,
   });
 
   @override
-  State<AssignmentDetailScreen> createState() =>
-      _AssignmentDetailScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => AssignmentDetailCubit(
+        sl<StudentAssignmentsRepository>(),
+        assignmentId,
+      )..loadAssignment(),
+      child: const _AssignmentDetailView(),
+    );
+  }
 }
 
-class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
-  late final StudentAssignmentsRepository _repository =
-      widget.repository ?? MockStudentAssignmentsRepository();
-  bool _isLoading = true;
-  bool _isSubmitting = false;
-  String? _error;
-  AssignmentModel? _assignment;
+class _AssignmentDetailView extends StatelessWidget {
+  const _AssignmentDetailView();
 
   @override
-  void initState() {
-    super.initState();
-    _loadAssignment();
+  Widget build(BuildContext context) {
+    return BlocBuilder<AssignmentDetailCubit, AssignmentDetailState>(
+      builder: (context, state) {
+        return Scaffold(
+          appBar: AppBar(title: const Text('Assignment Details')),
+          body: state.status == AssignmentDetailStatus.loading ||
+                  state.status == AssignmentDetailStatus.initial
+              ? const Center(child: CircularProgressIndicator())
+              : state.status == AssignmentDetailStatus.error
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            state.errorMessage ?? '',
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                          const SizedBox(height: 10),
+                          ElevatedButton(
+                            onPressed: () => context
+                                .read<AssignmentDetailCubit>()
+                                .loadAssignment(),
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : _AssignmentDetailBody(assignment: state.assignment!),
+        );
+      },
+    );
   }
+}
 
-  Future<void> _loadAssignment() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-    try {
-      final assignment =
-          await _repository.fetchAssignmentById(widget.assignmentId);
-      if (!mounted) return;
-      setState(() {
-        _assignment = assignment;
-        _isLoading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'Could not load assignment details.';
-        _isLoading = false;
-      });
-    }
-  }
+class _AssignmentDetailBody extends StatefulWidget {
+  final AssignmentModel assignment;
+
+  const _AssignmentDetailBody({required this.assignment});
+
+  @override
+  State<_AssignmentDetailBody> createState() => _AssignmentDetailBodyState();
+}
+
+class _AssignmentDetailBodyState extends State<_AssignmentDetailBody> {
+  bool _isSubmitting = false;
 
   Future<void> _submitAssignment() async {
     setState(() => _isSubmitting = true);
     try {
-      await _repository.submitAssignment(
-          widget.assignmentId, 'Submitted via app');
+      await sl<StudentAssignmentsRepository>().submitAssignment(
+          widget.assignment.id, 'Submitted via app');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Assignment submitted successfully!')),
@@ -76,31 +97,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Assignment Details')),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(_error!,
-                          style: const TextStyle(color: Colors.red)),
-                      const SizedBox(height: 10),
-                      ElevatedButton(
-                        onPressed: _loadAssignment,
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
-              : _buildContent(),
-    );
-  }
-
-  Widget _buildContent() {
-    final a = _assignment!;
+    final a = widget.assignment;
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(

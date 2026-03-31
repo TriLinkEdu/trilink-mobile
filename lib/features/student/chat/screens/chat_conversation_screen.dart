@@ -1,42 +1,50 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../models/chat_models.dart';
-import '../repositories/student_chat_repository.dart';
-import '../repositories/mock_student_chat_repository.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-class ChatConversationScreen extends StatefulWidget {
+import '../../../../core/di/injection_container.dart';
+import '../cubit/chat_conversation_cubit.dart';
+import '../repositories/student_chat_repository.dart';
+
+class ChatConversationScreen extends StatelessWidget {
   final String conversationId;
   final String title;
-  final StudentChatRepository? repository;
 
   const ChatConversationScreen({
     super.key,
     required this.conversationId,
     required this.title,
-    this.repository,
   });
 
   @override
-  State<ChatConversationScreen> createState() => _ChatConversationScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => ChatConversationCubit(
+        sl<StudentChatRepository>(),
+        conversationId,
+      )..loadMessages(),
+      child: _ChatConversationView(title: title),
+    );
+  }
 }
 
-class _ChatConversationScreenState extends State<ChatConversationScreen> {
-  static const String _currentUserId = 'student1';
+class _ChatConversationView extends StatefulWidget {
+  final String title;
 
-  late final StudentChatRepository _repository;
-  final TextEditingController _controller = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
-  List<ChatMessageModel> _messages = [];
-  bool _isLoading = true;
-  bool _isSending = false;
-  Timer? _autoReplyTimer;
+  const _ChatConversationView({required this.title});
 
   @override
-  void initState() {
-    super.initState();
-    _repository = widget.repository ?? MockStudentChatRepository();
-    _loadMessages();
-  }
+  State<_ChatConversationView> createState() =>
+      _ChatConversationViewState();
+}
+
+class _ChatConversationViewState extends State<_ChatConversationView> {
+  static const String _currentUserId = 'student1';
+
+  final TextEditingController _controller = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  bool _isSending = false;
+  Timer? _autoReplyTimer;
 
   @override
   void dispose() {
@@ -44,22 +52,6 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     _scrollController.dispose();
     _autoReplyTimer?.cancel();
     super.dispose();
-  }
-
-  Future<void> _loadMessages() async {
-    setState(() => _isLoading = true);
-    try {
-      final messages = await _repository.fetchMessages(widget.conversationId);
-      if (!mounted) return;
-      setState(() {
-        _messages = messages;
-        _isLoading = false;
-      });
-      _scrollToBottom();
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-    }
   }
 
   void _scrollToBottom() {
@@ -82,23 +74,17 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     setState(() => _isSending = true);
 
     try {
-      final sentMessage = await _repository.sendMessage(
-        widget.conversationId,
-        text,
-      );
+      await context.read<ChatConversationCubit>().sendMessage(text);
       if (!mounted) return;
-      setState(() {
-        _messages.add(sentMessage);
-        _isSending = false;
-      });
+      setState(() => _isSending = false);
       _scrollToBottom();
 
       _autoReplyTimer?.cancel();
+      final cubit = context.read<ChatConversationCubit>();
       _autoReplyTimer = Timer(const Duration(milliseconds: 1200), () async {
         if (!mounted) return;
-        final refreshed = await _repository.fetchMessages(widget.conversationId);
+        await cubit.loadMessages(showLoading: false);
         if (!mounted) return;
-        setState(() => _messages = refreshed);
         _scrollToBottom();
       });
     } catch (_) {
@@ -119,61 +105,70 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       body: Column(
         children: [
           Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(12),
-                    itemCount: _messages.length,
-                    itemBuilder: (context, index) {
-                      final message = _messages[index];
-                      final isMine = message.senderId == _currentUserId;
-                      return Align(
-                        alignment: isMine
-                            ? Alignment.centerRight
-                            : Alignment.centerLeft,
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 9,
-                          ),
-                          constraints: const BoxConstraints(maxWidth: 280),
-                          decoration: BoxDecoration(
-                            color: isMine
-                                ? theme.colorScheme.primaryContainer
-                                : theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (!isMine)
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 2),
-                                  child: Text(
-                                    message.senderName,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                    ),
+            child: BlocBuilder<ChatConversationCubit, ChatConversationState>(
+              builder: (context, state) {
+                final loading = state.status == ConversationStatus.initial ||
+                    state.status == ConversationStatus.loading;
+                if (loading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final messages = state.messages;
+                return ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(12),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final message = messages[index];
+                    final isMine = message.senderId == _currentUserId;
+                    return Align(
+                      alignment: isMine
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 9,
+                        ),
+                        constraints: const BoxConstraints(maxWidth: 280),
+                        decoration: BoxDecoration(
+                          color: isMine
+                              ? theme.colorScheme.primaryContainer
+                              : theme.colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (!isMine)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 2),
+                                child: Text(
+                                  message.senderName,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: theme.colorScheme.onSurfaceVariant,
                                   ),
                                 ),
-                              Text(
-                                message.content,
-                                style: TextStyle(
-                                  color: isMine
-                                      ? theme.colorScheme.onPrimaryContainer
-                                      : theme.colorScheme.onSurface,
-                                ),
                               ),
-                            ],
-                          ),
+                            Text(
+                              message.content,
+                              style: TextStyle(
+                                color: isMine
+                                    ? theme.colorScheme.onPrimaryContainer
+                                    : theme.colorScheme.onSurface,
+                              ),
+                            ),
+                          ],
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
           ),
           SafeArea(
             top: false,
