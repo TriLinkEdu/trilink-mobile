@@ -14,8 +14,10 @@ class ApiClient {
   ApiClient._internal() {
     _dio = Dio(BaseOptions(
       baseUrl: ApiConstants.baseUrl,
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 15),
+      // Keep login and data calls resilient on slower networks.
+      connectTimeout: const Duration(seconds: 30),
+      sendTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 45),
       headers: {'Content-Type': 'application/json'},
     ));
 
@@ -147,10 +149,15 @@ class ApiClient {
   }
 
   ApiException _handleDioError(DioException e) {
-    if (e.type == DioExceptionType.connectionTimeout ||
-        e.type == DioExceptionType.receiveTimeout ||
-        e.type == DioExceptionType.connectionError) {
+    if (e.type == DioExceptionType.connectionError) {
       return NetworkException();
+    }
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.sendTimeout ||
+        e.type == DioExceptionType.receiveTimeout) {
+      return ApiException(
+        message: 'Connection is slow and request timed out. Please try again.',
+      );
     }
     final statusCode = e.response?.statusCode;
     final data = e.response?.data;
