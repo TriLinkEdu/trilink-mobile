@@ -1,23 +1,75 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/api_service.dart';
 
-class ParentResultsScreen extends StatelessWidget {
-  final String studentId;
-  final String studentName;
+class ParentResultsScreen extends StatefulWidget {
+  const ParentResultsScreen({super.key});
 
-  const ParentResultsScreen({
-    super.key,
-    this.studentId = '849201',
-    this.studentName = 'Alex Mercer',
-  });
+  @override
+  State<ParentResultsScreen> createState() => _ParentResultsScreenState();
+}
+
+class _ParentResultsScreenState extends State<ParentResultsScreen> {
+  bool _loading = true;
+  String? _error;
+  int _selectedChildIndex = 0;
+
+  List<Map<String, dynamic>> _children = [];
+  Map<String, dynamic> _performance = {};
+
+  String get studentName {
+    if (_children.isEmpty) return '';
+    final c = _children[_selectedChildIndex];
+    return c['fullName'] as String? ??
+        '${c['firstName'] ?? ''} ${c['lastName'] ?? ''}'.trim();
+  }
+
+  String get studentId {
+    if (_children.isEmpty) return '';
+    return _children[_selectedChildIndex]['studentId'] as String? ??
+        _children[_selectedChildIndex]['id'] as String? ?? '';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      setState(() { _loading = true; _error = null; });
+      final dashboard = await ApiService().getParentDashboard();
+      _children = ((dashboard['linkedChildren'] as List<dynamic>?) ?? [])
+          .cast<Map<String, dynamic>>();
+      if (_children.isNotEmpty) {
+        await _loadPerformance();
+      } else {
+        if (!mounted) return;
+        setState(() { _loading = false; });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  Future<void> _loadPerformance() async {
+    try {
+      final perf = await ApiService().getStudentPerformance(studentId);
+      if (!mounted) return;
+      setState(() { _performance = perf; _loading = false; });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
@@ -32,47 +84,122 @@ class ParentResultsScreen extends StatelessWidget {
         ),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.notifications_outlined,
-              color: AppColors.textPrimary,
-            ),
-            onPressed: () {},
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildStudentHeader(),
-                  const SizedBox(height: 16),
-                  _buildTermAverageCard(),
-                  const SizedBox(height: 24),
-                  _buildSubjectPerformance(),
-                  const SizedBox(height: 24),
-                ],
+          if (_children.length > 1)
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedChildIndex =
+                      (_selectedChildIndex + 1) % _children.length;
+                });
+                _loadPerformance();
+              },
+              child: Container(
+                margin: const EdgeInsets.only(right: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(
+                      radius: 10,
+                      backgroundColor: AppColors.primary,
+                      child: Text(
+                        studentName
+                            .split(' ')
+                            .map((w) => w[0])
+                            .take(2)
+                            .join(),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      studentName.split(' ').first,
+                      style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textPrimary),
+                    ),
+                    const Icon(Icons.keyboard_arrow_down, size: 16),
+                  ],
+                ),
               ),
             ),
-          ),
-          _buildDownloadButton(),
         ],
       ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(_error!,
+                          style: const TextStyle(color: AppColors.error)),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                          onPressed: _loadData,
+                          child: const Text('Retry')),
+                    ],
+                  ),
+                )
+              : Column(
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildStudentHeader(),
+                            const SizedBox(height: 16),
+                            _buildTermAverageCard(),
+                            const SizedBox(height: 24),
+                            _buildSubjectPerformance(),
+                            const SizedBox(height: 24),
+                          ],
+                        ),
+                      ),
+                    ),
+                    _buildDownloadButton(),
+                  ],
+                ),
     );
   }
 
   Widget _buildStudentHeader() {
+    final avatar = _children.isNotEmpty
+        ? _children[_selectedChildIndex]['avatar'] as String? ?? ''
+        : '';
+    final grade = _performance['grade'] as String? ?? '';
+    final semester = _performance['semester'] as String? ?? '';
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
-          const CircleAvatar(
-            radius: 28,
-            backgroundImage: NetworkImage('https://i.pravatar.cc/120?img=47'),
-          ),
+          avatar.isNotEmpty
+              ? CircleAvatar(
+                  radius: 28,
+                  backgroundImage: NetworkImage(avatar),
+                )
+              : CircleAvatar(
+                  radius: 28,
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                  child: Text(
+                    studentName.isNotEmpty ? studentName[0] : '?',
+                    style: const TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20),
+                  ),
+                ),
           const SizedBox(width: 14),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,28 +214,31 @@ class ParentResultsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                'Grade 10B • ID: #$studentId',
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                '$grade • ID: #$studentId',
+                style:
+                    TextStyle(fontSize: 13, color: Colors.grey.shade500),
               ),
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 3,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.secondary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: const Text(
-                  'Fall Semester 2023',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.secondary,
+              if (semester.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    semester,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.secondary,
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ],
@@ -117,6 +247,10 @@ class ParentResultsScreen extends StatelessWidget {
   }
 
   Widget _buildTermAverageCard() {
+    final average = _performance['termAverage']?.toString() ?? '--';
+    final gpa = _performance['gpa']?.toString() ?? '';
+    final rank = _performance['classRank'] as String? ?? '';
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
@@ -144,51 +278,56 @@ class ParentResultsScreen extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                const Text(
-                  '89%',
-                  style: TextStyle(
+                Text(
+                  average.contains('%') ? average : '$average%',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 40,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(width: 10),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    'GPA 3.8',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.8),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.check, color: Colors.white, size: 14),
-                  const SizedBox(width: 4),
-                  const Text(
-                    'Top 5% of class',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                if (gpa.isNotEmpty) ...[
+                  const SizedBox(width: 10),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      'GPA $gpa',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
-              ),
+              ],
             ),
+            if (rank.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.check, color: Colors.white, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      rank,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -196,6 +335,25 @@ class ParentResultsScreen extends StatelessWidget {
   }
 
   Widget _buildSubjectPerformance() {
+    final subjects =
+        (_performance['subjects'] as List<dynamic>?) ?? [];
+    final iconMap = {
+      'mathematics': Icons.calculate,
+      'math': Icons.calculate,
+      'physics': Icons.science,
+      'science': Icons.science,
+      'english': Icons.menu_book,
+      'history': Icons.history_edu,
+    };
+    final colorMap = {
+      'mathematics': AppColors.primary,
+      'math': AppColors.primary,
+      'physics': AppColors.error,
+      'science': AppColors.secondary,
+      'english': Colors.purple,
+      'history': Colors.orange,
+    };
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -223,48 +381,42 @@ class ParentResultsScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          _SubjectCard(
-            icon: Icons.calculate,
-            iconColor: AppColors.primary,
-            name: 'Mathematics',
-            teacher: 'Mr. Anderson',
-            grade: '92%',
-            gradeLabel: 'GRADE A',
-            isExpanded: true,
-            details: const [
-              _GradeDetail(name: 'Midterm Exam', grade: '94%'),
-              _GradeDetail(name: 'Algebra Quiz', grade: '90%'),
-              _GradeDetail(name: 'Group Project', grade: '92%'),
-            ],
-            trendData: const [3.2, 3.4, 3.5, 3.3, 3.6],
-          ),
-          const SizedBox(height: 12),
-          _SubjectCard(
-            icon: Icons.science,
-            iconColor: AppColors.error,
-            name: 'Physics',
-            teacher: 'Ms. Roberts',
-            grade: '85%',
-            gradeLabel: 'GRADE B',
-          ),
-          const SizedBox(height: 12),
-          _SubjectCard(
-            icon: Icons.menu_book,
-            iconColor: Colors.purple,
-            name: 'English Lit.',
-            teacher: 'Dr. Stevens',
-            grade: '88%',
-            gradeLabel: 'GRADE B+',
-          ),
-          const SizedBox(height: 12),
-          _SubjectCard(
-            icon: Icons.history_edu,
-            iconColor: Colors.orange,
-            name: 'History',
-            teacher: 'Mrs. Clark',
-            grade: '79%',
-            gradeLabel: 'GRADE C+',
-          ),
+          if (subjects.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: Text('No subject data available',
+                    style: TextStyle(color: Colors.grey.shade500)),
+              ),
+            ),
+          ...subjects.map<Widget>((s) {
+            final name = (s['name'] as String? ?? '').toLowerCase();
+            final details = (s['details'] as List<dynamic>?)
+                    ?.map<_GradeDetail>((d) => _GradeDetail(
+                          name: d['name'] as String? ?? '',
+                          grade: d['grade'] as String? ?? '',
+                        ))
+                    .toList() ??
+                [];
+            final trend = (s['trend'] as List<dynamic>?)
+                    ?.map<double>((v) => (v as num).toDouble())
+                    .toList();
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _SubjectCard(
+                icon: iconMap[name] ?? Icons.school,
+                iconColor: colorMap[name] ?? AppColors.primary,
+                name: s['name'] as String? ?? '',
+                teacher: s['teacher'] as String? ?? '',
+                grade: s['grade'] as String? ?? '',
+                gradeLabel: s['gradeLabel'] as String? ?? '',
+                isExpanded: details.isNotEmpty,
+                details: details.isNotEmpty ? details : null,
+                trendData: trend,
+              ),
+            );
+          }),
         ],
       ),
     );

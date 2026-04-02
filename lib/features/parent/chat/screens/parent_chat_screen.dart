@@ -1,64 +1,60 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/api_service.dart';
 import 'parent_message_view_screen.dart';
 
-class ParentChatScreen extends StatelessWidget {
+class ParentChatScreen extends StatefulWidget {
   const ParentChatScreen({super.key});
 
-  static final List<_MessageThread> _threads = [
-    _MessageThread(
-      name: 'Mrs. Sarah Jenkins',
-      role: 'Mathematics - Grade 10',
-      avatarUrl: 'https://i.pravatar.cc/100?img=32',
-      preview: 'Please ensure the permission slip for th...',
-      time: '10:30 AM',
-      hasCheckmark: true,
-      isUnread: false,
-    ),
-    _MessageThread(
-      name: 'Mr. David Ross',
-      role: 'History - Grade 11',
-      avatarUrl: 'https://i.pravatar.cc/100?img=15',
-      preview: 'The mid-term results have been poste...',
-      time: 'Yesterday',
-      hasCheckmark: true,
-      isUnread: false,
-    ),
-    _MessageThread(
-      name: 'Administration Office',
-      role: 'General Announcement',
-      avatarUrl: '',
-      avatarIcon: Icons.business,
-      avatarColor: AppColors.primary,
-      preview: 'Reminder: School closes early this Frid...',
-      time: 'Tue',
-      hasCheckmark: true,
-      isUnread: false,
-    ),
-    _MessageThread(
-      name: 'Mrs. Emily Chen',
-      role: 'Physics - Grade 11',
-      avatarUrl: 'https://i.pravatar.cc/100?img=20',
-      preview: 'Lab coat fees are due by next week.',
-      time: 'Mon',
-      hasCheckmark: true,
-      isUnread: false,
-    ),
-    _MessageThread(
-      name: 'Coach Mike',
-      role: 'Athletics Department',
-      avatarUrl: 'https://i.pravatar.cc/100?img=51',
-      preview: 'Practice schedule change for the varsit...',
-      time: 'Sat',
-      hasCheckmark: false,
-      isUnread: true,
-    ),
-  ];
+  @override
+  State<ParentChatScreen> createState() => _ParentChatScreenState();
+}
+
+class _ParentChatScreenState extends State<ParentChatScreen> {
+  bool _loading = true;
+  String? _error;
+  List<_MessageThread> _threads = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      setState(() { _loading = true; _error = null; });
+      final conversations = await ApiService().getConversations();
+      if (!mounted) return;
+      setState(() {
+        _threads = conversations.map<_MessageThread>((c) {
+          return _MessageThread(
+            id: c['id'] as String? ?? '',
+            name: c['participantName'] as String? ??
+                c['name'] as String? ?? 'Unknown',
+            role: c['participantRole'] as String? ??
+                c['subject'] as String? ?? '',
+            avatarUrl: c['avatar'] as String? ?? '',
+            avatarIcon: null,
+            avatarColor: null,
+            preview: c['lastMessage'] as String? ?? '',
+            time: c['lastMessageTime'] as String? ??
+                c['updatedAt'] as String? ?? '',
+            hasCheckmark: c['read'] as bool? ?? false,
+            isUnread: !(c['read'] as bool? ?? true),
+          );
+        }).toList();
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,7 +64,32 @@ class ParentChatScreen extends StatelessWidget {
             _buildSearchBar(),
             const SizedBox(height: 20),
             _buildSectionLabel(),
-            Expanded(child: _buildThreadList(context)),
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(_error!,
+                                  style: const TextStyle(
+                                      color: AppColors.error)),
+                              const SizedBox(height: 12),
+                              ElevatedButton(
+                                  onPressed: _loadData,
+                                  child: const Text('Retry')),
+                            ],
+                          ),
+                        )
+                      : _threads.isEmpty
+                          ? Center(
+                              child: Text('No conversations yet',
+                                  style: TextStyle(
+                                      color: Colors.grey.shade500)),
+                            )
+                          : _buildThreadList(context),
+            ),
           ],
         ),
       ),
@@ -82,16 +103,21 @@ class ParentChatScreen extends StatelessWidget {
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      padding: const EdgeInsets.fromLTRB(8, 16, 20, 0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            'Messages',
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+          IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
+            onPressed: () => Navigator.pop(context),
+          ),
+          const Expanded(
+            child: Text(
+              'Messages',
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
             ),
           ),
           Container(
@@ -100,7 +126,8 @@ class ParentChatScreen extends StatelessWidget {
               color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.edit_outlined, color: AppColors.primary, size: 20),
+            child: const Icon(Icons.edit_outlined,
+                color: AppColors.primary, size: 20),
           ),
         ],
       ),
@@ -119,8 +146,10 @@ class ParentChatScreen extends StatelessWidget {
         child: TextField(
           decoration: InputDecoration(
             hintText: 'Search staff or subjects...',
-            hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
-            prefixIcon: Icon(Icons.search, color: Colors.grey.shade500, size: 20),
+            hintStyle:
+                TextStyle(color: Colors.grey.shade500, fontSize: 14),
+            prefixIcon: Icon(Icons.search,
+                color: Colors.grey.shade500, size: 20),
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(vertical: 12),
           ),
@@ -160,6 +189,7 @@ class ParentChatScreen extends StatelessWidget {
               context,
               MaterialPageRoute(
                 builder: (_) => ParentMessageViewScreen(
+                  conversationId: _threads[index].id,
                   teacherName: _threads[index].name,
                   subject: _threads[index].role,
                 ),
@@ -173,6 +203,7 @@ class ParentChatScreen extends StatelessWidget {
 }
 
 class _MessageThread {
+  final String id;
   final String name;
   final String role;
   final String avatarUrl;
@@ -184,6 +215,7 @@ class _MessageThread {
   final bool isUnread;
 
   _MessageThread({
+    required this.id,
     required this.name,
     required this.role,
     required this.avatarUrl,
@@ -250,7 +282,8 @@ class _ThreadTile extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     thread.role,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                    style: TextStyle(
+                        fontSize: 12, color: Colors.grey.shade500),
                   ),
                   const SizedBox(height: 6),
                   Row(

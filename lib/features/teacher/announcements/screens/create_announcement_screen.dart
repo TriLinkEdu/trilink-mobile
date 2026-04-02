@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/api_service.dart';
 
 class CreateAnnouncementScreen extends StatefulWidget {
   const CreateAnnouncementScreen({super.key});
@@ -13,6 +14,7 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _messageController = TextEditingController();
   bool _scheduleForLater = false;
+  bool _submitting = false;
 
   final List<_AudienceChip> _audiences = [
     _AudienceChip(label: '10A', selected: true),
@@ -31,6 +33,54 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
     _titleController.dispose();
     _messageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _sendAnnouncement() async {
+    final title = _titleController.text.trim();
+    final message = _messageController.text.trim();
+
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a title')),
+      );
+      return;
+    }
+    if (message.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a message')),
+      );
+      return;
+    }
+
+    final selectedAudiences =
+        _audiences.where((a) => a.selected).map((a) => a.label).toList();
+
+    setState(() => _submitting = true);
+    try {
+      await ApiService().createAnnouncement({
+        'title': title,
+        'message': message,
+        'targetAudience': selectedAudiences,
+        'status': _scheduleForLater ? 'scheduled' : 'sent',
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _scheduleForLater ? 'Announcement scheduled!' : 'Announcement sent!',
+          ),
+        ),
+      );
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
   }
 
   @override
@@ -366,16 +416,25 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
       child: Row(
         children: [
           Text(
-            'Draft saved 2m ago',
+            _submitting ? 'Sending...' : '',
             style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
           ),
           const Spacer(),
           ElevatedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.send, size: 16),
-            label: const Text(
-              'Send Now',
-              style: TextStyle(fontWeight: FontWeight.w600),
+            onPressed: _submitting ? null : _sendAnnouncement,
+            icon: _submitting
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.send, size: 16),
+            label: Text(
+              _scheduleForLater ? 'Schedule' : 'Send Now',
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,

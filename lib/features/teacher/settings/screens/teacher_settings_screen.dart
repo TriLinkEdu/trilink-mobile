@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_notifier.dart';
+import '../../../../core/services/api_service.dart';
+import '../../../../features/auth/services/auth_service.dart';
+import '../../../../core/routes/route_names.dart';
 
 class TeacherSettingsScreen extends StatefulWidget {
   const TeacherSettingsScreen({super.key});
@@ -12,13 +15,92 @@ class TeacherSettingsScreen extends StatefulWidget {
 class _TeacherSettingsScreenState extends State<TeacherSettingsScreen> {
   bool _predictiveInsights = true;
   bool _darkMode = ThemeNotifier.instance.isDark;
+  bool _loadingSettings = true;
+
+  String _fullName = '';
+  String _email = '';
+  String _subject = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+    _loadSettings();
+  }
+
+  void _loadProfile() {
+    final user = AuthService().currentUser;
+    if (user != null) {
+      setState(() {
+        _fullName = user.fullName;
+        _email = user.email;
+        _subject = user.subject ?? '';
+      });
+    }
+  }
+
+  Future<void> _loadSettings() async {
+    try {
+      final settings = await ApiService().getUserSettings();
+      if (!mounted) return;
+      setState(() {
+        _predictiveInsights =
+            settings['predictiveInsights'] as bool? ?? _predictiveInsights;
+        _loadingSettings = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingSettings = false);
+    }
+  }
+
+  Future<void> _saveSettings() async {
+    try {
+      await ApiService().updateUserSettings({
+        'predictiveInsights': _predictiveInsights,
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to save settings: $e')),
+      );
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Log Out'),
+        content: const Text('Are you sure you want to log out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Log Out',
+                style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    await AuthService().logout();
+    if (!mounted) return;
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      RouteNames.login,
+      (_) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
         leading: TextButton(
           onPressed: () => Navigator.pop(context),
@@ -96,9 +178,9 @@ class _TeacherSettingsScreenState extends State<TeacherSettingsScreen> {
           ],
         ),
         const SizedBox(height: 14),
-        const Text(
-          'Sarah Jenkins',
-          style: TextStyle(
+        Text(
+          _fullName.isNotEmpty ? _fullName : 'Teacher',
+          style: const TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
@@ -106,17 +188,17 @@ class _TeacherSettingsScreenState extends State<TeacherSettingsScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Senior Mathematics • Homeroom 10B',
+          _subject.isNotEmpty ? _subject : _email,
           style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
         ),
         const SizedBox(height: 4),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.badge_outlined, size: 14, color: Colors.grey.shade500),
+            Icon(Icons.email_outlined, size: 14, color: Colors.grey.shade500),
             const SizedBox(width: 4),
             Text(
-              'ID: 894021',
+              _email,
               style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
             ),
           ],
@@ -273,12 +355,20 @@ class _TeacherSettingsScreenState extends State<TeacherSettingsScreen> {
                   ],
                 ),
               ),
-              Switch(
-                value: _predictiveInsights,
-                onChanged: (val) =>
-                    setState(() => _predictiveInsights = val),
-                activeTrackColor: AppColors.primary,
-              ),
+              _loadingSettings
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Switch(
+                      value: _predictiveInsights,
+                      onChanged: (val) {
+                        setState(() => _predictiveInsights = val);
+                        _saveSettings();
+                      },
+                      activeTrackColor: AppColors.primary,
+                    ),
             ],
           ),
         ),
@@ -346,7 +436,7 @@ class _TeacherSettingsScreenState extends State<TeacherSettingsScreen> {
 
   Widget _buildLogout() {
     return GestureDetector(
-      onTap: () {},
+      onTap: _handleLogout,
       child: const Text(
         'Log Out',
         style: TextStyle(

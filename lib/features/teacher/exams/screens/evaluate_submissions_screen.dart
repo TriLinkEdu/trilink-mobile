@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/api_service.dart';
 
 class EvaluateSubmissionsScreen extends StatefulWidget {
   final String examId;
@@ -15,56 +16,9 @@ class _EvaluateSubmissionsScreenState extends State<EvaluateSubmissionsScreen> {
   String _selectedFilter = 'All';
   final List<String> _filters = ['All', 'Pending', 'Graded'];
 
-  final List<_StudentSubmission> _submissions = [
-    _StudentSubmission(
-      name: 'Sarah Jenkins',
-      studentId: 'STU-1024',
-      avatarUrl: 'https://i.pravatar.cc/100?img=9',
-      submissionTime: '10:42 AM',
-      isGraded: true,
-      score: 92,
-    ),
-    _StudentSubmission(
-      name: 'Mike Ross',
-      studentId: 'STU-1031',
-      avatarUrl: 'https://i.pravatar.cc/100?img=33',
-      submissionTime: '10:45 AM',
-      isGraded: false,
-      score: null,
-    ),
-    _StudentSubmission(
-      name: 'Jessica Pearson',
-      studentId: 'STU-1018',
-      avatarUrl: 'https://i.pravatar.cc/100?img=45',
-      submissionTime: '10:38 AM',
-      isGraded: true,
-      score: 78,
-    ),
-    _StudentSubmission(
-      name: 'James Liu',
-      studentId: 'STU-1042',
-      avatarUrl: '',
-      submissionTime: '10:50 AM',
-      isGraded: true,
-      score: 85,
-    ),
-    _StudentSubmission(
-      name: 'Amira Hassan',
-      studentId: 'STU-1055',
-      avatarUrl: 'https://i.pravatar.cc/100?img=25',
-      submissionTime: '10:48 AM',
-      isGraded: false,
-      score: null,
-    ),
-    _StudentSubmission(
-      name: 'Robert Zane',
-      studentId: 'STU-1009',
-      avatarUrl: 'https://i.pravatar.cc/100?img=51',
-      submissionTime: '10:35 AM',
-      isGraded: false,
-      score: null,
-    ),
-  ];
+  bool _loading = true;
+  String? _error;
+  List<_StudentSubmission> _submissions = [];
 
   int get _totalSubmitted => _submissions.length;
   int get _totalGraded => _submissions.where((s) => s.isGraded).length;
@@ -82,6 +36,32 @@ class _EvaluateSubmissionsScreenState extends State<EvaluateSubmissionsScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final attempts = await ApiService().getExamAttempts(widget.examId);
+      setState(() {
+        _submissions = attempts
+            .map((a) =>
+                _StudentSubmission.fromJson(a as Map<String, dynamic>))
+            .toList();
+      });
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -92,9 +72,9 @@ class _EvaluateSubmissionsScreenState extends State<EvaluateSubmissionsScreen> {
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          'Exam ${widget.examId}',
-          style: const TextStyle(
+        title: const Text(
+          'Evaluate Submissions',
+          style: TextStyle(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 17,
@@ -102,14 +82,35 @@ class _EvaluateSubmissionsScreenState extends State<EvaluateSubmissionsScreen> {
         ),
         centerTitle: true,
       ),
-      body: Column(
-        children: [
-          _buildSummaryBar(),
-          _buildFilterChips(),
-          const SizedBox(height: 4),
-          Expanded(child: _buildSubmissionList()),
-        ],
-      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.error_outline,
+                          size: 48, color: Colors.grey.shade400),
+                      const SizedBox(height: 12),
+                      Text(_error!,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey.shade600)),
+                      const SizedBox(height: 16),
+                      OutlinedButton(
+                        onPressed: _loadData,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : Column(
+                  children: [
+                    _buildSummaryBar(),
+                    _buildFilterChips(),
+                    const SizedBox(height: 4),
+                    Expanded(child: _buildSubmissionList()),
+                  ],
+                ),
     );
   }
 
@@ -205,22 +206,59 @@ class _EvaluateSubmissionsScreenState extends State<EvaluateSubmissionsScreen> {
 
   Widget _buildSubmissionList() {
     final submissions = _filteredSubmissions;
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      itemCount: submissions.length,
-      itemBuilder: (context, index) {
-        final submission = submissions[index];
-        return _SubmissionCard(
-          submission: submission,
-          onGrade: () => _showGradeSheet(submission),
-        );
-      },
+    if (submissions.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.assignment_outlined,
+                size: 48, color: Colors.grey.shade300),
+            const SizedBox(height: 12),
+            Text(
+              'No submissions found',
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade500),
+            ),
+          ],
+        ),
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        itemCount: submissions.length,
+        itemBuilder: (context, index) {
+          final submission = submissions[index];
+          return _SubmissionCard(
+            submission: submission,
+            onGrade: () => _showGradeSheet(submission),
+            onRelease: () => _releaseGrade(submission),
+          );
+        },
+      ),
     );
+  }
+
+  Future<void> _releaseGrade(_StudentSubmission submission) async {
+    try {
+      await ApiService().releaseAttempt(submission.attemptId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Grade released for ${submission.name}')),
+      );
+      _loadData();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
   }
 
   void _showGradeSheet(_StudentSubmission submission) {
     final scoreController = TextEditingController();
     final feedbackController = TextEditingController();
+    bool submitting = false;
 
     showModalBottomSheet(
       context: context,
@@ -229,157 +267,195 @@ class _EvaluateSubmissionsScreenState extends State<EvaluateSubmissionsScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            20,
-            20,
-            20,
-            MediaQuery.of(ctx).viewInsets.bottom + 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                20,
+                20,
+                MediaQuery.of(ctx).viewInsets.bottom + 20,
               ),
-              const SizedBox(height: 16),
-              Text(
-                'Grade ${submission.name}',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                submission.studentId,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Score (out of 100)',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: scoreController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  hintText: 'Enter score...',
-                  hintStyle: TextStyle(color: Colors.grey.shade400),
-                  filled: true,
-                  fillColor: Colors.grey.shade50,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Grade ${submission.name}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: AppColors.primary),
+                  const SizedBox(height: 4),
+                  Text(
+                    submission.studentId,
+                    style:
+                        TextStyle(fontSize: 13, color: Colors.grey.shade500),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 12,
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Score (out of 100)',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 14),
-              const Text(
-                'Feedback',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: feedbackController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  hintText: 'Enter feedback for the student...',
-                  hintStyle: TextStyle(color: Colors.grey.shade400),
-                  filled: true,
-                  fillColor: Colors.grey.shade50,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: scoreController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      hintText: 'Enter score...',
+                      hintStyle: TextStyle(color: Colors.grey.shade400),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide:
+                            const BorderSide(color: AppColors.primary),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                    ),
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Feedback',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: AppColors.primary),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: feedbackController,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      hintText: 'Enter feedback for the student...',
+                      hintStyle: TextStyle(color: Colors.grey.shade400),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide:
+                            const BorderSide(color: AppColors.primary),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    final score = int.tryParse(scoreController.text);
-                    if (score == null || score < 0 || score > 100) return;
-                    setState(() {
-                      final idx = _submissions.indexOf(submission);
-                      if (idx != -1) {
-                        _submissions[idx] = _StudentSubmission(
-                          name: submission.name,
-                          studentId: submission.studentId,
-                          avatarUrl: submission.avatarUrl,
-                          submissionTime: submission.submissionTime,
-                          isGraded: true,
-                          score: score,
-                        );
-                      }
-                    });
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          '${submission.name} graded: $score/100',
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: submitting
+                          ? null
+                          : () async {
+                              final score =
+                                  int.tryParse(scoreController.text);
+                              if (score == null ||
+                                  score < 0 ||
+                                  score > 100) {
+                                ScaffoldMessenger.of(ctx).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        'Enter a valid score (0-100)'),
+                                  ),
+                                );
+                                return;
+                              }
+                              setSheetState(() => submitting = true);
+                              try {
+                                await ApiService().gradeAttempt(
+                                  submission.attemptId,
+                                  {
+                                    'score': score,
+                                    'feedback':
+                                        feedbackController.text.trim(),
+                                  },
+                                );
+                                if (!ctx.mounted) return;
+                                Navigator.pop(ctx);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      '${submission.name} graded: $score/100',
+                                    ),
+                                  ),
+                                );
+                                _loadData();
+                              } catch (e) {
+                                setSheetState(
+                                    () => submitting = false);
+                                if (!ctx.mounted) return;
+                                ScaffoldMessenger.of(ctx).showSnackBar(
+                                  SnackBar(
+                                      content: Text('Error: $e')),
+                                );
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding:
+                            const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      child: submitting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              'Submit Grade',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                     ),
                   ),
-                  child: const Text(
-                    'Submit Grade',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -387,6 +463,7 @@ class _EvaluateSubmissionsScreenState extends State<EvaluateSubmissionsScreen> {
 }
 
 class _StudentSubmission {
+  final String attemptId;
   final String name;
   final String studentId;
   final String avatarUrl;
@@ -395,6 +472,7 @@ class _StudentSubmission {
   final int? score;
 
   _StudentSubmission({
+    required this.attemptId,
     required this.name,
     required this.studentId,
     required this.avatarUrl,
@@ -402,6 +480,25 @@ class _StudentSubmission {
     required this.isGraded,
     required this.score,
   });
+
+  factory _StudentSubmission.fromJson(Map<String, dynamic> json) {
+    final student = json['student'] as Map<String, dynamic>?;
+    final name = student?['name'] ??
+        '${student?['firstName'] ?? ''} ${student?['lastName'] ?? ''}'.trim();
+    final status = (json['status'] as String?) ?? '';
+    final isGraded = status == 'graded' || status == 'released';
+    final score = json['score'] ?? json['totalScore'];
+
+    return _StudentSubmission(
+      attemptId: json['_id'] ?? json['id'] ?? '',
+      name: name.isEmpty ? 'Student' : name,
+      studentId: student?['studentId'] ?? student?['_id'] ?? '',
+      avatarUrl: student?['avatarUrl'] ?? student?['avatar'] ?? '',
+      submissionTime: json['submittedAt'] ?? json['createdAt'] ?? '',
+      isGraded: isGraded,
+      score: score is num ? score.toInt() : null,
+    );
+  }
 }
 
 class _SummaryItem extends StatelessWidget {
@@ -440,10 +537,12 @@ class _SummaryItem extends StatelessWidget {
 class _SubmissionCard extends StatelessWidget {
   final _StudentSubmission submission;
   final VoidCallback onGrade;
+  final VoidCallback onRelease;
 
   const _SubmissionCard({
     required this.submission,
     required this.onGrade,
+    required this.onRelease,
   });
 
   Color get _scoreColor {
@@ -494,20 +593,22 @@ class _SubmissionCard extends StatelessWidget {
                         color: Colors.grey.shade500,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.access_time,
-                      size: 12,
-                      color: Colors.grey.shade400,
-                    ),
-                    const SizedBox(width: 3),
-                    Text(
-                      submission.submissionTime,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade500,
+                    if (submission.submissionTime.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.access_time,
+                        size: 12,
+                        color: Colors.grey.shade400,
                       ),
-                    ),
+                      const SizedBox(width: 3),
+                      Text(
+                        submission.submissionTime,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 6),
@@ -537,27 +638,43 @@ class _SubmissionCard extends StatelessWidget {
             ),
           ),
           if (submission.isGraded && submission.score != null)
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _scoreColor.withValues(alpha: 0.1),
-                border: Border.all(
-                  color: _scoreColor.withValues(alpha: 0.4),
-                  width: 2,
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  '${submission.score}',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: _scoreColor,
+            Column(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _scoreColor.withValues(alpha: 0.1),
+                    border: Border.all(
+                      color: _scoreColor.withValues(alpha: 0.4),
+                      width: 2,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${submission.score}',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: _scoreColor,
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                const SizedBox(height: 4),
+                GestureDetector(
+                  onTap: onRelease,
+                  child: Text(
+                    'Release',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+              ],
             )
           else
             OutlinedButton(
@@ -597,7 +714,7 @@ class _SubmissionCard extends StatelessWidget {
     }
     final initials = submission.name
         .split(' ')
-        .map((w) => w[0])
+        .map((w) => w.isNotEmpty ? w[0] : '')
         .take(2)
         .join()
         .toUpperCase();

@@ -245,6 +245,7 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => TeacherChatConversationScreen(
             threadName: args?['threadName'] as String? ?? 'Chat',
+            conversationId: args?['conversationId'] as String? ?? '',
             isParent: args?['isParent'] as bool? ?? false,
           ),
         );

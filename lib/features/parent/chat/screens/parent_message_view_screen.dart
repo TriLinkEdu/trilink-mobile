@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/api_service.dart';
+import '../../../../features/auth/services/auth_service.dart';
 
 class ParentMessageViewScreen extends StatefulWidget {
+  final String? conversationId;
   final String teacherName;
   final String subject;
 
   const ParentMessageViewScreen({
     super.key,
-    this.teacherName = 'Mr. Anderson',
-    this.subject = '10th Grade Math • TriLink HS',
+    this.conversationId,
+    this.teacherName = 'Unknown',
+    this.subject = '',
   });
 
   @override
@@ -17,7 +21,35 @@ class ParentMessageViewScreen extends StatefulWidget {
 }
 
 class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
+  bool _loading = true;
+  String? _error;
   bool _privacyMode = true;
+  List<Map<String, dynamic>> _messages = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    if (widget.conversationId == null || widget.conversationId!.isEmpty) {
+      setState(() { _loading = false; });
+      return;
+    }
+    try {
+      setState(() { _loading = true; _error = null; });
+      final msgs = await ApiService().getMessages(widget.conversationId!);
+      if (!mounted) return;
+      setState(() {
+        _messages = msgs.cast<Map<String, dynamic>>();
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +94,32 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
         children: [
           _buildMonitorBanner(),
           _buildPrivacyToggle(),
-          Expanded(child: _buildChatMessages()),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(_error!,
+                                style: const TextStyle(
+                                    color: AppColors.error)),
+                            const SizedBox(height: 12),
+                            ElevatedButton(
+                                onPressed: _loadData,
+                                child: const Text('Retry')),
+                          ],
+                        ),
+                      )
+                    : _messages.isEmpty
+                        ? Center(
+                            child: Text('No messages yet',
+                                style: TextStyle(
+                                    color: Colors.grey.shade500)),
+                          )
+                        : _buildChatMessages(),
+          ),
           _buildReadOnlyFooter(),
         ],
       ),
@@ -130,7 +187,8 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
                 ),
                 Text(
                   'Masks sensitive grade data in public',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                  style:
+                      TextStyle(fontSize: 12, color: Colors.grey.shade500),
                 ),
               ],
             ),
@@ -146,57 +204,46 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
   }
 
   Widget _buildChatMessages() {
-    return SingleChildScrollView(
+    final currentUserId = AuthService().currentUser?.id ?? '';
+    return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      child: Column(
-        children: [
-          _buildDateDivider('TUESDAY, OCT 24'),
-          const SizedBox(height: 12),
-          _buildTeacherMessage(
-            time: 'Mr. Anderson • 9:41 AM',
-            text:
-                'Hello Alex, just a reminder about the assignment due Tuesday. Please ensure you show all your work for the quadratic equations.',
-            avatarUrl: 'https://i.pravatar.cc/60?img=15',
-          ),
-          const SizedBox(height: 16),
-          _buildStudentMessage(
-            time: 'Alex • 9:45 AM',
-            text:
-                'Thanks Mr. A. I am finishing it up now and will upload it before the deadline.',
-            initials: 'AL',
-          ),
-          const SizedBox(height: 16),
-          _buildTeacherMessage(
-            time: 'Mr. Anderson • 10:15 AM',
-            text: "Great to hear. Also, I've graded your last quiz.",
-            avatarUrl: 'https://i.pravatar.cc/60?img=15',
-            hasSensitiveData: true,
-          ),
-          const SizedBox(height: 20),
-          _buildDateDivider('TODAY'),
-        ],
-      ),
-    );
-  }
+      itemCount: _messages.length,
+      itemBuilder: (context, index) {
+        final msg = _messages[index];
+        final senderId = msg['senderId'] as String? ?? '';
+        final senderName = msg['senderName'] as String? ?? '';
+        final body = msg['body'] as String? ?? msg['content'] as String? ?? '';
+        final time = msg['createdAt'] as String? ?? msg['time'] as String? ?? '';
+        final avatar = msg['senderAvatar'] as String? ?? '';
+        final hasSensitive = msg['hasSensitiveData'] as bool? ?? false;
+        final isOwnChild = senderId == currentUserId;
 
-  Widget _buildDateDivider(String label) {
-    return Row(
-      children: [
-        Expanded(child: Divider(color: Colors.grey.shade300)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade500,
-              letterSpacing: 0.5,
+        if (isOwnChild) {
+          final initials = senderName
+              .split(' ')
+              .map((w) => w.isNotEmpty ? w[0] : '')
+              .take(2)
+              .join()
+              .toUpperCase();
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: _buildStudentMessage(
+              time: '$senderName • $time',
+              text: body,
+              initials: initials.isNotEmpty ? initials : '??',
             ),
+          );
+        }
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: _buildTeacherMessage(
+            time: '$senderName • $time',
+            text: body,
+            avatarUrl: avatar,
+            hasSensitiveData: hasSensitive,
           ),
-        ),
-        Expanded(child: Divider(color: Colors.grey.shade300)),
-      ],
+        );
+      },
     );
   }
 
@@ -249,10 +296,16 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            CircleAvatar(
-              radius: 14,
-              backgroundImage: NetworkImage(avatarUrl),
-            ),
+            avatarUrl.isNotEmpty
+                ? CircleAvatar(
+                    radius: 14,
+                    backgroundImage: NetworkImage(avatarUrl),
+                  )
+                : CircleAvatar(
+                    radius: 14,
+                    backgroundColor: Colors.grey.shade200,
+                    child: const Icon(Icons.person, size: 14),
+                  ),
           ],
         ),
       ],
@@ -341,7 +394,8 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
             ),
             const SizedBox(width: 12),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(4),
@@ -364,13 +418,13 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
         color: AppColors.secondary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Row(
+      child: const Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.check_circle, size: 14, color: AppColors.secondary),
-          const SizedBox(width: 6),
-          const Text(
-            'Score: 88%\n(B+)',
+          Icon(Icons.check_circle, size: 14, color: AppColors.secondary),
+          SizedBox(width: 6),
+          Text(
+            'Score visible',
             style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
           ),
         ],

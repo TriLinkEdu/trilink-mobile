@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_notifier.dart';
+import '../../../../core/services/api_service.dart';
+import '../../../../features/auth/services/auth_service.dart';
+import '../../../../core/routes/route_names.dart';
 
 class ParentSettingsScreen extends StatefulWidget {
   const ParentSettingsScreen({super.key});
@@ -10,16 +13,83 @@ class ParentSettingsScreen extends StatefulWidget {
 }
 
 class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
+  bool _loading = true;
+  String? _error;
   bool _systemAnnouncements = true;
   bool _enhancedPrivacy = false;
   bool _darkMode = ThemeNotifier.instance.isDark;
 
+  List<Map<String, dynamic>> _linkedChildren = [];
+
+  String get _userName =>
+      AuthService().currentUser?.fullName ?? 'Parent';
+  String get _userEmail =>
+      AuthService().currentUser?.email ?? '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      setState(() { _loading = true; _error = null; });
+      final results = await Future.wait([
+        ApiService().getUserSettings(),
+        ApiService().getParentDashboard(),
+      ]);
+
+      final settings = results[0];
+      final dashboard = results[1];
+
+      if (!mounted) return;
+      setState(() {
+        _systemAnnouncements =
+            settings['systemAnnouncements'] as bool? ?? true;
+        _enhancedPrivacy =
+            settings['enhancedPrivacy'] as bool? ?? false;
+
+        _linkedChildren =
+            ((dashboard['linkedChildren'] as List<dynamic>?) ?? [])
+                .cast<Map<String, dynamic>>();
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  Future<void> _logout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Log Out'),
+        content: const Text('Are you sure you want to log out?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Log Out',
+                  style: TextStyle(color: AppColors.error))),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    await AuthService().logout();
+    if (!mounted) return;
+    Navigator.of(context).pushNamedAndRemoveUntil(
+        RouteNames.login, (route) => false);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
@@ -36,7 +106,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
         centerTitle: true,
         actions: [
           TextButton(
-            onPressed: () {},
+            onPressed: () => Navigator.pop(context),
             child: const Text(
               'Done',
               style: TextStyle(
@@ -48,35 +118,59 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 12),
-            _buildProfileCard(),
-            const SizedBox(height: 24),
-            _buildSection('PERSONAL INFORMATION', [
-              _SettingsTile(title: 'Edit Profile', onTap: () {}),
-              _SettingsTile(title: 'Change Password', onTap: () {}),
-            ]),
-            const SizedBox(height: 24),
-            _buildLinkedChildren(),
-            const SizedBox(height: 24),
-            _buildNotificationPreferences(),
-            const SizedBox(height: 24),
-            _buildAppSettings(),
-            const SizedBox(height: 32),
-            _buildLogout(),
-            const SizedBox(height: 12),
-            _buildVersionInfo(),
-            const SizedBox(height: 32),
-          ],
-        ),
-      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(_error!,
+                          style: const TextStyle(color: AppColors.error)),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                          onPressed: _loadData,
+                          child: const Text('Retry')),
+                    ],
+                  ),
+                )
+              : SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 12),
+                      _buildProfileCard(),
+                      const SizedBox(height: 24),
+                      _buildSection('PERSONAL INFORMATION', [
+                        _SettingsTile(title: 'Edit Profile', onTap: () {}),
+                        _SettingsTile(
+                            title: 'Change Password', onTap: () {}),
+                      ]),
+                      const SizedBox(height: 24),
+                      _buildLinkedChildren(),
+                      const SizedBox(height: 24),
+                      _buildNotificationPreferences(),
+                      const SizedBox(height: 24),
+                      _buildAppSettings(),
+                      const SizedBox(height: 32),
+                      _buildLogout(),
+                      const SizedBox(height: 12),
+                      _buildVersionInfo(),
+                      const SizedBox(height: 32),
+                    ],
+                  ),
+                ),
     );
   }
 
   Widget _buildProfileCard() {
+    final initials = _userName
+        .split(' ')
+        .map((w) => w.isNotEmpty ? w[0] : '')
+        .take(2)
+        .join()
+        .toUpperCase();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: InkWell(
@@ -91,10 +185,16 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
           ),
           child: Row(
             children: [
-              const CircleAvatar(
+              CircleAvatar(
                 radius: 28,
-                backgroundImage: NetworkImage(
-                  'https://i.pravatar.cc/120?img=32',
+                backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                child: Text(
+                  initials,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: AppColors.primary,
+                  ),
                 ),
               ),
               const SizedBox(width: 14),
@@ -102,9 +202,9 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Sarah Jenkins',
-                      style: TextStyle(
+                    Text(
+                      _userName,
+                      style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
@@ -112,7 +212,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'sarah.jenkins@example.com',
+                      _userEmail,
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.grey.shade500,
@@ -153,20 +253,22 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
 
   Widget _buildLinkedChildren() {
     return _buildSection('LINKED CHILDREN', [
-      _ChildTile(
-        name: 'Alex Jenkins',
-        schoolId: 'School ID: •••• 4821',
-        avatarUrl: 'https://i.pravatar.cc/80?img=60',
-        onManage: () {},
-      ),
-      _ChildTile(
-        name: 'Mia Jenkins',
-        schoolId: 'School ID: •••• 9932',
-        avatarUrl: 'https://i.pravatar.cc/80?img=47',
-        onManage: () {},
-      ),
+      ..._linkedChildren.map<Widget>((child) {
+        final name = child['fullName'] as String? ??
+            '${child['firstName'] ?? ''} ${child['lastName'] ?? ''}'.trim();
+        final id = child['studentId'] as String? ??
+            child['id'] as String? ?? '';
+        final avatar = child['avatar'] as String? ?? '';
+        return _ChildTile(
+          name: name,
+          schoolId: 'School ID: $id',
+          avatarUrl: avatar,
+          onManage: () {},
+        );
+      }),
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         child: GestureDetector(
           onTap: () {},
           child: Row(
@@ -201,24 +303,9 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
 
   Widget _buildNotificationPreferences() {
     return _buildSection('NOTIFICATION PREFERENCES', [
-      _SettingsTile(
-        title: "Alex's Alerts",
-        trailing: Text(
-          'Custom',
-          style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-        ),
-        onTap: () {},
-      ),
-      _SettingsTile(
-        title: "Mia's Alerts",
-        trailing: Text(
-          'All On',
-          style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-        ),
-        onTap: () {},
-      ),
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Row(
           children: [
             Expanded(
@@ -246,8 +333,11 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
             ),
             Switch(
               value: _systemAnnouncements,
-              onChanged: (val) =>
-                  setState(() => _systemAnnouncements = val),
+              onChanged: (val) {
+                setState(() => _systemAnnouncements = val);
+                ApiService().updateUserSettings(
+                    {'systemAnnouncements': val});
+              },
               activeTrackColor: AppColors.primary,
             ),
           ],
@@ -267,13 +357,14 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
         onTap: () {},
       ),
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Row(
           children: [
-            Expanded(
+            const Expanded(
               child: Text(
                 'Dark Mode',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textPrimary,
@@ -292,7 +383,8 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
         ),
       ),
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Row(
           children: [
             Expanded(
@@ -320,8 +412,11 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
             ),
             Switch(
               value: _enhancedPrivacy,
-              onChanged: (val) =>
-                  setState(() => _enhancedPrivacy = val),
+              onChanged: (val) {
+                setState(() => _enhancedPrivacy = val);
+                ApiService()
+                    .updateUserSettings({'enhancedPrivacy': val});
+              },
               activeTrackColor: AppColors.primary,
             ),
           ],
@@ -333,7 +428,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
   Widget _buildLogout() {
     return Center(
       child: GestureDetector(
-        onTap: () {},
+        onTap: _logout,
         child: const Text(
           'Log Out',
           style: TextStyle(
@@ -372,7 +467,8 @@ class _SettingsTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         child: Row(
           children: [
             Expanded(
@@ -389,7 +485,8 @@ class _SettingsTile extends StatelessWidget {
               trailing!,
               const SizedBox(width: 4),
             ],
-            Icon(Icons.chevron_right, size: 20, color: Colors.grey.shade400),
+            Icon(Icons.chevron_right,
+                size: 20, color: Colors.grey.shade400),
           ],
         ),
       ),
@@ -416,10 +513,28 @@ class _ChildTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundImage: NetworkImage(avatarUrl),
-          ),
+          avatarUrl.isNotEmpty
+              ? CircleAvatar(
+                  radius: 20,
+                  backgroundImage: NetworkImage(avatarUrl),
+                )
+              : CircleAvatar(
+                  radius: 20,
+                  backgroundColor:
+                      AppColors.primary.withValues(alpha: 0.1),
+                  child: Text(
+                    name
+                        .split(' ')
+                        .map((w) => w.isNotEmpty ? w[0] : '')
+                        .take(2)
+                        .join()
+                        .toUpperCase(),
+                    style: const TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12),
+                  ),
+                ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -435,7 +550,8 @@ class _ChildTile extends StatelessWidget {
                 ),
                 Text(
                   schoolId,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                  style: TextStyle(
+                      fontSize: 12, color: Colors.grey.shade500),
                 ),
               ],
             ),

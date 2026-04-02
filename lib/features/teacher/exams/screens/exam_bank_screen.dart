@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/api_service.dart';
 
 class ExamBankScreen extends StatefulWidget {
   const ExamBankScreen({super.key});
@@ -13,80 +14,9 @@ class _ExamBankScreenState extends State<ExamBankScreen> {
   String _selectedFilter = 'All';
   final List<String> _filters = ['All', 'MCQ', 'Short Answer', 'Essay', 'LaTeX'];
 
-  final List<_BankQuestion> _questions = [
-    _BankQuestion(
-      id: 1,
-      text: 'What is the derivative of f(x) = 3x² + 2x - 5?',
-      type: 'MCQ',
-      subject: 'Calculus',
-      points: 5,
-      hasLatex: true,
-      hasImage: false,
-    ),
-    _BankQuestion(
-      id: 2,
-      text: 'Explain Newton\'s Second Law of Motion and provide two real-world examples.',
-      type: 'Essay',
-      subject: 'Physics',
-      points: 15,
-      hasLatex: false,
-      hasImage: false,
-    ),
-    _BankQuestion(
-      id: 3,
-      text: 'Solve the integral ∫(2x + 1)dx from 0 to 3.',
-      type: 'Short Answer',
-      subject: 'Calculus',
-      points: 8,
-      hasLatex: true,
-      hasImage: false,
-    ),
-    _BankQuestion(
-      id: 4,
-      text: 'Which of the following is a property of electromagnetic waves?',
-      type: 'MCQ',
-      subject: 'Physics',
-      points: 3,
-      hasLatex: false,
-      hasImage: true,
-    ),
-    _BankQuestion(
-      id: 5,
-      text: 'Find the eigenvalues of the matrix A = [[2, 1], [1, 2]].',
-      type: 'Short Answer',
-      subject: 'Linear Algebra',
-      points: 10,
-      hasLatex: true,
-      hasImage: false,
-    ),
-    _BankQuestion(
-      id: 6,
-      text: 'Describe the process of cellular respiration and its stages.',
-      type: 'Essay',
-      subject: 'Biology',
-      points: 20,
-      hasLatex: false,
-      hasImage: true,
-    ),
-    _BankQuestion(
-      id: 7,
-      text: 'What is the pH of a 0.01M HCl solution?',
-      type: 'MCQ',
-      subject: 'Chemistry',
-      points: 4,
-      hasLatex: false,
-      hasImage: false,
-    ),
-    _BankQuestion(
-      id: 8,
-      text: 'Prove that the sum of angles in a triangle equals 180° using the parallel postulate.',
-      type: 'Essay',
-      subject: 'Geometry',
-      points: 12,
-      hasLatex: true,
-      hasImage: true,
-    ),
-  ];
+  bool _loading = true;
+  String? _error;
+  List<_BankQuestion> _questions = [];
 
   String _newQuestionText = '';
   String _newQuestionType = 'MCQ';
@@ -94,6 +24,31 @@ class _ExamBankScreenState extends State<ExamBankScreen> {
   int _newQuestionPoints = 5;
   bool _newHasLatex = false;
   bool _newHasImage = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final raw = await ApiService().getQuestions();
+      setState(() {
+        _questions = raw
+            .map((q) => _BankQuestion.fromJson(q as Map<String, dynamic>))
+            .toList();
+      });
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
 
   List<_BankQuestion> get _filteredQuestions {
     var results = _questions;
@@ -144,20 +99,39 @@ class _ExamBankScreenState extends State<ExamBankScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.search, color: AppColors.textPrimary),
-            onPressed: () {
-              // Focus the search field
-            },
+            onPressed: () {},
           ),
         ],
       ),
-      body: Column(
-        children: [
-          _buildSearchBar(),
-          _buildFilterChips(),
-          const SizedBox(height: 4),
-          Expanded(child: _buildQuestionList()),
-        ],
-      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.error_outline,
+                          size: 48, color: Colors.grey.shade400),
+                      const SizedBox(height: 12),
+                      Text(_error!,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey.shade600)),
+                      const SizedBox(height: 16),
+                      OutlinedButton(
+                        onPressed: _loadData,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : Column(
+                  children: [
+                    _buildSearchBar(),
+                    _buildFilterChips(),
+                    const SizedBox(height: 4),
+                    Expanded(child: _buildQuestionList()),
+                  ],
+                ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddQuestionSheet,
         backgroundColor: AppColors.primary,
@@ -251,16 +225,20 @@ class _ExamBankScreenState extends State<ExamBankScreen> {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-      itemCount: questions.length,
-      itemBuilder: (context, index) {
-        return _QuestionCard(
-          question: questions[index],
-          onEdit: () => _showEditQuestion(questions[index]),
-          onDelete: () => _deleteQuestion(questions[index]),
-        );
-      },
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+        itemCount: questions.length,
+        itemBuilder: (context, index) {
+          return _QuestionCard(
+            question: questions[index],
+            index: index + 1,
+            onEdit: () => _showEditQuestion(questions[index]),
+            onDelete: () => _deleteQuestion(questions[index]),
+          );
+        },
+      ),
     );
   }
 
@@ -270,7 +248,7 @@ class _ExamBankScreenState extends State<ExamBankScreen> {
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Question #${question.id} deleted'),
+        content: Text('Question deleted'),
         action: SnackBarAction(label: 'Undo', onPressed: () {
           setState(() => _questions.add(question));
         }),
@@ -280,7 +258,7 @@ class _ExamBankScreenState extends State<ExamBankScreen> {
 
   void _showEditQuestion(_BankQuestion question) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Editing Question #${question.id}')),
+      SnackBar(content: Text('Editing question: ${question.text}')),
     );
   }
 
@@ -291,6 +269,7 @@ class _ExamBankScreenState extends State<ExamBankScreen> {
     _newQuestionPoints = 5;
     _newHasLatex = false;
     _newHasImage = false;
+    bool submitting = false;
 
     showModalBottomSheet(
       context: context,
@@ -459,21 +438,31 @@ class _ExamBankScreenState extends State<ExamBankScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () {
-                          if (_newQuestionText.trim().isEmpty) return;
-                          setState(() {
-                            _questions.add(_BankQuestion(
-                              id: _questions.length + 1,
-                              text: _newQuestionText,
-                              type: _newQuestionType,
-                              subject: _newQuestionSubject,
-                              points: _newQuestionPoints,
-                              hasLatex: _newHasLatex,
-                              hasImage: _newHasImage,
-                            ));
-                          });
-                          Navigator.pop(ctx);
-                        },
+                        onPressed: submitting
+                            ? null
+                            : () async {
+                                if (_newQuestionText.trim().isEmpty) return;
+                                setSheetState(() => submitting = true);
+                                try {
+                                  await ApiService().createQuestion({
+                                    'text': _newQuestionText,
+                                    'type': _newQuestionType,
+                                    'subject': _newQuestionSubject,
+                                    'points': _newQuestionPoints,
+                                    'hasLatex': _newHasLatex,
+                                    'hasImage': _newHasImage,
+                                  });
+                                  if (!ctx.mounted) return;
+                                  Navigator.pop(ctx);
+                                  _loadData();
+                                } catch (e) {
+                                  setSheetState(() => submitting = false);
+                                  if (!ctx.mounted) return;
+                                  ScaffoldMessenger.of(ctx).showSnackBar(
+                                    SnackBar(content: Text('Error: $e')),
+                                  );
+                                }
+                              },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
@@ -482,13 +471,22 @@ class _ExamBankScreenState extends State<ExamBankScreen> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        child: const Text(
-                          'Add Question',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                        child: submitting
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                'Add Question',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                       ),
                     ),
                   ],
@@ -547,7 +545,7 @@ class _ExamBankScreenState extends State<ExamBankScreen> {
 }
 
 class _BankQuestion {
-  final int id;
+  final String id;
   final String text;
   final String type;
   final String subject;
@@ -564,15 +562,29 @@ class _BankQuestion {
     required this.hasLatex,
     required this.hasImage,
   });
+
+  factory _BankQuestion.fromJson(Map<String, dynamic> json) {
+    return _BankQuestion(
+      id: json['_id'] ?? json['id'] ?? '',
+      text: json['text'] ?? json['question'] ?? '',
+      type: json['type'] ?? 'MCQ',
+      subject: json['subject']?['name'] ?? json['subjectName'] ?? json['subject'] ?? '',
+      points: (json['points'] ?? json['marks'] ?? 5) as int,
+      hasLatex: json['hasLatex'] == true,
+      hasImage: json['hasImage'] == true || (json['image'] != null),
+    );
+  }
 }
 
 class _QuestionCard extends StatelessWidget {
   final _BankQuestion question;
+  final int index;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const _QuestionCard({
     required this.question,
+    required this.index,
     required this.onEdit,
     required this.onDelete,
   });
@@ -619,7 +631,7 @@ class _QuestionCard extends StatelessWidget {
                 ),
                 child: Center(
                   child: Text(
-                    '${question.id}',
+                    '$index',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       color: AppColors.primary,
