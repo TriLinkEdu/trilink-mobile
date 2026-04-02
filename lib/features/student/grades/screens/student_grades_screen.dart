@@ -43,33 +43,10 @@ class _GradesView extends StatelessWidget {
               children: [
                 Padding(
                   padding:
-                      EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+                      EdgeInsets.only(right: AppSpacing.md, top: AppSpacing.xs),
                   child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      SizedBox(
-                        width: 40,
-                        child: Navigator.of(context).canPop()
-                            ? IconButton(
-                                tooltip: 'Back',
-                                onPressed: () => Navigator.of(context).pop(),
-                                icon: const Icon(
-                                  Icons.arrow_back_ios_new_rounded,
-                                  size: 18,
-                                ),
-                              )
-                            : null,
-                      ),
-                      Expanded(
-                        child: Text(
-                          'Academic Grades',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: theme.colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
                       IconButton(
                         tooltip: 'Switch term view',
                         onPressed: () {

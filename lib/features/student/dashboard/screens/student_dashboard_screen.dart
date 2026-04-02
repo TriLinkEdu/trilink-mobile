@@ -12,6 +12,7 @@ import '../../../../core/widgets/pressable.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../../../../core/widgets/staggered_animation.dart';
 import '../../../auth/cubit/auth_cubit.dart';
+import '../widgets/student_shell_scope.dart';
 import '../cubit/dashboard_cubit.dart';
 import '../models/dashboard_data_model.dart';
 import '../repositories/student_dashboard_repository.dart';
@@ -224,9 +225,12 @@ class _DashboardContent extends StatelessWidget {
 
                 _SectionHeader(
                   title: 'Quick Actions',
+                  actionLabel: 'All',
+                  onAction: () =>
+                      StudentShellScope.of(context).openDrawer(),
                 ),
                 AppSpacing.gapMd,
-                _QuickActionsGrid(),
+                _QuickActionsRow(),
                 AppSpacing.gapXxl,
 
                 _SectionHeader(
@@ -321,7 +325,7 @@ class _HeroGreeting extends StatelessWidget {
               borderRadius: AppRadius.borderMd,
               boxShadow: AppShadows.glow(AppColors.primary),
             ),
-            child: Icon(
+            child: const Icon(
               Icons.person_rounded,
               color: Colors.white,
               size: 26,
@@ -574,32 +578,24 @@ class _NextUpCard extends StatelessWidget {
   }
 }
 
-// ── Quick Actions Grid ──
+// ── Quick Actions (top 3) ──
 
-class _QuickActionsGrid extends StatelessWidget {
+class _QuickActionsRow extends StatelessWidget {
   static const _actions = [
-    _ActionData(Icons.auto_awesome, 'AI Tutor', AppColors.levelPurple, RouteNames.studentAiAssistant),
-    _ActionData(Icons.emoji_events_rounded, 'Gamification', AppColors.xpGold, RouteNames.studentGamification),
     _ActionData(Icons.assignment_rounded, 'Assignments', AppColors.streakFire, RouteNames.studentAssignments),
-    _ActionData(Icons.folder_open_rounded, 'Resources', AppColors.computerScience, RouteNames.studentCourseResources),
-    _ActionData(Icons.fact_check_outlined, 'Attendance', AppColors.achievementEmerald, RouteNames.studentAttendance),
-    _ActionData(Icons.rate_review_rounded, 'Feedback', AppColors.literature, RouteNames.studentFeedback),
+    _ActionData(Icons.emoji_events_rounded, 'Gamification', AppColors.xpGold, RouteNames.studentGamification),
     _ActionData(Icons.calendar_month_rounded, 'Calendar', AppColors.physics, RouteNames.studentCalendar),
-    _ActionData(Icons.settings_rounded, 'Settings', AppColors.darkSurfaceBright, RouteNames.studentSettings),
   ];
 
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 3,
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 1.0,
+    return Row(
       children: _actions
-          .map((a) => _QuickActionTile(data: a))
-          .toList(),
+          .map((a) => Expanded(child: _QuickActionTile(data: a)))
+          .toList()
+          .expand<Widget>((w) => [w, AppSpacing.hGapMd])
+          .toList()
+        ..removeLast(),
     );
   }
 }
@@ -625,6 +621,7 @@ class _QuickActionTile extends StatelessWidget {
     return Pressable(
       onTap: () => Navigator.of(context).pushNamed(data.route),
       child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
           color: ext.cardBackground,
           borderRadius: AppRadius.borderLg,

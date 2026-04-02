@@ -58,37 +58,15 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
           children: [
             Padding(
               padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  const EdgeInsets.only(right: 16, top: 4),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  SizedBox(
-                    width: 40,
-                    child: Navigator.of(context).canPop()
-                        ? IconButton(
-                            tooltip: 'Back',
-                            onPressed: () => Navigator.of(context).pop(),
-                            icon: const Icon(
-                              Icons.arrow_back_ios_new_rounded,
-                              size: 18,
-                            ),
-                          )
-                        : null,
-                  ),
-                  Expanded(
-                    child:                     Text(
-                      'Profile',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
                   TextButton(
                     onPressed: () => Navigator.of(context)
                         .pushNamed(RouteNames.studentProfileEdit),
                     child: Text(
-                      'Edit',
+                      'Edit Profile',
                       style: TextStyle(
                         color: theme.colorScheme.primary,
                         fontSize: 14,

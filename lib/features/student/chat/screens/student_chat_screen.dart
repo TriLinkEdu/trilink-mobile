@@ -205,7 +205,8 @@ class _ChatViewState extends State<_ChatView> {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Chat'),
+          toolbarHeight: 0,
+          automaticallyImplyLeading: false,
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Groups'),
