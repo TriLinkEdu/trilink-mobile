@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/api_service.dart';
 
 class CreateGroupScreen extends StatefulWidget {
   const CreateGroupScreen({super.key});
@@ -13,6 +14,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  bool _creating = false;
 
   final List<_StudentItem> _students = [
     _StudentItem(name: 'Ahmed Al-Farsi', className: 'Grade 10 - Section A'),
@@ -57,7 +59,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     return parts[0][0];
   }
 
-  void _createGroup() {
+  Future<void> _createGroup() async {
     if (_nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a group name')),
@@ -70,10 +72,27 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
       );
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Group created successfully')),
-    );
-    Navigator.pop(context);
+
+    setState(() => _creating = true);
+
+    try {
+      await ApiService().createConversation({
+        'name': _nameController.text.trim(),
+        'description': _descriptionController.text.trim(),
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Group created successfully')),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _creating = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to create group: $e')),
+      );
+    }
   }
 
   @override
@@ -339,7 +358,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
         width: double.infinity,
         height: 48,
         child: ElevatedButton(
-          onPressed: _createGroup,
+          onPressed: _creating ? null : _createGroup,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
@@ -348,10 +367,19 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
             ),
             elevation: 0,
           ),
-          child: const Text(
-            'Create Group',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
+          child: _creating
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Text(
+                  'Create Group',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
         ),
       ),
     );

@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/api_service.dart';
+import '../../../../features/auth/services/auth_service.dart';
 
 class TeacherChatConversationScreen extends StatefulWidget {
   final String threadName;
+  final String conversationId;
   final bool isParent;
 
   const TeacherChatConversationScreen({
     super.key,
     required this.threadName,
+    this.conversationId = '',
     this.isParent = false,
   });
 
@@ -21,143 +25,139 @@ class _TeacherChatConversationScreenState
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  late final List<_ChatMessage> _messages;
+  bool _loading = true;
+  String? _error;
+  List<_ChatMessage> _messages = [];
+  bool _sending = false;
 
   @override
   void initState() {
     super.initState();
-    _messages = widget.isParent ? _parentMessages() : _groupMessages();
+    _loadMessages();
   }
 
-  List<_ChatMessage> _groupMessages() {
-    return [
-      _ChatMessage(
-        sender: 'Ahmed Al-Farsi',
-        text: 'Good morning! Will we have the lab session today?',
-        time: '9:00 AM',
-        isSent: false,
-        date: 'Today',
-      ),
-      _ChatMessage(
-        sender: 'You',
-        text:
-            'Yes, the lab session is confirmed. Please bring your lab coats and safety goggles.',
-        time: '9:05 AM',
-        isSent: true,
-        date: 'Today',
-      ),
-      _ChatMessage(
-        sender: 'Sara Mohammed',
-        text: 'Got it! Thank you for the reminder.',
-        time: '9:08 AM',
-        isSent: false,
-        date: 'Today',
-      ),
-      _ChatMessage(
-        sender: 'You',
-        text:
-            'Also, please review Chapter 5 before the session. We\'ll be discussing the practical applications.',
-        time: '9:12 AM',
-        isSent: true,
-        date: 'Today',
-      ),
-      _ChatMessage(
-        sender: 'Omar Hassan',
-        text: 'Is the assignment due date still Friday?',
-        time: '9:20 AM',
-        isSent: false,
-        date: 'Today',
-      ),
-      _ChatMessage(
-        sender: 'You',
-        text:
-            'Yes, the assignment deadline remains Friday at 11:59 PM. No extensions will be given.',
-        time: '9:25 AM',
-        isSent: true,
-        date: 'Today',
-      ),
-      _ChatMessage(
-        sender: 'Fatima Noor',
-        text: 'Can we work in pairs for the lab report?',
-        time: '10:00 AM',
-        isSent: false,
-        date: 'Today',
-      ),
-      _ChatMessage(
-        sender: 'You',
-        text:
-            'Yes, pairs are allowed for the lab report. Make sure both names are on the submission.',
-        time: '10:05 AM',
-        isSent: true,
-        date: 'Today',
-      ),
-    ];
+  Future<void> _loadMessages() async {
+    if (widget.conversationId.isEmpty) {
+      setState(() => _loading = false);
+      return;
+    }
+    try {
+      final msgs = await ApiService().getMessages(widget.conversationId);
+      if (!mounted) return;
+      setState(() {
+        _messages = msgs.map((m) {
+          final map = m as Map<String, dynamic>;
+          final senderMap = map['sender'] as Map<String, dynamic>?;
+          final senderName = senderMap != null
+              ? '${senderMap['firstName'] ?? ''} ${senderMap['lastName'] ?? ''}'
+                  .trim()
+              : 'Unknown';
+          final senderId = senderMap?['id'] as String? ??
+              map['senderId'] as String? ??
+              '';
+          final currentUserId = AuthService().currentUser?.id ?? '';
+          final isSent = senderId == currentUserId;
+
+          final createdAt = map['createdAt'] as String?;
+          String time = '';
+          String date = 'Today';
+          if (createdAt != null) {
+            try {
+              final dt = DateTime.parse(createdAt).toLocal();
+              final now = DateTime.now();
+              time =
+                  '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+              if (dt.year == now.year &&
+                  dt.month == now.month &&
+                  dt.day == now.day) {
+                date = 'Today';
+              } else if (dt.year == now.year &&
+                  dt.month == now.month &&
+                  dt.day == now.day - 1) {
+                date = 'Yesterday';
+              } else {
+                date = '${dt.month}/${dt.day}/${dt.year}';
+              }
+            } catch (_) {}
+          }
+
+          return _ChatMessage(
+            sender: isSent ? 'You' : senderName,
+            text: map['content'] as String? ?? '',
+            time: time,
+            isSent: isSent,
+            date: date,
+          );
+        }).toList();
+        _loading = false;
+      });
+      _scrollToBottom();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
   }
 
-  List<_ChatMessage> _parentMessages() {
-    return [
-      _ChatMessage(
-        sender: 'Parent',
-        text:
-            'Hello, I wanted to ask about my child\'s recent test performance.',
-        time: '8:30 AM',
-        isSent: false,
-        date: 'Yesterday',
-      ),
-      _ChatMessage(
+  Future<void> _sendMessage() async {
+    final text = _messageController.text.trim();
+    if (text.isEmpty || widget.conversationId.isEmpty) return;
+
+    setState(() {
+      _sending = true;
+      _messages.add(_ChatMessage(
         sender: 'You',
-        text:
-            'Good morning! Your child did well overall. There are a few areas we can work on together.',
-        time: '8:45 AM',
-        isSent: true,
-        date: 'Yesterday',
-      ),
-      _ChatMessage(
-        sender: 'Parent',
-        text: 'That\'s great to hear. What areas need improvement?',
-        time: '8:50 AM',
-        isSent: false,
-        date: 'Yesterday',
-      ),
-      _ChatMessage(
-        sender: 'You',
-        text:
-            'Mainly problem-solving in math word problems. I\'d recommend some extra practice at home.',
-        time: '9:00 AM',
-        isSent: true,
-        date: 'Yesterday',
-      ),
-      _ChatMessage(
-        sender: 'Parent',
-        text: 'Thank you! I\'ll make sure to help with that.',
-        time: '9:10 AM',
-        isSent: false,
-        date: 'Today',
-      ),
-      _ChatMessage(
-        sender: 'You',
-        text:
-            'Wonderful. I\'ll also send home a worksheet packet for additional practice.',
-        time: '9:15 AM',
+        text: text,
+        time: 'Sending...',
         isSent: true,
         date: 'Today',
-      ),
-      _ChatMessage(
-        sender: 'Parent',
-        text: 'That would be very helpful. Is there a parent-teacher meeting soon?',
-        time: '9:30 AM',
-        isSent: false,
-        date: 'Today',
-      ),
-      _ChatMessage(
-        sender: 'You',
-        text:
-            'Yes, next Thursday at 4 PM. I\'ll send the details via the school app.',
-        time: '9:35 AM',
-        isSent: true,
-        date: 'Today',
-      ),
-    ];
+      ));
+      _messageController.clear();
+    });
+    _scrollToBottom();
+
+    try {
+      await ApiService().sendMessage(
+        widget.conversationId,
+        {'content': text},
+      );
+      if (!mounted) return;
+      final now = DateTime.now();
+      setState(() {
+        _messages.last = _ChatMessage(
+          sender: 'You',
+          text: text,
+          time:
+              '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}',
+          isSent: true,
+          date: 'Today',
+        );
+        _sending = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _messages.removeLast();
+        _sending = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to send: $e')),
+      );
+    }
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   @override
@@ -216,6 +216,31 @@ class _TeacherChatConversationScreenState
   }
 
   Widget _buildMessagesList() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(_error!, style: const TextStyle(color: AppColors.error)),
+            const SizedBox(height: 12),
+            ElevatedButton(
+                onPressed: _loadMessages, child: const Text('Retry')),
+          ],
+        ),
+      );
+    }
+    if (_messages.isEmpty) {
+      return Center(
+        child: Text(
+          'No messages yet. Start the conversation!',
+          style: TextStyle(color: Colors.grey.shade500),
+        ),
+      );
+    }
+
     final grouped = <String, List<_ChatMessage>>{};
     for (final msg in _messages) {
       grouped.putIfAbsent(msg.date, () => []).add(msg);
@@ -370,22 +395,7 @@ class _TeacherChatConversationScreenState
             ),
             child: IconButton(
               icon: const Icon(Icons.send, color: Colors.white, size: 20),
-              onPressed: () {
-                if (_messageController.text.trim().isNotEmpty) {
-                  setState(() {
-                    _messages.add(
-                      _ChatMessage(
-                        sender: 'You',
-                        text: _messageController.text.trim(),
-                        time: 'Now',
-                        isSent: true,
-                        date: 'Today',
-                      ),
-                    );
-                    _messageController.clear();
-                  });
-                }
-              },
+              onPressed: _sending ? null : _sendMessage,
             ),
           ),
         ],

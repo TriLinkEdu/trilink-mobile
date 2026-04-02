@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/api_service.dart';
 
 class CreateExamScreen extends StatefulWidget {
   const CreateExamScreen({super.key});
@@ -14,6 +15,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
     text: r'\int_{a}^{b} x^2 dx',
   );
   final int _currentQuestion = 1;
+  bool _submitting = false;
 
   final List<String> _mathSymbols = ['∫', 'Σ', '√', 'x/y', 'π', 'θ', '∞'];
 
@@ -39,6 +41,54 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
       ),
     );
     setState(() {});
+  }
+
+  Future<void> _saveExam({required bool publish}) async {
+    final title = _titleController.text.trim();
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter an exam title')),
+      );
+      return;
+    }
+
+    setState(() => _submitting = true);
+    try {
+      final data = <String, dynamic>{
+        'title': title,
+        'status': publish ? 'published' : 'draft',
+      };
+
+      if (_latexController.text.trim().isNotEmpty) {
+        data['questions'] = [
+          {'text': _latexController.text.trim(), 'type': 'latex'},
+        ];
+      }
+
+      final result = await ApiService().createExam(data);
+
+      if (publish) {
+        final examId = result['_id'] ?? result['id'];
+        if (examId != null) {
+          await ApiService().publishExam(examId.toString());
+        }
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(publish ? 'Exam published!' : 'Draft saved!'),
+        ),
+      );
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
   }
 
   @override
@@ -328,7 +378,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
         children: [
           Expanded(
             child: OutlinedButton(
-              onPressed: () {},
+              onPressed: _submitting ? null : () => _saveExam(publish: false),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 side: BorderSide(color: Colors.grey.shade300),
@@ -336,20 +386,26 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: const Text(
-                'Save Draft',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
+              child: _submitting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text(
+                      'Save Draft',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: _submitting ? null : () => _saveExam(publish: true),
               icon: const Icon(Icons.send, size: 16),
               label: const Text(
                 'Publish',

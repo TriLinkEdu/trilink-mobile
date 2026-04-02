@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/api_service.dart';
 
 class ExamAnalyticsScreen extends StatefulWidget {
   final String examId;
@@ -12,68 +13,110 @@ class ExamAnalyticsScreen extends StatefulWidget {
 }
 
 class _ExamAnalyticsScreenState extends State<ExamAnalyticsScreen> {
-  final List<_ScoreRange> _scoreDistribution = [
-    _ScoreRange(label: '80-100', count: 12, color: AppColors.secondary),
-    _ScoreRange(label: '60-80', count: 8, color: AppColors.primary),
-    _ScoreRange(label: '40-60', count: 5, color: AppColors.accent),
-    _ScoreRange(label: '20-40', count: 2, color: Colors.orange),
-    _ScoreRange(label: '0-20', count: 1, color: AppColors.error),
-  ];
+  bool _loading = true;
+  String? _error;
 
-  final List<_QuestionAnalysis> _questionAnalyses = [
-    _QuestionAnalysis(
-      number: 1,
-      text: 'Derivative of f(x) = 3x² + 2x',
-      avgScore: 88,
-      difficulty: 'Easy',
-    ),
-    _QuestionAnalysis(
-      number: 2,
-      text: 'Newton\'s Second Law applications',
-      avgScore: 72,
-      difficulty: 'Medium',
-    ),
-    _QuestionAnalysis(
-      number: 3,
-      text: 'Integral ∫(2x + 1)dx from 0 to 3',
-      avgScore: 65,
-      difficulty: 'Medium',
-    ),
-    _QuestionAnalysis(
-      number: 4,
-      text: 'Electromagnetic wave properties',
-      avgScore: 91,
-      difficulty: 'Easy',
-    ),
-    _QuestionAnalysis(
-      number: 5,
-      text: 'Eigenvalues of matrix A',
-      avgScore: 45,
-      difficulty: 'Hard',
-    ),
-    _QuestionAnalysis(
-      number: 6,
-      text: 'Proof: sum of triangle angles',
-      avgScore: 52,
-      difficulty: 'Hard',
-    ),
-  ];
+  List<_ScoreRange> _scoreDistribution = [];
+  List<_QuestionAnalysis> _questionAnalyses = [];
+  List<_TopPerformer> _topPerformers = [];
+  List<_TrendPoint> _trendData = [];
 
-  final List<_TopPerformer> _topPerformers = [
-    _TopPerformer(rank: 1, name: 'Sarah Jenkins', score: 98),
-    _TopPerformer(rank: 2, name: 'James Liu', score: 95),
-    _TopPerformer(rank: 3, name: 'Amira Hassan', score: 93),
-    _TopPerformer(rank: 4, name: 'Jessica Pearson', score: 91),
-    _TopPerformer(rank: 5, name: 'Mike Ross', score: 89),
-  ];
+  double _classAverage = 0;
+  int _highestScore = 0;
+  int _passRate = 0;
+  int _totalSubmissions = 0;
+  int _totalStudents = 0;
 
-  final List<_TrendPoint> _trendData = [
-    _TrendPoint(label: 'Exam 1', value: 72),
-    _TrendPoint(label: 'Exam 2', value: 68),
-    _TrendPoint(label: 'Exam 3', value: 75),
-    _TrendPoint(label: 'Exam 4', value: 80),
-    _TrendPoint(label: 'Exam 5', value: 78),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final attempts = await ApiService().getExamAttempts(widget.examId);
+
+      if (attempts.isEmpty) {
+        setState(() {
+          _totalSubmissions = 0;
+          _totalStudents = 0;
+        });
+      } else {
+        _computeAnalytics(attempts);
+      }
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
+  void _computeAnalytics(List<dynamic> attempts) {
+    final scores = <int>[];
+    final performers = <_TopPerformer>[];
+
+    for (final a in attempts) {
+      final attempt = a as Map<String, dynamic>;
+      final score = (attempt['score'] ?? attempt['totalScore'] ?? 0) as num;
+      final maxScore = (attempt['maxScore'] ?? attempt['totalMarks'] ?? 100) as num;
+      final pct = maxScore > 0 ? (score / maxScore * 100).round() : 0;
+      scores.add(pct);
+
+      final student = attempt['student'] as Map<String, dynamic>?;
+      final name = student?['name'] ??
+          '${student?['firstName'] ?? ''} ${student?['lastName'] ?? ''}'.trim();
+      performers.add(_TopPerformer(
+        rank: 0,
+        name: name.isEmpty ? 'Student' : name,
+        score: pct,
+      ));
+    }
+
+    scores.sort((a, b) => b.compareTo(a));
+    performers.sort((a, b) => b.score.compareTo(a.score));
+
+    final rankedPerformers = <_TopPerformer>[];
+    for (int i = 0; i < math.min(5, performers.length); i++) {
+      rankedPerformers.add(_TopPerformer(
+        rank: i + 1,
+        name: performers[i].name,
+        score: performers[i].score,
+      ));
+    }
+
+    final avg = scores.isEmpty
+        ? 0.0
+        : scores.reduce((a, b) => a + b) / scores.length;
+    final highest = scores.isEmpty ? 0 : scores.first;
+    final passing = scores.where((s) => s >= 50).length;
+    final passRatePct =
+        scores.isEmpty ? 0 : (passing / scores.length * 100).round();
+
+    final ranges = [
+      _ScoreRange(label: '80-100', count: scores.where((s) => s >= 80).length, color: AppColors.secondary),
+      _ScoreRange(label: '60-80', count: scores.where((s) => s >= 60 && s < 80).length, color: AppColors.primary),
+      _ScoreRange(label: '40-60', count: scores.where((s) => s >= 40 && s < 60).length, color: AppColors.accent),
+      _ScoreRange(label: '20-40', count: scores.where((s) => s >= 20 && s < 40).length, color: Colors.orange),
+      _ScoreRange(label: '0-20', count: scores.where((s) => s < 20).length, color: AppColors.error),
+    ];
+
+    setState(() {
+      _classAverage = avg;
+      _highestScore = highest;
+      _passRate = passRatePct;
+      _totalSubmissions = scores.length;
+      _totalStudents = scores.length;
+      _scoreDistribution = ranges;
+      _topPerformers = rankedPerformers;
+      _trendData = [_TrendPoint(label: 'This Exam', value: avg)];
+      _questionAnalyses = [];
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,9 +129,9 @@ class _ExamAnalyticsScreenState extends State<ExamAnalyticsScreen> {
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          'Exam ${widget.examId}',
-          style: const TextStyle(
+        title: const Text(
+          'Exam Analytics',
+          style: TextStyle(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 17,
@@ -96,24 +139,70 @@ class _ExamAnalyticsScreenState extends State<ExamAnalyticsScreen> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildOverviewCards(),
-            const SizedBox(height: 20),
-            _buildScoreDistribution(),
-            const SizedBox(height: 20),
-            _buildPerQuestionAnalysis(),
-            const SizedBox(height: 20),
-            _buildTopPerformers(),
-            const SizedBox(height: 20),
-            _buildPerformanceTrend(),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.error_outline,
+                          size: 48, color: Colors.grey.shade400),
+                      const SizedBox(height: 12),
+                      Text(_error!,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey.shade600)),
+                      const SizedBox(height: 16),
+                      OutlinedButton(
+                        onPressed: _loadData,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : _totalSubmissions == 0
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.analytics_outlined,
+                              size: 48, color: Colors.grey.shade300),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No submissions yet',
+                            style: TextStyle(
+                                fontSize: 16, color: Colors.grey.shade500),
+                          ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _loadData,
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildOverviewCards(),
+                            const SizedBox(height: 20),
+                            _buildScoreDistribution(),
+                            if (_questionAnalyses.isNotEmpty) ...[
+                              const SizedBox(height: 20),
+                              _buildPerQuestionAnalysis(),
+                            ],
+                            if (_topPerformers.isNotEmpty) ...[
+                              const SizedBox(height: 20),
+                              _buildTopPerformers(),
+                            ],
+                            if (_trendData.length > 1) ...[
+                              const SizedBox(height: 20),
+                              _buildPerformanceTrend(),
+                            ],
+                            const SizedBox(height: 24),
+                          ],
+                        ),
+                      ),
+                    ),
     );
   }
 
@@ -128,25 +217,25 @@ class _ExamAnalyticsScreenState extends State<ExamAnalyticsScreen> {
       children: [
         _OverviewCard(
           title: 'Class Average',
-          value: '78%',
+          value: '${_classAverage.round()}%',
           icon: Icons.analytics_outlined,
           color: AppColors.primary,
         ),
         _OverviewCard(
           title: 'Highest Score',
-          value: '98%',
+          value: '$_highestScore%',
           icon: Icons.emoji_events_outlined,
           color: AppColors.accent,
         ),
         _OverviewCard(
           title: 'Pass Rate',
-          value: '85%',
+          value: '$_passRate%',
           icon: Icons.check_circle_outline,
           color: AppColors.secondary,
         ),
         _OverviewCard(
           title: 'Submissions',
-          value: '28/30',
+          value: '$_totalSubmissions/$_totalStudents',
           icon: Icons.people_outline,
           color: Colors.purple,
         ),
@@ -155,8 +244,9 @@ class _ExamAnalyticsScreenState extends State<ExamAnalyticsScreen> {
   }
 
   Widget _buildScoreDistribution() {
-    final maxCount =
-        _scoreDistribution.map((e) => e.count).reduce(math.max).toDouble();
+    final maxCount = _scoreDistribution.isEmpty
+        ? 1.0
+        : _scoreDistribution.map((e) => e.count).reduce(math.max).toDouble();
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -706,8 +796,9 @@ class _TrendChartPainter extends CustomPainter {
     }
 
     final points = <Offset>[];
+    final divisor = data.length > 1 ? data.length - 1 : 1;
     for (int i = 0; i < data.length; i++) {
-      final x = padLeft + (chartWidth / (data.length - 1)) * i;
+      final x = padLeft + (chartWidth / divisor) * i;
       final y = padTop + chartHeight * (1 - (data[i].value - minVal) / range);
       points.add(Offset(x, y));
     }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/api_service.dart';
 
 class AttendanceAnalyticsScreen extends StatefulWidget {
   const AttendanceAnalyticsScreen({super.key});
@@ -10,40 +11,121 @@ class AttendanceAnalyticsScreen extends StatefulWidget {
 }
 
 class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
-  String _selectedClass = 'Physics 10A';
+  bool _loadingClasses = true;
+  bool _loadingReport = false;
+  String? _error;
 
-  final List<String> _classes = [
-    'Physics 10A',
-    'Chemistry 10B',
-    'Biology 11A',
-    'Mathematics 10C',
-    'English 11B',
-    'History 12A',
-  ];
+  List<Map<String, dynamic>> _classOfferings = [];
+  String? _selectedClassId;
 
-  final List<_WeekData> _weeklyData = [
-    _WeekData(label: 'W1', percentage: 92),
-    _WeekData(label: 'W2', percentage: 96),
-    _WeekData(label: 'W3', percentage: 88),
-    _WeekData(label: 'W4', percentage: 94),
-    _WeekData(label: 'W5', percentage: 97),
-    _WeekData(label: 'W6', percentage: 95),
-  ];
+  double _averageAttendance = 0;
+  int _totalAbsences = 0;
+  int _lateArrivals = 0;
+  List<_WeekData> _weeklyData = [];
+  List<_AbsentStudent> _mostAbsent = [];
+  List<_DayAttendance> _dailyBreakdown = [];
 
-  final List<_AbsentStudent> _mostAbsent = [
-    _AbsentStudent(name: 'Sarah Williams', absences: 6, totalDays: 30),
-    _AbsentStudent(name: 'Marcus Johnson', absences: 5, totalDays: 30),
-    _AbsentStudent(name: 'Emily Chen', absences: 4, totalDays: 30),
-    _AbsentStudent(name: 'Alex Lee', absences: 3, totalDays: 30),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadClasses();
+  }
 
-  final List<_DayAttendance> _dailyBreakdown = [
-    _DayAttendance(day: 'Mon', percentage: 96),
-    _DayAttendance(day: 'Tue', percentage: 93),
-    _DayAttendance(day: 'Wed', percentage: 95),
-    _DayAttendance(day: 'Thu', percentage: 91),
-    _DayAttendance(day: 'Fri', percentage: 88),
-  ];
+  Future<void> _loadClasses() async {
+    try {
+      setState(() {
+        _loadingClasses = true;
+        _error = null;
+      });
+
+      final yearData = await ApiService().getActiveAcademicYear();
+      final yearId = yearData['id'] as String;
+      final offerings = await ApiService().getMyClassOfferings(yearId);
+
+      if (!mounted) return;
+      setState(() {
+        _classOfferings = offerings.cast<Map<String, dynamic>>();
+        _loadingClasses = false;
+        if (_classOfferings.isNotEmpty) {
+          _selectedClassId = _classOfferings.first['id'] as String?;
+          _loadReport();
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _loadingClasses = false;
+      });
+    }
+  }
+
+  Future<void> _loadReport() async {
+    if (_selectedClassId == null) return;
+    try {
+      setState(() {
+        _loadingReport = true;
+        _error = null;
+      });
+
+      final report =
+          await ApiService().getClassAttendanceReport(_selectedClassId!);
+
+      if (!mounted) return;
+      setState(() {
+        _averageAttendance =
+            (report['averageAttendance'] as num?)?.toDouble() ?? 0;
+        _totalAbsences = (report['totalAbsences'] as num?)?.toInt() ?? 0;
+        _lateArrivals = (report['lateArrivals'] as num?)?.toInt() ?? 0;
+
+        final weekly = report['weeklyTrends'] as List<dynamic>? ?? [];
+        _weeklyData = weekly.map((w) {
+          final m = w as Map<String, dynamic>;
+          return _WeekData(
+            label: m['label']?.toString() ?? '',
+            percentage: (m['percentage'] as num?)?.toDouble() ?? 0,
+          );
+        }).toList();
+
+        final absent = report['mostAbsent'] as List<dynamic>? ?? [];
+        _mostAbsent = absent.map((a) {
+          final m = a as Map<String, dynamic>;
+          return _AbsentStudent(
+            name: m['name']?.toString() ?? 'Unknown',
+            absences: (m['absences'] as num?)?.toInt() ?? 0,
+            totalDays: (m['totalDays'] as num?)?.toInt() ?? 1,
+          );
+        }).toList();
+
+        final daily = report['dailyBreakdown'] as List<dynamic>? ?? [];
+        _dailyBreakdown = daily.map((d) {
+          final m = d as Map<String, dynamic>;
+          return _DayAttendance(
+            day: m['day']?.toString() ?? '',
+            percentage: (m['percentage'] as num?)?.toInt() ?? 0,
+          );
+        }).toList();
+
+        _loadingReport = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _loadingReport = false;
+      });
+    }
+  }
+
+  String _labelFor(Map<String, dynamic> offering) {
+    final subject = offering['subject'];
+    final grade = offering['grade'];
+    final section = offering['section'];
+    final subjectName = subject is Map ? (subject['name'] ?? '') : '';
+    final gradeName = grade is Map ? (grade['name'] ?? '') : '';
+    final sectionName = section is Map ? (section['name'] ?? '') : '';
+    return '$subjectName $gradeName$sectionName'.trim();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,23 +143,95 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildClassDropdown(),
-            const SizedBox(height: 20),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_loadingClasses) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null && _classOfferings.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: Colors.grey.shade400),
+              const SizedBox(height: 16),
+              Text(
+                'Failed to load data',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _error ?? '',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: _loadClasses,
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('Retry'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_classOfferings.isEmpty) {
+      return Center(
+        child: Text(
+          'No classes found.',
+          style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildClassDropdown(),
+          const SizedBox(height: 20),
+          if (_loadingReport)
+            const Padding(
+              padding: EdgeInsets.only(top: 80),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else ...[
             _buildOverviewCards(),
             const SizedBox(height: 24),
-            _buildTrendsSection(),
-            const SizedBox(height: 24),
-            _buildMostAbsentSection(),
-            const SizedBox(height: 24),
-            _buildDailyBreakdownSection(),
-            const SizedBox(height: 32),
+            if (_weeklyData.isNotEmpty) ...[
+              _buildTrendsSection(),
+              const SizedBox(height: 24),
+            ],
+            if (_mostAbsent.isNotEmpty) ...[
+              _buildMostAbsentSection(),
+              const SizedBox(height: 24),
+            ],
+            if (_dailyBreakdown.isNotEmpty) ...[
+              _buildDailyBreakdownSection(),
+              const SizedBox(height: 32),
+            ],
           ],
-        ),
+        ],
       ),
     );
   }
@@ -91,7 +245,7 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
-          value: _selectedClass,
+          value: _selectedClassId,
           isExpanded: true,
           icon: const Icon(Icons.keyboard_arrow_down),
           style: const TextStyle(
@@ -99,11 +253,18 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),
-          items: _classes
-              .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-              .toList(),
+          items: _classOfferings.map((c) {
+            final id = c['id'] as String;
+            return DropdownMenuItem(
+              value: id,
+              child: Text(_labelFor(c)),
+            );
+          }).toList(),
           onChanged: (val) {
-            if (val != null) setState(() => _selectedClass = val);
+            if (val != null && val != _selectedClassId) {
+              setState(() => _selectedClassId = val);
+              _loadReport();
+            }
           },
         ),
       ),
@@ -116,7 +277,7 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
         Expanded(
           child: _OverviewCard(
             title: 'Average\nAttendance',
-            value: '94%',
+            value: '${_averageAttendance.round()}%',
             icon: Icons.trending_up,
             color: AppColors.secondary,
           ),
@@ -125,7 +286,7 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
         Expanded(
           child: _OverviewCard(
             title: 'Total\nAbsences',
-            value: '23',
+            value: '$_totalAbsences',
             icon: Icons.person_off_outlined,
             color: AppColors.error,
           ),
@@ -134,7 +295,7 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
         Expanded(
           child: _OverviewCard(
             title: 'Late\nArrivals',
-            value: '12',
+            value: '$_lateArrivals',
             icon: Icons.schedule,
             color: AppColors.accent,
           ),
@@ -212,7 +373,9 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
         const SizedBox(height: 12),
         ...List.generate(_mostAbsent.length, (index) {
           final student = _mostAbsent[index];
-          final ratio = student.absences / student.totalDays;
+          final ratio = student.totalDays > 0
+              ? student.absences / student.totalDays
+              : 0.0;
           return Container(
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.all(14),
@@ -229,6 +392,7 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
                   child: Text(
                     student.name
                         .split(' ')
+                        .where((w) => w.isNotEmpty)
                         .map((w) => w[0])
                         .take(2)
                         .join()
@@ -436,9 +600,9 @@ class _TrendChartPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (data.isEmpty) return;
 
-    final double minVal = 80;
-    final double maxVal = 100;
-    final double range = maxVal - minVal;
+    const double minVal = 80;
+    const double maxVal = 100;
+    const double range = maxVal - minVal;
 
     final gridPaint = Paint()
       ..color = const Color(0xFFE8E8E8)
@@ -477,10 +641,19 @@ class _TrendChartPainter extends CustomPainter {
 
     final points = <Offset>[];
     for (int i = 0; i < data.length; i++) {
-      final x = i * size.width / (data.length - 1);
-      final normalized = (data[i].percentage - minVal) / range;
+      final x = data.length == 1
+          ? size.width / 2
+          : i * size.width / (data.length - 1);
+      final clamped = data[i].percentage.clamp(minVal, maxVal);
+      final normalized = (clamped - minVal) / range;
       final y = size.height - (normalized * size.height);
       points.add(Offset(x, y));
+    }
+
+    if (points.length == 1) {
+      canvas.drawCircle(points[0], 5, dotBorderPaint);
+      canvas.drawCircle(points[0], 3.5, dotPaint);
+      return;
     }
 
     final linePath = Path()..moveTo(points[0].dx, points[0].dy);

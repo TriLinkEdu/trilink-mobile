@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/api_service.dart';
 import '../screens/create_announcement_screen.dart';
 
 class TeacherAnnouncementsScreen extends StatefulWidget {
@@ -13,56 +14,37 @@ class TeacherAnnouncementsScreen extends StatefulWidget {
 class _TeacherAnnouncementsScreenState
     extends State<TeacherAnnouncementsScreen> {
   String _selectedFilter = 'All';
-
   final List<String> _filters = ['All', 'Sent', 'Scheduled', 'Draft'];
 
-  final List<_AnnouncementItem> _announcements = [
-    _AnnouncementItem(
-      title: 'Mid-Term Exam Schedule Released',
-      preview:
-          'The mid-term examination schedule for all classes has been finalized. Please review the dates and prepare accordingly.',
-      audiences: ['10A', '10B', '11A'],
-      dateTime: 'Mar 20, 2026 • 9:00 AM',
-      status: _AnnouncementStatus.sent,
-      attachments: 1,
-    ),
-    _AnnouncementItem(
-      title: 'Science Fair Project Deadline Extended',
-      preview:
-          'Due to multiple requests, the deadline for submitting science fair projects has been extended by one week.',
-      audiences: ['11A', '11B'],
-      dateTime: 'Mar 22, 2026 • 2:30 PM',
-      status: _AnnouncementStatus.sent,
-      attachments: 0,
-    ),
-    _AnnouncementItem(
-      title: 'Parent-Teacher Conference Reminder',
-      preview:
-          'Reminder: Parent-Teacher conferences are scheduled for next Friday. Please ensure all grade reports are updated.',
-      audiences: ['All Classes'],
-      dateTime: 'Mar 25, 2026 • 8:00 AM',
-      status: _AnnouncementStatus.scheduled,
-      attachments: 2,
-    ),
-    _AnnouncementItem(
-      title: 'Lab Safety Training Required',
-      preview:
-          'All students enrolled in Chemistry and Biology must complete the online lab safety module before attending next lab session.',
-      audiences: ['10B', '11A'],
-      dateTime: 'Mar 26, 2026 • 10:00 AM',
-      status: _AnnouncementStatus.scheduled,
-      attachments: 1,
-    ),
-    _AnnouncementItem(
-      title: 'End-of-Year Trip Planning',
-      preview:
-          'We are planning the annual end-of-year educational trip. Details about destinations and costs will be shared soon.',
-      audiences: ['12A'],
-      dateTime: 'Edited Mar 18, 2026',
-      status: _AnnouncementStatus.draft,
-      attachments: 0,
-    ),
-  ];
+  bool _loading = true;
+  String? _error;
+  List<_AnnouncementItem> _announcements = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final raw = await ApiService().getAnnouncements();
+      setState(() {
+        _announcements = raw
+            .map((a) =>
+                _AnnouncementItem.fromJson(a as Map<String, dynamic>))
+            .toList();
+      });
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
 
   List<_AnnouncementItem> get _filteredAnnouncements {
     if (_selectedFilter == 'All') return _announcements;
@@ -96,54 +78,81 @@ class _TeacherAnnouncementsScreenState
         ),
         centerTitle: true,
       ),
-      body: Column(
-        children: [
-          _buildFilterChips(),
-          const SizedBox(height: 8),
-          Expanded(
-            child: _filteredAnnouncements.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.campaign_outlined,
-                          size: 48,
-                          color: Colors.grey.shade400,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'No $_selectedFilter announcements',
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: Colors.grey.shade500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    itemCount: _filteredAnnouncements.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      return _AnnouncementCard(
-                        announcement: _filteredAnnouncements[index],
-                      );
-                    },
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.error_outline,
+                          size: 48, color: Colors.grey.shade400),
+                      const SizedBox(height: 12),
+                      Text(_error!,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey.shade600)),
+                      const SizedBox(height: 16),
+                      OutlinedButton(
+                        onPressed: _loadData,
+                        child: const Text('Retry'),
+                      ),
+                    ],
                   ),
-          ),
-        ],
-      ),
+                )
+              : Column(
+                  children: [
+                    _buildFilterChips(),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: _filteredAnnouncements.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.campaign_outlined,
+                                    size: 48,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'No $_selectedFilter announcements',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      color: Colors.grey.shade500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : RefreshIndicator(
+                              onRefresh: _loadData,
+                              child: ListView.separated(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20),
+                                itemCount: _filteredAnnouncements.length,
+                                separatorBuilder: (context, index) =>
+                                    const SizedBox(height: 12),
+                                itemBuilder: (context, index) {
+                                  return _AnnouncementCard(
+                                    announcement:
+                                        _filteredAnnouncements[index],
+                                  );
+                                },
+                              ),
+                            ),
+                    ),
+                  ],
+                ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          final created = await Navigator.push<bool>(
             context,
             MaterialPageRoute(
               builder: (_) => const CreateAnnouncementScreen(),
             ),
           );
+          if (created == true) _loadData();
         },
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add, color: Colors.white),
@@ -347,4 +356,37 @@ class _AnnouncementItem {
     required this.status,
     required this.attachments,
   });
+
+  factory _AnnouncementItem.fromJson(Map<String, dynamic> json) {
+    final statusStr = (json['status'] as String?) ?? 'sent';
+    _AnnouncementStatus status;
+    switch (statusStr.toLowerCase()) {
+      case 'scheduled':
+        status = _AnnouncementStatus.scheduled;
+        break;
+      case 'draft':
+        status = _AnnouncementStatus.draft;
+        break;
+      default:
+        status = _AnnouncementStatus.sent;
+    }
+
+    final audienceRaw = json['audiences'] ?? json['targetAudience'] ?? [];
+    final audiences = (audienceRaw is List)
+        ? audienceRaw.map((a) => a is Map ? (a['name'] ?? a.toString()) : a.toString()).toList().cast<String>()
+        : <String>[];
+
+    final attachmentsRaw = json['attachments'];
+    final attachmentCount =
+        attachmentsRaw is List ? attachmentsRaw.length : 0;
+
+    return _AnnouncementItem(
+      title: json['title'] ?? '',
+      preview: json['message'] ?? json['body'] ?? json['content'] ?? '',
+      audiences: audiences,
+      dateTime: json['createdAt'] ?? json['scheduledAt'] ?? '',
+      status: status,
+      attachments: attachmentCount,
+    );
+  }
 }

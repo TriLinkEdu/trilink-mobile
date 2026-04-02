@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/api_service.dart';
 import 'live_exam_monitoring_screen.dart';
 import 'exam_analytics_screen.dart';
-import 'create_exam_screen.dart';
 
 class TeacherExamsScreen extends StatefulWidget {
   const TeacherExamsScreen({super.key});
@@ -14,91 +14,51 @@ class TeacherExamsScreen extends StatefulWidget {
 class _TeacherExamsScreenState extends State<TeacherExamsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _loading = true;
+  String? _error;
 
-  final List<_ExamItem> _upcomingExams = [
-    _ExamItem(
-      id: 'exam_1',
-      title: 'Calculus II Midterm',
-      subject: 'Mathematics',
-      date: 'Mar 28, 2026 • 9:00 AM',
-      duration: '90 min',
-      studentCount: 32,
-      status: 'Scheduled',
-      statusColor: AppColors.primary,
-    ),
-    _ExamItem(
-      id: 'exam_2',
-      title: 'Physics 101 Final',
-      subject: 'Physics',
-      date: 'Apr 2, 2026 • 10:30 AM',
-      duration: '120 min',
-      studentCount: 28,
-      status: 'Scheduled',
-      statusColor: AppColors.primary,
-    ),
-    _ExamItem(
-      id: 'exam_3',
-      title: 'Linear Algebra Quiz 4',
-      subject: 'Mathematics',
-      date: 'Apr 5, 2026 • 2:00 PM',
-      duration: '45 min',
-      studentCount: 35,
-      status: 'Scheduled',
-      statusColor: AppColors.primary,
-    ),
-  ];
-
-  final List<_ExamItem> _completedExams = [
-    _ExamItem(
-      id: 'exam_4',
-      title: 'Physics 101 Midterm',
-      subject: 'Physics',
-      date: 'Mar 10, 2026',
-      duration: '90 min',
-      studentCount: 30,
-      status: 'Completed',
-      statusColor: AppColors.secondary,
-    ),
-    _ExamItem(
-      id: 'exam_5',
-      title: 'Calculus II Quiz 3',
-      subject: 'Mathematics',
-      date: 'Mar 5, 2026',
-      duration: '30 min',
-      studentCount: 32,
-      status: 'Completed',
-      statusColor: AppColors.secondary,
-    ),
-  ];
-
-  final List<_ExamItem> _draftExams = [
-    _ExamItem(
-      id: 'exam_6',
-      title: 'Thermodynamics Test',
-      subject: 'Physics',
-      date: 'Not scheduled',
-      duration: '60 min',
-      studentCount: 0,
-      status: 'Draft',
-      statusColor: Colors.grey,
-    ),
-    _ExamItem(
-      id: 'exam_7',
-      title: 'Differential Equations Final',
-      subject: 'Mathematics',
-      date: 'Not scheduled',
-      duration: '120 min',
-      studentCount: 0,
-      status: 'Draft',
-      statusColor: Colors.grey,
-    ),
-  ];
+  List<_ExamItem> _upcomingExams = [];
+  List<_ExamItem> _completedExams = [];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(() => setState(() {}));
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final exams = await ApiService().getExams();
+      final upcoming = <_ExamItem>[];
+      final completed = <_ExamItem>[];
+
+      for (final e in exams) {
+        final item = _ExamItem.fromJson(e as Map<String, dynamic>);
+        switch (item.status.toLowerCase()) {
+          case 'completed':
+          case 'graded':
+            completed.add(item);
+            break;
+          default:
+            upcoming.add(item);
+        }
+      }
+
+      setState(() {
+        _upcomingExams = upcoming;
+        _completedExams = completed;
+      });
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      setState(() => _loading = false);
+    }
   }
 
   @override
@@ -114,6 +74,10 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen>
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: const Text(
           'Exams & Assessments',
           style: TextStyle(
@@ -140,48 +104,70 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen>
           tabs: [
             Tab(text: 'Upcoming (${_upcomingExams.length})'),
             Tab(text: 'Completed (${_completedExams.length})'),
-            Tab(text: 'Drafts (${_draftExams.length})'),
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildExamList(_upcomingExams, _ExamTab.upcoming),
-          _buildExamList(_completedExams, _ExamTab.completed),
-          _buildExamList(_draftExams, _ExamTab.drafts),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const CreateExamScreen()),
-        ),
-        backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text(
-          'New Exam',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.error_outline,
+                          size: 48, color: Colors.grey.shade400),
+                      const SizedBox(height: 12),
+                      Text(_error!,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey.shade600)),
+                      const SizedBox(height: 16),
+                      OutlinedButton(
+                        onPressed: _loadData,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildExamList(_upcomingExams, _ExamTab.upcoming),
+                    _buildExamList(_completedExams, _ExamTab.completed),
+                  ],
+                ),
     );
   }
 
   Widget _buildExamList(List<_ExamItem> exams, _ExamTab tab) {
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-      itemCount: exams.length,
-      itemBuilder: (context, index) {
-        return _ExamCard(
-          exam: exams[index],
-          tab: tab,
-          onTap: () => _onExamTap(exams[index], tab),
-          onAction: (action) => _onAction(exams[index], tab, action),
-        );
-      },
+    if (exams.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.quiz_outlined, size: 48, color: Colors.grey.shade300),
+            const SizedBox(height: 12),
+            Text(
+              'No exams found',
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade500),
+            ),
+          ],
+        ),
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+        itemCount: exams.length,
+        itemBuilder: (context, index) {
+          return _ExamCard(
+            exam: exams[index],
+            tab: tab,
+            onTap: () => _onExamTap(exams[index], tab),
+            onAction: (action) => _onAction(exams[index], tab, action),
+          );
+        },
+      ),
     );
   }
 
@@ -205,12 +191,6 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen>
           MaterialPageRoute(
             builder: (_) => ExamAnalyticsScreen(examId: exam.id),
           ),
-        );
-        break;
-      case _ExamTab.drafts:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const CreateExamScreen()),
         );
         break;
     }
@@ -239,17 +219,11 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen>
           ),
         );
         break;
-      case 'Edit':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const CreateExamScreen()),
-        );
-        break;
     }
   }
 }
 
-enum _ExamTab { upcoming, completed, drafts }
+enum _ExamTab { upcoming, completed }
 
 class _ExamItem {
   final String id;
@@ -271,6 +245,35 @@ class _ExamItem {
     required this.status,
     required this.statusColor,
   });
+
+  factory _ExamItem.fromJson(Map<String, dynamic> json) {
+    final status = (json['status'] as String?) ?? 'scheduled';
+    Color statusColor;
+    switch (status.toLowerCase()) {
+      case 'completed':
+      case 'graded':
+        statusColor = AppColors.secondary;
+        break;
+      case 'draft':
+        statusColor = Colors.grey;
+        break;
+      default:
+        statusColor = AppColors.primary;
+    }
+
+    final durationMin = json['durationMinutes'] ?? json['duration'] ?? 0;
+
+    return _ExamItem(
+      id: json['_id'] ?? json['id'] ?? '',
+      title: json['title'] ?? '',
+      subject: json['subject']?['name'] ?? json['subjectName'] ?? '',
+      date: json['scheduledAt'] ?? json['date'] ?? 'Not scheduled',
+      duration: '$durationMin min',
+      studentCount: (json['studentCount'] ?? json['totalStudents'] ?? 0) as int,
+      status: status[0].toUpperCase() + status.substring(1),
+      statusColor: statusColor,
+    );
+  }
 }
 
 class _ExamCard extends StatelessWidget {
@@ -290,17 +293,12 @@ class _ExamCard extends StatelessWidget {
     switch (tab) {
       case _ExamTab.upcoming:
         return [
-          _CardAction('Edit', Icons.edit_outlined, AppColors.textSecondary),
           _CardAction('Monitor', Icons.monitor_outlined, AppColors.primary),
         ];
       case _ExamTab.completed:
         return [
           _CardAction('Analytics', Icons.bar_chart, AppColors.primary),
           _CardAction('Results', Icons.assignment_outlined, AppColors.secondary),
-        ];
-      case _ExamTab.drafts:
-        return [
-          _CardAction('Edit', Icons.edit_outlined, AppColors.primary),
         ];
     }
   }

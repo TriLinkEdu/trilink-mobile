@@ -1,29 +1,91 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/offline_banner.dart';
+import '../../../../core/services/api_service.dart';
+import '../../student_info/screens/parent_student_info_screen.dart';
+import '../../student_info/screens/parent_results_screen.dart';
+import '../../attendance/screens/parent_attendance_screen.dart';
+import '../../chat/screens/parent_chat_screen.dart';
+import '../../announcements/screens/parent_announcements_screen.dart';
+import '../../feedback/screens/parent_feedback_screen.dart';
+import '../../reports/screens/weekly_report_screen.dart';
+import '../../notifications/screens/parent_notifications_screen.dart';
+import '../../profile_settings/screens/parent_settings_screen.dart';
 
 class ParentDashboardScreen extends StatefulWidget {
-  const ParentDashboardScreen({super.key});
+  final String? initialChildId;
+
+  const ParentDashboardScreen({super.key, this.initialChildId});
 
   @override
   State<ParentDashboardScreen> createState() => _ParentDashboardScreenState();
 }
 
 class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
+  bool _loading = true;
+  String? _error;
   int _selectedChildIndex = 0;
+  List<Map<String, dynamic>> _children = [];
+  Map<String, dynamic> _currentSummary = {};
 
-  final List<Map<String, String>> _children = [
-    {'name': 'Ahmed Al-Rashid', 'id': '99281', 'avatar': 'https://i.pravatar.cc/80?img=47'},
-    {'name': 'Sara Al-Rashid', 'id': '99282', 'avatar': 'https://i.pravatar.cc/80?img=32'},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
 
-  final List<Map<String, String>> _overviewData = [
-    {'average': '89%', 'avgDelta': '+2.1%', 'attendance': '96%', 'absences': '2 Absences', 'tasks': '3'},
-    {'average': '92%', 'avgDelta': '+3.5%', 'attendance': '98%', 'absences': '1 Absence', 'tasks': '1'},
-  ];
+  Future<void> _loadData() async {
+    try {
+      setState(() { _loading = true; _error = null; });
+      final dashboard = await ApiService().getParentDashboard();
+      final linked = (dashboard['linkedChildren'] as List<dynamic>? ?? [])
+          .cast<Map<String, dynamic>>();
 
-  String get _childName => _children[_selectedChildIndex]['name']!;
-  String get _childAvatar => _children[_selectedChildIndex]['avatar']!;
+      if (linked.isEmpty) {
+        if (!mounted) return;
+        setState(() { _children = []; _loading = false; });
+        return;
+      }
+
+      if (widget.initialChildId != null) {
+        final idx = linked.indexWhere((c) =>
+            (c['studentId'] ?? c['id']) == widget.initialChildId);
+        if (idx >= 0) _selectedChildIndex = idx;
+      }
+
+      _children = linked;
+      await _loadChildSummary();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  Future<void> _loadChildSummary() async {
+    try {
+      final child = _children[_selectedChildIndex];
+      final studentId = child['studentId'] as String? ??
+          child['id'] as String? ?? '';
+      final summary = await ApiService().getChildSummary(studentId);
+      if (!mounted) return;
+      setState(() { _currentSummary = summary; _loading = false; });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  String get _childName {
+    if (_children.isEmpty) return '';
+    final c = _children[_selectedChildIndex];
+    return c['fullName'] as String? ??
+        '${c['firstName'] ?? ''} ${c['lastName'] ?? ''}'.trim();
+  }
+
+  String get _childAvatar {
+    if (_children.isEmpty) return '';
+    return _children[_selectedChildIndex]['avatar'] as String? ?? '';
+  }
 
   void _showChildPicker() {
     showModalBottomSheet(
@@ -37,19 +99,32 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           children: [
             const Padding(
               padding: EdgeInsets.all(16),
-              child: Text('Select Child', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              child: Text('Select Child',
+                  style: TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold)),
             ),
             ...List.generate(_children.length, (i) {
               final child = _children[i];
+              final name = child['fullName'] as String? ??
+                  '${child['firstName'] ?? ''} ${child['lastName'] ?? ''}'
+                      .trim();
+              final avatar = child['avatar'] as String? ?? '';
               return ListTile(
-                leading: CircleAvatar(backgroundImage: NetworkImage(child['avatar']!)),
-                title: Text(child['name']!),
+                leading: avatar.isNotEmpty
+                    ? CircleAvatar(backgroundImage: NetworkImage(avatar))
+                    : CircleAvatar(
+                        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                        child: Text(name.isNotEmpty ? name[0] : '?',
+                            style: const TextStyle(color: AppColors.primary)),
+                      ),
+                title: Text(name),
                 trailing: _selectedChildIndex == i
                     ? const Icon(Icons.check_circle, color: AppColors.primary)
                     : null,
                 onTap: () {
                   setState(() => _selectedChildIndex = i);
                   Navigator.pop(ctx);
+                  _loadChildSummary();
                 },
               );
             }),
@@ -63,32 +138,50 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       body: OfflineBanner(
         child: SafeArea(
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(context),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 20),
-                      _buildOverviewSection(),
-                      const SizedBox(height: 16),
-                      _buildContactTeacher(),
-                      const SizedBox(height: 24),
-                      _buildRecentActivity(),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+          child: _loading
+              ? const Center(child: CircularProgressIndicator())
+              : _error != null
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(_error!,
+                              style: const TextStyle(color: AppColors.error)),
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                              onPressed: _loadData,
+                              child: const Text('Retry')),
+                        ],
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildHeader(context),
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 20),
+                                _buildOverviewSection(),
+                                const SizedBox(height: 24),
+                                _buildFeatureGrid(context),
+                                const SizedBox(height: 24),
+                                _buildContactTeacher(),
+                                const SizedBox(height: 24),
+                                _buildRecentActivity(),
+                                const SizedBox(height: 24),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
         ),
       ),
       bottomNavigationBar: _buildBottomNav(),
@@ -97,15 +190,27 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      padding: const EdgeInsets.fromLTRB(8, 12, 20, 0),
       child: Row(
         children: [
-          const Icon(Icons.menu, color: AppColors.textPrimary),
-          const SizedBox(width: 12),
-          CircleAvatar(
-            radius: 18,
-            backgroundImage: NetworkImage(_childAvatar),
+          IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
+            onPressed: () => Navigator.pop(context),
           ),
+          const SizedBox(width: 4),
+          _childAvatar.isNotEmpty
+              ? CircleAvatar(
+                  radius: 18,
+                  backgroundImage: NetworkImage(_childAvatar),
+                )
+              : CircleAvatar(
+                  radius: 18,
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                  child: Text(
+                    _childName.isNotEmpty ? _childName[0] : '?',
+                    style: const TextStyle(color: AppColors.primary),
+                  ),
+                ),
           const SizedBox(width: 8),
           GestureDetector(
             onTap: _showChildPicker,
@@ -124,16 +229,22 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
             ),
           ),
           const Spacer(),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(10),
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ParentNotificationsScreen()),
             ),
-            child: Icon(
-              Icons.notifications_outlined,
-              color: Colors.grey.shade700,
-              size: 20,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.notifications_outlined,
+                color: Colors.grey.shade700,
+                size: 20,
+              ),
             ),
           ),
         ],
@@ -142,7 +253,13 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   }
 
   Widget _buildOverviewSection() {
-    final data = _overviewData[_selectedChildIndex];
+    final average = _currentSummary['average']?.toString() ?? '--';
+    final avgDelta = _currentSummary['avgDelta']?.toString() ?? '';
+    final attendance = _currentSummary['attendance']?.toString() ?? '--';
+    final absences = _currentSummary['absences']?.toString() ?? '--';
+    final tasks = _currentSummary['pendingTasks']?.toString() ??
+        _currentSummary['tasks']?.toString() ?? '0';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -176,8 +293,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                 icon: Icons.trending_up,
                 iconColor: AppColors.secondary,
                 label: 'AVERAGE',
-                value: data['average']!,
-                subtitle: data['avgDelta']!,
+                value: average.contains('%') ? average : '$average%',
+                subtitle: avgDelta,
                 subtitleColor: AppColors.secondary,
               ),
             ),
@@ -187,8 +304,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                 icon: Icons.check_circle_outline,
                 iconColor: AppColors.primary,
                 label: 'ATTENDANCE',
-                value: data['attendance']!,
-                subtitle: data['absences']!,
+                value: attendance.contains('%') ? attendance : '$attendance%',
+                subtitle: absences,
                 subtitleColor: Colors.grey.shade500,
               ),
             ),
@@ -198,12 +315,160 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                 icon: Icons.assignment_outlined,
                 iconColor: Colors.orange,
                 label: 'TASKS',
-                value: data['tasks']!,
+                value: tasks,
                 subtitle: 'Due Soon',
                 subtitleColor: AppColors.error,
               ),
             ),
           ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFeatureGrid(BuildContext context) {
+    final childId = _children.isNotEmpty
+        ? (_children[_selectedChildIndex]['studentId'] as String? ??
+            _children[_selectedChildIndex]['id'] as String? ??
+            '')
+        : '';
+
+    final features = <_FeatureItem>[
+      _FeatureItem(
+        icon: Icons.person_outline,
+        label: 'Student\nInfo',
+        color: const Color(0xFF7C4DFF),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ParentStudentInfoScreen(
+              childName: _childName,
+              studentUserId: childId,
+            ),
+          ),
+        ),
+      ),
+      _FeatureItem(
+        icon: Icons.grade_outlined,
+        label: 'Academic\nResults',
+        color: AppColors.primary,
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ParentResultsScreen()),
+        ),
+      ),
+      _FeatureItem(
+        icon: Icons.event_available_outlined,
+        label: 'Attendance\nRecord',
+        color: AppColors.secondary,
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ParentAttendanceScreen(
+              studentId: childId,
+              childName: _childName,
+            ),
+          ),
+        ),
+      ),
+      _FeatureItem(
+        icon: Icons.chat_bubble_outline,
+        label: 'Messages',
+        color: const Color(0xFF00BFA5),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ParentChatScreen()),
+        ),
+      ),
+      _FeatureItem(
+        icon: Icons.campaign_outlined,
+        label: 'Announce-\nments',
+        color: Colors.orange,
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ParentAnnouncementsScreen()),
+        ),
+      ),
+      _FeatureItem(
+        icon: Icons.summarize_outlined,
+        label: 'Weekly\nReport',
+        color: const Color(0xFFE91E63),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => WeeklyReportScreen(childName: _childName)),
+        ),
+      ),
+      _FeatureItem(
+        icon: Icons.feedback_outlined,
+        label: 'Feedback',
+        color: const Color(0xFFFF6D00),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ParentFeedbackScreen()),
+        ),
+      ),
+      _FeatureItem(
+        icon: Icons.notifications_outlined,
+        label: 'Notifica-\ntions',
+        color: const Color(0xFF546E7A),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ParentNotificationsScreen()),
+        ),
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'QUICK ACCESS',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey.shade500,
+            letterSpacing: 0.8,
+          ),
+        ),
+        const SizedBox(height: 12),
+        GridView.count(
+          crossAxisCount: 4,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 8,
+          childAspectRatio: 0.85,
+          children: features.map((f) {
+            return GestureDetector(
+              onTap: f.onTap,
+              child: Column(
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: f.color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(f.icon, color: f.color, size: 24),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    f.label,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade700,
+                      height: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
         ),
       ],
     );
@@ -237,7 +502,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Mr. Davis is available for a chat.',
+                  'Reach out to your child\'s teacher.',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.8),
                     fontSize: 13,
@@ -252,7 +517,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
               color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.chat_bubble, color: Colors.white, size: 20),
+            child:
+                const Icon(Icons.chat_bubble, color: Colors.white, size: 20),
           ),
         ],
       ),
@@ -260,6 +526,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   }
 
   Widget _buildRecentActivity() {
+    final activities =
+        (_currentSummary['recentActivity'] as List<dynamic>?) ?? [];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -279,44 +547,49 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        _ActivityItem(
-          icon: Icons.quiz,
-          iconBgColor: AppColors.primary.withValues(alpha: 0.1),
-          iconColor: AppColors.primary,
-          title: 'Algebra II Quiz',
-          subtitle:
-              '"Great job on the polynomials section, keep it up!"',
-          teacher: 'Mr. Davis',
-          time: '2h ago',
-        ),
-        _ActivityItem(
-          icon: Icons.description,
-          iconBgColor: Colors.grey.shade100,
-          iconColor: Colors.grey.shade600,
-          title: 'History Essay',
-          subtitle: 'Draft submitted successfully. Pending review.',
-          time: '5h ago',
-          tag: 'Submission',
-        ),
-        _ActivityItem(
-          icon: Icons.access_time,
-          iconBgColor: AppColors.secondary.withValues(alpha: 0.1),
-          iconColor: AppColors.secondary,
-          title: 'Late Arrival',
-          subtitle: 'Arrived at 8:45 AM. Reason: Medical Appointment.',
-          time: 'Yesterday',
-          tag: 'Excused',
-          tagColor: AppColors.secondary,
-        ),
-        _ActivityItem(
-          icon: Icons.menu_book,
-          iconBgColor: Colors.purple.withValues(alpha: 0.1),
-          iconColor: Colors.purple,
-          title: 'English Reading',
-          subtitle:
-              'Chapter 4-5 assigned for weekend reading.',
-          time: '2d ago',
-        ),
+        if (activities.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: Text('No recent activity',
+                  style: TextStyle(color: Colors.grey.shade500)),
+            ),
+          ),
+        ...activities.map<Widget>((a) {
+          final type = a['type'] as String? ?? '';
+          IconData icon;
+          Color iconColor;
+          Color iconBgColor;
+          switch (type) {
+            case 'quiz':
+            case 'exam':
+              icon = Icons.quiz;
+              iconColor = AppColors.primary;
+              iconBgColor = AppColors.primary.withValues(alpha: 0.1);
+            case 'submission':
+              icon = Icons.description;
+              iconColor = Colors.grey.shade600;
+              iconBgColor = Colors.grey.shade100;
+            case 'attendance':
+              icon = Icons.access_time;
+              iconColor = AppColors.secondary;
+              iconBgColor = AppColors.secondary.withValues(alpha: 0.1);
+            default:
+              icon = Icons.menu_book;
+              iconColor = Colors.purple;
+              iconBgColor = Colors.purple.withValues(alpha: 0.1);
+          }
+          return _ActivityItem(
+            icon: icon,
+            iconBgColor: iconBgColor,
+            iconColor: iconColor,
+            title: a['title'] as String? ?? '',
+            subtitle: a['description'] as String? ?? '',
+            time: a['time'] as String? ?? '',
+            teacher: a['teacher'] as String?,
+            tag: a['tag'] as String?,
+          );
+        }),
       ],
     );
   }
@@ -324,7 +597,6 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   Widget _buildBottomNav() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -336,12 +608,29 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       child: BottomNavigationBar(
         currentIndex: 0,
         type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
         selectedItemColor: AppColors.primary,
         unselectedItemColor: Colors.grey.shade400,
         selectedFontSize: 12,
         unselectedFontSize: 12,
         elevation: 0,
+        onTap: (index) {
+          if (index == 0) return;
+          Widget? screen;
+          switch (index) {
+            case 1:
+              screen = const ParentChatScreen();
+            case 2:
+              screen = const ParentAnnouncementsScreen();
+            case 3:
+              screen = const ParentSettingsScreen();
+          }
+          if (screen != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => screen!),
+            );
+          }
+        },
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard_outlined),
@@ -353,8 +642,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
             label: 'Messages',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today_outlined),
-            label: 'Calendar',
+            icon: Icon(Icons.campaign_outlined),
+            label: 'Announcements',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings_outlined),
@@ -513,7 +802,8 @@ class _ActivityItem extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         radius: 10,
-                        backgroundColor: AppColors.secondary.withValues(alpha: 0.15),
+                        backgroundColor:
+                            AppColors.secondary.withValues(alpha: 0.15),
                         child: const Icon(
                           Icons.person,
                           size: 12,
@@ -560,4 +850,18 @@ class _ActivityItem extends StatelessWidget {
       ),
     );
   }
+}
+
+class _FeatureItem {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  _FeatureItem({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/theme_notifier.dart';
 import '../../../core/routes/route_names.dart';
 import '../services/auth_service.dart';
 
@@ -18,6 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _loading = false;
   _Role _selectedRole = _Role.student;
 
   @override
@@ -27,25 +27,40 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _handleLogin() {
-    if (_formKey.currentState?.validate() ?? false) {
+  Future<void> _handleLogin() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    setState(() => _loading = true);
+
+    try {
+      final auth = AuthService();
+      await auth.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        role: _selectedRole.name,
+      );
+
+      if (!mounted) return;
+
       final String destinationRoute;
-      final authService = AuthService();
       switch (_selectedRole) {
         case _Role.student:
-          authService.setCurrentRole('student');
           destinationRoute = RouteNames.studentDashboard;
-          break;
         case _Role.teacher:
-          authService.setCurrentRole('teacher');
           destinationRoute = RouteNames.teacherDashboard;
-          break;
         case _Role.parent:
-          authService.setCurrentRole('parent');
           destinationRoute = RouteNames.parentHome;
-          break;
       }
       Navigator.of(context).pushReplacementNamed(destinationRoute);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red.shade600,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -54,7 +69,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? null : Colors.white,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -64,7 +78,6 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildDarkModeToggle(isDark),
                   const SizedBox(height: 16),
                   _buildLogo(),
                   const SizedBox(height: 24),
@@ -94,31 +107,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 8),
                   _buildLoginButton(),
                   const SizedBox(height: 24),
-                  _buildContinueOffline(),
                 ],
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDarkModeToggle(bool isDark) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: GestureDetector(
-        onTap: () => ThemeNotifier.instance.toggle(),
-        child: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(
-            isDark ? Icons.light_mode : Icons.dark_mode,
-            color: isDark ? Colors.amber : Colors.grey.shade700,
-            size: 22,
           ),
         ),
       ),
@@ -350,7 +341,7 @@ class _LoginScreenState extends State<LoginScreen> {
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
-        onPressed: _handleLogin,
+        onPressed: _loading ? null : _handleLogin,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
@@ -363,26 +354,17 @@ class _LoginScreenState extends State<LoginScreen> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        child: const Text('LOG IN'),
+        child: _loading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : const Text('LOG IN'),
       ),
-    );
-  }
-
-  Widget _buildContinueOffline() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(Icons.wifi_off_rounded, size: 18, color: Colors.grey.shade500),
-        const SizedBox(width: 6),
-        TextButton(
-          onPressed: () {},
-          style: TextButton.styleFrom(padding: EdgeInsets.zero),
-          child: Text(
-            'Continue offline',
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-          ),
-        ),
-      ],
     );
   }
 }

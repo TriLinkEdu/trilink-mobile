@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/api_service.dart';
 
-class StudentAnalyticsScreen extends StatelessWidget {
+class StudentAnalyticsScreen extends StatefulWidget {
   final String studentId;
   final String studentName;
 
@@ -13,11 +14,91 @@ class StudentAnalyticsScreen extends StatelessWidget {
   });
 
   @override
+  State<StudentAnalyticsScreen> createState() => _StudentAnalyticsScreenState();
+}
+
+class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
+  bool _loading = true;
+  String? _error;
+
+  Map<String, dynamic> _performance = {};
+  Map<String, dynamic> _profile = {};
+
+  double _gpa = 0.0;
+  String _gpaRank = '';
+  int _absences = 0;
+  double _attendancePercent = 0.0;
+  List<double> _gradeTrends = [];
+  List<String> _trendLabels = [];
+  double _trendChange = 0.0;
+  String _insightTitle = '';
+  String _insightBody = '';
+  List<String> _tags = [];
+  String _grade = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final results = await Future.wait([
+        ApiService().getStudentPerformance(widget.studentId),
+        ApiService().getStudentProfile(widget.studentId),
+      ]);
+
+      if (!mounted) return;
+
+      _performance = results[0];
+      _profile = results[1];
+
+      final gpaVal = _performance['gpa'];
+      _gpa = gpaVal is num ? gpaVal.toDouble() : double.tryParse(gpaVal?.toString() ?? '') ?? 0.0;
+      _gpaRank = _performance['gpaRank'] as String? ??
+          _performance['classRank'] as String? ?? '';
+      final absVal = _performance['absences'] ?? _performance['totalAbsences'];
+      _absences = absVal is num ? absVal.toInt() : int.tryParse(absVal?.toString() ?? '') ?? 0;
+      final attVal = _performance['attendancePercent'];
+      _attendancePercent = attVal is num ? attVal.toDouble() : double.tryParse(attVal?.toString() ?? '') ?? 0.0;
+
+      final trendsRaw = _performance['gradeTrends'] as List<dynamic>? ??
+          _performance['gradeTrend'] as List<dynamic>? ?? [];
+      _gradeTrends =
+          trendsRaw.map((e) => (e as num).toDouble()).toList();
+      _trendLabels =
+          (_performance['trendLabels'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [];
+      _trendChange =
+          (_performance['trendChange'] as num?)?.toDouble() ?? 0.0;
+
+      final insight = _performance['insight'] as Map<String, dynamic>?;
+      _insightTitle = insight?['title'] as String? ?? '';
+      _insightBody = insight?['body'] as String? ?? '';
+
+      _tags = (_profile['tags'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [];
+      _grade = _profile['grade'] as String? ?? '';
+
+      setState(() => _loading = false);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
@@ -38,30 +119,54 @@ class StudentAnalyticsScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return Center(
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 16),
-            _buildProfileSection(),
-            const SizedBox(height: 20),
-            _buildStatsRow(),
-            const SizedBox(height: 28),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildGradeTrends(),
-                  const SizedBox(height: 28),
-                  _buildAttendanceSection(),
-                  const SizedBox(height: 24),
-                  _buildInsightCard(),
-                  const SizedBox(height: 32),
-                ],
-              ),
-            ),
+            Text(_error!, style: const TextStyle(color: AppColors.error)),
+            const SizedBox(height: 12),
+            ElevatedButton(onPressed: _loadData, child: const Text('Retry')),
           ],
         ),
+      );
+    }
+
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          const SizedBox(height: 16),
+          _buildProfileSection(),
+          const SizedBox(height: 20),
+          _buildStatsRow(),
+          const SizedBox(height: 28),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (_gradeTrends.isNotEmpty) ...[
+                  _buildGradeTrends(),
+                  const SizedBox(height: 28),
+                ],
+                _buildAttendanceSection(),
+                if (_insightTitle.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  _buildInsightCard(),
+                ],
+                const SizedBox(height: 32),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -92,7 +197,7 @@ class StudentAnalyticsScreen extends StatelessWidget {
         ),
         const SizedBox(height: 14),
         Text(
-          studentName.isEmpty ? 'Sara Mekonnen' : studentName,
+          widget.studentName,
           style: const TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
@@ -101,18 +206,22 @@ class StudentAnalyticsScreen extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          '10th Grade | ID: #${studentId.isEmpty ? "99281" : studentId}',
+          '${_grade.isNotEmpty ? _grade : 'Student'} | ID: #${widget.studentId}',
           style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
         ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _Tag(label: 'Honor Roll'),
-            const SizedBox(width: 8),
-            _Tag(label: 'Soccer Team'),
-          ],
-        ),
+        if (_tags.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: _tags
+                .take(3)
+                .map((t) => Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: _Tag(label: t),
+                    ))
+                .toList(),
+          ),
+        ],
       ],
     );
   }
@@ -156,26 +265,28 @@ class StudentAnalyticsScreen extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text(
-                        '3.2',
-                        style: TextStyle(
+                      Text(
+                        _gpa.toStringAsFixed(1),
+                        style: const TextStyle(
                           fontSize: 30,
                           fontWeight: FontWeight.bold,
                           color: AppColors.textPrimary,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Text(
-                          'Top 15%',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.primary.withValues(alpha: 0.8),
+                      if (_gpaRank.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Text(
+                            _gpaRank,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.primary.withValues(alpha: 0.8),
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ],
@@ -217,9 +328,9 @@ class StudentAnalyticsScreen extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text(
-                        '4',
-                        style: TextStyle(
+                      Text(
+                        '$_absences',
+                        style: const TextStyle(
                           fontSize: 30,
                           fontWeight: FontWeight.bold,
                           color: AppColors.textPrimary,
@@ -248,6 +359,7 @@ class StudentAnalyticsScreen extends StatelessWidget {
   }
 
   Widget _buildGradeTrends() {
+    final isDown = _trendChange < 0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -272,27 +384,36 @@ class StudentAnalyticsScreen extends StatelessWidget {
                 ),
               ],
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.error.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.trending_down, size: 14, color: AppColors.error),
-                  const SizedBox(width: 4),
-                  const Text(
-                    '5%',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.error,
+            if (_trendChange != 0)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: (isDown ? AppColors.error : AppColors.secondary)
+                      .withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      isDown ? Icons.trending_down : Icons.trending_up,
+                      size: 14,
+                      color:
+                          isDown ? AppColors.error : AppColors.secondary,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 4),
+                    Text(
+                      '${_trendChange.abs().toStringAsFixed(0)}%',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color:
+                            isDown ? AppColors.error : AppColors.secondary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
           ],
         ),
         const SizedBox(height: 20),
@@ -300,7 +421,10 @@ class StudentAnalyticsScreen extends StatelessWidget {
           height: 180,
           child: CustomPaint(
             size: const Size(double.infinity, 180),
-            painter: _GradeTrendPainter(),
+            painter: _GradeTrendPainter(
+              grades: _gradeTrends,
+              labels: _trendLabels,
+            ),
           ),
         ),
       ],
@@ -308,6 +432,9 @@ class StudentAnalyticsScreen extends StatelessWidget {
   }
 
   Widget _buildAttendanceSection() {
+    final pct = _attendancePercent > 1
+        ? _attendancePercent / 100
+        : _attendancePercent;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -339,11 +466,11 @@ class StudentAnalyticsScreen extends StatelessWidget {
             width: 60,
             height: 60,
             child: CustomPaint(
-              painter: _AttendanceCirclePainter(percentage: 0.82),
-              child: const Center(
+              painter: _AttendanceCirclePainter(percentage: pct),
+              child: Center(
                 child: Text(
-                  '82%',
-                  style: TextStyle(
+                  '${(pct * 100).round()}%',
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
@@ -372,17 +499,20 @@ class StudentAnalyticsScreen extends StatelessWidget {
             children: [
               Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700),
               const SizedBox(width: 8),
-              const Text(
-                'At-risk in Algebra',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+              Expanded(
+                child: Text(
+                  _insightTitle,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: AppColors.error,
                   borderRadius: BorderRadius.circular(4),
@@ -401,7 +531,7 @@ class StudentAnalyticsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            "Sara's performance in Algebra 1 has dropped by 15% in the last 3 weeks. Pattern matches early signs of disengagement.",
+            _insightBody,
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey.shade700,
@@ -460,11 +590,19 @@ class _Tag extends StatelessWidget {
 }
 
 class _GradeTrendPainter extends CustomPainter {
+  final List<double> grades;
+  final List<String> labels;
+
+  _GradeTrendPainter({required this.grades, required this.labels});
+
   @override
   void paint(Canvas canvas, Size size) {
-    final months = ['Sep', 'Oct', 'Nov', 'Dec', 'Jan'];
+    if (grades.isEmpty) return;
+
+    final months = labels.isNotEmpty
+        ? labels
+        : List.generate(grades.length, (i) => '${i + 1}');
     final yLabels = ['1.0', '2.0', '3.0', '4.0'];
-    final grades = [2.8, 3.2, 3.4, 3.3, 2.1];
 
     const leftPad = 32.0;
     const bottomPad = 24.0;
@@ -493,8 +631,9 @@ class _GradeTrendPainter extends CustomPainter {
       tp.paint(canvas, Offset(0, y - tp.height / 2));
     }
 
-    final stepX = chartW / (months.length - 1);
-    for (int i = 0; i < months.length; i++) {
+    final stepX =
+        grades.length > 1 ? chartW / (grades.length - 1) : chartW;
+    for (int i = 0; i < months.length && i < grades.length; i++) {
       final tp = TextPainter(
         text: TextSpan(text: months[i], style: labelStyle),
         textDirection: TextDirection.ltr,
@@ -558,7 +697,8 @@ class _GradeTrendPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _GradeTrendPainter oldDelegate) =>
+      oldDelegate.grades != grades || oldDelegate.labels != labels;
 }
 
 class _AttendanceCirclePainter extends CustomPainter {
@@ -592,5 +732,6 @@ class _AttendanceCirclePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _AttendanceCirclePainter oldDelegate) =>
+      oldDelegate.percentage != percentage;
 }

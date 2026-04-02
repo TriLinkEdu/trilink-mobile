@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/api_service.dart';
 import 'create_group_screen.dart';
 import 'teacher_chat_conversation_screen.dart';
 
@@ -15,51 +16,48 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
 
-  final List<_ThreadItem> _activeThreads = [
-    _ThreadItem(
-      name: 'Biology 101 - Period 2',
-      message: "Don't forget the lab coats tomorrow! Safet...",
-      time: '2m ago',
-      avatarColor: Colors.purple,
-      icon: Icons.science,
-    ),
-    _ThreadItem(
-      name: 'Art Club',
-      message: 'Meeting moved to Room 304 due to renov...',
-      time: '15m ago',
-      avatarColor: Colors.teal,
-      icon: Icons.palette,
-    ),
-  ];
-
-  final List<_ThreadItem> _previousThreads = [
-    _ThreadItem(
-      name: 'AP Calculus',
-      message: 'Reminder: Quiz on derivatives this Friday.',
-      time: '10:30 AM',
-      avatarColor: AppColors.primary,
-      icon: Icons.calculate,
-    ),
-    _ThreadItem(
-      name: 'English Lit - Period 4',
-      message: "Please read Chapter 4 of 'The Great Gatsb...",
-      time: 'Yesterday',
-      avatarColor: Colors.orange,
-      icon: Icons.menu_book,
-    ),
-    _ThreadItem(
-      name: 'Varsity Basketball',
-      message: 'Practice schedule updated for next week.',
-      time: 'Tue',
-      avatarColor: AppColors.error,
-      icon: Icons.sports_basketball,
-    ),
-  ];
+  bool _loading = true;
+  String? _error;
+  List<Map<String, dynamic>> _conversations = [];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final conversations = await ApiService().getConversations();
+      if (!mounted) return;
+      setState(() {
+        _conversations =
+            conversations.map((c) => c as Map<String, dynamic>).toList();
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  String _timeAgo(String? dateStr) {
+    if (dateStr == null) return '';
+    try {
+      final date = DateTime.parse(dateStr);
+      final diff = DateTime.now().difference(date);
+      if (diff.inMinutes < 1) return 'Just now';
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+      if (diff.inHours < 24) return '${diff.inHours}h ago';
+      if (diff.inDays < 7) return '${diff.inDays}d ago';
+      return '${date.month}/${date.day}';
+    } catch (_) {
+      return dateStr;
+    }
   }
 
   @override
@@ -72,7 +70,6 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -88,6 +85,7 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
                 controller: _tabController,
                 children: [
                   _buildStudentGroupsTab(),
+                  _buildStudentChatsTab(),
                   _buildParentInboxTab(),
                 ],
               ),
@@ -96,13 +94,14 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) => const CreateGroupScreen(),
             ),
           );
+          _loadData();
         },
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.edit, color: Colors.white),
@@ -112,16 +111,21 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      padding: const EdgeInsets.fromLTRB(8, 16, 20, 8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            'Messages',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+          IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
+            onPressed: () => Navigator.pop(context),
+          ),
+          const Expanded(
+            child: Text(
+              'Messages',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
             ),
           ),
           CircleAvatar(
@@ -171,6 +175,7 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
           ),
           tabs: const [
             Tab(text: 'Student Groups'),
+            Tab(text: 'Student Chats'),
             Tab(text: 'Parent Inbox'),
           ],
         ),
@@ -232,219 +237,97 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
     );
   }
 
-  Widget _buildStudentGroupsTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionLabel('ACTIVE THREADS'),
-          const SizedBox(height: 8),
-          ..._activeThreads.map((t) => _ThreadTile(
-                thread: t,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => TeacherChatConversationScreen(
-                        threadName: t.name,
-                      ),
-                    ),
-                  );
-                },
-              )),
-          const SizedBox(height: 20),
-          _buildSectionLabel('PREVIOUS'),
-          const SizedBox(height: 8),
-          ..._previousThreads.map((t) => _ThreadTile(
-                thread: t,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => TeacherChatConversationScreen(
-                        threadName: t.name,
-                      ),
-                    ),
-                  );
-                },
-              )),
-        ],
-      ),
-    );
-  }
-
-  final List<_ParentThread> _parentThreads = [
-    _ParentThread(
-      parentName: 'Mrs. Al-Farsi',
-      childName: "Ahmed's mother",
-      lastMessage: 'Thank you for the update on his progress.',
-      time: '10m ago',
-      unreadCount: 2,
-      avatarColor: Colors.indigo,
-    ),
-    _ParentThread(
-      parentName: 'Mr. Hassan',
-      childName: "Omar's father",
-      lastMessage: 'Can we schedule a meeting this week?',
-      time: '1h ago',
-      unreadCount: 1,
-      avatarColor: Colors.teal,
-    ),
-    _ParentThread(
-      parentName: 'Mrs. Noor',
-      childName: "Fatima's mother",
-      lastMessage: 'She will be absent tomorrow due to a doctor...',
-      time: '3h ago',
-      unreadCount: 0,
-      avatarColor: Colors.deepOrange,
-    ),
-    _ParentThread(
-      parentName: 'Mr. Mohammed',
-      childName: "Sara's father",
-      lastMessage: 'Noted, we will review the homework together.',
-      time: 'Yesterday',
-      unreadCount: 0,
-      avatarColor: Colors.blueGrey,
-    ),
-  ];
-
-  Widget _buildParentInboxTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionLabel('RECENT CONVERSATIONS'),
-          const SizedBox(height: 8),
-          ..._parentThreads.map((p) => _buildParentTile(p)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildParentTile(_ParentThread parent) {
-    final initials = parent.parentName
-        .replaceAll('Mrs. ', '')
-        .replaceAll('Mr. ', '')
-        .split(' ')
-        .map((w) => w[0])
-        .join();
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => TeacherChatConversationScreen(
-              threadName: parent.parentName,
-              isParent: true,
-            ),
-          ),
-        );
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
+  Widget _buildConversationBody(List<Map<String, dynamic>> threads) {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundColor: parent.avatarColor.withValues(alpha: 0.15),
-              child: Text(
-                initials,
-                style: TextStyle(
-                  color: parent.avatarColor,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          parent.parentName,
-                          style: TextStyle(
-                            fontWeight: parent.unreadCount > 0
-                                ? FontWeight.w700
-                                : FontWeight.w600,
-                            fontSize: 15,
-                            color: AppColors.textPrimary,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Text(
-                        parent.time,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: parent.unreadCount > 0
-                              ? AppColors.primary
-                              : Colors.grey.shade500,
-                          fontWeight: parent.unreadCount > 0
-                              ? FontWeight.w600
-                              : FontWeight.normal,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    parent.childName,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          parent.lastMessage,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        ),
-                      ),
-                      if (parent.unreadCount > 0)
-                        Container(
-                          margin: const EdgeInsets.only(left: 8),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            '${parent.unreadCount}',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+            Text(_error!, style: const TextStyle(color: AppColors.error)),
+            const SizedBox(height: 12),
+            ElevatedButton(onPressed: _loadData, child: const Text('Retry')),
           ],
         ),
+      );
+    }
+    if (threads.isEmpty) {
+      return Center(
+        child: Text(
+          'No conversations yet',
+          style: TextStyle(color: Colors.grey.shade500, fontSize: 15),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionLabel('CONVERSATIONS'),
+          const SizedBox(height: 8),
+          ...threads.map((c) {
+            final name = c['name'] as String? ?? 'Unnamed';
+            final id = c['id'] as String? ?? '';
+            final createdAt = c['createdAt'] as String?;
+            final participants = c['participants'] as List<dynamic>? ?? [];
+            final participantCount = participants.length;
+
+            return _ThreadTile(
+              thread: _ThreadItem(
+                name: name,
+                message: '$participantCount participant${participantCount == 1 ? '' : 's'}',
+                time: _timeAgo(createdAt),
+                avatarColor: AppColors.primary,
+                icon: Icons.group,
+              ),
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => TeacherChatConversationScreen(
+                      threadName: name,
+                      conversationId: id,
+                    ),
+                  ),
+                );
+              },
+            );
+          }),
+        ],
       ),
     );
+  }
+
+  Widget _buildStudentGroupsTab() {
+    final groups = _conversations
+        .where((c) => c['isGroup'] == true)
+        .toList();
+    return _buildConversationBody(groups);
+  }
+
+  Widget _buildStudentChatsTab() {
+    final studentChats = _conversations
+        .where((c) {
+          final subject = (c['subject'] as String? ?? '').toLowerCase();
+          return c['isGroup'] != true && subject.contains('student');
+        })
+        .toList();
+    return _buildConversationBody(studentChats);
+  }
+
+  Widget _buildParentInboxTab() {
+    final parentChats = _conversations
+        .where((c) {
+          final role = (c['participantRole'] as String? ??
+              c['subject'] as String? ?? '').toLowerCase();
+          return c['isGroup'] != true && role.contains('parent');
+        })
+        .toList();
+    return _buildConversationBody(parentChats);
   }
 
   Widget _buildSectionLabel(String label) {
@@ -510,24 +393,6 @@ class _ThreadItem {
     required this.time,
     required this.avatarColor,
     required this.icon,
-  });
-}
-
-class _ParentThread {
-  final String parentName;
-  final String childName;
-  final String lastMessage;
-  final String time;
-  final int unreadCount;
-  final Color avatarColor;
-
-  _ParentThread({
-    required this.parentName,
-    required this.childName,
-    required this.lastMessage,
-    required this.time,
-    required this.unreadCount,
-    required this.avatarColor,
   });
 }
 

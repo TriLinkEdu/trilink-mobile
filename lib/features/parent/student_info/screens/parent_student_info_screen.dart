@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/api_service.dart';
+import '../../attendance/screens/parent_attendance_screen.dart';
+import '../screens/parent_results_screen.dart';
+import '../../feedback/screens/parent_feedback_screen.dart';
 
 class ParentStudentInfoScreen extends StatefulWidget {
   final String childName;
+  final String? studentUserId;
 
-  const ParentStudentInfoScreen({super.key, required this.childName});
+  const ParentStudentInfoScreen({
+    super.key,
+    required this.childName,
+    this.studentUserId,
+  });
 
   @override
   State<ParentStudentInfoScreen> createState() =>
@@ -12,65 +21,106 @@ class ParentStudentInfoScreen extends StatefulWidget {
 }
 
 class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
-  final List<_ClassItem> _classes = [
-    _ClassItem(
-      subject: 'Mathematics',
-      teacher: 'Mr. Ahmed Hassan',
-      schedule: 'Sun, Tue, Thu • 8:00 AM',
-      room: 'Room 201',
-      color: AppColors.primary,
-      icon: Icons.calculate_outlined,
-    ),
-    _ClassItem(
-      subject: 'Science',
-      teacher: 'Ms. Fatima Ali',
-      schedule: 'Mon, Wed • 9:30 AM',
-      room: 'Lab 3',
-      color: AppColors.secondary,
-      icon: Icons.science_outlined,
-    ),
-    _ClassItem(
-      subject: 'English',
-      teacher: 'Mrs. Sarah Johnson',
-      schedule: 'Sun, Tue, Thu • 10:00 AM',
-      room: 'Room 105',
-      color: const Color(0xFF7C4DFF),
-      icon: Icons.menu_book_outlined,
-    ),
-    _ClassItem(
-      subject: 'Arabic',
-      teacher: 'Mr. Khalid Omar',
-      schedule: 'Mon, Wed • 11:00 AM',
-      room: 'Room 302',
-      color: const Color(0xFFFF6D00),
-      icon: Icons.translate_outlined,
-    ),
-    _ClassItem(
-      subject: 'Computer Science',
-      teacher: 'Dr. Nour Haddad',
-      schedule: 'Tue, Thu • 1:00 PM',
-      room: 'Lab 1',
-      color: const Color(0xFF00BFA5),
-      icon: Icons.computer_outlined,
-    ),
-  ];
+  bool _loading = true;
+  String? _error;
 
-  final List<_TeacherInfo> _teachers = [
-    _TeacherInfo(name: 'Mr. Ahmed', initials: 'AH', color: AppColors.primary),
-    _TeacherInfo(
-        name: 'Ms. Fatima', initials: 'FA', color: AppColors.secondary),
-    _TeacherInfo(
-        name: 'Mrs. Sarah', initials: 'SJ', color: const Color(0xFF7C4DFF)),
-    _TeacherInfo(
-        name: 'Mr. Khalid', initials: 'KO', color: const Color(0xFFFF6D00)),
-    _TeacherInfo(
-        name: 'Dr. Nour', initials: 'NH', color: const Color(0xFF00BFA5)),
-  ];
+  String _studentName = '';
+  String _gradeSection = '';
+  String _studentIdLabel = '';
+  List<_ClassItem> _classes = [];
+  List<_TeacherInfo> _teachers = [];
 
   String get _initials {
-    final parts = widget.childName.split(' ');
+    final parts = _studentName.split(' ');
     if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}';
-    return parts[0][0];
+    return parts.isNotEmpty && parts[0].isNotEmpty ? parts[0][0] : '?';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _studentName = widget.childName;
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      setState(() { _loading = true; _error = null; });
+
+      String userId = widget.studentUserId ?? '';
+      if (userId.isEmpty) {
+        final dashboard = await ApiService().getParentDashboard();
+        final linked = (dashboard['linkedChildren'] as List<dynamic>?) ?? [];
+        if (linked.isNotEmpty) {
+          userId = linked[0]['userId'] as String? ??
+              linked[0]['id'] as String? ?? '';
+        }
+      }
+
+      if (userId.isEmpty) {
+        if (!mounted) return;
+        setState(() { _loading = false; });
+        return;
+      }
+
+      final profile = await ApiService().getStudentProfile(userId);
+      if (!mounted) return;
+
+      final classesRaw = (profile['classes'] as List<dynamic>?) ?? [];
+      final teachersRaw = (profile['teachers'] as List<dynamic>?) ?? [];
+      final colors = [
+        AppColors.primary,
+        AppColors.secondary,
+        const Color(0xFF7C4DFF),
+        const Color(0xFFFF6D00),
+        const Color(0xFF00BFA5),
+      ];
+      final icons = [
+        Icons.calculate_outlined,
+        Icons.science_outlined,
+        Icons.menu_book_outlined,
+        Icons.translate_outlined,
+        Icons.computer_outlined,
+      ];
+
+      setState(() {
+        _studentName = profile['fullName'] as String? ??
+            '${profile['firstName'] ?? ''} ${profile['lastName'] ?? ''}'.trim();
+        if (_studentName.isEmpty) _studentName = widget.childName;
+        _gradeSection = profile['gradeSection'] as String? ??
+            '${profile['grade'] ?? ''} ${profile['section'] != null ? '• Section ${profile['section']}' : ''}'
+                .trim();
+        _studentIdLabel = profile['studentId'] as String? ?? '';
+
+        _classes = classesRaw.asMap().entries.map((entry) {
+          final c = entry.value as Map<String, dynamic>;
+          return _ClassItem(
+            subject: c['subject'] as String? ?? '',
+            teacher: c['teacher'] as String? ?? '',
+            schedule: c['schedule'] as String? ?? '',
+            room: c['room'] as String? ?? '',
+            color: colors[entry.key % colors.length],
+            icon: icons[entry.key % icons.length],
+          );
+        }).toList();
+
+        _teachers = teachersRaw.asMap().entries.map((entry) {
+          final t = entry.value as Map<String, dynamic>;
+          final name = t['name'] as String? ?? '';
+          final initials = name.split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join();
+          return _TeacherInfo(
+            name: name,
+            initials: initials.toUpperCase(),
+            color: colors[entry.key % colors.length],
+          );
+        }).toList();
+
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _error = e.toString(); _loading = false; });
+    }
   }
 
   @override
@@ -81,7 +131,7 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         title: Text(
-          widget.childName,
+          _studentName,
           style: const TextStyle(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.bold,
@@ -89,26 +139,51 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildProfileHeader(),
-            const SizedBox(height: 24),
-            _buildSectionTitle('Current Classes'),
-            const SizedBox(height: 12),
-            ..._classes.map(_buildClassCard),
-            const SizedBox(height: 24),
-            _buildSectionTitle('Teachers'),
-            const SizedBox(height: 12),
-            _buildTeachersRow(),
-            const SizedBox(height: 24),
-            _buildQuickLinks(),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(_error!,
+                          style: const TextStyle(color: AppColors.error)),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                          onPressed: _loadData,
+                          child: const Text('Retry')),
+                    ],
+                  ),
+                )
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildProfileHeader(),
+                      const SizedBox(height: 24),
+                      _buildSectionTitle('Current Classes'),
+                      const SizedBox(height: 12),
+                      if (_classes.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: Center(
+                            child: Text('No classes found',
+                                style: TextStyle(
+                                    color: Colors.grey.shade500)),
+                          ),
+                        ),
+                      ..._classes.map(_buildClassCard),
+                      const SizedBox(height: 24),
+                      _buildSectionTitle('Teachers'),
+                      const SizedBox(height: 12),
+                      _buildTeachersRow(),
+                      const SizedBox(height: 24),
+                      _buildQuickLinks(),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
     );
   }
 
@@ -143,7 +218,7 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
           ),
           const SizedBox(height: 14),
           Text(
-            widget.childName,
+            _studentName,
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -152,20 +227,22 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Grade 10 • Section A',
+            _gradeSection,
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey.shade600,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Student ID: STU-2026-04821',
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey.shade500,
+          if (_studentIdLabel.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Student ID: $_studentIdLabel',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade500,
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -241,12 +318,21 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
   }
 
   Widget _buildTeachersRow() {
+    if (_teachers.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Center(
+          child:
+              Text('No teachers found', style: TextStyle(color: Colors.grey.shade500)),
+        ),
+      );
+    }
     return SizedBox(
       height: 90,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: _teachers.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 16),
+        separatorBuilder: (_, __) => const SizedBox(width: 16),
         itemBuilder: (context, index) {
           final teacher = _teachers[index];
           return Column(
@@ -279,24 +365,42 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
   }
 
   Widget _buildQuickLinks() {
+    final studentId = widget.studentUserId ?? '';
     return Row(
       children: [
         _buildQuickLinkButton(
           icon: Icons.event_available_outlined,
           label: 'View Attendance',
           color: AppColors.secondary,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ParentAttendanceScreen(
+                studentId: studentId,
+                childName: _studentName,
+              ),
+            ),
+          ),
         ),
         const SizedBox(width: 10),
         _buildQuickLinkButton(
           icon: Icons.grade_outlined,
           label: 'View Grades',
           color: AppColors.primary,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ParentResultsScreen()),
+          ),
         ),
         const SizedBox(width: 10),
         _buildQuickLinkButton(
           icon: Icons.feedback_outlined,
           label: 'Send Feedback',
           color: AppColors.accent,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ParentFeedbackScreen()),
+          ),
         ),
       ],
     );
@@ -306,17 +410,11 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
     required IconData icon,
     required String label,
     required Color color,
+    required VoidCallback onTap,
   }) {
     return Expanded(
       child: GestureDetector(
-        onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('$label coming soon'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        },
+        onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
