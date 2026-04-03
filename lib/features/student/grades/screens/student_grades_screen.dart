@@ -7,6 +7,14 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_shadows.dart';
 import '../../../../core/theme/app_spacing.dart';
+import 'package:trilink_mobile/core/widgets/empty_state_widget.dart';
+import 'package:trilink_mobile/core/widgets/illustrations.dart';
+import 'package:trilink_mobile/core/widgets/error_widget.dart';
+import 'package:trilink_mobile/core/widgets/animated_counter.dart';
+import 'package:trilink_mobile/core/widgets/branded_refresh.dart';
+import 'package:trilink_mobile/core/widgets/celebration_overlay.dart';
+import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
+import 'package:trilink_mobile/core/widgets/pressable.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/grades_cubit.dart';
 import '../models/grade_model.dart';
@@ -24,8 +32,15 @@ class StudentGradesScreen extends StatelessWidget {
   }
 }
 
-class _GradesView extends StatelessWidget {
+class _GradesView extends StatefulWidget {
   const _GradesView();
+
+  @override
+  State<_GradesView> createState() => _GradesViewState();
+}
+
+class _GradesViewState extends State<_GradesView> {
+  static final _celebratedKeys = <String>{};
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +51,25 @@ class _GradesView extends StatelessWidget {
         final overallAverage = _overallAverage(summaries);
         final isLoading = state.status == GradesStatus.initial ||
             state.status == GradesStatus.loading;
+
+        final loadedOk = !isLoading &&
+            state.status != GradesStatus.error &&
+            summaries.isNotEmpty;
+        const key = 'high_average';
+        if (loadedOk &&
+            overallAverage >= 90 &&
+            !_celebratedKeys.contains(key)) {
+          _celebratedKeys.add(key);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            CelebrationOverlay.maybeOf(context)?.celebrate(
+              type: CelebrationType.grade,
+              message: 'Outstanding average!',
+              subtext:
+                  '${overallAverage.toStringAsFixed(0)}% across your subjects',
+            );
+          });
+        }
 
         return Scaffold(
           body: SafeArea(
@@ -70,168 +104,199 @@ class _GradesView extends StatelessWidget {
                           child: ShimmerList(itemCount: 6, itemHeight: 72),
                         )
                       : state.status == GradesStatus.error
-                          ? Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text('Unable to load grades right now.',
-                                      style: TextStyle(color: Theme.of(context).colorScheme.error)),
-                                  AppSpacing.gapSm,
-                                  ElevatedButton(
-                                    onPressed: () => context
-                                        .read<GradesCubit>()
-                                        .loadGrades(),
-                                    child: const Text('Retry'),
-                                  ),
-                                ],
-                              ),
+                          ? AppErrorWidget(
+                              message: 'Unable to load grades right now.',
+                              onRetry: () =>
+                                  context.read<GradesCubit>().loadGrades(),
                             )
                           : summaries.isEmpty
-                              ? Center(
-                                  child: Text(
-                                    'No grades available yet.',
-                                    style: TextStyle(
-                                      color: theme.colorScheme.onSurfaceVariant,
+                              ? BrandedRefreshIndicator(
+                                  onRefresh: () => context
+                                      .read<GradesCubit>()
+                                      .loadGrades(),
+                                  child: LayoutBuilder(
+                                    builder: (context, constraints) =>
+                                        SingleChildScrollView(
+                                      physics:
+                                          const AlwaysScrollableScrollPhysics(),
+                                      child: ConstrainedBox(
+                                        constraints: BoxConstraints(
+                                          minHeight: constraints.maxHeight,
+                                        ),
+                                        child: const EmptyStateWidget(
+                                          illustration:
+                                              GraduationCapIllustration(),
+                                          icon: Icons.school_rounded,
+                                          title: 'No grades yet',
+                                          subtitle:
+                                              'Your academic grades will appear here once teachers post them.',
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 )
-                              : SingleChildScrollView(
-                                  padding: AppSpacing.horizontalXl,
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 28),
-                                        decoration: BoxDecoration(
-                                          color: theme.colorScheme.primary
-                                              .withAlpha(20),
-                                          borderRadius: AppRadius.borderXl,
+                              : BrandedRefreshIndicator(
+                                  onRefresh: () =>
+                                      context.read<GradesCubit>().loadGrades(),
+                                  child: SingleChildScrollView(
+                                    physics: const AlwaysScrollableScrollPhysics(),
+                                    padding: AppSpacing.horizontalXl,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 28),
+                                          decoration: BoxDecoration(
+                                            color: theme.colorScheme.primary
+                                                .withAlpha(20),
+                                            borderRadius: AppRadius.borderXl,
+                                          ),
+                                          child: Column(
+                                            children: [
+                                              Text(
+                                                'Overall Average',
+                                                style: theme
+                                                    .textTheme.bodyMedium
+                                                    ?.copyWith(
+                                                  color: theme.colorScheme
+                                                      .onSurfaceVariant,
+                                                ),
+                                              ),
+                                              AppSpacing.gapSm,
+                                              AnimatedCounter(
+                                                value: overallAverage,
+                                                showTrend: true,
+                                                style: theme
+                                                    .textTheme.displayLarge
+                                                    ?.copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: theme
+                                                      .colorScheme.primary,
+                                                ),
+                                              ),
+                                              AppSpacing.gapXs,
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: 12,
+                                                  vertical: 5,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: theme.colorScheme
+                                                      .primary
+                                                      .withAlpha(30),
+                                                  borderRadius:
+                                                      AppRadius.borderXl,
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.shield_rounded,
+                                                      size: 14,
+                                                      color: theme.colorScheme
+                                                          .primary,
+                                                    ),
+                                                    AppSpacing.hGapXs,
+                                                    Text(
+                                                      'Performance Updated',
+                                                      style: theme.textTheme
+                                                          .bodySmall
+                                                          ?.copyWith(
+                                                        color: theme
+                                                            .colorScheme
+                                                            .primary,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                        child: Column(
+                                        AppSpacing.gapXxl,
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
                                           children: [
                                             Text(
-                                              'Overall Average',
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                color: theme.colorScheme
-                                                    .onSurfaceVariant,
-                                              ),
-                                            ),
-                                            AppSpacing.gapSm,
-                                            Text(
-                                              '${overallAverage.toStringAsFixed(0)}%',
-                                              style: TextStyle(
-                                                fontSize: 48,
+                                              state.selectedTerm == 'Fall 2023'
+                                                  ? 'Fall Semester 2023'
+                                                  : 'Spring Semester 2023',
+                                              style: theme.textTheme.titleSmall
+                                                  ?.copyWith(
                                                 fontWeight: FontWeight.bold,
-                                                color: theme.colorScheme.primary,
+                                                color: theme
+                                                    .colorScheme.onSurface,
                                               ),
                                             ),
-                                            AppSpacing.gapXs,
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 12,
-                                                vertical: 5,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: theme.colorScheme.primary
-                                                    .withAlpha(30),
-                                                borderRadius: AppRadius.borderXl,
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(
-                                                    Icons.shield_rounded,
-                                                    size: 14,
-                                                    color: theme
-                                                        .colorScheme.primary,
-                                                  ),
-                                                  AppSpacing.hGapXs,
-                                                  Text(
-                                                    'Performance Updated',
-                                                    style: TextStyle(
-                                                      fontSize: 12,
-                                                      color: theme
-                                                          .colorScheme.primary,
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                    ),
-                                                  ),
-                                                ],
+                                            TextButton(
+                                              onPressed: () {
+                                                Navigator.of(context)
+                                                    .pushNamed(
+                                                  RouteNames.studentAssignments,
+                                                );
+                                              },
+                                              child: Text(
+                                                'Assignments',
+                                                style: theme
+                                                    .textTheme.labelLarge
+                                                    ?.copyWith(
+                                                  color: theme
+                                                      .colorScheme.primary,
+                                                ),
                                               ),
                                             ),
                                           ],
                                         ),
-                                      ),
-                                      AppSpacing.gapXxl,
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            state.selectedTerm == 'Fall 2023'
-                                                ? 'Fall Semester 2023'
-                                                : 'Spring Semester 2023',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                              color: theme.colorScheme.onSurface,
-                                            ),
-                                          ),
-                                          TextButton(
-                                            onPressed: () {
-                                              Navigator.of(context).pushNamed(
-                                                  RouteNames.studentAssignments);
-                                            },
-                                            child: Text(
-                                              'Assignments',
-                                              style: TextStyle(
-                                                color:
-                                                    theme.colorScheme.primary,
-                                                fontSize: 13,
+                                        AppSpacing.gapSm,
+                                        for (int index = 0;
+                                            index < summaries.length;
+                                            index++) ...[
+                                          StaggeredFadeSlide(
+                                            index: index,
+                                            child: _SubjectGradeRow(
+                                              subjectId:
+                                                  summaries[index].subjectId,
+                                              icon: _iconForSubject(
+                                                  summaries[index].subjectName),
+                                              iconBgColor: _colorForSubject(
+                                                  summaries[index].subjectName),
+                                              name: summaries[index].subjectName,
+                                              detail:
+                                                  '${summaries[index].assessmentCount} Assessments',
+                                              gradeValue: summaries[index].average,
+                                              change: _trendLabel(
+                                                  summaries[index].trend),
+                                              isPositive:
+                                                  summaries[index].trend >= 0,
+                                              isHighlighted: index == 0,
+                                              onTap: () => Navigator.of(context)
+                                                  .pushNamed(
+                                                RouteNames.studentSubjectGrades,
+                                                arguments: {
+                                                  'subjectId': summaries[index]
+                                                      .subjectId,
+                                                  'subjectName': summaries[index]
+                                                      .subjectName,
+                                                  'selectedTerm':
+                                                      state.selectedTerm,
+                                                },
                                               ),
                                             ),
                                           ),
+                                          if (index < summaries.length - 1)
+                                            AppSpacing.gapSm,
                                         ],
-                                      ),
-                                      AppSpacing.gapSm,
-                                      for (int index = 0;
-                                          index < summaries.length;
-                                          index++) ...[
-                                        _SubjectGradeRow(
-                                          icon: _iconForSubject(
-                                              summaries[index].subjectName),
-                                          iconBgColor: _colorForSubject(
-                                              summaries[index].subjectName),
-                                          name: summaries[index].subjectName,
-                                          detail:
-                                              '${summaries[index].assessmentCount} Assessments',
-                                          grade:
-                                              '${summaries[index].average.toStringAsFixed(0)}%',
-                                          change: _trendLabel(
-                                              summaries[index].trend),
-                                          isPositive:
-                                              summaries[index].trend >= 0,
-                                          isHighlighted: index == 0,
-                                          onTap: () =>
-                                              Navigator.of(context).pushNamed(
-                                            RouteNames.studentSubjectGrades,
-                                            arguments: {
-                                              'subjectId':
-                                                  summaries[index].subjectId,
-                                              'subjectName':
-                                                  summaries[index].subjectName,
-                                            },
-                                          ),
-                                        ),
-                                        if (index < summaries.length - 1)
-                                          AppSpacing.gapSm,
+                                        AppSpacing.gapXl,
                                       ],
-                                      AppSpacing.gapXl,
-                                    ],
+                                    ),
                                   ),
                                 ),
                 ),
@@ -317,22 +382,24 @@ class _SubjectSummary {
 }
 
 class _SubjectGradeRow extends StatelessWidget {
+  final String subjectId;
   final IconData icon;
   final Color iconBgColor;
   final String name;
   final String detail;
-  final String grade;
+  final double gradeValue;
   final String change;
   final bool isPositive;
   final bool isHighlighted;
   final VoidCallback onTap;
 
   const _SubjectGradeRow({
+    required this.subjectId,
     required this.icon,
     required this.iconBgColor,
     required this.name,
     required this.detail,
-    required this.grade,
+    required this.gradeValue,
     required this.change,
     required this.isPositive,
     required this.isHighlighted,
@@ -345,9 +412,8 @@ class _SubjectGradeRow extends StatelessWidget {
 
     return Material(
       color: Colors.transparent,
-      child: InkWell(
+      child: Pressable(
         onTap: onTap,
-        borderRadius: AppRadius.borderLg,
         child: Container(
           padding: AppSpacing.paddingMd,
           decoration: BoxDecoration(
@@ -383,8 +449,7 @@ class _SubjectGradeRow extends StatelessWidget {
                   children: [
                     Text(
                       name,
-                      style: TextStyle(
-                        fontSize: 15,
+                      style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: isHighlighted
                             ? theme.colorScheme.onPrimary
@@ -394,8 +459,7 @@ class _SubjectGradeRow extends StatelessWidget {
                     AppSpacing.gapXxs,
                     Text(
                       detail,
-                      style: TextStyle(
-                        fontSize: 11,
+                      style: theme.textTheme.labelSmall?.copyWith(
                         color: isHighlighted
                             ? theme.colorScheme.onPrimary.withAlpha(180)
                             : theme.colorScheme.onSurfaceVariant,
@@ -407,14 +471,20 @@ class _SubjectGradeRow extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    grade,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: isHighlighted
-                          ? theme.colorScheme.onPrimary
-                          : theme.colorScheme.onSurface,
+                  Hero(
+                    tag: 'grade-hero-$subjectId',
+                    child: Material(
+                      color: Colors.transparent,
+                      child: AnimatedCounter(
+                        value: gradeValue,
+                        showTrend: true,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: isHighlighted
+                              ? theme.colorScheme.onPrimary
+                              : theme.colorScheme.onSurface,
+                        ),
+                      ),
                     ),
                   ),
                   AppSpacing.gapXxs,
@@ -435,8 +505,7 @@ class _SubjectGradeRow extends StatelessWidget {
                       AppSpacing.hGapXs,
                       Text(
                         change,
-                        style: TextStyle(
-                          fontSize: 11,
+                        style: theme.textTheme.labelSmall?.copyWith(
                           color: isHighlighted
                               ? theme.colorScheme.onPrimary.withAlpha(180)
                               : isPositive

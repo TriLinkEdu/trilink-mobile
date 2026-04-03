@@ -48,9 +48,9 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               AppSpacing.gapMd,
-              const Text(
+              Text(
                 'Choose Language',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                style: sheetTheme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
               ),
               AppSpacing.gapMd,
               ...options.map(
@@ -222,8 +222,7 @@ class _SectionCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
             child: Text(
               title,
-              style: TextStyle(
-                fontSize: 13,
+              style: theme.textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: theme.colorScheme.onSurface,
               ),

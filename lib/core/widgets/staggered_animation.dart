@@ -1,6 +1,10 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 
 /// Fades + slides a single child in with a configurable delay.
+/// Caps the maximum stagger delay to avoid long invisible items
+/// in long lists. Skips animation on subsequent mounts when
+/// used inside recycling lists (starts fully visible).
 class StaggeredFadeSlide extends StatefulWidget {
   final Widget child;
   final int index;
@@ -27,6 +31,13 @@ class _StaggeredFadeSlideState extends State<StaggeredFadeSlide>
   late final Animation<double> _opacity;
   late final Animation<Offset> _offset;
 
+  static const _maxStaggerMs = 600;
+
+  /// Tracks which parent widget trees have already animated their children.
+  /// Uses the parent Element's hashCode as a rough session key so that
+  /// scrolling back doesn't replay animations for items already seen.
+  static final _animatedParents = <int, Set<int>>{};
+
   @override
   void initState() {
     super.initState();
@@ -40,9 +51,22 @@ class _StaggeredFadeSlideState extends State<StaggeredFadeSlide>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
-    Future.delayed(widget.staggerDelay * widget.index, () {
-      if (mounted) _controller.forward();
-    });
+    final parentHash = context.hashCode;
+    final seen = _animatedParents.putIfAbsent(parentHash, () => <int>{});
+    final itemKey = widget.index;
+
+    if (seen.contains(itemKey)) {
+      _controller.value = 1.0;
+    } else {
+      seen.add(itemKey);
+      final delayMs = min(
+        widget.staggerDelay.inMilliseconds * widget.index,
+        _maxStaggerMs,
+      );
+      Future.delayed(Duration(milliseconds: delayMs), () {
+        if (mounted) _controller.forward();
+      });
+    }
   }
 
   @override

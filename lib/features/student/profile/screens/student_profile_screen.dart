@@ -1,13 +1,18 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/di/injection_container.dart';
+import 'package:trilink_mobile/core/di/injection_container.dart';
+import 'package:trilink_mobile/core/services/sound_service.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_shadows.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/theme_notifier.dart';
-import '../../../../core/widgets/pressable.dart';
+import 'package:trilink_mobile/core/widgets/celebration_overlay.dart';
+import 'package:trilink_mobile/core/widgets/pressable.dart';
 import '../../../auth/cubit/auth_cubit.dart';
 import '../repositories/student_profile_repository.dart';
 
@@ -18,18 +23,50 @@ class StudentProfileScreen extends StatefulWidget {
   State<StudentProfileScreen> createState() => _StudentProfileScreenState();
 }
 
-class _StudentProfileScreenState extends State<StudentProfileScreen> {
+class _StudentProfileScreenState extends State<StudentProfileScreen>
+    with SingleTickerProviderStateMixin {
   late final StudentProfileRepository _repo;
   final StorageService _storage = sl<StorageService>();
 
   bool _pushNotifications = true;
   String _language = 'English';
 
+  int _avatarTapCount = 0;
+  late final AnimationController _avatarSpinController;
+
   @override
   void initState() {
     super.initState();
     _repo = sl<StudentProfileRepository>();
+    _avatarSpinController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
     _loadPreferences();
+  }
+
+  @override
+  void dispose() {
+    _avatarSpinController.dispose();
+    super.dispose();
+  }
+
+  void _onAvatarTap() {
+    _avatarTapCount++;
+    if (_avatarTapCount == 5) {
+      HapticFeedback.selectionClick();
+    } else if (_avatarTapCount == 6) {
+      HapticFeedback.lightImpact();
+    } else if (_avatarTapCount >= 7) {
+      _avatarTapCount = 0;
+      _avatarSpinController.forward(from: 0);
+      sl<SoundService>().play(AppFeedback.achievement);
+      CelebrationOverlay.maybeOf(context)?.celebrate(
+        type: CelebrationType.achievement,
+        message: 'Easter Egg Found!',
+        subtext: 'You\'re a curious one!',
+      );
+    }
   }
 
   void _loadPreferences() {
@@ -67,9 +104,8 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                         .pushNamed(RouteNames.studentProfileEdit),
                     child: Text(
                       'Edit Profile',
-                      style: TextStyle(
+                      style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.primary,
-                        fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -83,16 +119,33 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                 child: Column(
                   children: [
                     AppSpacing.gapMd,
-                    Stack(
+                    GestureDetector(
+                      onTap: _onAvatarTap,
+                      child: Stack(
+                      clipBehavior: Clip.none,
                       alignment: Alignment.bottomRight,
                       children: [
-                        CircleAvatar(
-                          radius: 48,
-                          backgroundColor: theme.colorScheme.outlineVariant,
-                          child: Icon(
-                            Icons.person_rounded,
-                            size: 56,
-                            color: theme.colorScheme.onSurfaceVariant,
+                        ClipOval(
+                          child: SizedBox(
+                            width: 96,
+                            height: 96,
+                            child: AnimatedBuilder(
+                              animation: _avatarSpinController,
+                              builder: (context, child) => Transform.rotate(
+                                alignment: Alignment.center,
+                                angle: _avatarSpinController.value * 2 * pi,
+                                child: child,
+                              ),
+                              child: CircleAvatar(
+                                radius: 48,
+                                backgroundColor: theme.colorScheme.outlineVariant,
+                                child: Icon(
+                                  Icons.person_rounded,
+                                  size: 56,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                         Pressable(
@@ -124,6 +177,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                         ),
                       ],
                     ),
+                    ),
                     AppSpacing.gapLg,
                     Text(
                       displayName,
@@ -137,8 +191,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                       gradeSection.isNotEmpty
                           ? '$gradeSection • ID: $studentId'
                           : 'ID: $studentId',
-                      style: TextStyle(
-                        fontSize: 13,
+                      style: theme.textTheme.labelLarge?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
@@ -163,8 +216,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                           AppSpacing.hGapXs,
                           Text(
                             'Level 12 Scholar',
-                            style: TextStyle(
-                              fontSize: 12,
+                            style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.primary,
                               fontWeight: FontWeight.w500,
                             ),
@@ -183,8 +235,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                           label: 'Email',
                           trailing: Text(
                             displayEmail,
-                            style: TextStyle(
-                              fontSize: 13,
+                            style: theme.textTheme.labelLarge?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
@@ -205,8 +256,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                             children: [
                               Text(
                                 _language,
-                                style: TextStyle(
-                                  fontSize: 13,
+                                style: theme.textTheme.labelLarge?.copyWith(
                                   color: theme.colorScheme.onSurfaceVariant,
                                 ),
                               ),
@@ -255,6 +305,21 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                           ),
                         ),
                         _divider(),
+                        ListenableBuilder(
+                          listenable: sl<SoundService>(),
+                          builder: (context, _) {
+                            final soundService = sl<SoundService>();
+                            return _SettingsRow(
+                              icon: Icons.graphic_eq_rounded,
+                              label: 'Sound Effects',
+                              trailing: Switch(
+                                value: soundService.enabled,
+                                onChanged: (v) => soundService.setEnabled(v),
+                              ),
+                            );
+                          },
+                        ),
+                        _divider(),
                         _SettingsRow(
                           icon: Icons.text_fields_rounded,
                           label: 'Text Size',
@@ -263,8 +328,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                             children: [
                               Text(
                                 ThemeNotifier.instance.textScaleLabel,
-                                style: TextStyle(
-                                  fontSize: 13,
+                                style: theme.textTheme.labelLarge?.copyWith(
                                   color: theme.colorScheme.onSurfaceVariant,
                                 ),
                               ),
@@ -287,8 +351,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                             children: [
                               Text(
                                 ThemeNotifier.instance.fontFamily,
-                                style: TextStyle(
-                                  fontSize: 13,
+                                style: theme.textTheme.labelLarge?.copyWith(
                                   color: theme.colorScheme.onSurfaceVariant,
                                 ),
                               ),
@@ -434,10 +497,9 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                             borderRadius: AppRadius.borderMd,
                           ),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Log Out',
-                          style: TextStyle(
-                            fontSize: 15,
+                          style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -446,8 +508,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                     AppSpacing.gapMd,
                     Text(
                       'Version 2.4.0 (Build 302)',
-                      style: TextStyle(
-                        fontSize: 12,
+                      style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
@@ -572,9 +633,9 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               AppSpacing.gapMd,
-              const Text(
+              Text(
                 'Choose Language',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                style: sheetTheme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
               ),
               AppSpacing.gapMd,
               ListTile(
@@ -628,7 +689,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                   subtitle: Text(
                     'Aa Bb Cc',
                     style: TextStyle(
-                      fontSize: 14 * entry.value,
+                      fontSize: sheetTheme.textTheme.bodyMedium!.fontSize! * entry.value,
                     ),
                   ),
                   trailing: tn.textScaleLabel == entry.key
@@ -696,9 +757,8 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                         ),
                         subtitle: Text(
                           'The quick brown fox jumps over the lazy dog',
-                          style: TextStyle(
+                          style: sheetTheme.textTheme.bodySmall?.copyWith(
                             fontFamily: font,
-                            fontSize: 12,
                             color: sheetTheme.colorScheme.onSurfaceVariant,
                           ),
                         ),
@@ -823,13 +883,12 @@ class _FaqItem extends StatelessWidget {
       children: [
         Text(
           question,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         AppSpacing.gapXs,
         Text(
           answer,
-          style: TextStyle(
-            fontSize: 13,
+          style: theme.textTheme.labelLarge?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
@@ -850,8 +909,7 @@ class _SectionHeader extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: Text(
         title,
-        style: TextStyle(
-          fontSize: 12,
+        style: theme.textTheme.bodySmall?.copyWith(
           fontWeight: FontWeight.w600,
           color: theme.colorScheme.onSurfaceVariant,
           letterSpacing: 0.5,
@@ -899,7 +957,7 @@ class _SettingsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return InkWell(
+    return Pressable(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -910,8 +968,7 @@ class _SettingsRow extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: TextStyle(
-                  fontSize: 14,
+                style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w500,
                   color: theme.colorScheme.onSurface,
                 ),

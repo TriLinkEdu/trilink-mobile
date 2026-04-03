@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:trilink_mobile/core/widgets/empty_state_widget.dart';
+import 'package:trilink_mobile/core/widgets/illustrations.dart';
+import 'package:trilink_mobile/core/widgets/pressable.dart';
+
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
@@ -50,8 +54,11 @@ class _LearningPathBlocView extends StatelessWidget {
           }
           final list = state.data?.learningPath ?? [];
           if (list.isEmpty) {
-            return const Center(
-              child: Text('No learning path items available.'),
+            return const EmptyStateWidget(
+              illustration: BooksIllustration(),
+              icon: Icons.route_rounded,
+              title: 'No learning path items',
+              subtitle: 'Your personalized learning path will appear here.',
             );
           }
           return _LearningPathContent(initialItems: list);
@@ -174,29 +181,33 @@ class _LearningStepCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        onTap: onTap,
-        leading: Icon(
-          isComplete
-              ? Icons.check_circle_rounded
-              : isActive
-                  ? Icons.play_circle_fill_rounded
-                  : Icons.menu_book_rounded,
-          color: isComplete ? AppColors.success : null,
-        ),
-        title: Text(title),
-        subtitle: Text(subtitle),
-        trailing: Text(
-          isComplete
-              ? 'Done'
-              : isActive
-                  ? 'Continue'
-                  : 'Start',
-          style: TextStyle(
-            color: isComplete
-                ? AppColors.success
-                : Theme.of(context).colorScheme.primary,
+    return Pressable(
+      onTap: onTap,
+      enableHaptic: false,
+      child: Card(
+        child: ListTile(
+          onTap: onTap,
+          leading: Icon(
+            isComplete
+                ? Icons.check_circle_rounded
+                : isActive
+                    ? Icons.play_circle_fill_rounded
+                    : Icons.menu_book_rounded,
+            color: isComplete ? AppColors.success : null,
+          ),
+          title: Text(title),
+          subtitle: Text(subtitle),
+          trailing: Text(
+            isComplete
+                ? 'Done'
+                : isActive
+                    ? 'Continue'
+                    : 'Start',
+            style: TextStyle(
+              color: isComplete
+                  ? AppColors.success
+                  : Theme.of(context).colorScheme.primary,
+            ),
           ),
         ),
       ),

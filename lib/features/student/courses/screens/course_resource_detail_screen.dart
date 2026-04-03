@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
+import 'package:trilink_mobile/core/widgets/error_widget.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/course_resource_detail_cubit.dart';
 import '../models/course_resource_model.dart';
@@ -85,11 +86,9 @@ class _CourseResourceDetailViewState extends State<_CourseResourceDetailView> {
         if (state.status == CourseResourceDetailStatus.error) {
           return Scaffold(
             appBar: AppBar(title: const Text('Resource'), centerTitle: true),
-            body: Center(
-              child: Text(
-                state.errorMessage ?? '',
-                style: TextStyle(color: theme.colorScheme.error),
-              ),
+            body: AppErrorWidget(
+              message: state.errorMessage ??
+                  'Unable to load resource details.',
             ),
           );
         }

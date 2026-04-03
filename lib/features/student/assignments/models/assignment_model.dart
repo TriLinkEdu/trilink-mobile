@@ -11,6 +11,7 @@ class AssignmentModel {
   final double? maxScore;
   final String? feedback;
   final DateTime? submittedAt;
+  final String? submittedContent;
 
   const AssignmentModel({
     required this.id,
@@ -23,6 +24,7 @@ class AssignmentModel {
     this.maxScore,
     this.feedback,
     this.submittedAt,
+    this.submittedContent,
   });
 
   String get statusLabel {
@@ -58,6 +60,7 @@ class AssignmentModel {
     double? maxScore,
     String? feedback,
     DateTime? submittedAt,
+    String? submittedContent,
   }) {
     return AssignmentModel(
       id: id ?? this.id,
@@ -70,6 +73,7 @@ class AssignmentModel {
       maxScore: maxScore ?? this.maxScore,
       feedback: feedback ?? this.feedback,
       submittedAt: submittedAt ?? this.submittedAt,
+      submittedContent: submittedContent ?? this.submittedContent,
     );
   }
 
@@ -90,6 +94,7 @@ class AssignmentModel {
       submittedAt: json['submittedAt'] != null
           ? DateTime.parse(json['submittedAt'] as String)
           : null,
+      submittedContent: json['submittedContent'] as String?,
     );
   }
 
@@ -104,5 +109,6 @@ class AssignmentModel {
         'maxScore': maxScore,
         'feedback': feedback,
         'submittedAt': submittedAt?.toIso8601String(),
+        'submittedContent': submittedContent,
       };
 }

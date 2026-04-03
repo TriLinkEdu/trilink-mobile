@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:trilink_mobile/core/widgets/empty_state_widget.dart';
+import 'package:trilink_mobile/core/widgets/illustrations.dart';
+
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
@@ -48,7 +51,12 @@ class _ResourceRecommendationBlocView extends StatelessWidget {
           }
           final list = state.data?.resources ?? [];
           if (list.isEmpty) {
-            return const Center(child: Text('No resources available.'));
+            return const EmptyStateWidget(
+              illustration: BooksIllustration(),
+              icon: Icons.menu_book_rounded,
+              title: 'No resources available',
+              subtitle: 'Recommended resources will appear here.',
+            );
           }
           return _ResourceListPage(resources: list);
         },

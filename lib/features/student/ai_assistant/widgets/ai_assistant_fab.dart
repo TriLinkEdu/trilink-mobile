@@ -7,13 +7,23 @@ class AiAssistantFab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton(
+      heroTag: null,
       onPressed: () {
         showModalBottomSheet(
           context: context,
           builder: (_) => _AiAssistantBottomSheet(parentContext: context),
         );
       },
-      child: const Icon(Icons.smart_toy),
+      child: Hero(
+        tag: 'ai-tutor-hero',
+        child: Material(
+          color: Colors.transparent,
+          child: Icon(
+            Icons.auto_awesome,
+            color: Theme.of(context).colorScheme.onPrimary,
+          ),
+        ),
+      ),
     );
   }
 }

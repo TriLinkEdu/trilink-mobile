@@ -24,6 +24,16 @@ class AppColors {
   static const Color achievementEmerald = Color(0xFF10B981);
   static const Color leaderboardCrown = Color(0xFFFBBF24);
 
+  // ── Rank / Medal Accents ──
+  static const Color rankGold = Color(0xFFFFD700);
+  static const Color rankSilver = Color(0xFFC0C0C0);
+  static const Color rankBronze = Color(0xFFCD7F32);
+
+  // ── Announcement Category Tints ──
+  static const Color categoryGeneral = Color(0xFFDBEAFE);
+  static const Color categoryUrgent = Color(0xFFFEE2E2);
+  static const Color categoryEvent = Color(0xFFFEF3C7);
+
   // ── Subject Accents ──
   static const Color mathematics = Color(0xFF3B82F6);
   static const Color physics = Color(0xFF6366F1);
@@ -91,6 +101,12 @@ class AppGradients {
 
   static const LinearGradient achievement = LinearGradient(
     colors: [Color(0xFF10B981), Color(0xFF34D399)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient attendance = LinearGradient(
+    colors: [Color(0xFF1A73E8), Color(0xFF4A90E2)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

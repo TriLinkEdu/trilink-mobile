@@ -6,6 +6,8 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
+import 'package:trilink_mobile/core/widgets/error_widget.dart';
+
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/calendar_event_detail_cubit.dart';
 import '../models/calendar_event_model.dart';
@@ -80,11 +82,8 @@ class _CalendarEventDetailView extends StatelessWidget {
             );
           }
           if (state.status == CalendarEventDetailStatus.error) {
-            return Center(
-              child: Text(
-                state.errorMessage ?? '',
-                style: TextStyle(color: theme.colorScheme.error),
-              ),
+            return AppErrorWidget(
+              message: state.errorMessage ?? 'Unable to load event details.',
             );
           }
 
@@ -123,7 +122,7 @@ class _CalendarEventDetailView extends StatelessWidget {
                     Text(e.title, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
                     AppSpacing.gapXs,
                     Chip(
-                      label: Text(e.type.toUpperCase(), style: TextStyle(fontSize: 11, color: color)),
+                      label: Text(e.type.toUpperCase(), style: theme.textTheme.labelSmall?.copyWith(color: color)),
                       backgroundColor: color.withValues(alpha: 0.08),
                       visualDensity: VisualDensity.compact,
                       side: BorderSide.none,

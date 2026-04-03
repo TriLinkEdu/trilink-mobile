@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:trilink_mobile/core/widgets/error_widget.dart';
 
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -102,20 +103,11 @@ class _QuizViewState extends State<_QuizView> {
           if (state.status == QuizLoadStatus.error || state.quiz == null) {
             return Scaffold(
               appBar: AppBar(title: const Text('Quiz')),
-              body: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(state.errorMessage ?? 'Quiz not found.'),
-                    AppSpacing.gapMd,
-                    OutlinedButton(
-                      onPressed: () => context
-                          .read<QuizCubit>()
-                          .loadQuiz(widget.subjectId),
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
+              body: AppErrorWidget(
+                message: state.errorMessage ?? 'Quiz not found.',
+                onRetry: () => context
+                    .read<QuizCubit>()
+                    .loadQuiz(widget.subjectId),
               ),
             );
           }
@@ -157,8 +149,7 @@ class _QuizViewState extends State<_QuizView> {
                             AppSpacing.gapMd,
                             Text(
                               quiz.questions[_questionIndex].text,
-                              style: const TextStyle(
-                                fontSize: 18,
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.w500,
                               ),
                             ),

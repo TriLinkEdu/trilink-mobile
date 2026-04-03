@@ -4,6 +4,7 @@ import '../../../../core/routes/route_names.dart';
 import '../../../../core/routes/student_shell_routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/celebration_overlay.dart';
 import '../../../student/chat/screens/student_chat_screen.dart';
 import '../../../student/grades/screens/student_grades_screen.dart';
 import '../../../student/profile/screens/student_profile_screen.dart';
@@ -101,30 +102,32 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
             Navigator.of(context).maybePop();
           }
         },
-        child: Scaffold(
-          key: _scaffoldKey,
-          drawer: StudentDrawer(homeNavigatorKey: _navigatorKeys[0]),
-          body: Column(
-            children: [
-              _ShellTopBar(
-                titleNotifier: _titleNotifier,
-                onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
-              ),
-              Expanded(
-                child: IndexedStack(
-                  index: _currentIndex,
-                  children: List.generate(4, (i) => _TabNavigator(
-                    navigatorKey: _navigatorKeys[i],
-                    root: _tabRoots[i],
-                    observer: _routeObservers[i],
-                  )),
+        child: CelebrationOverlay(
+          child: Scaffold(
+            key: _scaffoldKey,
+            drawer: StudentDrawer(homeNavigatorKey: _navigatorKeys[0]),
+            body: Column(
+              children: [
+                _ShellTopBar(
+                  titleNotifier: _titleNotifier,
+                  onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
                 ),
-              ),
-            ],
-          ),
-          bottomNavigationBar: _GlassNavBar(
-            currentIndex: _currentIndex,
-            onTap: _onTap,
+                Expanded(
+                  child: IndexedStack(
+                    index: _currentIndex,
+                    children: List.generate(4, (i) => _TabNavigator(
+                      navigatorKey: _navigatorKeys[i],
+                      root: _tabRoots[i],
+                      observer: _routeObservers[i],
+                    )),
+                  ),
+                ),
+              ],
+            ),
+            bottomNavigationBar: _GlassNavBar(
+              currentIndex: _currentIndex,
+              onTap: _onTap,
+            ),
           ),
         ),
       ),
@@ -160,8 +163,11 @@ const _routeTitleMap = <String, String>{
   RouteNames.studentSubmitFeedback: 'Submit Feedback',
   RouteNames.studentAssignments: 'Assignments',
   RouteNames.studentAssignmentDetail: 'Assignment',
-  RouteNames.studentCourseResources: 'Courses & Resources',
+  RouteNames.studentCourses: 'My Courses',
+  RouteNames.studentCourseDetail: 'Course Details',
+  RouteNames.studentCourseResources: 'Resources',
   RouteNames.studentCourseResourceDetail: 'Resource',
+  RouteNames.studentExams: 'Exams',
   RouteNames.studentExamAttempt: 'Exam',
   RouteNames.studentSyncStatus: 'Sync Status',
 };
@@ -264,7 +270,12 @@ class _ShellTopBar extends StatelessWidget {
                 },
               ),
             ),
-            const SizedBox(width: 54),
+            IconButton(
+              icon: const Icon(Icons.notifications_outlined, size: 22),
+              onPressed: () => Navigator.of(context)
+                  .pushNamed(RouteNames.studentNotifications),
+              tooltip: 'Notifications',
+            ),
           ],
         ),
       ),
@@ -416,8 +427,7 @@ class _AnimatedNavItem extends StatelessWidget {
                       padding: const EdgeInsets.only(left: 8),
                       child: Text(
                         data.label,
-                        style: TextStyle(
-                          fontSize: 13,
+                        style: theme.textTheme.labelLarge?.copyWith(
                           fontWeight: FontWeight.w600,
                           color: theme.colorScheme.primary,
                         ),

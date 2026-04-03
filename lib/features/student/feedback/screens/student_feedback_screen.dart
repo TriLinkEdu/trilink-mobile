@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:trilink_mobile/core/widgets/empty_state_widget.dart';
+import 'package:trilink_mobile/core/widgets/illustrations.dart';
+import 'package:trilink_mobile/core/widgets/error_widget.dart';
+import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
@@ -126,8 +130,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                 children: [
                   Text(
                     'All Feedback History',
-                    style: TextStyle(
-                      fontSize: 18,
+                    style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.onSurface,
                     ),
@@ -143,22 +146,25 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
             const Divider(),
             Expanded(
               child: feedbackHistory.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No feedback submitted yet.',
-                        style: TextStyle(
-                            color: theme.colorScheme.onSurfaceVariant),
-                      ),
+                  ? const EmptyStateWidget(
+                      illustration: ClipboardIllustration(),
+                      icon: Icons.rate_review_rounded,
+                      title: 'No feedback yet',
+                      subtitle:
+                          'Feedback you submit will appear here.',
                     )
                   : ListView.separated(
                       controller: controller,
                       padding: const EdgeInsets.all(16),
                       itemCount: feedbackHistory.length,
-                      separatorBuilder: (_, __) =>
+                      separatorBuilder: (_, _) =>
                           AppSpacing.gapMd,
                       itemBuilder: (context, index) {
                         final fb = feedbackHistory[index];
-                        return _FeedbackHistoryTile(feedback: fb);
+                        return StaggeredFadeSlide(
+                          index: index,
+                          child: _FeedbackHistoryTile(feedback: fb),
+                        );
                       },
                     ),
             ),
@@ -255,8 +261,8 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                                       Expanded(
                                         child: Text(
                                           'Anonymous Feedback',
-                                          style: TextStyle(
-                                            fontSize: 14,
+                                          style: theme.textTheme.bodyMedium
+                                              ?.copyWith(
                                             fontWeight: FontWeight.w600,
                                             color:
                                                 theme.colorScheme.onSurface,
@@ -278,8 +284,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                                   AppSpacing.gapXs,
                                   Text(
                                     'Your feedback helps improve the course. Instructors will see your comments but not your name.',
-                                    style: TextStyle(
-                                      fontSize: 12,
+                                    style: theme.textTheme.bodySmall?.copyWith(
                                       color: theme
                                           .colorScheme.onSurfaceVariant,
                                       height: 1.4,
@@ -295,8 +300,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
 
                     Text(
                       'Select Subject',
-                      style: TextStyle(
-                        fontSize: 14,
+                      style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: theme.colorScheme.onSurface,
                       ),
@@ -319,8 +323,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                             Icons.keyboard_arrow_down_rounded,
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
-                          style: TextStyle(
-                            fontSize: 14,
+                          style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurface,
                           ),
                           items: _subjects
@@ -366,8 +369,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
 
                     Text(
                       'Rate your understanding (1-5)',
-                      style: TextStyle(
-                        fontSize: 14,
+                      style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: theme.colorScheme.onSurface,
                       ),
@@ -402,8 +404,8 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                                 children: [
                                   Text(
                                     '$rating',
-                                    style: TextStyle(
-                                      fontSize: 16,
+                                    style: theme.textTheme.titleSmall
+                                        ?.copyWith(
                                       fontWeight: FontWeight.bold,
                                       color: isSelected
                                           ? theme.colorScheme.onPrimary
@@ -417,8 +419,8 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                                       rating == 1
                                           ? 'POOR'
                                           : 'GREAT',
-                                      style: TextStyle(
-                                        fontSize: 8,
+                                      style: theme.textTheme.labelSmall
+                                          ?.copyWith(
                                         fontWeight: FontWeight.w600,
                                         color: isSelected
                                             ? theme.colorScheme.onPrimary
@@ -439,8 +441,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
 
                     Text(
                       'What went well?',
-                      style: TextStyle(
-                        fontSize: 14,
+                      style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: theme.colorScheme.onSurface,
                       ),
@@ -452,9 +453,8 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                       decoration: InputDecoration(
                         hintText:
                             'Highlight effective teaching methods...',
-                        hintStyle: TextStyle(
+                        hintStyle: theme.textTheme.labelLarge?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
-                          fontSize: 13,
                         ),
                         suffixIcon: Icon(
                           Icons.thumb_up_outlined,
@@ -468,8 +468,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
 
                     Text(
                       'What could improve?',
-                      style: TextStyle(
-                        fontSize: 14,
+                      style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: theme.colorScheme.onSurface,
                       ),
@@ -480,9 +479,8 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                       maxLines: 2,
                       decoration: InputDecoration(
                         hintText: 'Suggest areas for improvement...',
-                        hintStyle: TextStyle(
+                        hintStyle: theme.textTheme.labelLarge?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
-                          fontSize: 13,
                         ),
                         contentPadding: const EdgeInsets.all(14),
                       ),
@@ -502,8 +500,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                             borderRadius: AppRadius.borderMd,
                           ),
                           elevation: 0,
-                          textStyle: const TextStyle(
-                            fontSize: 15,
+                          textStyle: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -533,8 +530,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                       children: [
                         Text(
                           'Recent Feedback',
-                          style: TextStyle(
-                            fontSize: 16,
+                          style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: theme.colorScheme.onSurface,
                           ),
@@ -543,9 +539,8 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                           onPressed: _showAllFeedbackHistory,
                           child: Text(
                             'View all',
-                            style: TextStyle(
+                            style: theme.textTheme.labelLarge?.copyWith(
                               color: theme.colorScheme.primary,
-                              fontSize: 13,
                             ),
                           ),
                         ),
@@ -559,38 +554,22 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                         child: ShimmerList(),
                       )
                     else if (feedbackState.status == FeedbackStatus.error)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                feedbackState.errorMessage ?? '',
-                                style: TextStyle(color: theme.colorScheme.error),
-                                textAlign: TextAlign.center,
-                              ),
-                              AppSpacing.gapMd,
-                              ElevatedButton(
-                                onPressed: () => context
-                                    .read<FeedbackCubit>()
-                                    .loadFeedbackHistory(),
-                                child: const Text('Retry'),
-                              ),
-                            ],
-                          ),
-                        ),
+                      AppErrorWidget(
+                        message: feedbackState.errorMessage ??
+                            'Unable to load feedback.',
+                        onRetry: () => context
+                            .read<FeedbackCubit>()
+                            .loadFeedbackHistory(),
                       )
                     else if (recentItems.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Center(
-                          child: Text(
-                            'No feedback submitted yet.',
-                            style: TextStyle(
-                                color: theme
-                                    .colorScheme.onSurfaceVariant),
-                          ),
+                      const Padding(
+                        padding: EdgeInsets.all(20),
+                        child: EmptyStateWidget(
+                          illustration: ClipboardIllustration(),
+                          icon: Icons.rate_review_rounded,
+                          title: 'No feedback yet',
+                          subtitle:
+                              'Your submitted feedback will appear here.',
                         ),
                       )
                     else
@@ -648,8 +627,7 @@ class _RecentFeedbackItem extends StatelessWidget {
               Expanded(
                 child: Text(
                   feedback.subjectName,
-                  style: TextStyle(
-                    fontSize: 14,
+                  style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: theme.colorScheme.onSurface,
                   ),
@@ -675,8 +653,7 @@ class _RecentFeedbackItem extends StatelessWidget {
                     AppSpacing.hGapXs,
                     Text(
                       statusLabel,
-                      style: TextStyle(
-                        fontSize: 10,
+                      style: theme.textTheme.labelSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: statusColor,
                       ),
@@ -691,8 +668,7 @@ class _RecentFeedbackItem extends StatelessWidget {
             children: [
               Text(
                 _formatDate(feedback.createdAt),
-                style: TextStyle(
-                    fontSize: 11,
+                style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant),
               ),
               AppSpacing.hGapMd,
@@ -711,8 +687,7 @@ class _RecentFeedbackItem extends StatelessWidget {
               AppSpacing.hGapXs,
               Text(
                 '${feedback.rating}/5 Rating',
-                style: TextStyle(
-                    fontSize: 11,
+                style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant),
               ),
             ],
@@ -722,8 +697,7 @@ class _RecentFeedbackItem extends StatelessWidget {
             AppSpacing.gapMd,
             Text(
               '"${feedback.comment}"',
-              style: TextStyle(
-                fontSize: 12,
+              style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
                 height: 1.4,
                 fontStyle: FontStyle.italic,
@@ -770,8 +744,7 @@ class _FeedbackHistoryTile extends StatelessWidget {
       ),
       trailing: Text(
         (feedback.status ?? 'pending').toUpperCase(),
-        style: TextStyle(
-          fontSize: 10,
+        style: theme.textTheme.labelSmall?.copyWith(
           fontWeight: FontWeight.w600,
           color: feedback.status == 'reviewed'
               ? AppColors.success

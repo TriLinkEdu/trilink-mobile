@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:trilink_mobile/core/widgets/pressable.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
@@ -90,8 +90,14 @@ class StudentDrawer extends StatelessWidget {
                 ),
                 _DrawerItem(
                   icon: Icons.folder_open_rounded,
-                  label: 'Courses & Resources',
+                  label: 'Courses',
                   color: AppColors.computerScience,
+                  onTap: () => _navigate(context, RouteNames.studentCourses),
+                ),
+                _DrawerItem(
+                  icon: Icons.menu_book_rounded,
+                  label: 'Resources',
+                  color: AppColors.literature,
                   onTap: () =>
                       _navigate(context, RouteNames.studentCourseResources),
                 ),
@@ -100,7 +106,7 @@ class StudentDrawer extends StatelessWidget {
                   label: 'Exams',
                   color: AppColors.mathematics,
                   onTap: () =>
-                      _navigate(context, RouteNames.studentExamAttempt),
+                      _navigate(context, RouteNames.studentExams),
                 ),
 
                 AppSpacing.gapSm,
@@ -242,15 +248,16 @@ class _DrawerHeader extends StatelessWidget {
         children: [
           Row(
             children: [
-              GestureDetector(
+              Pressable(
                 onTap: onProfileTap,
                 child: CircleAvatar(
                   radius: 28,
-                  backgroundColor: Colors.white.withAlpha(40),
-                  child: const Icon(
+                  backgroundColor:
+                      theme.colorScheme.onPrimary.withAlpha(40),
+                  child: Icon(
                     Icons.person_rounded,
                     size: 30,
-                    color: Colors.white,
+                    color: theme.colorScheme.onPrimary,
                   ),
                 ),
               ),
@@ -258,19 +265,22 @@ class _DrawerHeader extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(25),
+                  color: theme.colorScheme.onPrimary.withAlpha(25),
                   borderRadius: AppRadius.borderFull,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.school_rounded, size: 14, color: Colors.white),
+                    Icon(
+                      Icons.school_rounded,
+                      size: 14,
+                      color: theme.colorScheme.onPrimary,
+                    ),
                     AppSpacing.hGapXs,
                     Text(
                       'TriLink',
-                      style: TextStyle(
-                        color: Colors.white.withAlpha(220),
-                        fontSize: 12,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onPrimary.withAlpha(220),
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.5,
                       ),
@@ -284,7 +294,7 @@ class _DrawerHeader extends StatelessWidget {
           Text(
             name,
             style: theme.textTheme.titleMedium?.copyWith(
-              color: Colors.white,
+              color: theme.colorScheme.onPrimary,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -292,9 +302,8 @@ class _DrawerHeader extends StatelessWidget {
             AppSpacing.gapXxs,
             Text(
               email,
-              style: TextStyle(
-                color: Colors.white.withAlpha(180),
-                fontSize: 12,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onPrimary.withAlpha(180),
               ),
             ),
           ],
@@ -303,14 +312,13 @@ class _DrawerHeader extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: Colors.white.withAlpha(20),
+                color: theme.colorScheme.onPrimary.withAlpha(20),
                 borderRadius: AppRadius.borderFull,
               ),
               child: Text(
                 subtitle,
-                style: TextStyle(
-                  color: Colors.white.withAlpha(200),
-                  fontSize: 11,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onPrimary.withAlpha(200),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -334,12 +342,11 @@ class _SectionLabel extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
       child: Text(
         title,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-          letterSpacing: 1.0,
-        ),
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              letterSpacing: 1.0,
+            ),
       ),
     );
   }
@@ -366,49 +373,40 @@ class _DrawerItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Material(
-      color: Colors.transparent,
-      borderRadius: AppRadius.borderMd,
-      child: InkWell(
-        borderRadius: AppRadius.borderMd,
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onTap();
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-          child: Row(
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: (isDestructive ? color : color).withAlpha(18),
-                  borderRadius: AppRadius.borderSm,
-                ),
-                child: Icon(icon, size: 18, color: color),
+    return Pressable(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: (isDestructive ? color : color).withAlpha(18),
+                borderRadius: AppRadius.borderSm,
               ),
-              AppSpacing.hGapMd,
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: isDestructive
-                        ? color
-                        : theme.colorScheme.onSurface,
-                  ),
+              child: Icon(icon, size: 18, color: color),
+            ),
+            AppSpacing.hGapMd,
+            Expanded(
+              child: Text(
+                label,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                  color: isDestructive
+                      ? color
+                      : theme.colorScheme.onSurface,
                 ),
               ),
-              if (!isDestructive)
-                Icon(
-                  Icons.chevron_right_rounded,
-                  size: 18,
-                  color: theme.colorScheme.onSurfaceVariant.withAlpha(120),
-                ),
-            ],
-          ),
+            ),
+            if (!isDestructive)
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: theme.colorScheme.onSurfaceVariant.withAlpha(120),
+              ),
+          ],
         ),
       ),
     );

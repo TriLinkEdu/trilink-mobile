@@ -78,15 +78,40 @@ class NextUpItemModel {
       };
 }
 
+/// Optional highlight for the dashboard hero when the student recently scored high.
+class DashboardRecentGradeHighlight {
+  final String subjectName;
+  final int scorePercent;
+
+  const DashboardRecentGradeHighlight({
+    required this.subjectName,
+    required this.scorePercent,
+  });
+
+  factory DashboardRecentGradeHighlight.fromJson(Map<String, dynamic> json) {
+    return DashboardRecentGradeHighlight(
+      subjectName: json['subjectName'] as String,
+      scorePercent: json['scorePercent'] as int,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'subjectName': subjectName,
+        'scorePercent': scorePercent,
+      };
+}
+
 class DashboardDataModel {
   final DashboardStatsModel stats;
   final NextUpItemModel? nextUp;
   final List<DashboardAnnouncementSnippet> recentAnnouncements;
+  final DashboardRecentGradeHighlight? recentGradeHighlight;
 
   const DashboardDataModel({
     required this.stats,
     this.nextUp,
     required this.recentAnnouncements,
+    this.recentGradeHighlight,
   });
 
   factory DashboardDataModel.fromJson(Map<String, dynamic> json) {
@@ -99,6 +124,11 @@ class DashboardDataModel {
           .map((a) =>
               DashboardAnnouncementSnippet.fromJson(a as Map<String, dynamic>))
           .toList(),
+      recentGradeHighlight: json['recentGradeHighlight'] != null
+          ? DashboardRecentGradeHighlight.fromJson(
+              json['recentGradeHighlight'] as Map<String, dynamic>,
+            )
+          : null,
     );
   }
 
@@ -107,6 +137,7 @@ class DashboardDataModel {
         'nextUp': nextUp?.toJson(),
         'recentAnnouncements':
             recentAnnouncements.map((a) => a.toJson()).toList(),
+        'recentGradeHighlight': recentGradeHighlight?.toJson(),
       };
 }
 

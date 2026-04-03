@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:trilink_mobile/core/widgets/celebration_overlay.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../exams/models/exam_model.dart';
 
-class QuizResultScreen extends StatelessWidget {
+class QuizResultScreen extends StatefulWidget {
   final ExamResultModel result;
   final List<QuestionModel>? questions;
 
@@ -12,9 +14,43 @@ class QuizResultScreen extends StatelessWidget {
   });
 
   @override
+  State<QuizResultScreen> createState() => _QuizResultScreenState();
+}
+
+class _QuizResultScreenState extends State<QuizResultScreen> {
+  static final _celebratedKeys = <String>{};
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final pct = widget.result.percentage;
+      final sessionKey = widget.result.examId;
+      if (pct >= 90) {
+        if (_celebratedKeys.contains(sessionKey)) return;
+        _celebratedKeys.add(sessionKey);
+        CelebrationOverlay.maybeOf(context)?.celebrate(
+          type: CelebrationType.grade,
+          message: 'Outstanding Score!',
+          subtext: '${pct.round()}% — amazing work!',
+        );
+      } else if (pct >= 70) {
+        if (_celebratedKeys.contains(sessionKey)) return;
+        _celebratedKeys.add(sessionKey);
+        CelebrationOverlay.maybeOf(context)?.celebrate(
+          type: CelebrationType.completion,
+          message: 'Quiz Complete!',
+          subtext: '${pct.round()}% — nice job!',
+        );
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final pct = result.percentage;
+    final pct = widget.result.percentage;
     final passed = pct >= 60;
 
     return Scaffold(
@@ -31,7 +67,7 @@ class QuizResultScreen extends StatelessWidget {
             Icon(
               passed ? Icons.celebration_rounded : Icons.sentiment_neutral_rounded,
               size: 64,
-              color: passed ? Colors.amber : theme.colorScheme.onSurfaceVariant,
+              color: passed ? AppColors.warning : theme.colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: 16),
             Text(
@@ -39,49 +75,76 @@ class QuizResultScreen extends StatelessWidget {
               style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
-            _ScoreCircle(percentage: pct, theme: theme),
+            if (widget.result.correctAnswers == widget.result.totalQuestions)
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withAlpha(120),
+                      blurRadius: 24,
+                      spreadRadius: 4,
+                    ),
+                  ],
+                ),
+                child: _ScoreCircle(percentage: pct, theme: theme),
+              )
+            else
+              _ScoreCircle(percentage: pct, theme: theme),
+            if (widget.result.correctAnswers == widget.result.totalQuestions) ...[
+              const SizedBox(height: 12),
+              Text(
+                'PERFECT!',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: theme.colorScheme.primary,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ],
             const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _StatCard(
                   label: 'Correct',
-                  value: '${result.correctAnswers}',
-                  color: Colors.green,
+                  value: '${widget.result.correctAnswers}',
+                  color: AppColors.success,
                 ),
                 _StatCard(
                   label: 'Wrong',
-                  value: '${result.totalQuestions - result.correctAnswers}',
-                  color: Colors.red,
+                  value: '${widget.result.totalQuestions - widget.result.correctAnswers}',
+                  color: AppColors.danger,
                 ),
                 _StatCard(
                   label: 'XP Earned',
-                  value: '+${result.xpEarned}',
-                  color: Colors.amber,
+                  value: '+${widget.result.xpEarned}',
+                  color: AppColors.warning,
                 ),
               ],
             ),
-            if (questions != null) ...[
+            if (widget.questions != null) ...[
               const SizedBox(height: 24),
               const Divider(),
               const SizedBox(height: 16),
               Text('Question Breakdown', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
               const SizedBox(height: 12),
-              ...questions!.asMap().entries.map((entry) {
+              ...widget.questions!.asMap().entries.map((entry) {
                 final idx = entry.key;
                 final q = entry.value;
-                final selected = result.answerMap[q.id];
+                final selected = widget.result.answerMap[q.id];
                 final isCorrect = selected == q.correctIndex;
                 return Card(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
                     leading: CircleAvatar(
                       radius: 14,
-                      backgroundColor: isCorrect ? Colors.green : Colors.red,
+                      backgroundColor: isCorrect ? AppColors.success : AppColors.danger,
                       child: Icon(
                         isCorrect ? Icons.check : Icons.close,
                         size: 16,
-                        color: Colors.white,
+                        color: theme.colorScheme.onPrimary,
                       ),
                     ),
                     title: Text('Q${idx + 1}: ${q.text}', maxLines: 2, overflow: TextOverflow.ellipsis),
@@ -115,10 +178,10 @@ class _ScoreCircle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = percentage >= 80
-        ? Colors.green
+        ? AppColors.success
         : percentage >= 60
-            ? Colors.orange
-            : Colors.red;
+            ? AppColors.warning
+            : AppColors.danger;
     return SizedBox(
       width: 120,
       height: 120,

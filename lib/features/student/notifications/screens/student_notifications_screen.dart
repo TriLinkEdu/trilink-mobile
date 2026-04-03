@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:trilink_mobile/core/widgets/branded_refresh.dart';
+import 'package:trilink_mobile/core/widgets/empty_state_widget.dart';
+import 'package:trilink_mobile/core/widgets/illustrations.dart';
+import 'package:trilink_mobile/core/widgets/error_widget.dart';
+import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
 
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -83,8 +88,6 @@ class _NotificationsViewState extends State<_NotificationsView> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Notifications'),
@@ -106,22 +109,11 @@ class _NotificationsViewState extends State<_NotificationsView> {
             );
           }
           if (state.status == NotificationsStatus.error) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    state.errorMessage ?? 'Unable to load notifications.',
-                    style: TextStyle(color: theme.colorScheme.error),
-                  ),
-                  AppSpacing.gapMd,
-                  ElevatedButton(
-                    onPressed: () =>
-                        context.read<NotificationsCubit>().loadNotifications(),
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
+            return AppErrorWidget(
+              message: state.errorMessage ??
+                  'Unable to load notifications.',
+              onRetry: () =>
+                  context.read<NotificationsCubit>().loadNotifications(),
             );
           }
 
@@ -152,29 +144,54 @@ class _NotificationsViewState extends State<_NotificationsView> {
               ),
               AppSpacing.gapSm,
               Expanded(
-                child: visibleItems.isEmpty
-                    ? Center(
-                        child: Text(
-                          'No notifications in this view.',
-                          style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                child: BrandedRefreshIndicator(
+                  onRefresh: () => context
+                      .read<NotificationsCubit>()
+                      .loadNotifications(),
+                  child: visibleItems.isEmpty
+                      ? LayoutBuilder(
+                          builder: (context, constraints) {
+                            return SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minHeight: constraints.maxHeight,
+                                ),
+                                child: EmptyStateWidget(
+                                  illustration: const EmptyBoxIllustration(),
+                                  icon: Icons.notifications_none_rounded,
+                                  title: _filterIndex == 1
+                                      ? 'No unread notifications'
+                                      : 'No notifications',
+                                  subtitle: _filterIndex == 1
+                                      ? 'All caught up — nothing new!'
+                                      : 'You are all caught up!',
+                                ),
+                              ),
+                            );
+                          },
+                        )
+                      : ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: visibleItems.length,
+                          separatorBuilder: (_, _) =>
+                              const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final item = visibleItems[index];
+                            return StaggeredFadeSlide(
+                              index: index,
+                              child: NotificationTile(
+                                isRead: item.isRead,
+                                title: item.title,
+                                body: item.body,
+                                time: _timeLabel(item.createdAt),
+                                onTap: () => _onTapNotification(item),
+                                onToggleRead: () => _onToggleRead(item),
+                              ),
+                            );
+                          },
                         ),
-                      )
-                    : ListView.separated(
-                        itemCount: visibleItems.length,
-                        separatorBuilder: (_, __) =>
-                            const Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          final item = visibleItems[index];
-                          return NotificationTile(
-                            isRead: item.isRead,
-                            title: item.title,
-                            body: item.body,
-                            time: _timeLabel(item.createdAt),
-                            onTap: () => _onTapNotification(item),
-                            onToggleRead: () => _onToggleRead(item),
-                          );
-                        },
-                      ),
+                ),
               ),
             ],
           );

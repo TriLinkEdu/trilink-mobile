@@ -32,6 +32,7 @@ class MockStudentAssignmentsRepository implements StudentAssignmentsRepository {
       maxScore: 100,
       feedback: 'Excellent analysis of the theme of indecision. Could improve on textual evidence.',
       submittedAt: DateTime.now().subtract(const Duration(days: 7)),
+      submittedContent: 'In Shakespeare\'s Hamlet, the recurring theme of indecision drives the narrative forward. Prince Hamlet\'s inability to act decisively upon learning of his father\'s murder creates a cascade of consequences that ultimately lead to tragedy...',
     ),
     AssignmentModel(
       id: 'a4',
@@ -49,6 +50,7 @@ class MockStudentAssignmentsRepository implements StudentAssignmentsRepository {
       dueDate: DateTime.now().subtract(const Duration(days: 2)),
       status: AssignmentStatus.submitted,
       submittedAt: DateTime.now().subtract(const Duration(days: 3)),
+      submittedContent: 'For the series circuit with R1=100Ω, R2=220Ω, R3=330Ω, the total resistance is R_total = R1 + R2 + R3 = 650Ω. For the parallel circuit, 1/R_total = 1/R1 + 1/R2 + 1/R3, giving R_total ≈ 56.9Ω.',
     ),
     AssignmentModel(
       id: 'a6',
@@ -61,6 +63,7 @@ class MockStudentAssignmentsRepository implements StudentAssignmentsRepository {
       maxScore: 100,
       feedback: 'Outstanding comparative analysis with strong use of literary devices.',
       submittedAt: DateTime.now().subtract(const Duration(days: 12)),
+      submittedContent: 'The Romantic period produced poets whose works reflected deep emotional connections with nature and the human condition. Comparing Wordsworth\'s "I Wandered Lonely as a Cloud" with Keats\'s "Ode to a Nightingale" reveals both shared ideals and distinct approaches...',
     ),
   ];
 
@@ -84,6 +87,7 @@ class MockStudentAssignmentsRepository implements StudentAssignmentsRepository {
       _assignments[index] = _assignments[index].copyWith(
         status: AssignmentStatus.submitted,
         submittedAt: DateTime.now(),
+        submittedContent: content,
       );
     }
   }

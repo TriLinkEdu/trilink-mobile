@@ -5,6 +5,13 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
+import 'package:trilink_mobile/core/widgets/branded_refresh.dart';
+import 'package:trilink_mobile/core/widgets/empty_state_widget.dart';
+import 'package:trilink_mobile/core/widgets/illustrations.dart';
+import 'package:trilink_mobile/core/widgets/error_widget.dart';
+import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
+import 'package:trilink_mobile/core/widgets/pressable.dart';
+
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/chat_cubit.dart';
 import '../models/chat_models.dart';
@@ -101,18 +108,18 @@ class _ChatViewState extends State<_ChatView> {
                   ),
                 ),
                 AppSpacing.gapLg,
-                const Align(
+                Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Select participants:',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    style: Theme.of(ctx).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
                   ),
                 ),
                 ...mockContacts.entries.map((entry) {
                   return CheckboxListTile(
                     dense: true,
                     contentPadding: EdgeInsets.zero,
-                    title: Text(entry.value, style: const TextStyle(fontSize: 14)),
+                    title: Text(entry.value, style: Theme.of(ctx).textTheme.bodyMedium),
                     value: selected.contains(entry.key),
                     onChanged: (v) {
                       setDialogState(() {
@@ -225,22 +232,9 @@ class _ChatViewState extends State<_ChatView> {
               );
             }
             if (state.status == ChatStatus.error) {
-              return Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      state.errorMessage ?? 'Unable to load conversations.',
-                      style: TextStyle(color: Theme.of(context).colorScheme.error),
-                    ),
-                    AppSpacing.gapMd,
-                    ElevatedButton(
-                      onPressed: () =>
-                          context.read<ChatCubit>().loadConversations(),
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
+              return AppErrorWidget(
+                message: state.errorMessage ?? 'Unable to load conversations.',
+                onRetry: () => context.read<ChatCubit>().loadConversations(),
               );
             }
 
@@ -252,8 +246,22 @@ class _ChatViewState extends State<_ChatView> {
 
             return TabBarView(
               children: [
-                _ChatList(items: groups, onTapItem: _openConversation),
-                _ChatList(items: inbox, onTapItem: _openConversation),
+                BrandedRefreshIndicator(
+                  onRefresh: () =>
+                      context.read<ChatCubit>().loadConversations(),
+                  child: _ChatList(
+                    items: groups,
+                    onTapItem: _openConversation,
+                  ),
+                ),
+                BrandedRefreshIndicator(
+                  onRefresh: () =>
+                      context.read<ChatCubit>().loadConversations(),
+                  child: _ChatList(
+                    items: inbox,
+                    onTapItem: _openConversation,
+                  ),
+                ),
               ],
             );
           },
@@ -295,53 +303,81 @@ class _ChatList extends StatelessWidget {
     final theme = Theme.of(context);
 
     if (items.isEmpty) {
-      return Center(
-        child: Text(
-          'No conversations yet.',
-          style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-        ),
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: const Center(
+                child: EmptyStateWidget(
+                  illustration: ChatBubblesIllustration(),
+                  icon: Icons.chat_bubble_outline_rounded,
+                  title: 'No conversations yet',
+                  subtitle:
+                      'Start a conversation with your classmates or teachers.',
+                ),
+              ),
+            ),
+          );
+        },
       );
     }
 
     return ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
       itemCount: items.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
+      separatorBuilder: (_, _) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final item = items[index];
-        return ListTile(
-          leading: CircleAvatar(
-            child: Text(item.title.characters.first.toUpperCase()),
-          ),
-          title: Text(item.title),
-          subtitle: Text(
-            _previewText(item),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          trailing: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                _timeLabel(item),
-                style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant),
-              ),
-              AppSpacing.gapXs,
-              if (item.unreadCount > 0)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary,
-                    borderRadius: AppRadius.borderSm,
-                  ),
-                  child: Text(
-                    '${item.unreadCount}',
-                    style: TextStyle(color: theme.colorScheme.onPrimary, fontSize: 11),
+        void openConversation() => onTapItem(item);
+        return StaggeredFadeSlide(
+          index: index,
+          child: Pressable(
+            onTap: openConversation,
+            enableHaptic: false,
+            child: ListTile(
+              onTap: openConversation,
+              leading: Hero(
+                tag: 'chat-avatar-${item.id}',
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: CircleAvatar(
+                    child: Text(item.title.characters.first.toUpperCase()),
                   ),
                 ),
-            ],
+              ),
+              title: Text(item.title),
+              subtitle: Text(
+                _previewText(item),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              trailing: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    _timeLabel(item),
+                    style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                  AppSpacing.gapXs,
+                  if (item.unreadCount > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary,
+                        borderRadius: AppRadius.borderSm,
+                      ),
+                      child: Text(
+                        '${item.unreadCount}',
+                        style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onPrimary),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
-          onTap: () => onTapItem(item),
         );
       },
     );

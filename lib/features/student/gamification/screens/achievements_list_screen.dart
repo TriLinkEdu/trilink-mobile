@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
 
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -55,7 +56,11 @@ class _AchievementsListView extends StatelessWidget {
                     style: theme.textTheme.titleMedium
                         ?.copyWith(fontWeight: FontWeight.bold)),
                 AppSpacing.gapSm,
-                ...unlocked.map((a) => _AchievementTile(achievement: a)),
+                for (var i = 0; i < unlocked.length; i++)
+                  StaggeredFadeSlide(
+                    index: i,
+                    child: _AchievementTile(achievement: unlocked[i]),
+                  ),
                 AppSpacing.gapXxl,
               ],
               if (locked.isNotEmpty) ...[
@@ -63,7 +68,11 @@ class _AchievementsListView extends StatelessWidget {
                     style: theme.textTheme.titleMedium
                         ?.copyWith(fontWeight: FontWeight.bold)),
                 AppSpacing.gapSm,
-                ...locked.map((a) => _AchievementTile(achievement: a)),
+                for (var i = 0; i < locked.length; i++)
+                  StaggeredFadeSlide(
+                    index: unlocked.length + i,
+                    child: _AchievementTile(achievement: locked[i]),
+                  ),
               ],
             ],
           );

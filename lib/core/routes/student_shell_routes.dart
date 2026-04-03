@@ -26,9 +26,12 @@ import '../../features/student/feedback/screens/student_feedback_screen.dart';
 import '../../features/student/feedback/screens/submit_feedback_screen.dart';
 import '../../features/student/assignments/screens/student_assignments_screen.dart';
 import '../../features/student/assignments/screens/assignment_detail_screen.dart';
+import '../../features/student/courses/screens/student_courses_screen.dart';
+import '../../features/student/courses/screens/student_course_detail_screen.dart';
 import '../../features/student/courses/screens/student_courses_resources_screen.dart';
 import '../../features/student/courses/screens/course_resource_detail_screen.dart';
 import '../../features/student/exams/screens/student_exam_attempt_screen.dart';
+import '../../features/student/exams/screens/student_exams_screen.dart';
 import '../../features/student/sync/screens/student_sync_status_screen.dart';
 
 /// Handles all student sub-page routing within the nested shell navigator.
@@ -50,6 +53,7 @@ class StudentShellRoutes {
           SubjectGradesScreen(
             subjectId: safeArgs['subjectId']?.toString() ?? '',
             subjectName: safeArgs['subjectName']?.toString() ?? 'Subject',
+            selectedTerm: safeArgs['selectedTerm'] as String?,
           ),
           settings,
         );
@@ -131,6 +135,16 @@ class StudentShellRoutes {
           ),
           settings,
         );
+      case RouteNames.studentCourses:
+        return _page(const StudentCoursesScreen(), settings);
+      case RouteNames.studentCourseDetail:
+        return _page(
+          StudentCourseDetailScreen(
+            subjectId: safeArgs['subjectId']?.toString() ?? '',
+            subjectName: safeArgs['subjectName']?.toString() ?? 'Course',
+          ),
+          settings,
+        );
       case RouteNames.studentCourseResources:
         return _page(const StudentCoursesResourcesScreen(), settings);
       case RouteNames.studentCourseResourceDetail:
@@ -140,6 +154,8 @@ class StudentShellRoutes {
           ),
           settings,
         );
+      case RouteNames.studentExams:
+        return _page(const StudentExamsScreen(), settings);
       case RouteNames.studentExamAttempt:
         return _page(
           StudentExamAttemptScreen(

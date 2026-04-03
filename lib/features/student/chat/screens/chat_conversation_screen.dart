@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_radius.dart';
@@ -26,15 +27,22 @@ class ChatConversationScreen extends StatelessWidget {
         sl<StudentChatRepository>(),
         conversationId,
       )..loadMessages(),
-      child: _ChatConversationView(title: title),
+      child: _ChatConversationView(
+        conversationId: conversationId,
+        title: title,
+      ),
     );
   }
 }
 
 class _ChatConversationView extends StatefulWidget {
+  final String conversationId;
   final String title;
 
-  const _ChatConversationView({required this.title});
+  const _ChatConversationView({
+    required this.conversationId,
+    required this.title,
+  });
 
   @override
   State<_ChatConversationView> createState() =>
@@ -73,12 +81,12 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
     final text = _controller.text.trim();
     if (text.isEmpty || _isSending) return;
 
-    _controller.clear();
     setState(() => _isSending = true);
 
     try {
       await context.read<ChatConversationCubit>().sendMessage(text);
       if (!mounted) return;
+      _controller.clear();
       setState(() => _isSending = false);
       _scrollToBottom();
 
@@ -104,7 +112,31 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Hero(
+              tag: 'chat-avatar-${widget.conversationId}',
+              child: Material(
+                type: MaterialType.transparency,
+                child: CircleAvatar(
+                  radius: 18,
+                  child: Text(
+                    widget.title.characters.first.toUpperCase(),
+                  ),
+                ),
+              ),
+            ),
+            AppSpacing.hGapSm,
+            Expanded(
+              child: Text(
+                widget.title,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
       body: Column(
         children: [
           Expanded(
@@ -145,15 +177,16 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
                           borderRadius: AppRadius.borderMd,
                         ),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: isMine
+                              ? CrossAxisAlignment.end
+                              : CrossAxisAlignment.start,
                           children: [
                             if (!isMine)
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 2),
                                 child: Text(
                                   message.senderName,
-                                  style: TextStyle(
-                                    fontSize: 11,
+                                  style: theme.textTheme.labelSmall?.copyWith(
                                     fontWeight: FontWeight.w600,
                                     color: theme.colorScheme.onSurfaceVariant,
                                   ),
@@ -165,6 +198,17 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
                                 color: isMine
                                     ? theme.colorScheme.onPrimaryContainer
                                     : theme.colorScheme.onSurface,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              DateFormat.jm().format(message.timestamp),
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                fontSize: 10,
+                                color: isMine
+                                    ? theme.colorScheme.onPrimaryContainer
+                                        .withAlpha(150)
+                                    : theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ],

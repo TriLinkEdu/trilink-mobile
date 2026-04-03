@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:trilink_mobile/core/widgets/celebration_overlay.dart';
+import 'package:trilink_mobile/core/widgets/empty_state_widget.dart';
+import 'package:trilink_mobile/core/widgets/illustrations.dart';
+import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
 
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/routes/route_names.dart';
@@ -35,9 +39,40 @@ class _GamificationView extends StatefulWidget {
 }
 
 class _GamificationViewState extends State<_GamificationView> {
+  static final _celebratedKeys = <String>{};
+
   bool _notifyQuizReminders = true;
   bool _notifyLeaderboard = true;
   bool _notifyAchievements = true;
+
+  void _maybeCelebrateStreakMilestone(int streak) {
+    if (streak < 7) return;
+
+    String message;
+    String subtext;
+    if (streak >= 100) {
+      message = '🔥 $streak Day Streak!';
+      subtext = 'Incredible dedication!';
+    } else if (streak >= 50) {
+      message = '🔥 $streak Day Streak!';
+      subtext = 'You are unstoppable!';
+    } else if (streak >= 30) {
+      message = '🔥 $streak Day Streak!';
+      subtext = 'A full month of consistency!';
+    } else if (streak >= 14) {
+      message = '🔥 $streak Day Streak!';
+      subtext = 'Two weeks strong!';
+    } else {
+      message = '🔥 $streak Day Streak!';
+      subtext = 'Great start — keep the fire going!';
+    }
+
+    CelebrationOverlay.maybeOf(context)?.celebrate(
+      type: CelebrationType.streak,
+      message: message,
+      subtext: subtext,
+    );
+  }
 
   void _showSettingsSheet() {
     final theme = Theme.of(context);
@@ -102,54 +137,62 @@ class _GamificationViewState extends State<_GamificationView> {
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Streak History'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _streakRow('Current Streak', '${streak.currentStreak} days'),
-            AppSpacing.gapSm,
-            _streakRow('Longest Streak', '${streak.longestStreak} days'),
-            AppSpacing.gapMd,
-            const Text(
-              'Recent Active Days',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-            AppSpacing.gapSm,
-            ...streak.recentDays.map((d) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.check_circle, color: AppColors.success, size: 16),
-                      AppSpacing.hGapSm,
-                      Text(
-                        '${d.day}/${d.month}/${d.year}',
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                    ],
-                  ),
-                )),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Close'),
+      builder: (ctx) {
+        final dialogTheme = Theme.of(ctx);
+        return AlertDialog(
+          title: const Text('Streak History'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _streakRow(ctx, 'Current Streak', '${streak.currentStreak} days'),
+              AppSpacing.gapSm,
+              _streakRow(ctx, 'Longest Streak', '${streak.longestStreak} days'),
+              AppSpacing.gapMd,
+              Text(
+                'Recent Active Days',
+                style: dialogTheme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              AppSpacing.gapSm,
+              ...streak.recentDays.map((d) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.check_circle, color: AppColors.success, size: 16),
+                        AppSpacing.hGapSm,
+                        Text(
+                          '${d.day}/${d.month}/${d.year}',
+                          style: dialogTheme.textTheme.labelLarge,
+                        ),
+                      ],
+                    ),
+                  )),
+            ],
           ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _streakRow(String label, String value) {
+  Widget _streakRow(BuildContext context, String label, String value) {
+    final theme = Theme.of(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(fontSize: 14)),
+        Text(label, style: theme.textTheme.bodyMedium),
         Text(
           value,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ],
     );
@@ -224,6 +267,19 @@ class _GamificationViewState extends State<_GamificationView> {
                       child: ShimmerList(itemCount: 5, itemHeight: 80),
                     );
                   }
+
+                  final streak = state.streak?.currentStreak;
+                  const key = 'streak_milestone';
+                  if (!_celebratedKeys.contains(key) &&
+                      streak != null &&
+                      streak >= 7) {
+                    _celebratedKeys.add(key);
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!mounted) return;
+                      _maybeCelebrateStreakMilestone(streak);
+                    });
+                  }
+
                   return SingleChildScrollView(
                     padding: AppSpacing.horizontalXl,
                     child: Column(
@@ -253,6 +309,8 @@ class _GamificationViewState extends State<_GamificationView> {
   }
 
   Widget _buildStreakCard(StreakModel? streak) {
+    final theme = Theme.of(context);
+    final isLegendary = (streak?.currentStreak ?? 0) >= 100;
     return Pressable(
       onTap: _showStreakHistory,
       child: Container(
@@ -261,6 +319,18 @@ class _GamificationViewState extends State<_GamificationView> {
         decoration: BoxDecoration(
           gradient: AppGradients.primaryHero,
           borderRadius: AppRadius.borderXl,
+          border: isLegendary
+              ? Border.all(color: AppColors.xpGold, width: 2.5)
+              : null,
+          boxShadow: isLegendary
+              ? [
+                  BoxShadow(
+                    color: AppColors.xpGold.withAlpha(100),
+                    blurRadius: 20,
+                    spreadRadius: 2,
+                  ),
+                ]
+              : null,
         ),
         child: Column(
           children: [
@@ -268,12 +338,12 @@ class _GamificationViewState extends State<_GamificationView> {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: Colors.white.withAlpha(35),
+                color: theme.colorScheme.onPrimary.withAlpha(35),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.local_fire_department_rounded,
-                color: Colors.white,
+                color: theme.colorScheme.onPrimary,
                 size: 30,
               ),
             ),
@@ -282,18 +352,34 @@ class _GamificationViewState extends State<_GamificationView> {
               streak != null
                   ? '${streak.currentStreak} Day Streak'
                   : '-- Day Streak',
-              style: const TextStyle(
-                fontSize: 22,
+              style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: theme.colorScheme.onPrimary,
               ),
             ),
+            if (isLegendary) ...[
+              AppSpacing.gapXs,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.xpGold,
+                  borderRadius: AppRadius.borderSm,
+                ),
+                child: Text(
+                  'LEGENDARY',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: theme.colorScheme.onPrimaryContainer,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ),
+            ],
             AppSpacing.gapXs,
             Text(
               "Keep it up! You're on fire.",
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.white.withAlpha(200),
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.onPrimary.withAlpha(200),
               ),
             ),
             AppSpacing.gapLg,
@@ -303,14 +389,13 @@ class _GamificationViewState extends State<_GamificationView> {
                 vertical: 8,
               ),
               decoration: BoxDecoration(
-                color: Colors.white.withAlpha(40),
+                color: theme.colorScheme.onPrimary.withAlpha(40),
                 borderRadius: AppRadius.borderXl,
               ),
-              child: const Text(
+              child: Text(
                 'View History',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.white,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.onPrimary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -345,39 +430,46 @@ class _GamificationViewState extends State<_GamificationView> {
               },
               child: Text(
                 'See All',
-                style: TextStyle(
+                style: theme.textTheme.labelLarge?.copyWith(
                   color: theme.colorScheme.primary,
-                  fontSize: 13,
                 ),
               ),
             ),
           ],
         ),
         AppSpacing.gapSm,
-        SizedBox(
-          height: 100,
-          child: displayAchievements.isEmpty
-              ? const Center(child: Text('No achievements yet.'))
-              : ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: displayAchievements.length,
-                  separatorBuilder: (_, _) => AppSpacing.hGapLg,
-                  itemBuilder: (_, i) {
-                    final a = displayAchievements[i];
-                    final color = a.isUnlocked ? AppColors.leaderboardCrown : Colors.grey;
-                    final icon = a.isUnlocked
-                        ? Icons.emoji_events_rounded
-                        : Icons.lock_rounded;
-                    return _AchievementChip(
-                      icon: icon,
-                      label: a.title,
-                      sublabel: a.isUnlocked ? 'Unlocked' : 'Locked',
-                      color: color,
-                      isUnlocked: a.isUnlocked,
-                    );
-                  },
-                ),
-        ),
+        if (displayAchievements.isEmpty)
+          const EmptyStateWidget(
+            illustration: TrophyIllustration(),
+            icon: Icons.emoji_events_rounded,
+            title: 'No achievements yet',
+            subtitle: 'Complete challenges to earn achievements!',
+          )
+        else
+          SizedBox(
+            height: 100,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: displayAchievements.length,
+              separatorBuilder: (_, _) => AppSpacing.hGapLg,
+              itemBuilder: (_, i) {
+                final a = displayAchievements[i];
+                final color = a.isUnlocked
+                    ? AppColors.leaderboardCrown
+                    : theme.colorScheme.onSurfaceVariant;
+                final icon = a.isUnlocked
+                    ? Icons.emoji_events_rounded
+                    : Icons.lock_rounded;
+                return _AchievementChip(
+                  icon: icon,
+                  label: a.title,
+                  sublabel: a.isUnlocked ? 'Unlocked' : 'Locked',
+                  color: color,
+                  isUnlocked: a.isUnlocked,
+                );
+              },
+            ),
+          ),
       ],
     );
   }
@@ -396,25 +488,33 @@ class _GamificationViewState extends State<_GamificationView> {
         ),
         AppSpacing.gapMd,
         if (availableQuizzes.isEmpty)
-          const Center(child: Text('No quizzes available.'))
+          const EmptyStateWidget(
+            illustration: TrophyIllustration(),
+            icon: Icons.quiz_rounded,
+            title: 'No quizzes available',
+            subtitle: 'Quick quizzes will appear here.',
+          )
         else
           ...List.generate(availableQuizzes.length, (i) {
             final quiz = availableQuizzes[i];
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: i < availableQuizzes.length - 1 ? 10 : 0,
-              ),
-              child: _QuickQuizTile(
-                icon: _iconForSubject(quiz.subjectName),
-                title: '${quiz.subjectName}: ${quiz.title}',
-                questions: quiz.questionCount,
-                xp: quiz.xpReward,
-                onStart: () {
-                  Navigator.of(context).pushNamed(
-                    RouteNames.studentQuiz,
-                    arguments: {'subjectId': quiz.subjectId},
-                  );
-                },
+            return StaggeredFadeSlide(
+              index: i,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: i < availableQuizzes.length - 1 ? 10 : 0,
+                ),
+                child: _QuickQuizTile(
+                  icon: _iconForSubject(quiz.subjectName),
+                  title: '${quiz.subjectName}: ${quiz.title}',
+                  questions: quiz.questionCount,
+                  xp: quiz.xpReward,
+                  onStart: () {
+                    Navigator.of(context).pushNamed(
+                      RouteNames.studentQuiz,
+                      arguments: {'subjectId': quiz.subjectId},
+                    );
+                  },
+                ),
               ),
             );
           }),
@@ -462,8 +562,7 @@ class _GamificationViewState extends State<_GamificationView> {
                   AppSpacing.hGapXs,
                   Text(
                     isWeeklyRanking ? 'Weekly' : 'Monthly',
-                    style: TextStyle(
-                      fontSize: 13,
+                    style: theme.textTheme.labelLarge?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
@@ -474,27 +573,36 @@ class _GamificationViewState extends State<_GamificationView> {
         ),
         AppSpacing.gapMd,
         if (topEntries.isEmpty)
-          const Center(child: Text('No leaderboard data.'))
+          const EmptyStateWidget(
+            illustration: TrophyIllustration(),
+            icon: Icons.leaderboard_rounded,
+            title: 'No leaderboard data',
+            subtitle:
+                'Compete with classmates to see rankings here.',
+          )
         else
           ...List.generate(topEntries.length, (i) {
             final entry = topEntries[i];
             const rankColors = [
-              Color(0xFFFFD700),
-              Color(0xFFC0C0C0),
-              Color(0xFFCD7F32),
+              AppColors.rankGold,
+              AppColors.rankSilver,
+              AppColors.rankBronze,
             ];
             final avatarColors = [AppColors.streakFire, AppColors.secondary, theme.colorScheme.primary];
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: i < topEntries.length - 1 ? 8 : 0,
-              ),
-              child: _LeaderboardRow(
-                rank: entry.rank,
-                name: entry.studentName,
-                classLabel: '',
-                xp: '${entry.points} XP',
-                avatarColor: avatarColors[i % avatarColors.length],
-                rankColor: rankColors[i % rankColors.length],
+            return StaggeredFadeSlide(
+              index: i,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: i < topEntries.length - 1 ? 8 : 0,
+                ),
+                child: _LeaderboardRow(
+                  rank: entry.rank,
+                  name: entry.studentName,
+                  classLabel: '',
+                  xp: '${entry.points} XP',
+                  avatarColor: avatarColors[i % avatarColors.length],
+                  rankColor: rankColors[i % rankColors.length],
+                ),
               ),
             );
           }),
@@ -548,16 +656,14 @@ class _AchievementChip extends StatelessWidget {
         AppSpacing.gapSm,
         Text(
           label,
-          style: TextStyle(
-            fontSize: 11,
+          style: theme.textTheme.labelSmall?.copyWith(
             fontWeight: FontWeight.w600,
             color: theme.colorScheme.onSurface,
           ),
         ),
         Text(
           sublabel,
-          style: TextStyle(
-            fontSize: 10,
+          style: theme.textTheme.labelSmall?.copyWith(
             color: isUnlocked ? AppColors.success : theme.colorScheme.onSurfaceVariant,
           ),
         ),
@@ -602,8 +708,7 @@ class _QuickQuizTile extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(
-                    fontSize: 14,
+                  style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: theme.colorScheme.onSurface,
                   ),
@@ -611,8 +716,7 @@ class _QuickQuizTile extends StatelessWidget {
                 AppSpacing.gapXxs,
                 Text(
                   '$questions Questions  •  $xp XP',
-                  style: TextStyle(
-                    fontSize: 11,
+                  style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
@@ -623,14 +727,13 @@ class _QuickQuizTile extends StatelessWidget {
             onPressed: onStart,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.success,
-              foregroundColor: Colors.white,
+              foregroundColor: theme.colorScheme.onPrimary,
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: AppRadius.borderSm,
               ),
               elevation: 0,
-              textStyle: const TextStyle(
-                fontSize: 13,
+              textStyle: theme.textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -682,8 +785,7 @@ class _LeaderboardRow extends StatelessWidget {
             child: Center(
               child: Text(
                 '$rank',
-                style: TextStyle(
-                  fontSize: 13,
+                style: theme.textTheme.labelLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: rankColor,
                 ),
@@ -703,8 +805,7 @@ class _LeaderboardRow extends StatelessWidget {
               children: [
                 Text(
                   name,
-                  style: TextStyle(
-                    fontSize: 14,
+                  style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: theme.colorScheme.onSurface,
                   ),
@@ -712,8 +813,7 @@ class _LeaderboardRow extends StatelessWidget {
                 if (classLabel.isNotEmpty)
                   Text(
                     classLabel,
-                    style: TextStyle(
-                      fontSize: 11,
+                    style: theme.textTheme.labelSmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
@@ -722,8 +822,7 @@ class _LeaderboardRow extends StatelessWidget {
           ),
           Text(
             xp,
-            style: TextStyle(
-              fontSize: 15,
+            style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.bold,
               color: theme.colorScheme.primary,
             ),

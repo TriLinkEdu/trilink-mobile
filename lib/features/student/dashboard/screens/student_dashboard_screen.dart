@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart' as intl;
+import 'package:trilink_mobile/core/widgets/animated_counter.dart';
+import 'package:trilink_mobile/core/widgets/branded_refresh.dart';
+import 'package:trilink_mobile/core/widgets/error_widget.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -43,9 +46,11 @@ class _DashboardView extends StatelessWidget {
         }
 
         if (state.status == DashboardStatus.error) {
-          return _DashboardError(
-            message: state.errorMessage ?? 'Something went wrong',
-            onRetry: () => context.read<DashboardCubit>().loadDashboard(),
+          return Scaffold(
+            body: AppErrorWidget(
+              message: state.errorMessage ?? 'Something went wrong',
+              onRetry: () => context.read<DashboardCubit>().loadDashboard(),
+            ),
           );
         }
 
@@ -97,67 +102,6 @@ class _DashboardSkeleton extends StatelessWidget {
   }
 }
 
-// ── Error State ──
-
-class _DashboardError extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-
-  const _DashboardError({required this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: AppSpacing.paddingXxl,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.errorContainer.withAlpha(80),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.cloud_off_rounded,
-                  size: 36,
-                  color: theme.colorScheme.error,
-                ),
-              ),
-              AppSpacing.gapXl,
-              Text(
-                'Oops!',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-              AppSpacing.gapSm,
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              AppSpacing.gapXxl,
-              FilledButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Try Again'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 // ── Main Content ──
 
 class _DashboardContent extends StatelessWidget {
@@ -167,7 +111,6 @@ class _DashboardContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final now = DateTime.now();
     final dateStr = intl.DateFormat('EEEE, MMM dd').format(now);
     final hour = now.hour;
@@ -183,10 +126,8 @@ class _DashboardContent extends StatelessWidget {
     return Scaffold(
       body: SafeArea(
         bottom: false,
-        child: RefreshIndicator(
-          onRefresh: () async =>
-              context.read<DashboardCubit>().loadDashboard(),
-          color: theme.colorScheme.primary,
+        child: BrandedRefreshIndicator(
+          onRefresh: () => context.read<DashboardCubit>().loadDashboard(),
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
@@ -196,6 +137,7 @@ class _DashboardContent extends StatelessWidget {
                   date: dateStr,
                   greeting: greeting,
                   name: firstName,
+                  subtitle: _buildContextualGreeting(data),
                   onProfileTap: () => Navigator.of(context)
                       .pushNamed(RouteNames.studentProfile),
                 ),
@@ -258,10 +200,20 @@ class _DashboardContent extends StatelessWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: null,
         tooltip: 'AI Assistant',
         onPressed: () =>
             Navigator.of(context).pushNamed(RouteNames.studentAiAssistant),
-        child: const Icon(Icons.auto_awesome),
+        child: Hero(
+          tag: 'ai-tutor-hero',
+          child: Material(
+            color: Colors.transparent,
+            child: Icon(
+              Icons.auto_awesome,
+              color: Theme.of(context).colorScheme.onPrimary,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -269,16 +221,52 @@ class _DashboardContent extends StatelessWidget {
 
 // ── Hero Greeting ──
 
+/// Short line under the hero name. Priority: streak → upcoming [nextUp] → recent grade → default.
+String _buildContextualGreeting(DashboardDataModel data) {
+  final streak = data.stats.streakDays;
+  if (streak >= 7) {
+    return "You're on a $streak-day streak — keep going!";
+  }
+
+  final next = data.nextUp;
+  if (next != null && _isDueWithinDays(next.dueAt, DateTime.now(), 3)) {
+    final typeLabel = _formatNextUpTypeLabel(next.type);
+    return 'You have an upcoming $typeLabel — stay prepared!';
+  }
+
+  final highlight = data.recentGradeHighlight;
+  if (highlight != null && highlight.scorePercent >= 85) {
+    return 'Great work on ${highlight.subjectName} — ${highlight.scorePercent}%!';
+  }
+
+  return 'Ready to learn something new today?';
+}
+
+bool _isDueWithinDays(DateTime dueAt, DateTime now, int days) {
+  final today = DateTime(now.year, now.month, now.day);
+  final dueDay = DateTime(dueAt.year, dueAt.month, dueAt.day);
+  final diffDays = dueDay.difference(today).inDays;
+  return diffDays >= 0 && diffDays <= days;
+}
+
+String _formatNextUpTypeLabel(String type) {
+  final t = type.trim();
+  if (t.isEmpty) return 'item';
+  return '${t[0].toUpperCase()}${t.length > 1 ? t.substring(1).toLowerCase() : ''}';
+}
+
 class _HeroGreeting extends StatelessWidget {
   final String date;
   final String greeting;
   final String name;
+  final String subtitle;
   final VoidCallback onProfileTap;
 
   const _HeroGreeting({
     required this.date,
     required this.greeting,
     required this.name,
+    required this.subtitle,
     required this.onProfileTap,
   });
 
@@ -312,6 +300,16 @@ class _HeroGreeting extends StatelessWidget {
                   color: theme.colorScheme.onSurface,
                 ),
               ),
+              AppSpacing.gapSm,
+              Text(
+                subtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  height: 1.35,
+                ),
+              ),
             ],
           ),
         ),
@@ -325,9 +323,9 @@ class _HeroGreeting extends StatelessWidget {
               borderRadius: AppRadius.borderMd,
               boxShadow: AppShadows.glow(AppColors.primary),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.person_rounded,
-              color: Colors.white,
+              color: theme.colorScheme.onPrimary,
               size: 26,
             ),
           ),
@@ -356,12 +354,23 @@ class _GamificationRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final onPrimaryStyle = theme.textTheme.titleLarge?.copyWith(
+      fontWeight: FontWeight.w700,
+      color: theme.colorScheme.onPrimary,
+    );
+
     return Row(
       children: [
         Expanded(
           child: _GradientStatCard(
             icon: Icons.local_fire_department_rounded,
-            value: '$streak',
+            value: AnimatedCounter(
+              value: streak.toDouble(),
+              suffix: '',
+              showTrend: true,
+              style: onPrimaryStyle,
+            ),
             label: 'Day Streak',
             gradient: AppGradients.streak,
             onTap: onTap,
@@ -371,7 +380,12 @@ class _GamificationRow extends StatelessWidget {
         Expanded(
           child: _GradientStatCard(
             icon: Icons.star_rounded,
-            value: '$xp',
+            value: AnimatedCounter(
+              value: xp.toDouble(),
+              suffix: '',
+              showTrend: true,
+              style: onPrimaryStyle,
+            ),
             label: 'Total XP',
             gradient: AppGradients.xp,
             onTap: onTap,
@@ -381,7 +395,18 @@ class _GamificationRow extends StatelessWidget {
         Expanded(
           child: _GradientStatCard(
             icon: Icons.emoji_events_rounded,
-            value: 'Lvl $level',
+            value: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Lvl ', style: onPrimaryStyle),
+                AnimatedCounter(
+                  value: level.toDouble(),
+                  suffix: '',
+                  showTrend: true,
+                  style: onPrimaryStyle,
+                ),
+              ],
+            ),
             label: levelTitle,
             gradient: AppGradients.level,
             onTap: onTap,
@@ -394,7 +419,7 @@ class _GamificationRow extends StatelessWidget {
 
 class _GradientStatCard extends StatelessWidget {
   final IconData icon;
-  final String value;
+  final Widget value;
   final String label;
   final LinearGradient gradient;
   final VoidCallback? onTap;
@@ -409,6 +434,8 @@ class _GradientStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Pressable(
       onTap: onTap,
       child: Container(
@@ -420,23 +447,15 @@ class _GradientStatCard extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Icon(icon, color: Colors.white, size: 22),
+            Icon(icon, color: theme.colorScheme.onPrimary, size: 22),
             AppSpacing.gapSm,
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
+            value,
             AppSpacing.gapXxs,
             Text(
               label,
-              style: TextStyle(
-                fontSize: 10,
+              style: theme.textTheme.labelSmall?.copyWith(
                 fontWeight: FontWeight.w500,
-                color: Colors.white.withAlpha(200),
+                color: theme.colorScheme.onPrimary.withAlpha(200),
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -548,8 +567,7 @@ class _NextUpCard extends StatelessWidget {
                         ),
                         child: Text(
                           _dueIn(data.dueAt),
-                          style: TextStyle(
-                            fontSize: 11,
+                          style: theme.textTheme.labelSmall?.copyWith(
                             color: subjectColor,
                             fontWeight: FontWeight.w600,
                           ),
@@ -713,10 +731,9 @@ class _AnnouncementCard extends StatelessWidget {
               backgroundColor: color.withAlpha(25),
               child: Text(
                 authorName.isNotEmpty ? authorName[0].toUpperCase() : '?',
-                style: TextStyle(
+                style: theme.textTheme.bodyMedium?.copyWith(
                   color: color,
                   fontWeight: FontWeight.w600,
-                  fontSize: 14,
                 ),
               ),
             ),

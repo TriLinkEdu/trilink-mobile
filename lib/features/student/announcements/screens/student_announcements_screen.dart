@@ -6,6 +6,12 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_shadows.dart';
 import '../../../../core/theme/app_spacing.dart';
+import 'package:trilink_mobile/core/widgets/branded_refresh.dart';
+import 'package:trilink_mobile/core/widgets/empty_state_widget.dart';
+import 'package:trilink_mobile/core/widgets/illustrations.dart';
+import 'package:trilink_mobile/core/widgets/error_widget.dart';
+import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
+
 import '../../../../core/widgets/pressable.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/announcements_cubit.dart';
@@ -95,8 +101,7 @@ class _StudentAnnouncementsViewState extends State<_StudentAnnouncementsView> {
                     child: Text(
                       'Announcements',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 18,
+                      style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: theme.colorScheme.onSurface,
                       ),
@@ -141,9 +146,8 @@ class _StudentAnnouncementsViewState extends State<_StudentAnnouncementsView> {
                                 ),
                                 child: Text(
                                   '$count',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: theme.colorScheme.onError,
                                     fontWeight: FontWeight.bold,
                                   ),
                                   textAlign: TextAlign.center,
@@ -190,8 +194,7 @@ class _StudentAnnouncementsViewState extends State<_StudentAnnouncementsView> {
                           ),
                           child: Text(
                             _filters[index],
-                            style: TextStyle(
-                              fontSize: 13,
+                            style: theme.textTheme.labelLarge?.copyWith(
                               fontWeight: FontWeight.w500,
                               color: isSelected
                                   ? theme.colorScheme.onPrimary
@@ -218,37 +221,34 @@ class _StudentAnnouncementsViewState extends State<_StudentAnnouncementsView> {
                     );
                   }
                   if (state.status == AnnouncementsStatus.error) {
-                    return Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(state.errorMessage ?? '',
-                              style: const TextStyle(color: AppColors.danger)),
-                          AppSpacing.gapSm,
-                          ElevatedButton(
-                            onPressed: () => context
-                                .read<AnnouncementsCubit>()
-                                .loadAnnouncements(),
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
+                    return AppErrorWidget(
+                      message: state.errorMessage ??
+                          'Unable to load announcements.',
+                      onRetry: () => context
+                          .read<AnnouncementsCubit>()
+                          .loadAnnouncements(),
                     );
                   }
                   final announcements = state.announcements;
                   final visible = _visibleAnnouncements(announcements);
-                  return ListView(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 20),
-                    children: [
+                  var announcementStaggerIndex = 0;
+                  return BrandedRefreshIndicator(
+                    onRefresh: () => context
+                        .read<AnnouncementsCubit>()
+                        .loadAnnouncements(),
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 20),
+                      children: [
                       if (visible.isEmpty) ...[
                         AppSpacing.gapHuge,
-                        Center(
-                          child: Text(
-                            'No announcements in this category yet.',
-                            style: TextStyle(
-                                color: theme.colorScheme.onSurfaceVariant),
-                          ),
+                        EmptyStateWidget(
+                          illustration: const EmptyBoxIllustration(),
+                          icon: Icons.campaign_rounded,
+                          title: 'No announcements yet',
+                          subtitle:
+                              'Announcements for this category will appear here.',
                         ),
                         AppSpacing.gapHuge,
                       ] else ...[
@@ -265,20 +265,23 @@ class _StudentAnnouncementsViewState extends State<_StudentAnnouncementsView> {
                               (item) =>
                                   _sectionFor(item) == section,
                             )) ...[
-                              Pressable(
-                                onTap: () => _openAnnouncementDetail(
-                                    announcement),
-                                child: _AnnouncementItem(
-                                  icon: _iconFor(announcement),
-                                  iconColor:
-                                      _iconColorFor(announcement),
-                                  iconBgColor:
-                                      _iconBgFor(announcement),
-                                  title: announcement.title,
-                                  subtitle: announcement.authorName,
-                                  time: _timeLabel(
-                                      announcement.createdAt),
-                                  body: announcement.body,
+                              StaggeredFadeSlide(
+                                index: announcementStaggerIndex++,
+                                child: Pressable(
+                                  onTap: () => _openAnnouncementDetail(
+                                      announcement),
+                                  child: _AnnouncementItem(
+                                    icon: _iconFor(announcement),
+                                    iconColor:
+                                        _iconColorFor(announcement),
+                                    iconBgColor:
+                                        _iconBgFor(announcement),
+                                    title: announcement.title,
+                                    subtitle: announcement.authorName,
+                                    time: _timeLabel(
+                                        announcement.createdAt),
+                                    body: announcement.body,
+                                  ),
                                 ),
                               ),
                               AppSpacing.gapSm,
@@ -291,14 +294,14 @@ class _StudentAnnouncementsViewState extends State<_StudentAnnouncementsView> {
                       Center(
                         child: Text(
                           'You\'re all caught up',
-                          style: TextStyle(
-                            fontSize: 13,
+                          style: theme.textTheme.labelLarge?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),
                       AppSpacing.gapXl,
                     ],
+                    ),
                   );
                 },
               ),
@@ -339,11 +342,11 @@ class _StudentAnnouncementsViewState extends State<_StudentAnnouncementsView> {
   }
 
   Color _iconBgFor(AnnouncementModel model) {
-    if (model.category == 'calendar') return const Color(0xFFDBEAFE);
+    if (model.category == 'calendar') return AppColors.categoryGeneral;
     if (model.authorRole.toLowerCase() == 'teacher') {
-      return const Color(0xFFFEF3C7);
+      return AppColors.categoryEvent;
     }
-    return const Color(0xFFFEE2E2);
+    return AppColors.categoryUrgent;
   }
 }
 
@@ -356,8 +359,7 @@ class _SectionHeader extends StatelessWidget {
     final theme = Theme.of(context);
     return Text(
       title,
-      style: TextStyle(
-        fontSize: 12,
+      style: theme.textTheme.bodySmall?.copyWith(
         fontWeight: FontWeight.w600,
         color: theme.colorScheme.onSurfaceVariant,
         letterSpacing: 0.5,
@@ -418,8 +420,7 @@ class _AnnouncementItem extends StatelessWidget {
                     Expanded(
                       child: Text(
                         title,
-                        style: TextStyle(
-                          fontSize: 14,
+                        style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                           color: theme.colorScheme.onSurface,
                         ),
@@ -429,8 +430,7 @@ class _AnnouncementItem extends StatelessWidget {
                     AppSpacing.hGapSm,
                     Text(
                       time,
-                      style: TextStyle(
-                        fontSize: 11,
+                      style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
@@ -439,13 +439,12 @@ class _AnnouncementItem extends StatelessWidget {
                 AppSpacing.gapXxs,
                 Text(
                   subtitle,
-                  style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
                 AppSpacing.gapSm,
                 Text(
                   body,
-                  style: TextStyle(
-                    fontSize: 12,
+                  style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                     height: 1.4,
                   ),

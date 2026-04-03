@@ -143,6 +143,7 @@ class MockStudentExamsRepository implements StudentExamsRepository {
               scheduledAt: e.scheduledAt,
               isCompleted: e.isCompleted,
               score: e.score,
+              lifecycleState: e.lifecycleState,
               questions: const [],
             ))
         .toList();

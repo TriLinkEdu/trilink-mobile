@@ -13,11 +13,15 @@ class MockStudentDashboardRepository implements StudentDashboardRepository {
 
     return DashboardDataModel(
       stats: const DashboardStatsModel(
-        streakDays: 12,
+        streakDays: 5,
         totalXp: 850,
         level: 5,
         levelTitle: 'Scholar',
         attendancePercent: 0.87,
+      ),
+      recentGradeHighlight: const DashboardRecentGradeHighlight(
+        subjectName: 'Physics',
+        scorePercent: 96,
       ),
       nextUp: NextUpItemModel(
         id: 'next-1',

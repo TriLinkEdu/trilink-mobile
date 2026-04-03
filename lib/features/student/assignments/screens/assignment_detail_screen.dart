@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import 'package:trilink_mobile/core/widgets/error_widget.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/assignment_detail_cubit.dart';
 import '../models/assignment_model.dart';
@@ -44,23 +45,12 @@ class _AssignmentDetailView extends StatelessWidget {
                   child: ShimmerList(),
                 )
               : state.status == AssignmentDetailStatus.error
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            state.errorMessage ?? '',
-                            style: const TextStyle(color: AppColors.danger),
-                          ),
-                          AppSpacing.gapSm,
-                          ElevatedButton(
-                            onPressed: () => context
-                                .read<AssignmentDetailCubit>()
-                                .loadAssignment(),
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
+                  ? AppErrorWidget(
+                      message: state.errorMessage ??
+                          'Unable to load assignment details.',
+                      onRetry: () => context
+                          .read<AssignmentDetailCubit>()
+                          .loadAssignment(),
                     )
                   : _AssignmentDetailBody(assignment: state.assignment!),
         );
@@ -80,17 +70,35 @@ class _AssignmentDetailBody extends StatefulWidget {
 
 class _AssignmentDetailBodyState extends State<_AssignmentDetailBody> {
   bool _isSubmitting = false;
+  bool _hasJustSubmitted = false;
+  final TextEditingController _submissionController = TextEditingController();
+
+  @override
+  void dispose() {
+    _submissionController.dispose();
+    super.dispose();
+  }
 
   Future<void> _submitAssignment() async {
+    final text = _submissionController.text.trim();
+    if (text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter your submission before submitting.'),
+        ),
+      );
+      return;
+    }
+
     setState(() => _isSubmitting = true);
     try {
-      await sl<StudentAssignmentsRepository>().submitAssignment(
-          widget.assignment.id, 'Submitted via app');
+      await sl<StudentAssignmentsRepository>()
+          .submitAssignment(widget.assignment.id, text);
       if (!mounted) return;
+      setState(() => _hasJustSubmitted = true);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Assignment submitted successfully!')),
       );
-      Navigator.of(context).pop(true);
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -101,10 +109,26 @@ class _AssignmentDetailBodyState extends State<_AssignmentDetailBody> {
     }
   }
 
+  bool get _showReadOnlySubmission {
+    if (_hasJustSubmitted) return true;
+    final s = widget.assignment.status;
+    return s == AssignmentStatus.submitted || s == AssignmentStatus.graded;
+  }
+
+  String? get _submittedText {
+    if (_hasJustSubmitted) return _submissionController.text.trim();
+    return widget.assignment.submittedContent;
+  }
+
   @override
   Widget build(BuildContext context) {
     final a = widget.assignment;
-    return Padding(
+    final canSubmit =
+        !_hasJustSubmitted &&
+        (a.status == AssignmentStatus.pending ||
+            a.status == AssignmentStatus.overdue);
+
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,7 +139,7 @@ class _AssignmentDetailBodyState extends State<_AssignmentDetailBody> {
           AppSpacing.gapSm,
           Text(a.dueDateLabel),
           AppSpacing.gapXs,
-          Text('Status: ${a.statusLabel}'),
+          Text('Status: ${_hasJustSubmitted ? 'Submitted' : a.statusLabel}'),
           AppSpacing.gapXxl,
           Card(
             child: Padding(
@@ -143,9 +167,8 @@ class _AssignmentDetailBodyState extends State<_AssignmentDetailBody> {
                     AppSpacing.hGapMd,
                     Text(
                       'Score: ${a.score!.toStringAsFixed(0)}/${a.maxScore!.toStringAsFixed(0)}',
-                      style: const TextStyle(
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w600,
-                        fontSize: 16,
                       ),
                     ),
                   ],
@@ -171,9 +194,72 @@ class _AssignmentDetailBodyState extends State<_AssignmentDetailBody> {
               ),
             ),
           ],
-          const Spacer(),
-          if (a.status == AssignmentStatus.pending ||
-              a.status == AssignmentStatus.overdue)
+
+          // Read-only submitted content
+          if (_showReadOnlySubmission && _submittedText != null) ...[
+            AppSpacing.gapLg,
+            Card(
+              color: AppColors.success.withAlpha(12),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.check_circle_rounded,
+                            color: AppColors.success, size: 20),
+                        AppSpacing.hGapSm,
+                        Text('Your Submission',
+                            style: Theme.of(context).textTheme.titleSmall),
+                      ],
+                    ),
+                    AppSpacing.gapSm,
+                    Text(_submittedText!),
+                  ],
+                ),
+              ),
+            ),
+          ],
+
+          // Editable submission area
+          if (canSubmit) ...[
+            AppSpacing.gapLg,
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Your Submission',
+                        style: Theme.of(context).textTheme.titleSmall),
+                    AppSpacing.gapSm,
+                    TextField(
+                      controller: _submissionController,
+                      maxLines: 8,
+                      decoration: const InputDecoration(
+                        hintText: 'Type your answer or paste your work here...',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    AppSpacing.gapSm,
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                                'File picker will be available when integrated'),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.attach_file_rounded),
+                      label: const Text('Attach File'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            AppSpacing.gapLg,
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -187,6 +273,7 @@ class _AssignmentDetailBodyState extends State<_AssignmentDetailBody> {
                     : const Text('Submit Assignment'),
               ),
             ),
+          ],
         ],
       ),
     );

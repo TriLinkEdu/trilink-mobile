@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:trilink_mobile/core/widgets/empty_state_widget.dart';
+import 'package:trilink_mobile/core/widgets/illustrations.dart';
+import 'package:trilink_mobile/core/widgets/error_widget.dart';
+import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -92,23 +96,11 @@ class _StudentSyncStatusViewState extends State<_StudentSyncStatusView> {
                   child: ShimmerList(),
                 )
               : state.status == SyncStatus.error
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            state.errorMessage ?? '',
-                            style: const TextStyle(color: AppColors.danger),
-                          ),
-                          AppSpacing.gapSm,
-                          ElevatedButton(
-                            onPressed: () => context
-                                .read<SyncCubit>()
-                                .loadSyncStatus(),
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
+                  ? AppErrorWidget(
+                      message: state.errorMessage ??
+                          'Unable to load sync status.',
+                      onRetry: () =>
+                          context.read<SyncCubit>().loadSyncStatus(),
                     )
                   : Padding(
                   padding: const EdgeInsets.all(16),
@@ -122,25 +114,33 @@ class _StudentSyncStatusViewState extends State<_StudentSyncStatusView> {
                       AppSpacing.gapLg,
                       Expanded(
                         child: items.isEmpty
-                            ? const Center(
-                                child: Text('No sync items available.'))
+                            ? const EmptyStateWidget(
+                                illustration: ClipboardIllustration(),
+                                icon: Icons.sync_rounded,
+                                title: 'No sync items',
+                                subtitle:
+                                    'Your sync status will appear here.',
+                              )
                             : ListView.separated(
                                 itemCount: items.length,
-                                separatorBuilder: (_, __) =>
+                                separatorBuilder: (_, _) =>
                                     AppSpacing.gapSm,
                                 itemBuilder: (context, index) {
                                   final item = items[index];
-                                  return Card(
-                                    child: ListTile(
-                                      title: Text(item.category),
-                                      subtitle: Text(
-                                        '${item.description}\nLast synced: ${_formatTime(item.lastSyncedAt)}'
-                                        '${item.pendingCount > 0 ? ' • ${item.pendingCount} pending' : ''}',
-                                      ),
-                                      isThreeLine: true,
-                                      trailing: Icon(
-                                        _statusIcon(item.status),
-                                        color: _statusColor(item.status),
+                                  return StaggeredFadeSlide(
+                                    index: index,
+                                    child: Card(
+                                      child: ListTile(
+                                        title: Text(item.category),
+                                        subtitle: Text(
+                                          '${item.description}\nLast synced: ${_formatTime(item.lastSyncedAt)}'
+                                          '${item.pendingCount > 0 ? ' • ${item.pendingCount} pending' : ''}',
+                                        ),
+                                        isThreeLine: true,
+                                        trailing: Icon(
+                                          _statusIcon(item.status),
+                                          color: _statusColor(item.status),
+                                        ),
                                       ),
                                     ),
                                   );

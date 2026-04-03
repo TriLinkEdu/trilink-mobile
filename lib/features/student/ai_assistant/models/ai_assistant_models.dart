@@ -1,3 +1,15 @@
+class AiChatMessage {
+  final String text;
+  final bool isUser;
+  final DateTime timestamp;
+
+  const AiChatMessage({
+    required this.text,
+    required this.isUser,
+    required this.timestamp,
+  });
+}
+
 class LearningPathItemModel {
   final int step;
   final String title;

@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:trilink_mobile/core/widgets/animated_counter.dart';
+import 'package:trilink_mobile/core/widgets/empty_state_widget.dart';
+import 'package:trilink_mobile/core/widgets/illustrations.dart';
+import 'package:trilink_mobile/core/widgets/error_widget.dart';
+import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_shadows.dart';
@@ -7,18 +12,19 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/pressable.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../models/grade_model.dart';
-import '../repositories/mock_student_grades_repository.dart';
 import '../repositories/student_grades_repository.dart';
 
 class SubjectGradesScreen extends StatefulWidget {
   final String subjectId;
   final String subjectName;
+  final String? selectedTerm;
   final StudentGradesRepository? repository;
 
   const SubjectGradesScreen({
     super.key,
     required this.subjectId,
     required this.subjectName,
+    this.selectedTerm,
     this.repository,
   });
 
@@ -30,7 +36,7 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
   bool _sortByDateDescending = true;
   bool _isDownloading = false;
   late final StudentGradesRepository _repository =
-      widget.repository ?? MockStudentGradesRepository();
+      widget.repository ?? sl<StudentGradesRepository>();
   bool _isLoading = true;
   String? _error;
   List<GradeModel> _subjectGrades = const [];
@@ -47,7 +53,11 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
       _error = null;
     });
     try {
-      final grades = await _repository.fetchGradesBySubject(widget.subjectId);
+      var grades = await _repository.fetchGradesBySubject(widget.subjectId);
+      final term = widget.selectedTerm;
+      if (term != null) {
+        grades = grades.where((g) => g.term == term).toList();
+      }
       if (!mounted) return;
       setState(() {
         _subjectGrades = grades;
@@ -97,8 +107,7 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                     child: Text(
                       widget.subjectName,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 18,
+                      style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: theme.colorScheme.onSurface,
                       ),
@@ -115,28 +124,17 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                       child: ShimmerList(itemCount: 6, itemHeight: 72),
                     )
                   : _error != null
-                      ? Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(_error!,
-                                  style: TextStyle(color: Theme.of(context).colorScheme.error)),
-                              AppSpacing.gapSm,
-                              ElevatedButton(
-                                onPressed: _loadSubjectGrades,
-                                child: const Text('Retry'),
-                              ),
-                            ],
-                          ),
+                      ? AppErrorWidget(
+                          message: _error!,
+                          onRetry: _loadSubjectGrades,
                         )
                       : _subjectGrades.isEmpty
-                          ? Center(
-                              child: Text(
-                                'No assessments available for this subject yet.',
-                                style: TextStyle(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
+                          ? const EmptyStateWidget(
+                              illustration: GraduationCapIllustration(),
+                              icon: Icons.assignment_rounded,
+                              title: 'No assessments yet',
+                              subtitle:
+                                  'Assessment results for this subject will appear here.',
                             )
                           : SingleChildScrollView(
                               padding: AppSpacing.horizontalXl,
@@ -155,43 +153,34 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                                       children: [
                                         Text(
                                           'CURRENT AVERAGE',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color:
-                                                Colors.white.withAlpha(180),
+                                          style: theme.textTheme.labelSmall
+                                              ?.copyWith(
+                                            color: theme.colorScheme.onPrimary
+                                                .withAlpha(180),
                                             fontWeight: FontWeight.w600,
                                             letterSpacing: 1,
                                           ),
                                         ),
                                         AppSpacing.gapSm,
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              _average.toStringAsFixed(0),
-                                              style: const TextStyle(
-                                                fontSize: 54,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
-                                                height: 1,
-                                              ),
-                                            ),
-                                            const Padding(
-                                              padding:
-                                                  EdgeInsets.only(top: 8),
-                                              child: Text(
-                                                '%',
-                                                style: TextStyle(
-                                                  fontSize: 22,
-                                                  fontWeight: FontWeight.w500,
-                                                  color: Colors.white70,
+                                        Center(
+                                          child: Hero(
+                                            tag: 'grade-hero-${widget.subjectId}',
+                                            child: Material(
+                                              color: Colors.transparent,
+                                              child: AnimatedCounter(
+                                                value: _average,
+                                                showTrend: true,
+                                                style: theme
+                                                    .textTheme.displayLarge
+                                                    ?.copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: theme
+                                                      .colorScheme.onPrimary,
+                                                  height: 1,
                                                 ),
                                               ),
                                             ),
-                                          ],
+                                          ),
                                         ),
                                         AppSpacing.gapSm,
                                         Container(
@@ -208,10 +197,10 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                                           ),
                                           child: Text(
                                             'Grade ${_letterGradeForAverage(_average)}',
-                                            style: const TextStyle(
-                                              fontSize: 13,
+                                            style: theme.textTheme.labelLarge
+                                                ?.copyWith(
                                               fontWeight: FontWeight.w600,
-                                              color: Colors.white,
+                                              color: theme.colorScheme.onPrimary,
                                             ),
                                           ),
                                         ),
@@ -238,8 +227,7 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                                   AppSpacing.gapXxl,
                                   Text(
                                     'Grade Distribution',
-                                    style: TextStyle(
-                                      fontSize: 16,
+                                    style: theme.textTheme.titleSmall?.copyWith(
                                       fontWeight: FontWeight.bold,
                                       color: theme.colorScheme.onSurface,
                                     ),
@@ -279,8 +267,8 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                                     children: [
                                       Text(
                                         'Assessments',
-                                        style: TextStyle(
-                                          fontSize: 16,
+                                        style: theme.textTheme.titleSmall
+                                            ?.copyWith(
                                           fontWeight: FontWeight.bold,
                                           color: theme.colorScheme.onSurface,
                                         ),
@@ -295,9 +283,9 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                                           _sortByDateDescending
                                               ? 'Sort by Date ↓'
                                               : 'Sort by Date ↑',
-                                          style: TextStyle(
+                                          style: theme.textTheme.labelLarge
+                                              ?.copyWith(
                                             color: theme.colorScheme.primary,
-                                            fontSize: 13,
                                           ),
                                         ),
                                       ),
@@ -356,8 +344,8 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
                                           borderRadius: AppRadius.borderMd,
                                         ),
                                         elevation: 0,
-                                        textStyle: const TextStyle(
-                                          fontSize: 15,
+                                        textStyle: theme.textTheme.titleSmall
+                                            ?.copyWith(
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -451,19 +439,21 @@ class _StatBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       children: [
         Text(
           label,
-          style: TextStyle(fontSize: 11, color: Colors.white.withAlpha(180)),
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onPrimary.withAlpha(180),
+          ),
         ),
         AppSpacing.gapXs,
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 22,
+          style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: theme.colorScheme.onPrimary,
           ),
         ),
       ],
@@ -492,8 +482,7 @@ class _GradeBar extends StatelessWidget {
           width: 20,
           child: Text(
             grade,
-            style: TextStyle(
-              fontSize: 13,
+            style: theme.textTheme.labelLarge?.copyWith(
               fontWeight: FontWeight.w600,
               color: theme.colorScheme.onSurface,
             ),
@@ -529,8 +518,7 @@ class _GradeBar extends StatelessWidget {
           child: Text(
             '$count',
             textAlign: TextAlign.right,
-            style: TextStyle(
-              fontSize: 12,
+            style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
@@ -578,8 +566,7 @@ class _AssessmentRow extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(
-                    fontSize: 14,
+                  style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: theme.colorScheme.onSurface,
                   ),
@@ -587,8 +574,7 @@ class _AssessmentRow extends StatelessWidget {
                 AppSpacing.gapXxs,
                 Text(
                   date,
-                  style: TextStyle(
-                    fontSize: 11,
+                  style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
@@ -600,16 +586,14 @@ class _AssessmentRow extends StatelessWidget {
             children: [
               Text(
                 score,
-                style: TextStyle(
-                  fontSize: 16,
+                style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.onSurface,
                 ),
               ),
               Text(
                 grade,
-                style: TextStyle(
-                  fontSize: 12,
+                style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: gradeColor,
                 ),

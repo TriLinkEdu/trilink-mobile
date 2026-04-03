@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:trilink_mobile/core/widgets/empty_state_widget.dart';
+import 'package:trilink_mobile/core/widgets/illustrations.dart';
+
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
@@ -48,8 +51,11 @@ class _EvaluateMeBlocView extends StatelessWidget {
           }
           final list = state.data?.insights ?? [];
           if (list.isEmpty) {
-            return const Center(
-              child: Text('No evaluation insights available.'),
+            return const EmptyStateWidget(
+              illustration: BrainIllustration(),
+              icon: Icons.analytics_rounded,
+              title: 'No evaluation insights',
+              subtitle: 'Complete assessments to see your evaluation here.',
             );
           }
           return _EvaluateMeList(insights: list);

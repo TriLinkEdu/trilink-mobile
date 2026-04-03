@@ -23,7 +23,10 @@ class RouteNames {
   static const String studentSettings = '/student/settings';
   static const String studentAssignments = '/student/assignments';
   static const String studentAssignmentDetail = '/student/assignments/detail';
+  static const String studentCourses = '/student/courses';
+  static const String studentCourseDetail = '/student/courses/detail';
   static const String studentCourseResources = '/student/courses-resources';
+  static const String studentExams = '/student/exams';
   static const String studentExamAttempt = '/student/exam/attempt';
   static const String studentSyncStatus = '/student/sync-status';
   static const String studentProfileEdit = '/student/profile/edit';

@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:trilink_mobile/core/widgets/empty_state_widget.dart';
+import 'package:trilink_mobile/core/widgets/illustrations.dart';
+import 'package:trilink_mobile/core/widgets/error_widget.dart';
 import '../../../../core/di/injection_container.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../../gamification/screens/quiz_result_screen.dart';
@@ -45,20 +49,10 @@ class _ExamAttemptView extends StatelessWidget {
         if (state.status == ExamAttemptStatus.error) {
           return Scaffold(
             appBar: AppBar(title: const Text('Exam Attempt')),
-            body: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(state.errorMessage ?? '',
-                      style: const TextStyle(color: AppColors.danger)),
-                  AppSpacing.gapSm,
-                  ElevatedButton(
-                    onPressed: () =>
-                        context.read<ExamAttemptCubit>().retryLoadExam(),
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
+            body: AppErrorWidget(
+              message: state.errorMessage ?? 'Unable to load exam.',
+              onRetry: () =>
+                  context.read<ExamAttemptCubit>().retryLoadExam(),
             ),
           );
         }
@@ -69,7 +63,13 @@ class _ExamAttemptView extends StatelessWidget {
         if (questions.isEmpty) {
           return Scaffold(
             appBar: AppBar(title: Text(exam.title)),
-            body: const Center(child: Text('No questions in this exam.')),
+            body: const EmptyStateWidget(
+              illustration: GraduationCapIllustration(),
+              icon: Icons.quiz_rounded,
+              title: 'No questions',
+              subtitle:
+                  'This exam does not have any questions yet.',
+            ),
           );
         }
 
@@ -93,8 +93,86 @@ class _ExamAttemptQuestionsState extends State<_ExamAttemptQuestions> {
   int _currentQuestionIndex = 0;
   final Map<String, int> _answers = {};
 
+  Timer? _timer;
+  late int _remainingSeconds;
+  bool _warned5Min = false;
+  bool _warned1Min = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _remainingSeconds = widget.exam.durationMinutes * 60;
+    if (widget.exam.isTimeLimited) {
+      _timer = Timer.periodic(const Duration(seconds: 1), _onTick);
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _onTick(Timer timer) {
+    if (_remainingSeconds <= 0) {
+      timer.cancel();
+      return;
+    }
+
+    setState(() => _remainingSeconds--);
+
+    if (_remainingSeconds == 300 && !_warned5Min) {
+      _warned5Min = true;
+      _showTimerWarning('5 minutes remaining!');
+    } else if (_remainingSeconds == 60 && !_warned1Min) {
+      _warned1Min = true;
+      _showTimerWarning('1 minute remaining!');
+    }
+
+    if (_remainingSeconds <= 0) {
+      timer.cancel();
+      _autoSubmit();
+    }
+  }
+
+  void _showTimerWarning(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.timer_outlined, color: Colors.white),
+            const SizedBox(width: 8),
+            Text(message),
+          ],
+        ),
+        backgroundColor: Colors.orange.shade700,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  Future<void> _autoSubmit() async {
+    if (_isSubmitting) return;
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Time is up! Auto-submitting your exam...'),
+        backgroundColor: Colors.red,
+      ),
+    );
+    await _submitExam();
+  }
+
+  String get _formattedTime {
+    final minutes = _remainingSeconds ~/ 60;
+    final seconds = _remainingSeconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
   Future<void> _submitExam() async {
     setState(() => _isSubmitting = true);
+    _timer?.cancel();
     try {
       final result =
           await sl<StudentExamsRepository>().submitExam(widget.exam.id, _answers);
@@ -141,9 +219,52 @@ class _ExamAttemptQuestionsState extends State<_ExamAttemptQuestions> {
     final current = questions[_currentQuestionIndex];
     final selectedOption = _answers[current.id];
     final isLastQuestion = _currentQuestionIndex == questions.length - 1;
+    final timerIsUrgent = _remainingSeconds < 60;
 
     return Scaffold(
-      appBar: AppBar(title: Text(exam.title)),
+      appBar: AppBar(
+        title: Text(exam.title),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(4),
+          child: LinearProgressIndicator(
+            value: (_currentQuestionIndex + 1) / questions.length,
+          ),
+        ),
+        actions: [
+          if (exam.isTimeLimited)
+            Center(
+              child: Container(
+                margin: const EdgeInsets.only(right: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: timerIsUrgent
+                      ? Colors.red.withAlpha(30)
+                      : Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.timer_outlined,
+                      size: 18,
+                      color: timerIsUrgent ? Colors.red : null,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _formattedTime,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                        color: timerIsUrgent ? Colors.red : null,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -153,7 +274,7 @@ class _ExamAttemptQuestionsState extends State<_ExamAttemptQuestions> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Question ${_currentQuestionIndex + 1}/${questions.length}',
+                  'Question ${_currentQuestionIndex + 1} of ${questions.length}',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 Text(
@@ -161,10 +282,6 @@ class _ExamAttemptQuestionsState extends State<_ExamAttemptQuestions> {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
-            ),
-            AppSpacing.gapXs,
-            LinearProgressIndicator(
-              value: (_currentQuestionIndex + 1) / questions.length,
             ),
             AppSpacing.gapLg,
             Text(

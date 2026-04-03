@@ -7,20 +7,33 @@ export 'calendar_state.dart';
 class CalendarCubit extends Cubit<CalendarState> {
   final StudentCalendarRepository _repository;
 
-  CalendarCubit(this._repository) : super(const CalendarState());
+  CalendarCubit(this._repository) : super(CalendarState());
 
   Future<void> loadEvents({DateTime? month}) async {
-    emit(state.copyWith(status: CalendarStatus.loading));
+    final target = month ?? state.selectedMonth;
+    emit(state.copyWith(status: CalendarStatus.loading, selectedMonth: target));
     try {
-      final events = await _repository.fetchEvents(
-        month: month ?? DateTime.now(),
-      );
-      emit(CalendarState(status: CalendarStatus.loaded, events: events));
+      final events = await _repository.fetchEvents(month: target);
+      emit(state.copyWith(status: CalendarStatus.loaded, events: events));
     } catch (_) {
       emit(state.copyWith(
         status: CalendarStatus.error,
         errorMessage: 'Unable to load calendar events.',
       ));
     }
+  }
+
+  void changeMonth(DateTime month) {
+    loadEvents(month: month);
+  }
+
+  void previousMonth() {
+    final m = state.selectedMonth;
+    changeMonth(DateTime(m.year, m.month - 1));
+  }
+
+  void nextMonth() {
+    final m = state.selectedMonth;
+    changeMonth(DateTime(m.year, m.month + 1));
   }
 }

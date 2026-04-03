@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_spacing.dart';
+import 'package:trilink_mobile/core/widgets/error_widget.dart';
+
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/announcement_detail_cubit.dart';
 import '../models/announcement_model.dart';
@@ -50,11 +52,8 @@ class _AnnouncementDetailView extends StatelessWidget {
         if (state.status == AnnouncementDetailStatus.error) {
           return Scaffold(
             appBar: AppBar(title: const Text('Announcement'), centerTitle: true),
-            body: Center(
-              child: Text(
-                state.errorMessage ?? '',
-                style: TextStyle(color: theme.colorScheme.error),
-              ),
+            body: AppErrorWidget(
+              message: state.errorMessage ?? 'Unable to load announcement.',
             ),
           );
         }
@@ -75,7 +74,7 @@ class _AnnouncementDetailView extends StatelessWidget {
         children: [
           if (a.category != null)
             Chip(
-              label: Text(a.category!.toUpperCase(), style: const TextStyle(fontSize: 11)),
+              label: Text(a.category!.toUpperCase(), style: theme.textTheme.labelSmall),
               visualDensity: VisualDensity.compact,
             ),
           AppSpacing.gapSm,

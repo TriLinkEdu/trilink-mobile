@@ -264,6 +264,114 @@ class MockStudentGamificationRepository
         ),
       ],
     ),
+    'history': const ExamModel(
+      id: 'quiz-hist-1',
+      title: 'World History Quick Quiz',
+      subjectId: 'history',
+      subjectName: 'History',
+      durationMinutes: 10,
+      questions: [
+        QuestionModel(
+          id: 'qh1',
+          text: 'Which ancient civilization built the pyramids at Giza?',
+          options: ['Mesopotamia', 'Ancient Egypt', 'Persia', 'Phoenicia'],
+          correctIndex: 1,
+        ),
+        QuestionModel(
+          id: 'qh2',
+          text: 'In which year did World War II end in Europe?',
+          options: ['1943', '1944', '1945', '1946'],
+          correctIndex: 2,
+        ),
+        QuestionModel(
+          id: 'qh3',
+          text: 'Who led the unification of Germany in the 19th century?',
+          options: [
+            'Otto von Bismarck',
+            'Frederick the Great',
+            'Kaiser Wilhelm I',
+            'Metternich',
+          ],
+          correctIndex: 0,
+        ),
+        QuestionModel(
+          id: 'qh4',
+          text: 'The fall of Constantinople in 1453 marked the end of which empire?',
+          options: [
+            'Roman Republic',
+            'Byzantine Empire',
+            'Ottoman Empire',
+            'Holy Roman Empire',
+          ],
+          correctIndex: 1,
+        ),
+        QuestionModel(
+          id: 'qh5',
+          text: 'Which explorer is credited with initiating sustained European contact with the Americas in 1492?',
+          options: [
+            'Vasco da Gama',
+            'Christopher Columbus',
+            'Ferdinand Magellan',
+            'Amerigo Vespucci',
+          ],
+          correctIndex: 1,
+        ),
+      ],
+    ),
+    'computer-science': const ExamModel(
+      id: 'quiz-cs-1',
+      title: 'Computer Science Quick Quiz',
+      subjectId: 'computer-science',
+      subjectName: 'Computer Science',
+      durationMinutes: 10,
+      questions: [
+        QuestionModel(
+          id: 'qcs1',
+          text: 'What is the time complexity of binary search on a sorted array?',
+          options: ['O(n)', 'O(log n)', 'O(n log n)', 'O(n²)'],
+          correctIndex: 1,
+        ),
+        QuestionModel(
+          id: 'qcs2',
+          text: 'Which data structure follows FIFO (first-in, first-out)?',
+          options: ['Stack', 'Queue', 'Heap', 'Binary search tree'],
+          correctIndex: 1,
+        ),
+        QuestionModel(
+          id: 'qcs3',
+          text: 'What does HTTP stand for?',
+          options: [
+            'HyperText Transfer Protocol',
+            'High Transfer Text Protocol',
+            'Hyperlink Text Transport Process',
+            'Host Terminal Transfer Protocol',
+          ],
+          correctIndex: 0,
+        ),
+        QuestionModel(
+          id: 'qcs4',
+          text: 'In object-oriented programming, what is encapsulation?',
+          options: [
+            'Hiding implementation details behind an interface',
+            'Creating multiple copies of a class',
+            'Converting code to machine language',
+            'Running code in parallel threads',
+          ],
+          correctIndex: 0,
+        ),
+        QuestionModel(
+          id: 'qcs5',
+          text: 'Which algorithm design technique breaks a problem into overlapping subproblems?',
+          options: [
+            'Greedy',
+            'Divide and conquer',
+            'Dynamic programming',
+            'Backtracking',
+          ],
+          correctIndex: 2,
+        ),
+      ],
+    ),
   };
 
   static final List<QuizModel> _availableQuizzes = const [

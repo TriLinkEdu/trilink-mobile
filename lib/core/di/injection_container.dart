@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+import '../services/sound_service.dart';
 import '../services/storage_service.dart';
 import '../theme/theme_notifier.dart';
 import '../../features/auth/cubit/auth_cubit.dart';
@@ -54,6 +55,9 @@ Future<void> initDependencies() async {
   final themeNotifier = ThemeNotifier(sl<StorageService>());
   ThemeNotifier.instance = themeNotifier;
   sl.registerLazySingleton<ThemeNotifier>(() => themeNotifier);
+  sl.registerLazySingleton<SoundService>(
+    () => SoundService(sl<StorageService>()),
+  );
 
   // ── Auth ──
   sl.registerLazySingleton<AuthRepository>(() => MockAuthRepository());

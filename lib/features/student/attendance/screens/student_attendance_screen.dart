@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:trilink_mobile/core/widgets/empty_state_widget.dart';
+import 'package:trilink_mobile/core/widgets/illustrations.dart';
+import 'package:trilink_mobile/core/widgets/error_widget.dart';
+import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
+
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
@@ -104,6 +109,7 @@ class _AttendanceViewState extends State<_AttendanceView> {
   }
 
   Widget _buildSummaryRow(String label, String value, {Color? dotColor}) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -117,10 +123,17 @@ class _AttendanceViewState extends State<_AttendanceView> {
             ),
             AppSpacing.hGapSm,
           ],
-          Expanded(child: Text(label, style: const TextStyle(fontSize: 14))),
-          Text(value,
-              style: const TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.w600)),
+          Expanded(
+            child: Text(
+              label,
+              style: theme.textTheme.bodyMedium,
+            ),
+          ),
+          Text(
+            value,
+            style: theme.textTheme.bodyMedium
+                ?.copyWith(fontWeight: FontWeight.w600),
+          ),
         ],
       ),
     );
@@ -168,8 +181,7 @@ class _AttendanceViewState extends State<_AttendanceView> {
                     child: Text(
                       'Attendance Record',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 18,
+                      style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: theme.colorScheme.onSurface,
                       ),
@@ -198,35 +210,22 @@ class _AttendanceViewState extends State<_AttendanceView> {
                     );
                   }
                   if (state.status == AttendanceStatus.error) {
-                    return Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            state.errorMessage ??
-                                'Unable to load attendance records.',
-                            style: const TextStyle(color: AppColors.danger),
-                          ),
-                          AppSpacing.gapSm,
-                          ElevatedButton(
-                            onPressed: () => context
-                                .read<AttendanceCubit>()
-                                .loadAttendance(),
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
+                    return AppErrorWidget(
+                      message: state.errorMessage ??
+                          'Unable to load attendance records.',
+                      onRetry: () =>
+                          context.read<AttendanceCubit>().loadAttendance(),
                     );
                   }
 
                   final records = state.records;
                   if (records.isEmpty) {
-                    return Center(
-                      child: Text(
-                        'No attendance records yet.',
-                        style: TextStyle(
-                            color: theme.colorScheme.onSurfaceVariant),
-                      ),
+                    return const EmptyStateWidget(
+                      illustration: ClipboardIllustration(),
+                      icon: Icons.fact_check_rounded,
+                      title: 'No attendance records',
+                      subtitle:
+                          'Your attendance records will appear here.',
                     );
                   }
 
@@ -242,32 +241,24 @@ class _AttendanceViewState extends State<_AttendanceView> {
                           padding: const EdgeInsets.symmetric(
                               vertical: 24),
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [
-                                Color(0xFF1A73E8),
-                                Color(0xFF4A90E2),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
+                            gradient: AppGradients.attendance,
                             borderRadius: AppRadius.borderXl,
                           ),
                           child: Column(
                             children: [
-                              const Text(
+                              Text(
                                 'Overall Attendance',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.white70,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onPrimary
+                                      .withAlpha(180),
                                 ),
                               ),
                               AppSpacing.gapSm,
                               Text(
                                 '${_overallAttendance(records).toStringAsFixed(0)}%',
-                                style: const TextStyle(
-                                  fontSize: 48,
+                                style: theme.textTheme.displayLarge?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                                  color: theme.colorScheme.onPrimary,
                                 ),
                               ),
                               AppSpacing.gapSm,
@@ -293,9 +284,9 @@ class _AttendanceViewState extends State<_AttendanceView> {
                                     AppSpacing.hGapXs,
                                     Text(
                                       '${_currentStreak(records)} Day Streak',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.white,
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                        color: theme.colorScheme.onPrimary,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -344,8 +335,7 @@ class _AttendanceViewState extends State<_AttendanceView> {
                           children: [
                             Text(
                               'Subject Breakdown',
-                              style: TextStyle(
-                                fontSize: 16,
+                              style: theme.textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: theme.colorScheme.onSurface,
                               ),
@@ -380,9 +370,8 @@ class _AttendanceViewState extends State<_AttendanceView> {
                               },
                               child: Text(
                                 'View All',
-                                style: TextStyle(
+                                style: theme.textTheme.labelLarge?.copyWith(
                                   color: theme.colorScheme.primary,
-                                  fontSize: 13,
                                 ),
                               ),
                             ),
@@ -392,17 +381,20 @@ class _AttendanceViewState extends State<_AttendanceView> {
                         for (int index = 0;
                             index < subjectSummaries.length;
                             index++) ...[
-                          _SubjectAttendanceRow(
-                            icon: _iconForSubject(
-                                subjectSummaries[index].name),
-                            iconColor: _colorForSubject(
-                                subjectSummaries[index].name),
-                            name: subjectSummaries[index].name,
-                            totalClasses:
-                                subjectSummaries[index].total,
-                            percentage: subjectSummaries[index]
-                                .percentageLabel,
-                            dots: subjectSummaries[index].dots,
+                          StaggeredFadeSlide(
+                            index: index,
+                            child: _SubjectAttendanceRow(
+                              icon: _iconForSubject(
+                                  subjectSummaries[index].name),
+                              iconColor: _colorForSubject(
+                                  subjectSummaries[index].name),
+                              name: subjectSummaries[index].name,
+                              totalClasses:
+                                  subjectSummaries[index].total,
+                              percentage: subjectSummaries[index]
+                                  .percentageLabel,
+                              dots: subjectSummaries[index].dots,
+                            ),
                           ),
                           if (index <
                               subjectSummaries.length - 1)
@@ -564,6 +556,7 @@ class _AttendanceStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
@@ -574,18 +567,16 @@ class _AttendanceStat extends StatelessWidget {
         children: [
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 22,
+            style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: theme.colorScheme.onPrimary,
             ),
           ),
           AppSpacing.gapXxs,
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 10,
-              color: Colors.white70,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onPrimary.withAlpha(180),
               fontWeight: FontWeight.w500,
               letterSpacing: 0.5,
             ),
@@ -645,16 +636,14 @@ class _SubjectAttendanceRow extends StatelessWidget {
                   children: [
                     Text(
                       name,
-                      style: TextStyle(
-                        fontSize: 14,
+                      style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: theme.colorScheme.onSurface,
                       ),
                     ),
                     Text(
                       'Total Classes: $totalClasses',
-                      style: TextStyle(
-                        fontSize: 11,
+                      style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
@@ -663,8 +652,7 @@ class _SubjectAttendanceRow extends StatelessWidget {
               ),
               Text(
                 percentage,
-                style: TextStyle(
-                  fontSize: 18,
+                style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.onSurface,
                 ),
@@ -711,6 +699,7 @@ class _LegendItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Row(
       children: [
         Container(
@@ -721,9 +710,8 @@ class _LegendItem extends StatelessWidget {
         AppSpacing.hGapXs,
         Text(
           label,
-          style: TextStyle(
-            fontSize: 11,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
       ],
