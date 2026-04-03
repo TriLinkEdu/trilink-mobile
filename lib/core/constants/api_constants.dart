@@ -118,6 +118,7 @@ class ApiConstants {
   // Chat
   static const String chatWsInfo = '/chat/ws-info';
   static const String conversations = '/conversations';
+  static const String conversationsInitiate = '/conversations/initiate';
   static String conversation(String id) => '/conversations/$id';
   static String conversationMessages(String id) =>
       '/conversations/$id/messages';
@@ -139,6 +140,10 @@ class ApiConstants {
       '/reports/students/$studentId/performance';
   static String studentCompare(String studentId) =>
       '/reports/students/$studentId/compare';
+  static String studentReport(String studentId) =>
+      '/reports/students/$studentId/report';
+  static String studentTeachers(String studentId) =>
+      '/reports/students/$studentId/teachers';
   static const String parentWeeklySummary = '/reports/parent/weekly-summary';
 
   // Files
@@ -158,6 +163,7 @@ class ApiConstants {
   // Student profiles
   static const String myProfile = '/student-profiles/me';
   static String studentProfile(String userId) => '/student-profiles/$userId';
+  static String studentDetail(String userId) => '/student-profiles/$userId/detail';
 
   // AI
   static String aiRecommendations(String studentId) =>
@@ -183,4 +189,10 @@ class ApiConstants {
   // Student reports
   static String studentReport(String studentId) =>
       '/reports/students/$studentId/report';
+  
+  // Enrollments (teacher)
+  static const String enrollments = '/enrollments';
+  
+  // User Search
+  static const String usersSearch = '/users/search';
 }
