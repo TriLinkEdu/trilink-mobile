@@ -65,7 +65,7 @@ class _GamificationViewState extends State<_GamificationView> {
       subtext = 'Two weeks strong!';
     } else {
       message = '🔥 $streak Day Streak!';
-      subtext = 'Great start — keep the fire going!';
+      subtext = 'Great start   keep the fire going!';
     }
 
     CelebrationOverlay.maybeOf(context)?.celebrate(
@@ -308,6 +308,15 @@ class _GamificationViewState extends State<_GamificationView> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _buildStreakCard(state.streak),
+                          AppSpacing.gapLg,
+                          _buildProgressSnapshot(
+                            state.xpProgress,
+                            state.nextBadgeProgress,
+                          ),
+                          AppSpacing.gapXxl,
+                          _buildDailyMissionsSection(state.dailyMissions),
+                          AppSpacing.gapXxl,
+                          _buildTeamChallengeSection(state.teamChallenge),
                           AppSpacing.gapXxl,
                           _buildAchievementsSection(state.achievements),
                           AppSpacing.gapXxl,
@@ -426,6 +435,216 @@ class _GamificationViewState extends State<_GamificationView> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildProgressSnapshot(
+    XpProgressModel? xpProgress,
+    NextBadgeProgressModel? nextBadge,
+  ) {
+    final theme = Theme.of(context);
+    final progress = xpProgress?.levelProgressRatio ?? 0.0;
+    final weekly = xpProgress?.weeklyProgressRatio ?? 0.0;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: AppRadius.borderLg,
+        boxShadow: AppShadows.subtle(theme.shadowColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.bolt_rounded,
+                color: theme.colorScheme.primary,
+                size: 22,
+              ),
+              AppSpacing.hGapSm,
+              Text(
+                xpProgress != null
+                    ? 'Level ${xpProgress.level} • ${xpProgress.totalXp} XP'
+                    : 'Level -- • -- XP',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          AppSpacing.gapMd,
+          LinearProgressIndicator(value: progress, minHeight: 8),
+          AppSpacing.gapXs,
+          Text(
+            xpProgress != null
+                ? '${xpProgress.xpIntoCurrentLevel}/${xpProgress.xpNeededForNextLevel} XP to next level'
+                : 'Progress unavailable',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          AppSpacing.gapMd,
+          Text(
+            'Weekly Sprint',
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          AppSpacing.gapXs,
+          LinearProgressIndicator(value: weekly, minHeight: 8),
+          AppSpacing.gapXs,
+          Text(
+            xpProgress != null
+                ? '${xpProgress.weeklyXpEarned}/${xpProgress.weeklyXpTarget} XP this week'
+                : '--/-- XP this week',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          if (nextBadge != null) ...[
+            AppSpacing.gapMd,
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerLow,
+                borderRadius: AppRadius.borderMd,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Next Unlock: ${nextBadge.badgeName}',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  AppSpacing.gapXxs,
+                  Text(nextBadge.description, style: theme.textTheme.bodySmall),
+                  AppSpacing.gapSm,
+                  LinearProgressIndicator(
+                    value: nextBadge.completionRatio,
+                    minHeight: 7,
+                  ),
+                  AppSpacing.gapXxs,
+                  Text(
+                    '${nextBadge.progressCurrent}/${nextBadge.progressTarget} • +${nextBadge.xpReward} XP',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDailyMissionsSection(List<DailyMissionModel> missions) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Daily Missions',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        AppSpacing.gapSm,
+        if (missions.isEmpty)
+          const EmptyStateWidget(
+            illustration: TrophyIllustration(),
+            icon: Icons.task_alt_rounded,
+            title: 'No missions today',
+            subtitle: 'New missions will appear soon.',
+          )
+        else
+          ...List.generate(missions.length, (i) {
+            final mission = missions[i];
+            return StaggeredFadeSlide(
+              index: i,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: i < missions.length - 1 ? 8 : 0,
+                ),
+                child: _MissionTile(
+                  mission: mission,
+                  onComplete: mission.isCompleted
+                      ? null
+                      : () async {
+                          await context
+                              .read<GamificationCubit>()
+                              .completeMission(mission.id);
+                          if (!mounted) return;
+                          CelebrationOverlay.maybeOf(context)?.celebrate(
+                            type: CelebrationType.completion,
+                            message: 'Mission Completed!',
+                            subtext: '+${mission.xpReward} XP earned',
+                          );
+                        },
+                ),
+              ),
+            );
+          }),
+      ],
+    );
+  }
+
+  Widget _buildTeamChallengeSection(TeamChallengeModel? challenge) {
+    final theme = Theme.of(context);
+    if (challenge == null) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Cooperative Challenge',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        AppSpacing.gapSm,
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: AppRadius.borderLg,
+            boxShadow: AppShadows.subtle(theme.shadowColor),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                challenge.title,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              AppSpacing.gapXxs,
+              Text(challenge.objective, style: theme.textTheme.bodySmall),
+              AppSpacing.gapSm,
+              LinearProgressIndicator(
+                value: challenge.completionRatio,
+                minHeight: 8,
+              ),
+              AppSpacing.gapXs,
+              Text(
+                '${challenge.progressCurrent}/${challenge.progressTarget} XP • ${challenge.contributorCount} classmates contributed',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -550,6 +769,15 @@ class _GamificationViewState extends State<_GamificationView> {
   ) {
     final theme = Theme.of(context);
     final topEntries = leaderboardEntries.take(3).toList();
+    final myEntry = leaderboardEntries.firstWhere(
+      (entry) => entry.studentId == 's1',
+      orElse: () => const LeaderboardEntry(
+        studentId: 's1',
+        studentName: 'You',
+        rank: 0,
+        points: 0,
+      ),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -595,6 +823,22 @@ class _GamificationViewState extends State<_GamificationView> {
           ],
         ),
         AppSpacing.gapMd,
+        if (myEntry.rank > 0)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            margin: const EdgeInsets.only(bottom: 10),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerLow,
+              borderRadius: AppRadius.borderMd,
+            ),
+            child: Text(
+              'You are #${myEntry.rank} with ${myEntry.points} XP',
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
         if (topEntries.isEmpty)
           const EmptyStateWidget(
             illustration: TrophyIllustration(),
@@ -859,6 +1103,73 @@ class _LeaderboardRow extends StatelessWidget {
               color: theme.colorScheme.primary,
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MissionTile extends StatelessWidget {
+  final DailyMissionModel mission;
+  final VoidCallback? onComplete;
+
+  const _MissionTile({required this.mission, this.onComplete});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: AppRadius.borderMd,
+        boxShadow: AppShadows.subtle(theme.shadowColor),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            mission.isCompleted
+                ? Icons.check_circle_rounded
+                : Icons.radio_button_unchecked_rounded,
+            color: mission.isCompleted
+                ? AppColors.success
+                : theme.colorScheme.onSurfaceVariant,
+          ),
+          AppSpacing.hGapSm,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  mission.title,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                AppSpacing.gapXxs,
+                Text(
+                  mission.description,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                AppSpacing.gapXs,
+                LinearProgressIndicator(
+                  value: mission.completionRatio,
+                  minHeight: 6,
+                ),
+                AppSpacing.gapXxs,
+                Text(
+                  '${mission.progressCurrent}/${mission.progressTarget} • +${mission.xpReward} XP',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (!mission.isCompleted)
+            TextButton(onPressed: onComplete, child: const Text('Complete')),
         ],
       ),
     );

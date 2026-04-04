@@ -30,25 +30,36 @@ class RouteNames {
   static const String studentExamAttempt = '/student/exam/attempt';
   static const String studentSyncStatus = '/student/sync-status';
   static const String studentProfileEdit = '/student/profile/edit';
-  static const String studentAnnouncementDetail = '/student/announcements/detail';
+  static const String studentAnnouncementDetail =
+      '/student/announcements/detail';
   static const String studentCalendarEventDetail = '/student/calendar/event';
   static const String studentAchievements = '/student/achievements';
-  static const String studentCourseResourceDetail = '/student/courses-resources/detail';
+  static const String studentCourseResourceDetail =
+      '/student/courses-resources/detail';
   static const String studentChatConversation = '/student/chat/conversation';
   static const String studentSubmitFeedback = '/student/feedback/submit';
   static const String studentQuiz = '/student/quiz';
   static const String studentLeaderboard = '/student/leaderboard';
-  static const String studentLearningPath = '/student/ai-assistant/learning-path';
-  static const String studentResourceRecommendation = '/student/ai-assistant/resources';
+  static const String studentLearningPath =
+      '/student/ai-assistant/learning-path';
+  static const String studentResourceRecommendation =
+      '/student/ai-assistant/resources';
   static const String studentEvaluateMe = '/student/ai-assistant/evaluate';
+  static const String studentWeeklySnapshot = '/student/weekly-snapshot';
+  static const String studentActionPlan = '/student/action-plan';
+  static const String studentPerformanceTrends = '/student/performance-trends';
+  static const String studentAttendanceInsights =
+      '/student/attendance-insights';
 
   // Teacher
   static const String teacherDashboard = '/teacher/dashboard';
   static const String teacherAttendance = '/teacher/attendance';
   static const String teacherMarkAttendance = '/teacher/attendance/mark';
-  static const String teacherAttendanceAnalytics = '/teacher/attendance/analytics';
+  static const String teacherAttendanceAnalytics =
+      '/teacher/attendance/analytics';
   static const String teacherAnnouncements = '/teacher/announcements';
-  static const String teacherCreateAnnouncement = '/teacher/announcements/create';
+  static const String teacherCreateAnnouncement =
+      '/teacher/announcements/create';
   static const String teacherExams = '/teacher/exams';
   static const String teacherCreateExam = '/teacher/exams/create';
   static const String teacherExamBank = '/teacher/exams/bank';
@@ -60,7 +71,8 @@ class RouteNames {
   static const String teacherStudentAnalytics = '/teacher/student/analytics';
   static const String teacherCalendar = '/teacher/calendar';
   static const String teacherMessages = '/teacher/messages';
-  static const String teacherChatConversation = '/teacher/messages/conversation';
+  static const String teacherChatConversation =
+      '/teacher/messages/conversation';
   static const String teacherCreateGroup = '/teacher/messages/create-group';
   static const String teacherClasses = '/teacher/classes';
   static const String teacherSettings = '/teacher/settings';

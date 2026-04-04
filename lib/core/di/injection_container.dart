@@ -41,6 +41,8 @@ import '../../features/student/sync/repositories/student_sync_repository.dart';
 import '../../features/student/sync/repositories/mock_student_sync_repository.dart';
 import '../../features/student/ai_assistant/repositories/student_ai_assistant_repository.dart';
 import '../../features/student/ai_assistant/repositories/mock_student_ai_assistant_repository.dart';
+import '../../features/student/analytics/repositories/student_analytics_repository.dart';
+import '../../features/student/analytics/repositories/mock_student_analytics_repository.dart';
 import '../../features/student/shared/repositories/student_progress_repository.dart';
 import '../../features/student/shared/repositories/mock_student_progress_repository.dart';
 
@@ -116,6 +118,9 @@ Future<void> initDependencies() async {
   );
   sl.registerLazySingleton<StudentAiAssistantRepository>(
     () => MockStudentAiAssistantRepository(),
+  );
+  sl.registerLazySingleton<StudentAnalyticsRepository>(
+    () => MockStudentAnalyticsRepository(),
   );
   sl.registerLazySingleton<StudentProgressRepository>(
     () => MockStudentProgressRepository(),

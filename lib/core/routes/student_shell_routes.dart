@@ -33,6 +33,10 @@ import '../../features/student/courses/screens/course_resource_detail_screen.dar
 import '../../features/student/exams/screens/student_exam_attempt_screen.dart';
 import '../../features/student/exams/screens/student_exams_screen.dart';
 import '../../features/student/sync/screens/student_sync_status_screen.dart';
+import '../../features/student/analytics/screens/student_weekly_snapshot_screen.dart';
+import '../../features/student/analytics/screens/student_action_plan_screen.dart';
+import '../../features/student/analytics/screens/student_performance_trends_screen.dart';
+import '../../features/student/analytics/screens/student_attendance_insights_screen.dart';
 
 /// Handles all student sub-page routing within the nested shell navigator.
 /// This keeps the bottom nav visible for every student screen.
@@ -111,9 +115,7 @@ class StudentShellRoutes {
         return _page(const AchievementsListScreen(), settings);
       case RouteNames.studentQuiz:
         return _page(
-          QuizScreen(
-            subjectId: safeArgs['subjectId']?.toString() ?? 'general',
-          ),
+          QuizScreen(subjectId: safeArgs['subjectId']?.toString() ?? 'general'),
           settings,
         );
       case RouteNames.studentFeedback:
@@ -158,13 +160,19 @@ class StudentShellRoutes {
         return _page(const StudentExamsScreen(), settings);
       case RouteNames.studentExamAttempt:
         return _page(
-          StudentExamAttemptScreen(
-            examId: safeArgs['examId']?.toString(),
-          ),
+          StudentExamAttemptScreen(examId: safeArgs['examId']?.toString()),
           settings,
         );
       case RouteNames.studentSyncStatus:
         return _page(const StudentSyncStatusScreen(), settings);
+      case RouteNames.studentWeeklySnapshot:
+        return _page(const StudentWeeklySnapshotScreen(), settings);
+      case RouteNames.studentActionPlan:
+        return _page(const StudentActionPlanScreen(), settings);
+      case RouteNames.studentPerformanceTrends:
+        return _page(const StudentPerformanceTrendsScreen(), settings);
+      case RouteNames.studentAttendanceInsights:
+        return _page(const StudentAttendanceInsightsScreen(), settings);
       default:
         return null;
     }

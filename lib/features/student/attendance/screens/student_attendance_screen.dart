@@ -7,6 +7,7 @@ import 'package:trilink_mobile/core/widgets/error_widget.dart';
 import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
 
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/routes/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_shadows.dart';
@@ -199,6 +200,16 @@ class _AttendanceViewState extends State<_AttendanceView> {
                           fontWeight: FontWeight.w600,
                           color: theme.colorScheme.onSurface,
                         ),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Attendance insights',
+                      onPressed: () => Navigator.of(
+                        context,
+                      ).pushNamed(RouteNames.studentAttendanceInsights),
+                      icon: Icon(
+                        Icons.insights_rounded,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     IconButton(

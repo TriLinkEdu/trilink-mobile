@@ -5,6 +5,7 @@ import 'package:trilink_mobile/core/widgets/illustrations.dart';
 import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
 
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_shadows.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -67,53 +68,136 @@ class _LeaderboardView extends StatelessWidget {
                 subtitle: 'Rankings will appear here once available.',
               );
             }
-            return ListView.separated(
+            final yourRank = state.entries.firstWhere(
+              (e) => e.studentId == 's1',
+              orElse: () => state.entries.first,
+            );
+            final teamProgress =
+                state.entries.take(5).fold<int>(0, (sum, e) => sum + e.points) /
+                2500;
+            return ListView(
               padding: AppSpacing.paddingLg,
-              itemCount: state.entries.length,
-              separatorBuilder: (_, _) => AppSpacing.gapSm,
-              itemBuilder: (context, index) {
-                final entry = state.entries[index];
-                return StaggeredFadeSlide(
-                  index: index,
-                  child: Container(
-                    padding: AppSpacing.paddingMd,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surface,
-                      borderRadius: AppRadius.borderMd,
-                      boxShadow: AppShadows.subtle(theme.shadowColor),
-                    ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 14,
-                          backgroundColor:
-                              theme.colorScheme.surfaceContainerLow,
-                          child: Text(
-                            '${entry.rank}',
-                            style: theme.textTheme.bodySmall,
-                          ),
-                        ),
-                        AppSpacing.hGapSm,
-                        Expanded(
-                          child: Text(
-                            entry.studentName,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          '${entry.points} XP',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                      ],
-                    ),
+              children: [
+                Container(
+                  padding: AppSpacing.paddingMd,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: AppRadius.borderMd,
+                    boxShadow: AppShadows.subtle(theme.shadowColor),
                   ),
-                );
-              },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Your Position',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      AppSpacing.gapXxs,
+                      Text(
+                        '#${yourRank.rank} • ${yourRank.points} XP',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      AppSpacing.gapSm,
+                      Text(
+                        'Tip: Complete one hard quiz (+60 XP) and one mission (+80 XP) to likely climb at least one rank.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                AppSpacing.gapMd,
+                Container(
+                  padding: AppSpacing.paddingMd,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: AppRadius.borderMd,
+                    boxShadow: AppShadows.subtle(theme.shadowColor),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Class Team Sprint',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      AppSpacing.gapXs,
+                      LinearProgressIndicator(
+                        value: teamProgress.clamp(0, 1),
+                        minHeight: 8,
+                      ),
+                      AppSpacing.gapXxs,
+                      Text(
+                        'Top 5 combined XP toward 2,500 target',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                AppSpacing.gapMd,
+                ...List.generate(state.entries.length, (index) {
+                  final entry = state.entries[index];
+                  final isTopThree = entry.rank <= 3;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: StaggeredFadeSlide(
+                      index: index,
+                      child: Container(
+                        padding: AppSpacing.paddingMd,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          borderRadius: AppRadius.borderMd,
+                          boxShadow: AppShadows.subtle(theme.shadowColor),
+                        ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 14,
+                              backgroundColor: isTopThree
+                                  ? AppColors.leaderboardCrown.withAlpha(28)
+                                  : theme.colorScheme.surfaceContainerLow,
+                              child: Text(
+                                '${entry.rank}',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: isTopThree
+                                      ? AppColors.leaderboardCrown
+                                      : theme.colorScheme.onSurface,
+                                ),
+                              ),
+                            ),
+                            AppSpacing.hGapSm,
+                            Expanded(
+                              child: Text(
+                                entry.studentName,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              '${entry.points} XP',
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ],
             );
           },
         ),

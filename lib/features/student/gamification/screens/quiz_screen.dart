@@ -76,8 +76,13 @@ class _QuizViewState extends State<_QuizView> {
         context.read<QuizCubit>().clearSubmitResult();
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (_) =>
-                QuizResultScreen(result: result, questions: quiz.questions),
+            builder: (_) => QuizResultScreen(
+              result: result,
+              questions: quiz.questions,
+              newlyUnlockedAchievements: state.newlyUnlockedAchievements,
+              leveledUp: state.leveledUp,
+              newLevel: state.newLevel,
+            ),
           ),
         );
       },

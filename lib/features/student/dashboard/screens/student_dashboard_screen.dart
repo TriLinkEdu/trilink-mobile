@@ -202,6 +202,27 @@ class _DashboardContent extends StatelessWidget {
                   ],
 
                   _SectionHeader(
+                    title: 'This Week',
+                    actionLabel: 'Details',
+                    onAction: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentWeeklySnapshot),
+                  ),
+                  AppSpacing.gapMd,
+                  _WeeklySnapshotCard(
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentWeeklySnapshot),
+                  ),
+                  AppSpacing.gapMd,
+                  _ActionPlanPreviewCard(
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentActionPlan),
+                  ),
+                  AppSpacing.gapXxl,
+
+                  _SectionHeader(
                     title: 'Quick Actions',
                     actionLabel: 'All',
                     onAction: () => StudentShellScope.of(context).openDrawer(),
@@ -258,24 +279,151 @@ class _DashboardContent extends StatelessWidget {
   }
 }
 
+class _WeeklySnapshotCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _WeeklySnapshotCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Pressable(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: AppRadius.borderLg,
+          boxShadow: AppShadows.subtle(theme.shadowColor),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withAlpha(18),
+                borderRadius: AppRadius.borderMd,
+              ),
+              child: Icon(
+                Icons.insights_rounded,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            AppSpacing.hGapMd,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Weekly Snapshot',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  AppSpacing.gapXxs,
+                  Text(
+                    'See attendance, quiz trend, and your focus plan.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionPlanPreviewCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _ActionPlanPreviewCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Pressable(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: AppRadius.borderLg,
+          boxShadow: AppShadows.subtle(theme.shadowColor),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: AppColors.secondary.withAlpha(16),
+                borderRadius: AppRadius.borderMd,
+              ),
+              child: Icon(Icons.task_alt_rounded, color: AppColors.secondary),
+            ),
+            AppSpacing.hGapMd,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Action Plan',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  AppSpacing.gapXxs,
+                  Text(
+                    'Get focused tasks and mark progress as done.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ── Hero Greeting ──
 
 /// Short line under the hero name. Priority: streak → upcoming [nextUp] → recent grade → default.
 String _buildContextualGreeting(DashboardDataModel data) {
   final streak = data.stats.streakDays;
   if (streak >= 7) {
-    return "You're on a $streak-day streak — keep going!";
+    return "You're on a $streak-day streak   keep going!";
   }
 
   final next = data.nextUp;
   if (next != null && _isDueWithinDays(next.dueAt, DateTime.now(), 3)) {
     final typeLabel = _formatNextUpTypeLabel(next.type);
-    return 'You have an upcoming $typeLabel — stay prepared!';
+    return 'You have an upcoming $typeLabel   stay prepared!';
   }
 
   final highlight = data.recentGradeHighlight;
   if (highlight != null && highlight.scorePercent >= 85) {
-    return 'Great work on ${highlight.subjectName} — ${highlight.scorePercent}%!';
+    return 'Great work on ${highlight.subjectName}   ${highlight.scorePercent}%!';
   }
 
   return 'Ready to learn something new today?';
