@@ -184,6 +184,7 @@ const _routeTitleMap = <String, String>{
   RouteNames.studentWeeklySnapshot: 'Weekly Snapshot',
   RouteNames.studentActionPlan: 'Action Plan',
   RouteNames.studentPerformanceTrends: 'Performance Trends',
+  RouteNames.studentAttendanceInsights: 'Attendance Insights',
 };
 
 // ── Navigator Observer for Title Tracking ──
