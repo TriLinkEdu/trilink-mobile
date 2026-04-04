@@ -77,7 +77,7 @@ class StudentDrawer extends StatelessWidget {
                 _DrawerItem(
                   icon: Icons.assignment_rounded,
                   label: 'Assignments',
-                  color: theme.colorScheme.tertiary,
+                  color: theme.colorScheme.secondary,
                   onTap: () =>
                       _navigate(context, RouteNames.studentAssignments),
                 ),
@@ -102,7 +102,7 @@ class StudentDrawer extends StatelessWidget {
                 _DrawerItem(
                   icon: Icons.menu_book_rounded,
                   label: 'Resources',
-                  color: theme.colorScheme.tertiary,
+                  color: theme.colorScheme.secondary,
                   onTap: () =>
                       _navigate(context, RouteNames.studentCourseResources),
                 ),
@@ -132,7 +132,7 @@ class StudentDrawer extends StatelessWidget {
                 _DrawerItem(
                   icon: Icons.rate_review_rounded,
                   label: 'Feedback',
-                  color: theme.colorScheme.tertiary,
+                  color: theme.colorScheme.secondary,
                   onTap: () => _navigate(context, RouteNames.studentFeedback),
                 ),
                 _DrawerItem(

@@ -12,6 +12,7 @@ import 'package:trilink_mobile/core/widgets/error_widget.dart';
 import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
 import 'package:trilink_mobile/core/widgets/pressable.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/student_page_background.dart';
 import '../cubit/assignments_cubit.dart';
 import '../models/assignment_model.dart';
 import '../repositories/student_assignments_repository.dart';
@@ -55,16 +56,7 @@ class _StudentAssignmentsView extends StatelessWidget {
             state.status == AssignmentsStatus.initial;
         return Scaffold(
           appBar: AppBar(title: const Text('Assignments')),
-          body: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: Theme.of(context).brightness == Brightness.dark
-                    ? const [Color(0xFF0A1525), Color(0xFF0F2237)]
-                    : const [Color(0xFFF0F8FF), Color(0xFFE6F4FF)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
+          body: StudentPageBackground(
             child: loading
                 ? const Padding(
                     padding: EdgeInsets.all(16),

@@ -14,6 +14,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/pressable.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/student_page_background.dart';
 import '../cubit/gamification_cubit.dart';
 import '../models/gamification_models.dart';
 import '../repositories/student_gamification_repository.dart';
@@ -222,19 +223,9 @@ class _GamificationViewState extends State<_GamificationView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: isDark
-                ? const [Color(0xFF0A1422), Color(0xFF10253A)]
-                : const [Color(0xFFF0F8FF), Color(0xFFE6F4FF)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
+      body: StudentPageBackground(
         child: SafeArea(
           child: Column(
             children: [

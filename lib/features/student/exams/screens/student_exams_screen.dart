@@ -12,6 +12,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/student_page_background.dart';
 import '../cubit/exam_list_cubit.dart';
 import '../models/exam_model.dart';
 import '../repositories/student_exams_repository.dart';
@@ -41,16 +42,7 @@ class _StudentExamsView extends StatelessWidget {
 
         return Scaffold(
           appBar: AppBar(title: const Text('Exams')),
-          body: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: Theme.of(context).brightness == Brightness.dark
-                    ? const [Color(0xFF0A1525), Color(0xFF0F2338)]
-                    : const [Color(0xFFF0F8FF), Color(0xFFE6F4FF)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
+          body: StudentPageBackground(
             child: loading
                 ? const Padding(
                     padding: EdgeInsets.all(16),
