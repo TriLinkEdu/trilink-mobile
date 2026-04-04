@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/branded_refresh.dart';
 import '../../../../core/widgets/error_widget.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../../shared/widgets/student_page_background.dart';
@@ -59,68 +60,73 @@ class _StudentAttendanceInsightsView extends StatelessWidget {
 
             final insight = state.insight!;
 
-            return ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                InsightMetricCard(
-                  title: 'Current Attendance',
-                  value: '${(insight.currentRate * 100).round()}%',
-                  subtitle: 'Current month',
-                  icon: Icons.event_available_rounded,
-                  accent: StudentSemanticColors.info,
-                ),
-                AppSpacing.gapSm,
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: RiskBadge(
-                    label: '${insight.riskLevel} risk',
-                    color: insight.riskLevel.toLowerCase() == 'low'
-                        ? StudentSemanticColors.success
-                        : insight.riskLevel.toLowerCase() == 'medium'
-                        ? StudentSemanticColors.warning
-                        : StudentSemanticColors.risk,
+            return BrandedRefreshIndicator(
+              onRefresh: () =>
+                  context.read<AttendanceInsightsCubit>().loadInsights(),
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  InsightMetricCard(
+                    title: 'Current Attendance',
+                    value: '${(insight.currentRate * 100).round()}%',
+                    subtitle: 'Current month',
+                    icon: Icons.event_available_rounded,
+                    accent: StudentSemanticColors.info,
                   ),
-                ),
-                AppSpacing.gapSm,
-                _InsightRow(
-                  label: 'Projected Month End',
-                  value: '${(insight.projectedMonthEndRate * 100).round()}%',
-                ),
-                _InsightRow(label: 'Best Day', value: insight.bestDay),
-                _InsightRow(label: 'Weak Day', value: insight.weakDay),
-                AppSpacing.gapMd,
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    borderRadius: AppRadius.borderLg,
+                  AppSpacing.gapSm,
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: RiskBadge(
+                      label: '${insight.riskLevel} risk',
+                      color: insight.riskLevel.toLowerCase() == 'low'
+                          ? StudentSemanticColors.success
+                          : insight.riskLevel.toLowerCase() == 'medium'
+                          ? StudentSemanticColors.warning
+                          : StudentSemanticColors.risk,
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Weekly Trend',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      AppSpacing.gapSm,
-                      ...insight.weeklyTrend.map(
-                        (point) => Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(point.label),
-                              Text('${point.value.round()}%'),
-                            ],
+                  AppSpacing.gapSm,
+                  _InsightRow(
+                    label: 'Projected Month End',
+                    value: '${(insight.projectedMonthEndRate * 100).round()}%',
+                  ),
+                  _InsightRow(label: 'Best Day', value: insight.bestDay),
+                  _InsightRow(label: 'Weak Day', value: insight.weakDay),
+                  AppSpacing.gapMd,
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface,
+                      borderRadius: AppRadius.borderLg,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Weekly Trend',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                      ),
-                    ],
+                        AppSpacing.gapSm,
+                        ...insight.weeklyTrend.map(
+                          (point) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(point.label),
+                                Text('${point.value.round()}%'),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             );
           },
         ),
