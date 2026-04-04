@@ -10,6 +10,7 @@ import '../../shared/widgets/student_page_background.dart';
 import '../cubit/attendance_insights_cubit.dart';
 import '../cubit/attendance_insights_state.dart';
 import '../repositories/student_analytics_repository.dart';
+import '../widgets/student_insight_cards.dart';
 
 class StudentAttendanceInsightsScreen extends StatelessWidget {
   const StudentAttendanceInsightsScreen({super.key});
@@ -60,11 +61,26 @@ class _StudentAttendanceInsightsView extends StatelessWidget {
             return ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                _InsightRow(
-                  label: 'Current Attendance',
+                InsightMetricCard(
+                  title: 'Current Attendance',
                   value: '${(insight.currentRate * 100).round()}%',
+                  subtitle: 'Current month',
+                  icon: Icons.event_available_rounded,
+                  accent: theme.colorScheme.primary,
                 ),
-                _InsightRow(label: 'Risk Level', value: insight.riskLevel),
+                AppSpacing.gapSm,
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: RiskBadge(
+                    label: '${insight.riskLevel} risk',
+                    color: insight.riskLevel.toLowerCase() == 'low'
+                        ? Colors.green
+                        : insight.riskLevel.toLowerCase() == 'medium'
+                        ? Colors.orange
+                        : Colors.red,
+                  ),
+                ),
+                AppSpacing.gapSm,
                 _InsightRow(
                   label: 'Projected Month End',
                   value: '${(insight.projectedMonthEndRate * 100).round()}%',

@@ -10,6 +10,7 @@ import '../../shared/widgets/student_page_background.dart';
 import '../cubit/weekly_snapshot_cubit.dart';
 import '../cubit/weekly_snapshot_state.dart';
 import '../repositories/student_analytics_repository.dart';
+import '../widgets/student_insight_cards.dart';
 
 class StudentWeeklySnapshotScreen extends StatelessWidget {
   const StudentWeeklySnapshotScreen({super.key});
@@ -58,25 +59,28 @@ class _StudentWeeklySnapshotView extends StatelessWidget {
             return ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                _MetricCard(
+                InsightMetricCard(
                   title: 'Attendance',
                   value: '${(snapshot.attendanceRate * 100).round()}%',
                   subtitle: 'This week',
                   icon: Icons.event_available_rounded,
+                  accent: theme.colorScheme.primary,
                 ),
                 AppSpacing.gapSm,
-                _MetricCard(
+                InsightMetricCard(
                   title: 'Average Quiz Score',
                   value: '${snapshot.averageQuizScore.round()}%',
                   subtitle: 'This week',
                   icon: Icons.quiz_rounded,
+                  accent: theme.colorScheme.primary,
                 ),
                 AppSpacing.gapSm,
-                _MetricCard(
+                InsightMetricCard(
                   title: 'Assignments Due',
                   value: '${snapshot.dueAssignments}',
                   subtitle: 'Due soon',
                   icon: Icons.assignment_late_rounded,
+                  accent: theme.colorScheme.primary,
                 ),
                 AppSpacing.gapMd,
                 Container(
@@ -116,66 +120,6 @@ class _StudentWeeklySnapshotView extends StatelessWidget {
             );
           },
         ),
-      ),
-    );
-  }
-}
-
-class _MetricCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final String subtitle;
-  final IconData icon;
-
-  const _MetricCard({
-    required this.title,
-    required this.value,
-    required this.subtitle,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: AppRadius.borderLg,
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withAlpha(18),
-              borderRadius: AppRadius.borderMd,
-            ),
-            child: Icon(icon, color: theme.colorScheme.primary),
-          ),
-          AppSpacing.hGapMd,
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: theme.textTheme.labelLarge),
-                Text(
-                  value,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            subtitle,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
       ),
     );
   }
