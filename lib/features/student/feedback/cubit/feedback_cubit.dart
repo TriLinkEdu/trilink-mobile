@@ -13,15 +13,60 @@ class FeedbackCubit extends Cubit<FeedbackState> {
     emit(state.copyWith(status: FeedbackStatus.loading));
     try {
       final history = await _repository.fetchFeedbackHistory();
-      emit(FeedbackState(
-        status: FeedbackStatus.loaded,
-        feedbackHistory: history,
-      ));
-    } catch (_) {
-      emit(state.copyWith(
-        status: FeedbackStatus.error,
-        errorMessage: 'Unable to load feedback history.',
-      ));
+      emit(
+        state.copyWith(
+          status: FeedbackStatus.loaded,
+          feedbackHistory: history,
+          errorMessage: null,
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: FeedbackStatus.error,
+          errorMessage: 'Unable to load feedback history: $e',
+        ),
+      );
     }
+  }
+
+  Future<void> submitFeedback({
+    required String subjectId,
+    required String subjectName,
+    required int rating,
+    String? comment,
+  }) async {
+    emit(
+      state.copyWith(
+        submissionStatus: FeedbackSubmissionStatus.submitting,
+        submissionErrorMessage: null,
+      ),
+    );
+    try {
+      await _repository.submitFeedback(
+        subjectId: subjectId,
+        subjectName: subjectName,
+        rating: rating,
+        comment: comment,
+      );
+      emit(state.copyWith(submissionStatus: FeedbackSubmissionStatus.success));
+      await loadFeedbackHistory();
+    } catch (e) {
+      emit(
+        state.copyWith(
+          submissionStatus: FeedbackSubmissionStatus.error,
+          submissionErrorMessage: 'Failed to submit feedback: $e',
+        ),
+      );
+    }
+  }
+
+  void clearSubmissionStatus() {
+    emit(
+      state.copyWith(
+        submissionStatus: FeedbackSubmissionStatus.idle,
+        submissionErrorMessage: null,
+      ),
+    );
   }
 }

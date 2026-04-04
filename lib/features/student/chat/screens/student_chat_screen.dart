@@ -112,14 +112,19 @@ class _ChatViewState extends State<_ChatView> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Select participants:',
-                    style: Theme.of(ctx).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+                    style: Theme.of(ctx).textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 ...mockContacts.entries.map((entry) {
                   return CheckboxListTile(
                     dense: true,
                     contentPadding: EdgeInsets.zero,
-                    title: Text(entry.value, style: Theme.of(ctx).textTheme.bodyMedium),
+                    title: Text(
+                      entry.value,
+                      style: Theme.of(ctx).textTheme.bodyMedium,
+                    ),
                     value: selected.contains(entry.key),
                     onChanged: (v) {
                       setDialogState(() {
@@ -145,13 +150,14 @@ class _ChatViewState extends State<_ChatView> {
                 final name = nameController.text.trim();
                 if (name.isEmpty || selected.isEmpty) return;
                 Navigator.pop(dialogContext);
-                final conversation = await sl<StudentChatRepository>()
+                final conversation = await context
+                    .read<ChatCubit>()
                     .createConversation(
-                  title: name,
-                  participantIds: ['student1', ...selected],
-                  isGroup: true,
-                );
-                if (!mounted) return;
+                      title: name,
+                      participantIds: ['student1', ...selected],
+                      isGroup: true,
+                    );
+                if (!mounted || conversation == null) return;
                 _openConversation(conversation);
               },
               child: const Text('Create'),
@@ -181,13 +187,14 @@ class _ChatViewState extends State<_ChatView> {
           return SimpleDialogOption(
             onPressed: () async {
               Navigator.pop(dialogContext);
-              final conversation = await sl<StudentChatRepository>()
+              final conversation = await context
+                  .read<ChatCubit>()
                   .createConversation(
-                title: entry.value,
-                participantIds: ['student1', entry.key],
-                isGroup: false,
-              );
-              if (!mounted) return;
+                    title: entry.value,
+                    participantIds: ['student1', entry.key],
+                    isGroup: false,
+                  );
+              if (!mounted || conversation == null) return;
               _openConversation(conversation);
             },
             child: Row(
@@ -223,7 +230,8 @@ class _ChatViewState extends State<_ChatView> {
         ),
         body: BlocBuilder<ChatCubit, ChatState>(
           builder: (context, state) {
-            final loading = state.status == ChatStatus.initial ||
+            final loading =
+                state.status == ChatStatus.initial ||
                 state.status == ChatStatus.loading;
             if (loading) {
               return const Padding(
@@ -239,28 +247,20 @@ class _ChatViewState extends State<_ChatView> {
             }
 
             final conversations = state.conversations;
-            final groups =
-                conversations.where((c) => c.isGroup).toList();
-            final inbox =
-                conversations.where((c) => !c.isGroup).toList();
+            final groups = conversations.where((c) => c.isGroup).toList();
+            final inbox = conversations.where((c) => !c.isGroup).toList();
 
             return TabBarView(
               children: [
                 BrandedRefreshIndicator(
                   onRefresh: () =>
                       context.read<ChatCubit>().loadConversations(),
-                  child: _ChatList(
-                    items: groups,
-                    onTapItem: _openConversation,
-                  ),
+                  child: _ChatList(items: groups, onTapItem: _openConversation),
                 ),
                 BrandedRefreshIndicator(
                   onRefresh: () =>
                       context.read<ChatCubit>().loadConversations(),
-                  child: _ChatList(
-                    items: inbox,
-                    onTapItem: _openConversation,
-                  ),
+                  child: _ChatList(items: inbox, onTapItem: _openConversation),
                 ),
               ],
             );
@@ -359,19 +359,26 @@ class _ChatList extends StatelessWidget {
                 children: [
                   Text(
                     _timeLabel(item),
-                    style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   AppSpacing.gapXs,
                   if (item.unreadCount > 0)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primary,
                         borderRadius: AppRadius.borderSm,
                       ),
                       child: Text(
                         '${item.unreadCount}',
-                        style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onPrimary),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onPrimary,
+                        ),
                       ),
                     ),
                 ],

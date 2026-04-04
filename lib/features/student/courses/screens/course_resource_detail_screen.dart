@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -13,18 +14,14 @@ import '../repositories/student_courses_repository.dart';
 class CourseResourceDetailScreen extends StatelessWidget {
   final String resourceId;
 
-  const CourseResourceDetailScreen({
-    super.key,
-    required this.resourceId,
-  });
+  const CourseResourceDetailScreen({super.key, required this.resourceId});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => CourseResourceDetailCubit(
-        sl<StudentCoursesRepository>(),
-        resourceId,
-      )..loadResource(),
+      create: (_) =>
+          CourseResourceDetailCubit(sl<StudentCoursesRepository>(), resourceId)
+            ..loadResource(),
       child: const _CourseResourceDetailView(),
     );
   }
@@ -42,13 +39,35 @@ class _CourseResourceDetailViewState extends State<_CourseResourceDetailView> {
   bool _isOpening = false;
 
   Future<void> _openResource(CourseResourceModel resource) async {
+    final urlValue = resource.url;
+    if (urlValue == null || urlValue.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No link is available for this resource yet.'),
+        ),
+      );
+      return;
+    }
+
+    final uri = Uri.tryParse(urlValue);
+    if (uri == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to open this resource link.')),
+      );
+      return;
+    }
+
     setState(() => _isOpening = true);
-    await Future<void>.delayed(const Duration(seconds: 1));
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (mounted) {
       setState(() => _isOpening = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Opened "${resource.title}" (${resource.typeLabel})')),
-      );
+      if (!opened) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open this resource right now.'),
+          ),
+        );
+      }
     }
   }
 
@@ -87,8 +106,7 @@ class _CourseResourceDetailViewState extends State<_CourseResourceDetailView> {
           return Scaffold(
             appBar: AppBar(title: const Text('Resource'), centerTitle: true),
             body: AppErrorWidget(
-              message: state.errorMessage ??
-                  'Unable to load resource details.',
+              message: state.errorMessage ?? 'Unable to load resource details.',
             ),
           );
         }
@@ -115,25 +133,47 @@ class _CourseResourceDetailViewState extends State<_CourseResourceDetailView> {
                   color: theme.colorScheme.primaryContainer,
                   borderRadius: AppRadius.borderMd,
                 ),
-                child: Icon(_iconForType(r.type), size: 32, color: theme.colorScheme.primary),
+                child: Icon(
+                  _iconForType(r.type),
+                  size: 32,
+                  color: theme.colorScheme.primary,
+                ),
               ),
               AppSpacing.hGapLg,
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(r.title, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                    Text(
+                      r.title,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     AppSpacing.gapXs,
-                    Text(r.subjectName, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                    Text(
+                      r.subjectName,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ],
                 ),
               ),
             ],
           ),
           AppSpacing.gapXxl,
-          _InfoRow(icon: Icons.category_rounded, label: 'Type', value: r.typeLabel),
+          _InfoRow(
+            icon: Icons.category_rounded,
+            label: 'Type',
+            value: r.typeLabel,
+          ),
           if (r.fileSize != null)
-            _InfoRow(icon: Icons.storage_rounded, label: 'Size', value: r.fileSize!),
+            _InfoRow(
+              icon: Icons.storage_rounded,
+              label: 'Size',
+              value: r.fileSize!,
+            ),
           _InfoRow(
             icon: Icons.calendar_today_rounded,
             label: 'Uploaded',
@@ -141,7 +181,10 @@ class _CourseResourceDetailViewState extends State<_CourseResourceDetailView> {
           ),
           if (r.description != null) ...[
             const Divider(height: 32),
-            Text(r.description!, style: theme.textTheme.bodyLarge?.copyWith(height: 1.5)),
+            Text(
+              r.description!,
+              style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
+            ),
           ],
           const Spacer(),
           SizedBox(
@@ -149,7 +192,11 @@ class _CourseResourceDetailViewState extends State<_CourseResourceDetailView> {
             child: FilledButton.icon(
               onPressed: _isOpening ? null : () => _openResource(r),
               icon: _isOpening
-                  ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : const Icon(Icons.open_in_new_rounded),
               label: Text(_isOpening ? 'Opening...' : 'Open Resource'),
             ),
@@ -164,7 +211,11 @@ class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  const _InfoRow({required this.icon, required this.label, required this.value});
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -172,7 +223,11 @@ class _InfoRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+          Icon(
+            icon,
+            size: 18,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           AppSpacing.hGapMd,
           Text('$label: ', style: const TextStyle(fontWeight: FontWeight.w500)),
           Text(value),

@@ -9,29 +9,34 @@ class CourseResourceDetailCubit extends Cubit<CourseResourceDetailState> {
   final String resourceId;
 
   CourseResourceDetailCubit(this._repository, this.resourceId)
-      : super(const CourseResourceDetailState());
+    : super(const CourseResourceDetailState());
 
   Future<void> loadResource() async {
     emit(state.copyWith(status: CourseResourceDetailStatus.loading));
     try {
-      final all = await _repository.fetchCourseResources();
-      final match = all.where((r) => r.id == resourceId);
-      if (match.isNotEmpty) {
-        emit(CourseResourceDetailState(
-          status: CourseResourceDetailStatus.loaded,
-          resource: match.first,
-        ));
+      final resource = await _repository.fetchResourceById(resourceId);
+      if (resource != null) {
+        emit(
+          CourseResourceDetailState(
+            status: CourseResourceDetailStatus.loaded,
+            resource: resource,
+          ),
+        );
       } else {
-        emit(state.copyWith(
-          status: CourseResourceDetailStatus.error,
-          errorMessage: 'Resource not found',
-        ));
+        emit(
+          state.copyWith(
+            status: CourseResourceDetailStatus.error,
+            errorMessage: 'Resource not found',
+          ),
+        );
       }
     } catch (e) {
-      emit(state.copyWith(
-        status: CourseResourceDetailStatus.error,
-        errorMessage: e.toString(),
-      ));
+      emit(
+        state.copyWith(
+          status: CourseResourceDetailStatus.error,
+          errorMessage: e.toString(),
+        ),
+      );
     }
   }
 }

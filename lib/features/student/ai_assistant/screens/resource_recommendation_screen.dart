@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:trilink_mobile/core/widgets/empty_state_widget.dart';
 import 'package:trilink_mobile/core/widgets/illustrations.dart';
@@ -25,8 +26,9 @@ class ResourceRecommendationScreen extends StatelessWidget {
       );
     }
     return BlocProvider(
-      create: (_) => AiAssistantCubit(sl<StudentAiAssistantRepository>())
-        ..loadAssistantData(suppressError: true),
+      create: (_) =>
+          AiAssistantCubit(sl<StudentAiAssistantRepository>())
+            ..loadAssistantData(suppressError: true),
       child: const _ResourceRecommendationBlocView(),
     );
   }
@@ -41,7 +43,8 @@ class _ResourceRecommendationBlocView extends StatelessWidget {
       appBar: AppBar(title: const Text('Resources')),
       body: BlocBuilder<AiAssistantCubit, AiAssistantState>(
         builder: (context, state) {
-          final loading = state.status == AiAssistantStatus.initial ||
+          final loading =
+              state.status == AiAssistantStatus.initial ||
               state.status == AiAssistantStatus.loading;
           if (loading) {
             return const Padding(
@@ -76,20 +79,32 @@ class _ResourceListPage extends StatefulWidget {
 
 class _ResourceListPageState extends State<_ResourceListPage> {
   Future<void> _openResource(ResourceRecommendationModel resource) async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
+    final urlValue = resource.url;
+    if (urlValue == null || urlValue.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No link is available for this resource yet.'),
+        ),
+      );
+      return;
+    }
 
-    await Future<void>.delayed(const Duration(seconds: 1));
+    final uri = Uri.tryParse(urlValue);
+    if (uri == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to open this resource link.')),
+      );
+      return;
+    }
 
-    if (!mounted) return;
-    Navigator.of(context).pop();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Opened ${resource.title}')),
-    );
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not open this resource right now.'),
+        ),
+      );
+    }
   }
 
   @override
@@ -139,10 +154,7 @@ class _ResourceTile extends StatelessWidget {
         leading: Icon(icon),
         title: Text(title),
         subtitle: Text(subtitle),
-        trailing: TextButton(
-          onPressed: onOpen,
-          child: const Text('Open'),
-        ),
+        trailing: TextButton(onPressed: onOpen, child: const Text('Open')),
       ),
     );
   }

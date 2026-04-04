@@ -51,8 +51,7 @@ class _ExamAttemptView extends StatelessWidget {
             appBar: AppBar(title: const Text('Exam Attempt')),
             body: AppErrorWidget(
               message: state.errorMessage ?? 'Unable to load exam.',
-              onRetry: () =>
-                  context.read<ExamAttemptCubit>().retryLoadExam(),
+              onRetry: () => context.read<ExamAttemptCubit>().retryLoadExam(),
             ),
           );
         }
@@ -67,8 +66,7 @@ class _ExamAttemptView extends StatelessWidget {
               illustration: GraduationCapIllustration(),
               icon: Icons.quiz_rounded,
               title: 'No questions',
-              subtitle:
-                  'This exam does not have any questions yet.',
+              subtitle: 'This exam does not have any questions yet.',
             ),
           );
         }
@@ -90,10 +88,8 @@ class _ExamAttemptQuestions extends StatefulWidget {
 
 class _ExamAttemptQuestionsState extends State<_ExamAttemptQuestions> {
   static const String _currentUserId = 'student1';
-  bool _isSubmitting = false;
   int _currentQuestionIndex = 0;
   final Map<String, int> _answers = {};
-  String? _attemptId;
 
   Timer? _timer;
   late int _remainingSeconds;
@@ -117,14 +113,10 @@ class _ExamAttemptQuestionsState extends State<_ExamAttemptQuestions> {
   }
 
   Future<void> _startAttempt() async {
-    try {
-      final attempt = await sl<StudentExamsRepository>()
-          .startAttempt(widget.exam.id, _currentUserId);
-      if (!mounted) return;
-      setState(() => _attemptId = attempt.id);
-    } catch (_) {
-      // Don't block exam attempt if attempt tracking fails.
-    }
+    await context.read<ExamAttemptCubit>().startAttempt(
+      widget.exam.id,
+      _currentUserId,
+    );
   }
 
   Future<bool> _confirmSubmitIfNeeded() async {
@@ -195,7 +187,11 @@ class _ExamAttemptQuestionsState extends State<_ExamAttemptQuestions> {
   }
 
   Future<void> _autoSubmit() async {
-    if (_isSubmitting) return;
+    if (!mounted) return;
+    final isSubmitting =
+        context.read<ExamAttemptCubit>().state.submissionStatus ==
+        ExamSubmissionStatus.submitting;
+    if (isSubmitting) return;
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -213,15 +209,12 @@ class _ExamAttemptQuestionsState extends State<_ExamAttemptQuestions> {
   }
 
   Future<void> _submitExam() async {
-    setState(() => _isSubmitting = true);
     _timer?.cancel();
-    try {
-      if (_attemptId != null) {
-        await sl<StudentExamsRepository>().submitAttempt(_attemptId!, _answers);
-      }
-      final result = await sl<StudentExamsRepository>()
-          .submitExam(widget.exam.id, _answers);
-      if (!mounted) return;
+    final result = await context.read<ExamAttemptCubit>().submitCurrentExam(
+      _answers,
+    );
+    if (!mounted) return;
+    if (result != null) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => QuizResultScreen(
@@ -230,14 +223,17 @@ class _ExamAttemptQuestionsState extends State<_ExamAttemptQuestions> {
           ),
         ),
       );
-    } catch (_) {
-      if (!mounted) return;
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to submit exam.')),
+        SnackBar(
+          content: Text(
+            context.read<ExamAttemptCubit>().state.submissionErrorMessage ??
+                'Failed to submit exam.',
+          ),
+        ),
       );
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
     }
+    context.read<ExamAttemptCubit>().clearSubmissionStatus();
   }
 
   void _selectAnswer(int optionIndex) {
@@ -259,6 +255,10 @@ class _ExamAttemptQuestionsState extends State<_ExamAttemptQuestions> {
 
   @override
   Widget build(BuildContext context) {
+    final submissionStatus = context.select(
+      (ExamAttemptCubit c) => c.state.submissionStatus,
+    );
+    final isSubmitting = submissionStatus == ExamSubmissionStatus.submitting;
     final exam = widget.exam;
     final questions = exam.questions;
     final current = questions[_currentQuestionIndex];
@@ -280,7 +280,10 @@ class _ExamAttemptQuestionsState extends State<_ExamAttemptQuestions> {
             Center(
               child: Container(
                 margin: const EdgeInsets.only(right: 12),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: timerIsUrgent
                       ? Colors.red.withAlpha(30)
@@ -329,10 +332,7 @@ class _ExamAttemptQuestionsState extends State<_ExamAttemptQuestions> {
               ],
             ),
             AppSpacing.gapLg,
-            Text(
-              current.text,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text(current.text, style: Theme.of(context).textTheme.titleLarge),
             AppSpacing.gapLg,
             ...List.generate(current.options.length, (index) {
               final isSelected = selectedOption == index;
@@ -350,10 +350,8 @@ class _ExamAttemptQuestionsState extends State<_ExamAttemptQuestions> {
                             : Theme.of(context).colorScheme.outlineVariant,
                       ),
                       color: isSelected
-                          ? Theme.of(context)
-                              .colorScheme
-                              .primaryContainer
-                              .withValues(alpha: 0.4)
+                          ? Theme.of(context).colorScheme.primaryContainer
+                                .withValues(alpha: 0.4)
                           : null,
                     ),
                     child: ListTile(
@@ -384,25 +382,24 @@ class _ExamAttemptQuestionsState extends State<_ExamAttemptQuestions> {
                 if (_currentQuestionIndex > 0) AppSpacing.hGapMd,
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: _isSubmitting
+                    onPressed: isSubmitting
                         ? null
                         : isLastQuestion
-                            ? () async {
-                                final ok = await _confirmSubmitIfNeeded();
-                                if (!ok) return;
-                                await _submitExam();
-                              }
-                            : _nextQuestion,
-                    child: _isSubmitting
+                        ? () async {
+                            final ok = await _confirmSubmitIfNeeded();
+                            if (!ok) return;
+                            await _submitExam();
+                          }
+                        : _nextQuestion,
+                    child: isSubmitting
                         ? const SizedBox(
                             height: 20,
                             width: 20,
-                            child:
-                                CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : Text(isLastQuestion
-                            ? 'Submit Exam'
-                            : 'Next Question'),
+                        : Text(
+                            isLastQuestion ? 'Submit Exam' : 'Next Question',
+                          ),
                   ),
                 ),
               ],

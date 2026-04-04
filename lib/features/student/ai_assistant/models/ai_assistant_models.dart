@@ -62,14 +62,14 @@ class LearningPathItemModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'step': step,
-        'title': title,
-        'subject': subject,
-        'duration': duration,
-        'progress': progress,
-        'isActive': isActive,
-        'isBookmarked': isBookmarked,
-      };
+    'step': step,
+    'title': title,
+    'subject': subject,
+    'duration': duration,
+    'progress': progress,
+    'isActive': isActive,
+    'isBookmarked': isBookmarked,
+  };
 }
 
 class ResourceRecommendationModel {
@@ -78,6 +78,7 @@ class ResourceRecommendationModel {
   final String type;
   final String estimatedTime;
   final String level;
+  final String? url;
 
   const ResourceRecommendationModel({
     required this.id,
@@ -85,6 +86,7 @@ class ResourceRecommendationModel {
     required this.type,
     required this.estimatedTime,
     required this.level,
+    this.url,
   });
 
   factory ResourceRecommendationModel.fromJson(Map<String, dynamic> json) {
@@ -94,16 +96,18 @@ class ResourceRecommendationModel {
       type: json['type'] as String,
       estimatedTime: json['estimatedTime'] as String,
       level: json['level'] as String,
+      url: json['url'] as String?,
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'type': type,
-        'estimatedTime': estimatedTime,
-        'level': level,
-      };
+    'id': id,
+    'title': title,
+    'type': type,
+    'estimatedTime': estimatedTime,
+    'level': level,
+    'url': url,
+  };
 }
 
 class EvaluateInsightModel {
@@ -126,10 +130,10 @@ class EvaluateInsightModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'title': title,
-        'summary': summary,
-        'recommendation': recommendation,
-      };
+    'title': title,
+    'summary': summary,
+    'recommendation': recommendation,
+  };
 }
 
 class AiAssistantData {
@@ -146,23 +150,23 @@ class AiAssistantData {
   factory AiAssistantData.fromJson(Map<String, dynamic> json) {
     return AiAssistantData(
       learningPath: (json['learningPath'] as List)
-          .map((e) =>
-              LearningPathItemModel.fromJson(e as Map<String, dynamic>))
+          .map((e) => LearningPathItemModel.fromJson(e as Map<String, dynamic>))
           .toList(),
       resources: (json['resources'] as List)
-          .map((e) =>
-              ResourceRecommendationModel.fromJson(e as Map<String, dynamic>))
+          .map(
+            (e) =>
+                ResourceRecommendationModel.fromJson(e as Map<String, dynamic>),
+          )
           .toList(),
       insights: (json['insights'] as List)
-          .map((e) =>
-              EvaluateInsightModel.fromJson(e as Map<String, dynamic>))
+          .map((e) => EvaluateInsightModel.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'learningPath': learningPath.map((e) => e.toJson()).toList(),
-        'resources': resources.map((e) => e.toJson()).toList(),
-        'insights': insights.map((e) => e.toJson()).toList(),
-      };
+    'learningPath': learningPath.map((e) => e.toJson()).toList(),
+    'resources': resources.map((e) => e.toJson()).toList(),
+    'insights': insights.map((e) => e.toJson()).toList(),
+  };
 }

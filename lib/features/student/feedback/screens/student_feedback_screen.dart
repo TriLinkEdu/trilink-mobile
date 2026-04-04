@@ -39,7 +39,6 @@ class _StudentFeedbackView extends StatefulWidget {
 class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
   int _selectedRating = 4;
   String _selectedSubject = 'Mathematics 101';
-  bool _isSubmitting = false;
   bool _showBanner = true;
   final _whatWentWellController = TextEditingController();
   final _whatCouldImproveController = TextEditingController();
@@ -59,7 +58,7 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
     super.dispose();
   }
 
-  Future<void> _submitFeedback() async {
+  void _submitFeedback() {
     final positive = _whatWentWellController.text.trim();
     final improvement = _whatCouldImproveController.text.trim();
 
@@ -72,39 +71,17 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
       return;
     }
 
-    setState(() => _isSubmitting = true);
+    final comment = [
+      if (positive.isNotEmpty) 'What went well: $positive',
+      if (improvement.isNotEmpty) 'Could improve: $improvement',
+    ].join('\n');
 
-    try {
-      final comment = [
-        if (positive.isNotEmpty) 'What went well: $positive',
-        if (improvement.isNotEmpty) 'Could improve: $improvement',
-      ].join('\n');
-
-      await sl<StudentFeedbackRepository>().submitFeedback(
-        subjectId: _selectedSubject.toLowerCase().replaceAll(' ', '_'),
-        subjectName: _selectedSubject,
-        rating: _selectedRating,
-        comment: comment,
-      );
-
-      if (!mounted) return;
-      setState(() => _isSubmitting = false);
-
-      _whatWentWellController.clear();
-      _whatCouldImproveController.clear();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Feedback submitted for $_selectedSubject.')),
-      );
-
-      context.read<FeedbackCubit>().loadFeedbackHistory();
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _isSubmitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to submit feedback.')),
-      );
-    }
+    context.read<FeedbackCubit>().submitFeedback(
+      subjectId: _selectedSubject.toLowerCase().replaceAll(' ', '_'),
+      subjectName: _selectedSubject,
+      rating: _selectedRating,
+      comment: comment,
+    );
   }
 
   void _showAllFeedbackHistory() {
@@ -150,15 +127,13 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                       illustration: ClipboardIllustration(),
                       icon: Icons.rate_review_rounded,
                       title: 'No feedback yet',
-                      subtitle:
-                          'Feedback you submit will appear here.',
+                      subtitle: 'Feedback you submit will appear here.',
                     )
                   : ListView.separated(
                       controller: controller,
                       padding: const EdgeInsets.all(16),
                       itemCount: feedbackHistory.length,
-                      separatorBuilder: (_, _) =>
-                          AppSpacing.gapMd,
+                      separatorBuilder: (_, _) => AppSpacing.gapMd,
                       itemBuilder: (context, index) {
                         final fb = feedbackHistory[index];
                         return StaggeredFadeSlide(
@@ -176,417 +151,454 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<FeedbackCubit, FeedbackState>(
+    return BlocConsumer<FeedbackCubit, FeedbackState>(
+      listener: (context, feedbackState) {
+        if (feedbackState.submissionStatus ==
+            FeedbackSubmissionStatus.success) {
+          _whatWentWellController.clear();
+          _whatCouldImproveController.clear();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Feedback submitted for $_selectedSubject.'),
+            ),
+          );
+          context.read<FeedbackCubit>().clearSubmissionStatus();
+        } else if (feedbackState.submissionStatus ==
+            FeedbackSubmissionStatus.error) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                feedbackState.submissionErrorMessage ??
+                    'Failed to submit feedback.',
+              ),
+            ),
+          );
+          context.read<FeedbackCubit>().clearSubmissionStatus();
+        }
+      },
       builder: (context, feedbackState) {
         final theme = Theme.of(context);
         final feedbackHistory = feedbackState.feedbackHistory;
-        final historyLoading = feedbackState.status == FeedbackStatus.loading ||
+        final historyLoading =
+            feedbackState.status == FeedbackStatus.loading ||
             feedbackState.status == FeedbackStatus.initial;
+        final isSubmitting =
+            feedbackState.submissionStatus ==
+            FeedbackSubmissionStatus.submitting;
         final recentItems = feedbackHistory.length > 2
             ? feedbackHistory.sublist(feedbackHistory.length - 2)
             : feedbackHistory;
 
         return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  Pressable(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 20,
-                      color: theme.colorScheme.onSurface,
-                    ),
+          body: SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
                   ),
-                  Expanded(
-                    child:                     Text(
-                      'Feedback',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurface,
+                  child: Row(
+                    children: [
+                      Pressable(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          size: 20,
+                          color: theme.colorScheme.onSurface,
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 40),
-                ],
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (_showBanner)
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withAlpha(15),
-                          borderRadius: AppRadius.borderMd,
-                          border: Border.all(
-                            color: theme.colorScheme.primary.withAlpha(40),
+                      Expanded(
+                        child: Text(
+                          'Feedback',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color:
-                                    theme.colorScheme.primary.withAlpha(30),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.shield_rounded,
-                                size: 16,
-                                color: theme.colorScheme.primary,
+                      ),
+                      const SizedBox(width: 40),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (_showBanner)
+                          Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary.withAlpha(15),
+                              borderRadius: AppRadius.borderMd,
+                              border: Border.all(
+                                color: theme.colorScheme.primary.withAlpha(40),
                               ),
                             ),
-                            AppSpacing.hGapMd,
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                children: [
-                                  Row(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primary.withAlpha(
+                                      30,
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.shield_rounded,
+                                    size: 16,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
+                                AppSpacing.hGapMd,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Expanded(
-                                        child: Text(
-                                          'Anonymous Feedback',
-                                          style: theme.textTheme.bodyMedium
-                                              ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            color:
-                                                theme.colorScheme.onSurface,
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              'Anonymous Feedback',
+                                              style: theme.textTheme.bodyMedium
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                    color: theme
+                                                        .colorScheme
+                                                        .onSurface,
+                                                  ),
+                                            ),
                                           ),
-                                        ),
+                                          Pressable(
+                                            onTap: () => setState(
+                                              () => _showBanner = false,
+                                            ),
+                                            child: Icon(
+                                              Icons.close,
+                                              size: 18,
+                                              color: theme
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      Pressable(
-                                        onTap: () => setState(
-                                            () => _showBanner = false),
-                                        child: Icon(
-                                          Icons.close,
-                                          size: 18,
-                                          color: theme
-                                              .colorScheme.onSurfaceVariant,
-                                        ),
+                                      AppSpacing.gapXs,
+                                      Text(
+                                        'Your feedback helps improve the course. Instructors will see your comments but not your name.',
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              color: theme
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
+                                              height: 1.4,
+                                            ),
                                       ),
                                     ],
                                   ),
-                                  AppSpacing.gapXs,
-                                  Text(
-                                    'Your feedback helps improve the course. Instructors will see your comments but not your name.',
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme
-                                          .colorScheme.onSurfaceVariant,
-                                      height: 1.4,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
-                    AppSpacing.gapXxl,
-
-                    Text(
-                      'Select Subject',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                    AppSpacing.gapSm,
-                    Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 14),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surface,
-                        borderRadius: AppRadius.borderMd,
-                        border: Border.all(
-                            color: theme.colorScheme.outlineVariant),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _selectedSubject,
-                          isExpanded: true,
-                          icon: Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            color: theme.colorScheme.onSurfaceVariant,
                           ),
+                        AppSpacing.gapXxl,
+
+                        Text(
+                          'Select Subject',
                           style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
                             color: theme.colorScheme.onSurface,
                           ),
-                          items: _subjects
-                              .map(
-                                (s) => DropdownMenuItem(
-                                    value: s, child: Text(s)),
-                              )
-                              .toList(),
-                          onChanged: (v) {
-                            if (v != null) {
-                              setState(() => _selectedSubject = v);
-                            }
-                          },
                         ),
-                      ),
-                    ),
-                    AppSpacing.gapMd,
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton.icon(
-                        onPressed: () async {
-                          final cubit = context.read<FeedbackCubit>();
-                          final result =
-                              await Navigator.of(context).pushNamed<bool>(
-                            RouteNames.studentSubmitFeedback,
-                            arguments: {
-                              'subjectId': _selectedSubject
-                                  .toLowerCase()
-                                  .replaceAll(' ', '_'),
-                              'subjectName': _selectedSubject,
+                        AppSpacing.gapSm,
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surface,
+                            borderRadius: AppRadius.borderMd,
+                            border: Border.all(
+                              color: theme.colorScheme.outlineVariant,
+                            ),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: _selectedSubject,
+                              isExpanded: true,
+                              icon: Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurface,
+                              ),
+                              items: _subjects
+                                  .map(
+                                    (s) => DropdownMenuItem(
+                                      value: s,
+                                      child: Text(s),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (v) {
+                                if (v != null) {
+                                  setState(() => _selectedSubject = v);
+                                }
+                              },
+                            ),
+                          ),
+                        ),
+                        AppSpacing.gapMd,
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton.icon(
+                            onPressed: () async {
+                              final cubit = context.read<FeedbackCubit>();
+                              final result = await Navigator.of(context)
+                                  .pushNamed<bool>(
+                                    RouteNames.studentSubmitFeedback,
+                                    arguments: {
+                                      'subjectId': _selectedSubject
+                                          .toLowerCase()
+                                          .replaceAll(' ', '_'),
+                                      'subjectName': _selectedSubject,
+                                    },
+                                  );
+                              if (result == true && mounted) {
+                                cubit.loadFeedbackHistory();
+                              }
                             },
-                          );
-                          if (result == true && mounted) {
-                            cubit.loadFeedbackHistory();
-                          }
-                        },
-                        icon: const Icon(Icons.open_in_new_rounded,
-                            size: 16),
-                        label: const Text('Open detailed form'),
-                      ),
-                    ),
-                    AppSpacing.gapXxl,
+                            icon: const Icon(
+                              Icons.open_in_new_rounded,
+                              size: 16,
+                            ),
+                            label: const Text('Open detailed form'),
+                          ),
+                        ),
+                        AppSpacing.gapXxl,
 
-                    Text(
-                      'Rate your understanding (1-5)',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                    AppSpacing.gapMd,
-                    Row(
-                      children: List.generate(5, (i) {
-                        final rating = i + 1;
-                        final isSelected = rating == _selectedRating;
-                        return Expanded(
-                          child: Pressable(
-                            onTap: () => setState(
-                                () => _selectedRating = rating),
-                            child: Container(
-                              margin: EdgeInsets.only(
-                                  right: i < 4 ? 8 : 0),
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 12),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? theme.colorScheme.primary
-                                    : theme.colorScheme.surface,
-                                borderRadius:
-                                    AppRadius.borderMd,
-                                border: Border.all(
-                                  color: isSelected
-                                      ? theme.colorScheme.primary
-                                      : theme.colorScheme.outlineVariant,
+                        Text(
+                          'Rate your understanding (1-5)',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                        AppSpacing.gapMd,
+                        Row(
+                          children: List.generate(5, (i) {
+                            final rating = i + 1;
+                            final isSelected = rating == _selectedRating;
+                            return Expanded(
+                              child: Pressable(
+                                onTap: () =>
+                                    setState(() => _selectedRating = rating),
+                                child: Container(
+                                  margin: EdgeInsets.only(right: i < 4 ? 8 : 0),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? theme.colorScheme.primary
+                                        : theme.colorScheme.surface,
+                                    borderRadius: AppRadius.borderMd,
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? theme.colorScheme.primary
+                                          : theme.colorScheme.outlineVariant,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        '$rating',
+                                        style: theme.textTheme.titleSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              color: isSelected
+                                                  ? theme.colorScheme.onPrimary
+                                                  : theme.colorScheme.onSurface,
+                                            ),
+                                      ),
+                                      if (rating == 1 || rating == 5) ...[
+                                        AppSpacing.gapXxs,
+                                        Text(
+                                          rating == 1 ? 'POOR' : 'GREAT',
+                                          style: theme.textTheme.labelSmall
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w600,
+                                                color: isSelected
+                                                    ? theme
+                                                          .colorScheme
+                                                          .onPrimary
+                                                          .withAlpha(200)
+                                                    : theme
+                                                          .colorScheme
+                                                          .onSurfaceVariant,
+                                              ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
                                 ),
                               ),
-                              child: Column(
-                                children: [
-                                  Text(
-                                    '$rating',
-                                    style: theme.textTheme.titleSmall
-                                        ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: isSelected
-                                          ? theme.colorScheme.onPrimary
-                                          : theme.colorScheme.onSurface,
-                                    ),
-                                  ),
-                                  if (rating == 1 ||
-                                      rating == 5) ...[
-                                    AppSpacing.gapXxs,
-                                    Text(
-                                      rating == 1
-                                          ? 'POOR'
-                                          : 'GREAT',
-                                      style: theme.textTheme.labelSmall
-                                          ?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                        color: isSelected
-                                            ? theme.colorScheme.onPrimary
-                                                .withAlpha(200)
-                                            : theme.colorScheme
-                                                .onSurfaceVariant,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      }),
-                    ),
-                    AppSpacing.gapXxl,
+                            );
+                          }),
+                        ),
+                        AppSpacing.gapXxl,
 
-                    Text(
-                      'What went well?',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                    AppSpacing.gapSm,
-                    TextField(
-                      controller: _whatWentWellController,
-                      maxLines: 2,
-                      decoration: InputDecoration(
-                        hintText:
-                            'Highlight effective teaching methods...',
-                        hintStyle: theme.textTheme.labelLarge?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        suffixIcon: Icon(
-                          Icons.thumb_up_outlined,
-                          color: theme.colorScheme.outlineVariant,
-                          size: 20,
-                        ),
-                        contentPadding: const EdgeInsets.all(14),
-                      ),
-                    ),
-                    AppSpacing.gapXl,
-
-                    Text(
-                      'What could improve?',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                    AppSpacing.gapSm,
-                    TextField(
-                      controller: _whatCouldImproveController,
-                      maxLines: 2,
-                      decoration: InputDecoration(
-                        hintText: 'Suggest areas for improvement...',
-                        hintStyle: theme.textTheme.labelLarge?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        contentPadding: const EdgeInsets.all(14),
-                      ),
-                    ),
-                    AppSpacing.gapXxl,
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed:
-                            _isSubmitting ? null : _submitFeedback,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: theme.colorScheme.primary,
-                          foregroundColor: theme.colorScheme.onPrimary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: AppRadius.borderMd,
-                          ),
-                          elevation: 0,
-                          textStyle: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.center,
-                          children: [
-                            Text(_isSubmitting
-                                ? 'Submitting...'
-                                : 'Submit Feedback'),
-                            AppSpacing.hGapSm,
-                            Icon(
-                              _isSubmitting
-                                  ? Icons.hourglass_top_rounded
-                                  : Icons.arrow_forward_rounded,
-                              size: 18,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    AppSpacing.gapXxxl,
-
-                    Row(
-                      mainAxisAlignment:
-                          MainAxisAlignment.spaceBetween,
-                      children: [
                         Text(
-                          'Recent Feedback',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
+                          'What went well?',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
                             color: theme.colorScheme.onSurface,
                           ),
                         ),
-                        TextButton(
-                          onPressed: _showAllFeedbackHistory,
-                          child: Text(
-                            'View all',
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              color: theme.colorScheme.primary,
+                        AppSpacing.gapSm,
+                        TextField(
+                          controller: _whatWentWellController,
+                          maxLines: 2,
+                          decoration: InputDecoration(
+                            hintText: 'Highlight effective teaching methods...',
+                            hintStyle: theme.textTheme.labelLarge?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                            suffixIcon: Icon(
+                              Icons.thumb_up_outlined,
+                              color: theme.colorScheme.outlineVariant,
+                              size: 20,
+                            ),
+                            contentPadding: const EdgeInsets.all(14),
+                          ),
+                        ),
+                        AppSpacing.gapXl,
+
+                        Text(
+                          'What could improve?',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                        AppSpacing.gapSm,
+                        TextField(
+                          controller: _whatCouldImproveController,
+                          maxLines: 2,
+                          decoration: InputDecoration(
+                            hintText: 'Suggest areas for improvement...',
+                            hintStyle: theme.textTheme.labelLarge?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                            contentPadding: const EdgeInsets.all(14),
+                          ),
+                        ),
+                        AppSpacing.gapXxl,
+
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton(
+                            onPressed: isSubmitting ? null : _submitFeedback,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: theme.colorScheme.primary,
+                              foregroundColor: theme.colorScheme.onPrimary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: AppRadius.borderMd,
+                              ),
+                              elevation: 0,
+                              textStyle: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  isSubmitting
+                                      ? 'Submitting...'
+                                      : 'Submit Feedback',
+                                ),
+                                AppSpacing.hGapSm,
+                                Icon(
+                                  isSubmitting
+                                      ? Icons.hourglass_top_rounded
+                                      : Icons.arrow_forward_rounded,
+                                  size: 18,
+                                ),
+                              ],
                             ),
                           ),
                         ),
+                        AppSpacing.gapXxxl,
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Recent Feedback',
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: _showAllFeedbackHistory,
+                              child: Text(
+                                'View all',
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        AppSpacing.gapSm,
+
+                        if (historyLoading)
+                          const Padding(
+                            padding: EdgeInsets.all(20),
+                            child: ShimmerList(),
+                          )
+                        else if (feedbackState.status == FeedbackStatus.error)
+                          AppErrorWidget(
+                            message:
+                                feedbackState.errorMessage ??
+                                'Unable to load feedback.',
+                            onRetry: () => context
+                                .read<FeedbackCubit>()
+                                .loadFeedbackHistory(),
+                          )
+                        else if (recentItems.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.all(20),
+                            child: EmptyStateWidget(
+                              illustration: ClipboardIllustration(),
+                              icon: Icons.rate_review_rounded,
+                              title: 'No feedback yet',
+                              subtitle:
+                                  'Your submitted feedback will appear here.',
+                            ),
+                          )
+                        else
+                          for (final fb in recentItems.reversed) ...[
+                            _RecentFeedbackItem(feedback: fb),
+                            AppSpacing.gapLg,
+                          ],
+                        AppSpacing.gapXxl,
                       ],
                     ),
-                    AppSpacing.gapSm,
-
-                    if (historyLoading)
-                      const Padding(
-                        padding: EdgeInsets.all(20),
-                        child: ShimmerList(),
-                      )
-                    else if (feedbackState.status == FeedbackStatus.error)
-                      AppErrorWidget(
-                        message: feedbackState.errorMessage ??
-                            'Unable to load feedback.',
-                        onRetry: () => context
-                            .read<FeedbackCubit>()
-                            .loadFeedbackHistory(),
-                      )
-                    else if (recentItems.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.all(20),
-                        child: EmptyStateWidget(
-                          illustration: ClipboardIllustration(),
-                          icon: Icons.rate_review_rounded,
-                          title: 'No feedback yet',
-                          subtitle:
-                              'Your submitted feedback will appear here.',
-                        ),
-                      )
-                    else
-                      for (final fb
-                          in recentItems.reversed) ...[
-                        _RecentFeedbackItem(feedback: fb),
-                        AppSpacing.gapLg,
-                      ],
-                    AppSpacing.gapXxl,
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
+          ),
+        );
       },
     );
   }
@@ -599,8 +611,18 @@ class _RecentFeedbackItem extends StatelessWidget {
 
   String _formatDate(DateTime date) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
@@ -634,8 +656,7 @@ class _RecentFeedbackItem extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: statusColor.withAlpha(25),
                   borderRadius: AppRadius.borderSm,
@@ -669,7 +690,8 @@ class _RecentFeedbackItem extends StatelessWidget {
               Text(
                 _formatDate(feedback.createdAt),
                 style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant),
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               AppSpacing.hGapMd,
               Row(
@@ -688,12 +710,12 @@ class _RecentFeedbackItem extends StatelessWidget {
               Text(
                 '${feedback.rating}/5 Rating',
                 style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant),
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
-          if (feedback.comment != null &&
-              feedback.comment!.isNotEmpty) ...[
+          if (feedback.comment != null && feedback.comment!.isNotEmpty) ...[
             AppSpacing.gapMd,
             Text(
               '"${feedback.comment}"',

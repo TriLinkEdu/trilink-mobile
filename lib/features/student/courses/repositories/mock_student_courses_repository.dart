@@ -53,7 +53,8 @@ class MockStudentCoursesRepository implements StudentCoursesRepository {
       topicId: 'phys-t2',
       type: ResourceType.link,
       difficulty: DifficultyTier.hard,
-      description: 'Interactive PhET simulation for electromagnetic wave properties.',
+      description:
+          'Interactive PhET simulation for electromagnetic wave properties.',
       url: 'https://phet.colorado.edu/en/simulation/wave-on-a-string',
       uploadedAt: DateTime(2025, 10, 8),
     ),
@@ -104,7 +105,8 @@ class MockStudentCoursesRepository implements StudentCoursesRepository {
       topicId: 'math-t1',
       type: ResourceType.link,
       difficulty: DifficultyTier.medium,
-      description: 'External resource covering integration by parts and substitution.',
+      description:
+          'External resource covering integration by parts and substitution.',
       url: 'https://www.khanacademy.org/math/ap-calculus-bc/bc-integration-new',
       uploadedAt: DateTime(2025, 9, 28),
     ),
@@ -122,5 +124,16 @@ class MockStudentCoursesRepository implements StudentCoursesRepository {
   ) async {
     await Future<void>.delayed(_latency);
     return _resources.where((r) => r.subjectId == subjectId).toList();
+  }
+
+  @override
+  Future<CourseResourceModel?> fetchResourceById(String resourceId) async {
+    await Future<void>.delayed(_latency);
+    for (final resource in _resources) {
+      if (resource.id == resourceId) {
+        return resource;
+      }
+    }
+    return null;
   }
 }

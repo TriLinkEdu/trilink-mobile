@@ -67,6 +67,8 @@ class MockStudentAiAssistantRepository implements StudentAiAssistantRepository {
           type: 'Video',
           estimatedTime: '12 min',
           level: 'Core',
+          url:
+              'https://www.khanacademy.org/science/physics/forces-newtons-laws',
         ),
         ResourceRecommendationModel(
           id: 'r2',
@@ -74,6 +76,7 @@ class MockStudentAiAssistantRepository implements StudentAiAssistantRepository {
           type: 'Worksheet',
           estimatedTime: '20 min',
           level: 'Practice',
+          url: 'https://example.com/resources/forces-motion-practice.pdf',
         ),
         ResourceRecommendationModel(
           id: 'r3',
@@ -81,6 +84,7 @@ class MockStudentAiAssistantRepository implements StudentAiAssistantRepository {
           type: 'Article',
           estimatedTime: '8 min',
           level: 'Revision',
+          url: 'https://example.com/articles/kinematics-exam-tips',
         ),
       ],
       insights: [
