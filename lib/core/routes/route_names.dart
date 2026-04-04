@@ -23,9 +23,24 @@ class RouteNames {
   static const String studentSettings = '/student/settings';
   static const String studentAssignments = '/student/assignments';
   static const String studentAssignmentDetail = '/student/assignments/detail';
+  static const String studentCourses = '/student/courses';
+  static const String studentCourseDetail = '/student/courses/detail';
   static const String studentCourseResources = '/student/courses-resources';
+  static const String studentExams = '/student/exams';
   static const String studentExamAttempt = '/student/exam/attempt';
   static const String studentSyncStatus = '/student/sync-status';
+  static const String studentProfileEdit = '/student/profile/edit';
+  static const String studentAnnouncementDetail = '/student/announcements/detail';
+  static const String studentCalendarEventDetail = '/student/calendar/event';
+  static const String studentAchievements = '/student/achievements';
+  static const String studentCourseResourceDetail = '/student/courses-resources/detail';
+  static const String studentChatConversation = '/student/chat/conversation';
+  static const String studentSubmitFeedback = '/student/feedback/submit';
+  static const String studentQuiz = '/student/quiz';
+  static const String studentLeaderboard = '/student/leaderboard';
+  static const String studentLearningPath = '/student/ai-assistant/learning-path';
+  static const String studentResourceRecommendation = '/student/ai-assistant/resources';
+  static const String studentEvaluateMe = '/student/ai-assistant/evaluate';
 
   // Teacher
   static const String teacherDashboard = '/teacher/dashboard';

@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
 class UpcomingExamsCard extends StatelessWidget {
-  final List<_ExamItem> exams;
+  final List<ExamItem> exams;
 
   const UpcomingExamsCard({super.key, this.exams = const []});
 
   @override
   Widget build(BuildContext context) {
     const defaultExams = [
-      _ExamItem(subject: 'Physics', date: 'Mar 25', time: '9:00 AM'),
-      _ExamItem(subject: 'Mathematics', date: 'Mar 27', time: '1:30 PM'),
+      ExamItem(subject: 'Physics', date: 'Mar 25', time: '9:00 AM'),
+      ExamItem(subject: 'Mathematics', date: 'Mar 27', time: '1:30 PM'),
     ];
     final upcoming = exams.isEmpty ? defaultExams : exams;
 
@@ -45,12 +45,12 @@ class UpcomingExamsCard extends StatelessWidget {
   }
 }
 
-class _ExamItem {
+class ExamItem {
   final String subject;
   final String date;
   final String time;
 
-  const _ExamItem({
+  const ExamItem({
     required this.subject,
     required this.date,
     required this.time,

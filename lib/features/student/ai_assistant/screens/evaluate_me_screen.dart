@@ -1,29 +1,96 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-/// AI-generated general feedback about performance and learning habits.
+import 'package:trilink_mobile/core/widgets/empty_state_widget.dart';
+import 'package:trilink_mobile/core/widgets/illustrations.dart';
+
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/student_page_background.dart';
+import '../cubit/ai_assistant_cubit.dart';
+import '../models/ai_assistant_models.dart';
+import '../repositories/student_ai_assistant_repository.dart';
+
 class EvaluateMeScreen extends StatelessWidget {
-  const EvaluateMeScreen({super.key});
+  final List<EvaluateInsightModel>? insights;
+
+  const EvaluateMeScreen({super.key, this.insights});
+
+  @override
+  Widget build(BuildContext context) {
+    if (insights != null && insights!.isNotEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Evaluate Me')),
+        body: StudentPageBackground(
+          child: _EvaluateMeList(insights: insights!),
+        ),
+      );
+    }
+    return BlocProvider(
+      create: (_) =>
+          AiAssistantCubit(sl<StudentAiAssistantRepository>(), sl())
+            ..loadAssistantData(suppressError: true),
+      child: const _EvaluateMeBlocView(),
+    );
+  }
+}
+
+class _EvaluateMeBlocView extends StatelessWidget {
+  const _EvaluateMeBlocView();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Evaluate Me')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: const [
-          _InsightCard(
-            title: 'Strength',
-            summary: 'You consistently perform well in conceptual questions.',
-            recommendation: 'Keep using quick concept summaries before practice.',
-          ),
-          SizedBox(height: 10),
-          _InsightCard(
-            title: 'Focus Area',
-            summary: 'Multi-step numerical questions reduce your speed.',
-            recommendation: 'Practice 3 timed multi-step problems daily.',
-          ),
-        ],
+      body: StudentPageBackground(
+        child: BlocBuilder<AiAssistantCubit, AiAssistantState>(
+          builder: (context, state) {
+            final loading =
+                state.status == AiAssistantStatus.initial ||
+                state.status == AiAssistantStatus.loading;
+            if (loading) {
+              return const Padding(
+                padding: EdgeInsets.all(16),
+                child: ShimmerList(),
+              );
+            }
+            final list = state.data?.insights ?? [];
+            if (list.isEmpty) {
+              return const EmptyStateWidget(
+                illustration: BrainIllustration(),
+                icon: Icons.analytics_rounded,
+                title: 'No evaluation insights',
+                subtitle: 'Complete assessments to see your evaluation here.',
+              );
+            }
+            return _EvaluateMeList(insights: list);
+          },
+        ),
       ),
+    );
+  }
+}
+
+class _EvaluateMeList extends StatelessWidget {
+  final List<EvaluateInsightModel> insights;
+
+  const _EvaluateMeList({required this.insights});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: insights.length,
+      separatorBuilder: (_, _) => AppSpacing.gapSm,
+      itemBuilder: (context, index) {
+        final insight = insights[index];
+        return _InsightCard(
+          title: insight.title,
+          summary: insight.summary,
+          recommendation: insight.recommendation,
+        );
+      },
     );
   }
 }
@@ -49,11 +116,13 @@ class _InsightCard extends StatelessWidget {
           children: [
             Text(
               title,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 8),
+            AppSpacing.gapSm,
             Text(summary),
-            const SizedBox(height: 8),
+            AppSpacing.gapSm,
             Text('Recommendation: $recommendation'),
           ],
         ),

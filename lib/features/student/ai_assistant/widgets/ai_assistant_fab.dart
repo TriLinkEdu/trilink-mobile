@@ -1,28 +1,41 @@
 import 'package:flutter/material.dart';
-import '../screens/evaluate_me_screen.dart';
-import '../screens/learning_path_screen.dart';
-import '../screens/resource_recommendation_screen.dart';
+import '../../../../core/routes/route_names.dart';
 
-/// Floating button that opens the AI assistant popup.
 class AiAssistantFab extends StatelessWidget {
   const AiAssistantFab({super.key});
 
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton(
+      heroTag: null,
       onPressed: () {
         showModalBottomSheet(
           context: context,
-          builder: (_) => const _AiAssistantBottomSheet(),
+          builder: (_) => _AiAssistantBottomSheet(parentContext: context),
         );
       },
-      child: const Icon(Icons.smart_toy),
+      child: Hero(
+        tag: 'ai-tutor-hero',
+        child: Material(
+          color: Colors.transparent,
+          child: Icon(
+            Icons.auto_awesome,
+            color: Theme.of(context).colorScheme.onPrimary,
+          ),
+        ),
+      ),
     );
   }
 }
 
 class _AiAssistantBottomSheet extends StatelessWidget {
-  const _AiAssistantBottomSheet();
+  final BuildContext parentContext;
+  const _AiAssistantBottomSheet({required this.parentContext});
+
+  void _navigate(BuildContext sheetCtx, String route) {
+    Navigator.of(sheetCtx).pop();
+    Navigator.of(parentContext).pushNamed(route);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,34 +52,17 @@ class _AiAssistantBottomSheet extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.route),
             title: const Text('Learning Path'),
-            onTap: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const LearningPathScreen()),
-              );
-            },
+            onTap: () => _navigate(context, RouteNames.studentLearningPath),
           ),
           ListTile(
             leading: const Icon(Icons.menu_book),
             title: const Text('Resource Recommendation'),
-            onTap: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const ResourceRecommendationScreen(),
-                ),
-              );
-            },
+            onTap: () => _navigate(context, RouteNames.studentResourceRecommendation),
           ),
           ListTile(
             leading: const Icon(Icons.analytics),
             title: const Text('Evaluate Me'),
-            onTap: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const EvaluateMeScreen()),
-              );
-            },
+            onTap: () => _navigate(context, RouteNames.studentEvaluateMe),
           ),
         ],
       ),

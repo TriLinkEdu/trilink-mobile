@@ -1,244 +1,317 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/routes/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_shadows.dart';
+import '../../../../core/theme/app_spacing.dart';
+import 'package:trilink_mobile/core/widgets/branded_refresh.dart';
+import 'package:trilink_mobile/core/widgets/empty_state_widget.dart';
+import 'package:trilink_mobile/core/widgets/illustrations.dart';
+import 'package:trilink_mobile/core/widgets/error_widget.dart';
+import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
+
+import '../../../../core/widgets/pressable.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/student_page_background.dart';
+import '../cubit/announcements_cubit.dart';
 import '../models/announcement_model.dart';
-import '../repositories/mock_student_announcements_repository.dart';
 import '../repositories/student_announcements_repository.dart';
 
-class StudentAnnouncementsScreen extends StatefulWidget {
+class StudentAnnouncementsScreen extends StatelessWidget {
   const StudentAnnouncementsScreen({super.key});
 
   @override
-  State<StudentAnnouncementsScreen> createState() =>
-      _StudentAnnouncementsScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          AnnouncementsCubit(sl<StudentAnnouncementsRepository>())
+            ..loadAnnouncements(),
+      child: const _StudentAnnouncementsView(),
+    );
+  }
 }
 
-class _StudentAnnouncementsScreenState
-    extends State<StudentAnnouncementsScreen> {
-  int _selectedFilter = 0;
-  final List<String> _filters = ['All', 'Admin', 'Teacher', 'Calendar'];
-  final StudentAnnouncementsRepository _repository =
-      MockStudentAnnouncementsRepository();
-  bool _isLoading = true;
-  String? _error;
-  List<AnnouncementModel> _announcements = const [];
+class _StudentAnnouncementsView extends StatefulWidget {
+  const _StudentAnnouncementsView();
 
   @override
-  void initState() {
-    super.initState();
-    _loadAnnouncements();
-  }
+  State<_StudentAnnouncementsView> createState() =>
+      _StudentAnnouncementsViewState();
+}
 
-  Future<void> _loadAnnouncements() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+class _StudentAnnouncementsViewState extends State<_StudentAnnouncementsView> {
+  int _selectedFilter = 0;
+  final List<String> _filters = ['All', 'Admin', 'Teacher', 'Calendar'];
 
-    try {
-      final announcements = await _repository.fetchAnnouncements();
-      if (!mounted) return;
-      setState(() {
-        _announcements = announcements;
-        _isLoading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'Unable to load announcements right now.';
-        _isLoading = false;
-      });
-    }
-  }
-
-  List<AnnouncementModel> get _visibleAnnouncements {
-    if (_selectedFilter == 0) return _announcements;
+  List<AnnouncementModel> _visibleAnnouncements(
+    List<AnnouncementModel> announcements,
+  ) {
+    if (_selectedFilter == 0) return announcements;
     final selectedCategory = _filters[_selectedFilter].toLowerCase();
     if (selectedCategory == 'calendar') {
-      return _announcements
+      return announcements
           .where((announcement) => announcement.category == 'calendar')
           .toList();
     }
-    return _announcements
-        .where((announcement) =>
-            announcement.authorRole.toLowerCase() == selectedCategory)
+    return announcements
+        .where(
+          (announcement) =>
+              announcement.authorRole.toLowerCase() == selectedCategory,
+        )
         .toList();
+  }
+
+  int _recentUnreadCount(List<AnnouncementModel> announcements) {
+    final oneDayAgo = DateTime.now().subtract(const Duration(hours: 24));
+    return announcements.where((a) => a.createdAt.isAfter(oneDayAgo)).length;
+  }
+
+  void _openAnnouncementDetail(AnnouncementModel announcement) {
+    Navigator.of(context).pushNamed(
+      RouteNames.studentAnnouncementDetail,
+      arguments: {'announcementId': announcement.id},
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // App bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  Semantics(
-                    label: 'Back',
-                    button: true,
-                    child: GestureDetector(
-                      onTap: () => Navigator.of(context).pop(),
-                      child: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 20,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                  const Expanded(
-                    child: Text(
-                      'Announcements',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: 'Announcement notifications',
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('No unread announcement notifications.'),
-                        ),
-                      );
-                    },
-                    icon: const Icon(
-                      Icons.notifications_outlined,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Filter chips
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: List.generate(_filters.length, (index) {
-                  final isSelected = _selectedFilter == index;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: GestureDetector(
-                      onTap: () => setState(() => _selectedFilter = index),
-                      child: Semantics(
-                        selected: isSelected,
-                        button: true,
-                        label: 'Filter ${_filters[index]}',
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isSelected ? AppColors.primary : Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: isSelected
-                                  ? AppColors.primary
-                                  : Colors.grey.shade300,
-                            ),
-                          ),
-                          child: Text(
-                            _filters[index],
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: isSelected
-                                  ? Colors.white
-                                  : Colors.grey.shade600,
-                            ),
-                          ),
+      body: StudentPageBackground(
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                child: Row(
+                  children: [
+                    Semantics(
+                      label: 'Back',
+                      button: true,
+                      child: Pressable(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          size: 20,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                     ),
-                  );
-                }),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Announcements list
-            Expanded(
-              child: _isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        semanticsLabel: 'Loading announcements',
-                      ),
-                    )
-                  : _error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(_error!, style: const TextStyle(color: Colors.red)),
-                          const SizedBox(height: 10),
-                          ElevatedButton(
-                            onPressed: _loadAnnouncements,
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                children: [
-                  if (_visibleAnnouncements.isEmpty) ...[
-                    const SizedBox(height: 60),
-                    const Center(
+                    Expanded(
                       child: Text(
-                        'No announcements in this category yet.',
-                        style: TextStyle(color: AppColors.textSecondary),
+                        'Announcements',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onSurface,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 40),
-                  ] else ...[
-                    for (final section in {'TODAY', 'YESTERDAY'}) ...[
-                      if (_visibleAnnouncements.any(
-                        (announcement) => _sectionFor(announcement) == section,
-                      )) ...[
-                        _SectionHeader(title: section),
-                        const SizedBox(height: 10),
-                        for (final announcement in _visibleAnnouncements.where(
-                          (item) => _sectionFor(item) == section,
-                        )) ...[
-                          _AnnouncementItem(
-                            icon: _iconFor(announcement),
-                            iconColor: _iconColorFor(announcement),
-                            iconBgColor: _iconBgFor(announcement),
-                            title: announcement.title,
-                            subtitle: announcement.authorName,
-                            time: _timeLabel(announcement.createdAt),
-                            body: announcement.body,
-                          ),
-                          const SizedBox(height: 10),
-                        ],
-                        const SizedBox(height: 10),
-                      ],
-                    ],
+                    BlocBuilder<AnnouncementsCubit, AnnouncementsState>(
+                      buildWhen: (previous, current) =>
+                          previous.announcements != current.announcements,
+                      builder: (context, state) {
+                        final count = _recentUnreadCount(state.announcements);
+                        return Stack(
+                          children: [
+                            IconButton(
+                              tooltip: 'Announcement notifications',
+                              onPressed: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      count > 0
+                                          ? '$count announcement${count == 1 ? '' : 's'} in the last 24 hours.'
+                                          : 'No recent announcements.',
+                                    ),
+                                  ),
+                                );
+                              },
+                              icon: Icon(
+                                Icons.notifications_outlined,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                            if (count > 0)
+                              Positioned(
+                                right: 6,
+                                top: 6,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.danger,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 18,
+                                    minHeight: 18,
+                                  ),
+                                  child: Text(
+                                    '$count',
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: theme.colorScheme.onError,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
                   ],
-                  const SizedBox(height: 24),
-                  Center(
-                    child: Text(
-                      'You\'re all caught up',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade400,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                ],
+                ),
               ),
-            ),
-          ],
+
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: List.generate(_filters.length, (index) {
+                    final isSelected = _selectedFilter == index;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Pressable(
+                        onTap: () => setState(() => _selectedFilter = index),
+                        child: Semantics(
+                          selected: isSelected,
+                          button: true,
+                          label: 'Filter ${_filters[index]}',
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.surface,
+                              borderRadius: AppRadius.borderXl,
+                              border: Border.all(
+                                color: isSelected
+                                    ? theme.colorScheme.primary
+                                    : theme.colorScheme.outlineVariant,
+                              ),
+                            ),
+                            child: Text(
+                              _filters[index],
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.w500,
+                                color: isSelected
+                                    ? theme.colorScheme.onPrimary
+                                    : theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+              AppSpacing.gapLg,
+
+              Expanded(
+                child: BlocBuilder<AnnouncementsCubit, AnnouncementsState>(
+                  builder: (context, state) {
+                    if (state.status == AnnouncementsStatus.loading ||
+                        state.status == AnnouncementsStatus.initial) {
+                      return const Padding(
+                        padding: EdgeInsets.all(20),
+                        child: ShimmerList(),
+                      );
+                    }
+                    if (state.status == AnnouncementsStatus.error) {
+                      return AppErrorWidget(
+                        message:
+                            state.errorMessage ??
+                            'Unable to load announcements.',
+                        onRetry: () => context
+                            .read<AnnouncementsCubit>()
+                            .loadAnnouncements(),
+                      );
+                    }
+                    final announcements = state.announcements;
+                    final visible = _visibleAnnouncements(announcements);
+                    var announcementStaggerIndex = 0;
+                    return BrandedRefreshIndicator(
+                      onRefresh: () => context
+                          .read<AnnouncementsCubit>()
+                          .loadAnnouncements(),
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        children: [
+                          if (visible.isEmpty) ...[
+                            AppSpacing.gapHuge,
+                            EmptyStateWidget(
+                              illustration: const EmptyBoxIllustration(),
+                              icon: Icons.campaign_rounded,
+                              title: 'No announcements yet',
+                              subtitle:
+                                  'Announcements for this category will appear here.',
+                            ),
+                            AppSpacing.gapHuge,
+                          ] else ...[
+                            for (final section in {'TODAY', 'YESTERDAY'}) ...[
+                              if (visible.any(
+                                (announcement) =>
+                                    _sectionFor(announcement) == section,
+                              )) ...[
+                                _SectionHeader(title: section),
+                                AppSpacing.gapSm,
+                                for (final announcement in visible.where(
+                                  (item) => _sectionFor(item) == section,
+                                )) ...[
+                                  StaggeredFadeSlide(
+                                    index: announcementStaggerIndex++,
+                                    child: Pressable(
+                                      onTap: () =>
+                                          _openAnnouncementDetail(announcement),
+                                      child: _AnnouncementItem(
+                                        icon: _iconFor(announcement),
+                                        iconColor: _iconColorFor(announcement),
+                                        iconBgColor: _iconBgFor(announcement),
+                                        title: announcement.title,
+                                        subtitle: announcement.authorName,
+                                        time: _timeLabel(
+                                          announcement.createdAt,
+                                        ),
+                                        body: announcement.body,
+                                      ),
+                                    ),
+                                  ),
+                                  AppSpacing.gapSm,
+                                ],
+                                AppSpacing.gapSm,
+                              ],
+                            ],
+                          ],
+                          AppSpacing.gapXxl,
+                          Center(
+                            child: Text(
+                              'You\'re all caught up',
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                          AppSpacing.gapXl,
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -259,22 +332,26 @@ class _StudentAnnouncementsScreenState
 
   IconData _iconFor(AnnouncementModel model) {
     if (model.category == 'calendar') return Icons.calendar_today_rounded;
-    if (model.authorRole.toLowerCase() == 'teacher') return Icons.school_rounded;
+    if (model.authorRole.toLowerCase() == 'teacher') {
+      return Icons.school_rounded;
+    }
     return Icons.warning_amber_rounded;
   }
 
   Color _iconColorFor(AnnouncementModel model) {
-    if (model.category == 'calendar') return AppColors.primary;
-    if (model.authorRole.toLowerCase() == 'teacher') return Colors.amber;
-    return Colors.red;
+    if (model.category == 'calendar') {
+      return Theme.of(context).colorScheme.primary;
+    }
+    if (model.authorRole.toLowerCase() == 'teacher') return AppColors.warning;
+    return AppColors.danger;
   }
 
   Color _iconBgFor(AnnouncementModel model) {
-    if (model.category == 'calendar') return const Color(0xFFDBEAFE);
+    if (model.category == 'calendar') return AppColors.categoryGeneral;
     if (model.authorRole.toLowerCase() == 'teacher') {
-      return const Color(0xFFFEF3C7);
+      return AppColors.categoryEvent;
     }
-    return const Color(0xFFFEE2E2);
+    return AppColors.categoryUrgent;
   }
 }
 
@@ -284,12 +361,12 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Text(
       title,
-      style: TextStyle(
-        fontSize: 12,
+      style: theme.textTheme.bodySmall?.copyWith(
         fontWeight: FontWeight.w600,
-        color: Colors.grey.shade500,
+        color: theme.colorScheme.onSurfaceVariant,
         letterSpacing: 0.5,
       ),
     );
@@ -317,18 +394,14 @@ class _AnnouncementItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(8),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: theme.colorScheme.surface,
+        borderRadius: AppRadius.borderLg,
+        boxShadow: AppShadows.subtle(theme.shadowColor),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -338,11 +411,11 @@ class _AnnouncementItem extends StatelessWidget {
             height: 42,
             decoration: BoxDecoration(
               color: iconBgColor,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: AppRadius.borderSm,
             ),
             child: Icon(icon, color: iconColor, size: 22),
           ),
-          const SizedBox(width: 12),
+          AppSpacing.hGapMd,
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,35 +425,34 @@ class _AnnouncementItem extends StatelessWidget {
                     Expanded(
                       child: Text(
                         title,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                          color: theme.colorScheme.onSurface,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    AppSpacing.hGapSm,
                     Text(
                       time,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey.shade400,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 2),
+                AppSpacing.gapXxs,
                 Text(
                   subtitle,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
-                const SizedBox(height: 6),
+                AppSpacing.gapSm,
                 Text(
                   body,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                     height: 1.4,
                   ),
                   maxLines: 2,

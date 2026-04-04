@@ -1,95 +1,123 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:trilink_mobile/core/widgets/empty_state_widget.dart';
+import 'package:trilink_mobile/core/widgets/illustrations.dart';
+import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
 
-class LeaderboardScreen extends StatefulWidget {
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_shadows.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/student_page_background.dart';
+import '../cubit/leaderboard_cubit.dart';
+import '../repositories/student_gamification_repository.dart';
+
+class LeaderboardScreen extends StatelessWidget {
   const LeaderboardScreen({super.key});
 
   @override
-  State<LeaderboardScreen> createState() => _LeaderboardScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          LeaderboardCubit(sl<StudentGamificationRepository>())
+            ..loadLeaderboard(),
+      child: const _LeaderboardView(),
+    );
+  }
 }
 
-class _LeaderboardScreenState extends State<LeaderboardScreen> {
-  bool _weekly = true;
-
-  static const List<_LeaderboardEntry> _weeklyEntries = [
-    _LeaderboardEntry(name: 'Alex M.', xp: 4500, isCurrentUser: false),
-    _LeaderboardEntry(name: 'Sarah J.', xp: 4320, isCurrentUser: false),
-    _LeaderboardEntry(name: 'You', xp: 4100, isCurrentUser: true),
-    _LeaderboardEntry(name: 'David R.', xp: 3980, isCurrentUser: false),
-  ];
-
-  static const List<_LeaderboardEntry> _monthlyEntries = [
-    _LeaderboardEntry(name: 'Sarah J.', xp: 17200, isCurrentUser: false),
-    _LeaderboardEntry(name: 'You', xp: 16850, isCurrentUser: true),
-    _LeaderboardEntry(name: 'Alex M.', xp: 16420, isCurrentUser: false),
-    _LeaderboardEntry(name: 'Marta K.', xp: 16010, isCurrentUser: false),
-  ];
+class _LeaderboardView extends StatelessWidget {
+  const _LeaderboardView();
 
   @override
   Widget build(BuildContext context) {
-    final entries = _weekly ? _weeklyEntries : _monthlyEntries;
+    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Leaderboard'),
         actions: [
           TextButton(
-            onPressed: () => setState(() => _weekly = !_weekly),
-            child: Text(_weekly ? 'Weekly' : 'Monthly'),
+            onPressed: () => context.read<LeaderboardCubit>().togglePeriod(),
+            child: BlocBuilder<LeaderboardCubit, LeaderboardState>(
+              builder: (context, state) =>
+                  Text(state.weekly ? 'Weekly' : 'Monthly'),
+            ),
           ),
         ],
       ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: entries.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
-        itemBuilder: (context, index) {
-          final entry = entries[index];
-          final rank = index + 1;
-          return Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: entry.isCurrentUser
-                  ? Theme.of(context).colorScheme.primary.withAlpha(18)
-                  : Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: entry.isCurrentUser
-                    ? Theme.of(context).colorScheme.primary
-                    : Colors.grey.shade300,
-              ),
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 14,
-                  backgroundColor: Colors.grey.shade200,
-                  child: Text('$rank', style: const TextStyle(fontSize: 12)),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    entry.name,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+      body: StudentPageBackground(
+        child: BlocBuilder<LeaderboardCubit, LeaderboardState>(
+          builder: (context, state) {
+            final loading =
+                state.status == LeaderboardStatus.initial ||
+                state.status == LeaderboardStatus.loading;
+            if (loading) {
+              return const Padding(
+                padding: AppSpacing.paddingLg,
+                child: ShimmerList(itemCount: 8, itemHeight: 56),
+              );
+            }
+            if (state.entries.isEmpty) {
+              return const EmptyStateWidget(
+                illustration: TrophyIllustration(),
+                icon: Icons.leaderboard_rounded,
+                title: 'No leaderboard data',
+                subtitle: 'Rankings will appear here once available.',
+              );
+            }
+            return ListView.separated(
+              padding: AppSpacing.paddingLg,
+              itemCount: state.entries.length,
+              separatorBuilder: (_, _) => AppSpacing.gapSm,
+              itemBuilder: (context, index) {
+                final entry = state.entries[index];
+                return StaggeredFadeSlide(
+                  index: index,
+                  child: Container(
+                    padding: AppSpacing.paddingMd,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface,
+                      borderRadius: AppRadius.borderMd,
+                      boxShadow: AppShadows.subtle(theme.shadowColor),
+                    ),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 14,
+                          backgroundColor:
+                              theme.colorScheme.surfaceContainerLow,
+                          child: Text(
+                            '${entry.rank}',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ),
+                        AppSpacing.hGapSm,
+                        Expanded(
+                          child: Text(
+                            entry.studentName,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '${entry.points} XP',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                Text('${entry.xp} XP'),
-              ],
-            ),
-          );
-        },
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
-}
-
-class _LeaderboardEntry {
-  final String name;
-  final int xp;
-  final bool isCurrentUser;
-
-  const _LeaderboardEntry({
-    required this.name,
-    required this.xp,
-    required this.isCurrentUser,
-  });
 }

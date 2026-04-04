@@ -4,8 +4,9 @@ class CalendarEventModel {
   final String? description;
   final DateTime startTime;
   final DateTime endTime;
-  final String type; // exam, event, class, personal
+  final String type;
   final String? subjectId;
+  final String? location;
 
   const CalendarEventModel({
     required this.id,
@@ -15,6 +16,7 @@ class CalendarEventModel {
     required this.endTime,
     required this.type,
     this.subjectId,
+    this.location,
   });
 
   factory CalendarEventModel.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,18 @@ class CalendarEventModel {
       endTime: DateTime.parse(json['endTime'] as String),
       type: json['type'] as String,
       subjectId: json['subjectId'] as String?,
+      location: json['location'] as String?,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'description': description,
+        'startTime': startTime.toIso8601String(),
+        'endTime': endTime.toIso8601String(),
+        'type': type,
+        'subjectId': subjectId,
+        'location': location,
+      };
 }

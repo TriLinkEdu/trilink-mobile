@@ -1,19 +1,46 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:trilink_mobile/core/widgets/empty_state_widget.dart';
+import 'package:trilink_mobile/core/widgets/illustrations.dart';
+import 'package:trilink_mobile/core/widgets/error_widget.dart';
+import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
+import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
-import 'submit_feedback_screen.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_shadows.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/routes/route_names.dart';
+import '../../../../core/widgets/pressable.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
+import '../cubit/feedback_cubit.dart';
+import '../models/feedback_model.dart';
+import '../repositories/student_feedback_repository.dart';
+import '../../shared/widgets/student_page_background.dart';
 
-/// Anonymous feedback for each subject/teacher.
-class StudentFeedbackScreen extends StatefulWidget {
+class StudentFeedbackScreen extends StatelessWidget {
   const StudentFeedbackScreen({super.key});
 
   @override
-  State<StudentFeedbackScreen> createState() => _StudentFeedbackScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          FeedbackCubit(sl<StudentFeedbackRepository>())..loadFeedbackHistory(),
+      child: const _StudentFeedbackView(),
+    );
+  }
 }
 
-class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
+class _StudentFeedbackView extends StatefulWidget {
+  const _StudentFeedbackView();
+
+  @override
+  State<_StudentFeedbackView> createState() => _StudentFeedbackViewState();
+}
+
+class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
   int _selectedRating = 4;
   String _selectedSubject = 'Mathematics 101';
-  bool _isSubmitting = false;
+  bool _showBanner = true;
   final _whatWentWellController = TextEditingController();
   final _whatCouldImproveController = TextEditingController();
 
@@ -32,512 +59,601 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      body: SafeArea(
-        child: Column(
+  void _submitFeedback() {
+    final positive = _whatWentWellController.text.trim();
+    final improvement = _whatCouldImproveController.text.trim();
+
+    if (positive.isEmpty && improvement.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please add at least one feedback comment.'),
+        ),
+      );
+      return;
+    }
+
+    final comment = [
+      if (positive.isNotEmpty) 'What went well: $positive',
+      if (improvement.isNotEmpty) 'Could improve: $improvement',
+    ].join('\n');
+
+    context.read<FeedbackCubit>().submitFeedback(
+      subjectId: _selectedSubject.toLowerCase().replaceAll(' ', '_'),
+      subjectName: _selectedSubject,
+      rating: _selectedRating,
+      comment: comment,
+    );
+  }
+
+  void _showAllFeedbackHistory() {
+    final theme = Theme.of(context);
+    final feedbackHistory = context.read<FeedbackCubit>().state.feedbackHistory;
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => DraggableScrollableSheet(
+        initialChildSize: 0.65,
+        maxChildSize: 0.9,
+        minChildSize: 0.3,
+        expand: false,
+        builder: (_, controller) => Column(
           children: [
-            // App bar
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 20,
-                      color: AppColors.textPrimary,
+                  Text(
+                    'All Feedback History',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
-                  const Expanded(
-                    child: Text(
-                      'Feedback',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: () => Navigator.pop(sheetContext),
+                    icon: const Icon(Icons.close),
                   ),
-                  const SizedBox(width: 40),
                 ],
               ),
             ),
-
+            const Divider(),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Anonymous notice
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withAlpha(15),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppColors.primary.withAlpha(40),
-                        ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withAlpha(30),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.shield_rounded,
-                              size: 16,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    const Expanded(
-                                      child: Text(
-                                        'Anonymous Feedback',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.textPrimary,
-                                        ),
-                                      ),
-                                    ),
-                                    Icon(
-                                      Icons.close,
-                                      size: 18,
-                                      color: Colors.grey.shade400,
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Your feedback helps improve the course. Instructors will see your comments but not your name.',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 22),
-
-                    // Select Subject
-                    const Text(
-                      'Select Subject',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _selectedSubject,
-                          isExpanded: true,
-                          icon: Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            color: Colors.grey.shade500,
-                          ),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textPrimary,
-                          ),
-                          items: _subjects
-                              .map(
-                                (s) =>
-                                    DropdownMenuItem(value: s, child: Text(s)),
-                              )
-                              .toList(),
-                          onChanged: (v) {
-                            if (v != null) setState(() => _selectedSubject = v);
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton.icon(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => SubmitFeedbackScreen(
-                                subjectId: _selectedSubject
-                                    .toLowerCase()
-                                    .replaceAll(' ', '_'),
-                                subjectName: _selectedSubject,
-                              ),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.open_in_new_rounded, size: 16),
-                        label: const Text('Open detailed form'),
-                      ),
-                    ),
-                    const SizedBox(height: 22),
-
-                    // Rating
-                    const Text(
-                      'Rate your understanding (1-5)',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: List.generate(5, (i) {
-                        final rating = i + 1;
-                        final isSelected = rating == _selectedRating;
-                        return Expanded(
-                          child: GestureDetector(
-                            onTap: () =>
-                                setState(() => _selectedRating = rating),
-                            child: Container(
-                              margin: EdgeInsets.only(right: i < 4 ? 8 : 0),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? AppColors.primary
-                                    : Colors.white,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? AppColors.primary
-                                      : Colors.grey.shade300,
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                  Text(
-                                    '$rating',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: isSelected
-                                          ? Colors.white
-                                          : AppColors.textPrimary,
-                                    ),
-                                  ),
-                                  if (rating == 1 || rating == 5) ...[
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      rating == 1 ? 'POOR' : 'GREAT',
-                                      style: TextStyle(
-                                        fontSize: 8,
-                                        fontWeight: FontWeight.w600,
-                                        color: isSelected
-                                            ? Colors.white.withAlpha(200)
-                                            : Colors.grey.shade400,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          ),
+              child: feedbackHistory.isEmpty
+                  ? const EmptyStateWidget(
+                      illustration: ClipboardIllustration(),
+                      icon: Icons.rate_review_rounded,
+                      title: 'No feedback yet',
+                      subtitle: 'Feedback you submit will appear here.',
+                    )
+                  : ListView.separated(
+                      controller: controller,
+                      padding: const EdgeInsets.all(16),
+                      itemCount: feedbackHistory.length,
+                      separatorBuilder: (_, _) => AppSpacing.gapMd,
+                      itemBuilder: (context, index) {
+                        final fb = feedbackHistory[index];
+                        return StaggeredFadeSlide(
+                          index: index,
+                          child: _FeedbackHistoryTile(feedback: fb),
                         );
-                      }),
+                      },
                     ),
-                    const SizedBox(height: 22),
-
-                    // What went well?
-                    const Text(
-                      'What went well?',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _whatWentWellController,
-                      maxLines: 2,
-                      decoration: InputDecoration(
-                        hintText: 'Highlight effective teaching methods...',
-                        hintStyle: TextStyle(
-                          color: Colors.grey.shade400,
-                          fontSize: 13,
-                        ),
-                        suffixIcon: Icon(
-                          Icons.thumb_up_outlined,
-                          color: Colors.grey.shade300,
-                          size: 20,
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.primary,
-                            width: 1.5,
-                          ),
-                        ),
-                        contentPadding: const EdgeInsets.all(14),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-
-                    // What could improve?
-                    const Text(
-                      'What could improve?',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _whatCouldImproveController,
-                      maxLines: 2,
-                      decoration: InputDecoration(
-                        hintText: 'Suggest areas for improvement...',
-                        hintStyle: TextStyle(
-                          color: Colors.grey.shade400,
-                          fontSize: 13,
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.primary,
-                            width: 1.5,
-                          ),
-                        ),
-                        contentPadding: const EdgeInsets.all(14),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Submit button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: _isSubmitting
-                            ? null
-                            : () async {
-                                final positive = _whatWentWellController.text
-                                    .trim();
-                                final improvement =
-                                    _whatCouldImproveController.text.trim();
-
-                                if (positive.isEmpty && improvement.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Please add at least one feedback comment.',
-                                      ),
-                                    ),
-                                  );
-                                  return;
-                                }
-
-                                setState(() => _isSubmitting = true);
-                                await Future<void>.delayed(
-                                  const Duration(milliseconds: 600),
-                                );
-                                if (!context.mounted) return;
-                                setState(() => _isSubmitting = false);
-
-                                _whatWentWellController.clear();
-                                _whatCouldImproveController.clear();
-
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Feedback submitted for $_selectedSubject.',
-                                    ),
-                                  ),
-                                );
-                              },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                          textStyle: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(_isSubmitting ? 'Submitting...' : 'Submit Feedback'),
-                            const SizedBox(width: 6),
-                            Icon(
-                              _isSubmitting
-                                  ? Icons.hourglass_top_rounded
-                                  : Icons.arrow_forward_rounded,
-                              size: 18,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-
-                    // Recent Feedback
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Recent Feedback',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            showDialog<void>(
-                              context: context,
-                              builder: (dialogContext) => AlertDialog(
-                                title: const Text('All Feedback History'),
-                                content: const Text(
-                                  '2 recent feedback items are currently available in this prototype view.',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.of(dialogContext).pop(),
-                                    child: const Text('Close'),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                          child: const Text(
-                            'View all',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Recent feedback items
-                    const _RecentFeedbackItem(
-                      subject: 'Physics: Mechanics',
-                      date: 'Oct 24, 2023',
-                      rating: 3,
-                      status: 'REPLIED',
-                      statusColor: Colors.green,
-                      comment:
-                          '"The lab sessions were very helpful, but the lecture pace was a bit too fast for the complex..."',
-                      instructorResponse:
-                          '"Thanks for the feedback! We\'ll try to slow down during the thermodynamics module next week."',
-                    ),
-                    const SizedBox(height: 14),
-                    const _RecentFeedbackItem(
-                      subject: 'World History',
-                      date: 'Oct 12, 2023',
-                      rating: 5,
-                      status: 'PENDING',
-                      statusColor: Colors.orange,
-                      comment:
-                          '"Absolutely loved the documentary we watche..."',
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-                ),
-              ),
             ),
           ],
         ),
       ),
     );
   }
-}
-
-class _RecentFeedbackItem extends StatelessWidget {
-  final String subject;
-  final String date;
-  final int rating;
-  final String status;
-  final Color statusColor;
-  final String comment;
-  final String? instructorResponse;
-
-  const _RecentFeedbackItem({
-    required this.subject,
-    required this.date,
-    required this.rating,
-    required this.status,
-    required this.statusColor,
-    required this.comment,
-    this.instructorResponse,
-  });
 
   @override
   Widget build(BuildContext context) {
+    return BlocConsumer<FeedbackCubit, FeedbackState>(
+      listener: (context, feedbackState) {
+        if (feedbackState.submissionStatus ==
+            FeedbackSubmissionStatus.success) {
+          _whatWentWellController.clear();
+          _whatCouldImproveController.clear();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Feedback submitted for $_selectedSubject.'),
+            ),
+          );
+          context.read<FeedbackCubit>().clearSubmissionStatus();
+        } else if (feedbackState.submissionStatus ==
+            FeedbackSubmissionStatus.error) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                feedbackState.submissionErrorMessage ??
+                    'Failed to submit feedback.',
+              ),
+            ),
+          );
+          context.read<FeedbackCubit>().clearSubmissionStatus();
+        }
+      },
+      builder: (context, feedbackState) {
+        final theme = Theme.of(context);
+        final feedbackHistory = feedbackState.feedbackHistory;
+        final historyLoading =
+            feedbackState.status == FeedbackStatus.loading ||
+            feedbackState.status == FeedbackStatus.initial;
+        final isSubmitting =
+            feedbackState.submissionStatus ==
+            FeedbackSubmissionStatus.submitting;
+        final recentItems = feedbackHistory.length > 2
+            ? feedbackHistory.sublist(feedbackHistory.length - 2)
+            : feedbackHistory;
+
+        return Scaffold(
+          body: StudentPageBackground(
+            child: SafeArea(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      children: [
+                        Pressable(
+                          onTap: () => Navigator.of(context).pop(),
+                          child: Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            size: 20,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            'Feedback',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 40),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (_showBanner)
+                            Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary.withAlpha(15),
+                                borderRadius: AppRadius.borderMd,
+                                border: Border.all(
+                                  color: theme.colorScheme.primary.withAlpha(
+                                    40,
+                                  ),
+                                ),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: 32,
+                                    height: 32,
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.primary
+                                          .withAlpha(30),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.shield_rounded,
+                                      size: 16,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                  ),
+                                  AppSpacing.hGapMd,
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                'Anonymous Feedback',
+                                                style: theme
+                                                    .textTheme
+                                                    .bodyMedium
+                                                    ?.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: theme
+                                                          .colorScheme
+                                                          .onSurface,
+                                                    ),
+                                              ),
+                                            ),
+                                            Pressable(
+                                              onTap: () => setState(
+                                                () => _showBanner = false,
+                                              ),
+                                              child: Icon(
+                                                Icons.close,
+                                                size: 18,
+                                                color: theme
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        AppSpacing.gapXs,
+                                        Text(
+                                          'Your feedback helps improve the course. Instructors will see your comments but not your name.',
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                                color: theme
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
+                                                height: 1.4,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          AppSpacing.gapXxl,
+
+                          Text(
+                            'Select Subject',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                          AppSpacing.gapSm,
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surface,
+                              borderRadius: AppRadius.borderMd,
+                              border: Border.all(
+                                color: theme.colorScheme.outlineVariant,
+                              ),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _selectedSubject,
+                                isExpanded: true,
+                                icon: Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurface,
+                                ),
+                                items: _subjects
+                                    .map(
+                                      (s) => DropdownMenuItem(
+                                        value: s,
+                                        child: Text(s),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (v) {
+                                  if (v != null) {
+                                    setState(() => _selectedSubject = v);
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+                          AppSpacing.gapMd,
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton.icon(
+                              onPressed: () async {
+                                final cubit = context.read<FeedbackCubit>();
+                                final result = await Navigator.of(context)
+                                    .pushNamed<bool>(
+                                      RouteNames.studentSubmitFeedback,
+                                      arguments: {
+                                        'subjectId': _selectedSubject
+                                            .toLowerCase()
+                                            .replaceAll(' ', '_'),
+                                        'subjectName': _selectedSubject,
+                                      },
+                                    );
+                                if (result == true && mounted) {
+                                  cubit.loadFeedbackHistory();
+                                }
+                              },
+                              icon: const Icon(
+                                Icons.open_in_new_rounded,
+                                size: 16,
+                              ),
+                              label: const Text('Open detailed form'),
+                            ),
+                          ),
+                          AppSpacing.gapXxl,
+
+                          Text(
+                            'Rate your understanding (1-5)',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                          AppSpacing.gapMd,
+                          Row(
+                            children: List.generate(5, (i) {
+                              final rating = i + 1;
+                              final isSelected = rating == _selectedRating;
+                              return Expanded(
+                                child: Pressable(
+                                  onTap: () =>
+                                      setState(() => _selectedRating = rating),
+                                  child: Container(
+                                    margin: EdgeInsets.only(
+                                      right: i < 4 ? 8 : 0,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? theme.colorScheme.primary
+                                          : theme.colorScheme.surface,
+                                      borderRadius: AppRadius.borderMd,
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? theme.colorScheme.primary
+                                            : theme.colorScheme.outlineVariant,
+                                      ),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Text(
+                                          '$rating',
+                                          style: theme.textTheme.titleSmall
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                color: isSelected
+                                                    ? theme
+                                                          .colorScheme
+                                                          .onPrimary
+                                                    : theme
+                                                          .colorScheme
+                                                          .onSurface,
+                                              ),
+                                        ),
+                                        if (rating == 1 || rating == 5) ...[
+                                          AppSpacing.gapXxs,
+                                          Text(
+                                            rating == 1 ? 'POOR' : 'GREAT',
+                                            style: theme.textTheme.labelSmall
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                  color: isSelected
+                                                      ? theme
+                                                            .colorScheme
+                                                            .onPrimary
+                                                            .withAlpha(200)
+                                                      : theme
+                                                            .colorScheme
+                                                            .onSurfaceVariant,
+                                                ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ),
+                          AppSpacing.gapXxl,
+
+                          Text(
+                            'What went well?',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                          AppSpacing.gapSm,
+                          TextField(
+                            controller: _whatWentWellController,
+                            maxLines: 2,
+                            decoration: InputDecoration(
+                              hintText:
+                                  'Highlight effective teaching methods...',
+                              hintStyle: theme.textTheme.labelLarge?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                              suffixIcon: Icon(
+                                Icons.thumb_up_outlined,
+                                color: theme.colorScheme.outlineVariant,
+                                size: 20,
+                              ),
+                              contentPadding: const EdgeInsets.all(14),
+                            ),
+                          ),
+                          AppSpacing.gapXl,
+
+                          Text(
+                            'What could improve?',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                          AppSpacing.gapSm,
+                          TextField(
+                            controller: _whatCouldImproveController,
+                            maxLines: 2,
+                            decoration: InputDecoration(
+                              hintText: 'Suggest areas for improvement...',
+                              hintStyle: theme.textTheme.labelLarge?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                              contentPadding: const EdgeInsets.all(14),
+                            ),
+                          ),
+                          AppSpacing.gapXxl,
+
+                          SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: isSubmitting ? null : _submitFeedback,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: theme.colorScheme.primary,
+                                foregroundColor: theme.colorScheme.onPrimary,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: AppRadius.borderMd,
+                                ),
+                                elevation: 0,
+                                textStyle: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    isSubmitting
+                                        ? 'Submitting...'
+                                        : 'Submit Feedback',
+                                  ),
+                                  AppSpacing.hGapSm,
+                                  Icon(
+                                    isSubmitting
+                                        ? Icons.hourglass_top_rounded
+                                        : Icons.arrow_forward_rounded,
+                                    size: 18,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          AppSpacing.gapXxxl,
+
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Recent Feedback',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.onSurface,
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: _showAllFeedbackHistory,
+                                child: Text(
+                                  'View all',
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          AppSpacing.gapSm,
+
+                          if (historyLoading)
+                            const Padding(
+                              padding: EdgeInsets.all(20),
+                              child: ShimmerList(),
+                            )
+                          else if (feedbackState.status == FeedbackStatus.error)
+                            AppErrorWidget(
+                              message:
+                                  feedbackState.errorMessage ??
+                                  'Unable to load feedback.',
+                              onRetry: () => context
+                                  .read<FeedbackCubit>()
+                                  .loadFeedbackHistory(),
+                            )
+                          else if (recentItems.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.all(20),
+                              child: EmptyStateWidget(
+                                illustration: ClipboardIllustration(),
+                                icon: Icons.rate_review_rounded,
+                                title: 'No feedback yet',
+                                subtitle:
+                                    'Your submitted feedback will appear here.',
+                              ),
+                            )
+                          else
+                            for (final fb in recentItems.reversed) ...[
+                              _RecentFeedbackItem(feedback: fb),
+                              AppSpacing.gapLg,
+                            ],
+                          AppSpacing.gapXxl,
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _RecentFeedbackItem extends StatelessWidget {
+  final FeedbackModel feedback;
+
+  const _RecentFeedbackItem({required this.feedback});
+
+  String _formatDate(DateTime date) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final statusLabel = (feedback.status ?? 'PENDING').toUpperCase();
+    final isReplied = statusLabel == 'REVIEWED';
+    final statusColor = isReplied ? AppColors.success : AppColors.warning;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(8),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: theme.colorScheme.surface,
+        borderRadius: AppRadius.borderLg,
+        boxShadow: AppShadows.subtle(theme.shadowColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -546,11 +662,10 @@ class _RecentFeedbackItem extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  subject,
-                  style: const TextStyle(
-                    fontSize: 14,
+                  feedback.subjectName,
+                  style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -558,23 +673,22 @@ class _RecentFeedbackItem extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: statusColor.withAlpha(25),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: AppRadius.borderSm,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      status == 'REPLIED'
+                      isReplied
                           ? Icons.arrow_back_rounded
                           : Icons.schedule_rounded,
                       size: 12,
                       color: statusColor,
                     ),
-                    const SizedBox(width: 3),
+                    AppSpacing.hGapXs,
                     Text(
-                      status,
-                      style: TextStyle(
-                        fontSize: 10,
+                      statusLabel,
+                      style: theme.textTheme.labelSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: statusColor,
                       ),
@@ -584,79 +698,94 @@ class _RecentFeedbackItem extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          AppSpacing.gapXs,
           Row(
             children: [
               Text(
-                date,
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                _formatDate(feedback.createdAt),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
-              const SizedBox(width: 12),
+              AppSpacing.hGapMd,
               Row(
                 children: List.generate(
                   5,
                   (i) => Icon(
                     Icons.star_rounded,
                     size: 14,
-                    color: i < rating ? Colors.amber : Colors.grey.shade300,
+                    color: i < feedback.rating
+                        ? AppColors.xpGold
+                        : theme.colorScheme.outlineVariant,
                   ),
                 ),
               ),
-              const SizedBox(width: 4),
+              AppSpacing.hGapXs,
               Text(
-                '$rating/5 Rating',
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                '${feedback.rating}/5 Rating',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Text(
-            comment,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade700,
-              height: 1.4,
-              fontStyle: FontStyle.italic,
-            ),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-          ),
-          if (instructorResponse != null) ...[
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.green.withAlpha(15),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.green.withAlpha(40)),
+          if (feedback.comment != null && feedback.comment!.isNotEmpty) ...[
+            AppSpacing.gapMd,
+            Text(
+              '"${feedback.comment}"',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                height: 1.4,
+                fontStyle: FontStyle.italic,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'INSTRUCTOR RESPONSE',
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.green,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    instructorResponse!,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade700,
-                      height: 1.4,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ],
-              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _FeedbackHistoryTile extends StatelessWidget {
+  final FeedbackModel feedback;
+
+  const _FeedbackHistoryTile({required this.feedback});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return ListTile(
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.borderMd,
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      leading: CircleAvatar(
+        backgroundColor: theme.colorScheme.primary.withAlpha(20),
+        child: Text(
+          '${feedback.rating}',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+      ),
+      title: Text(feedback.subjectName),
+      subtitle: Text(
+        feedback.comment ?? 'No comment',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: Text(
+        (feedback.status ?? 'pending').toUpperCase(),
+        style: theme.textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: feedback.status == 'reviewed'
+              ? AppColors.success
+              : AppColors.warning,
+        ),
       ),
     );
   }

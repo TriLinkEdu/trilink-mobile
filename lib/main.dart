@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'core/di/injection_container.dart';
 import 'app.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // TODO: Initialize services (storage, notifications, etc.)
+  await initDependencies();
   runApp(const App());
 }

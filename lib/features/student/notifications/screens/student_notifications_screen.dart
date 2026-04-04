@@ -1,58 +1,96 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:trilink_mobile/core/widgets/branded_refresh.dart';
+import 'package:trilink_mobile/core/widgets/empty_state_widget.dart';
+import 'package:trilink_mobile/core/widgets/illustrations.dart';
+import 'package:trilink_mobile/core/widgets/error_widget.dart';
+import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
+
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/student_page_background.dart';
+import '../cubit/notifications_cubit.dart';
+import '../models/notification_model.dart';
+import '../repositories/student_notifications_repository.dart';
 import '../widgets/notification_tile.dart';
 
-/// Personalized notifications (academic, administrative, marketing).
-/// Supports mark as read/unread.
-class StudentNotificationsScreen extends StatefulWidget {
+class StudentNotificationsScreen extends StatelessWidget {
   const StudentNotificationsScreen({super.key});
 
   @override
-  State<StudentNotificationsScreen> createState() =>
-      _StudentNotificationsScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          NotificationsCubit(sl<StudentNotificationsRepository>())
+            ..loadNotifications(),
+      child: const _NotificationsView(),
+    );
+  }
 }
 
-class _StudentNotificationsScreenState extends State<StudentNotificationsScreen> {
-  int _filterIndex = 0;
-  final List<_NotificationItem> _items = [
-    _NotificationItem(
-      title: 'Math Quiz Reminder',
-      body: 'Your Algebra quiz starts tomorrow at 9:00 AM.',
-      time: '10m ago',
-      isRead: false,
-    ),
-    _NotificationItem(
-      title: 'Attendance Alert',
-      body: 'You have 2 absences recorded this week.',
-      time: '1h ago',
-      isRead: false,
-    ),
-    _NotificationItem(
-      title: 'New Announcement',
-      body: 'School science fair registration is now open.',
-      time: 'Yesterday',
-      isRead: true,
-    ),
-  ];
+class _NotificationsView extends StatefulWidget {
+  const _NotificationsView();
 
-  List<_NotificationItem> get _visibleItems {
+  @override
+  State<_NotificationsView> createState() => _NotificationsViewState();
+}
+
+class _NotificationsViewState extends State<_NotificationsView> {
+  int _filterIndex = 0;
+
+  List<NotificationModel> _visibleItems(List<NotificationModel> items) {
     if (_filterIndex == 1) {
-      return _items.where((item) => !item.isRead).toList();
+      return items.where((item) => !item.isRead).toList();
     }
-    return _items;
+    return items;
   }
 
-  void _markAllRead() {
-    setState(() {
-      for (final item in _items) {
-        item.isRead = true;
-      }
-    });
+  Future<void> _markAllRead() async {
+    await context.read<NotificationsCubit>().markAllAsRead();
+  }
+
+  Future<void> _onTapNotification(NotificationModel notification) async {
+    await context.read<NotificationsCubit>().markNotificationRead(
+      notification.id,
+    );
+
+    if (!mounted) return;
+    if (notification.routeName != null) {
+      Navigator.of(
+        context,
+      ).pushNamed(notification.routeName!, arguments: notification.routeArgs);
+    } else {
+      showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(notification.title),
+          content: Text(notification.body),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Future<void> _onToggleRead(NotificationModel notification) async {
+    await context.read<NotificationsCubit>().toggleRead(notification);
+  }
+
+  String _timeLabel(DateTime createdAt) {
+    final diff = DateTime.now().difference(createdAt);
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays == 1) return 'Yesterday';
+    return '${diff.inDays}d ago';
   }
 
   @override
   Widget build(BuildContext context) {
-    final visibleItems = _visibleItems;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Notifications'),
@@ -63,75 +101,118 @@ class _StudentNotificationsScreenState extends State<StudentNotificationsScreen>
           ),
         ],
       ),
-      body: Column(
-        children: [
-          const SizedBox(height: 10),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
+      body: StudentPageBackground(
+        child: BlocBuilder<NotificationsCubit, NotificationsState>(
+          builder: (context, state) {
+            final loading =
+                state.status == NotificationsStatus.initial ||
+                state.status == NotificationsStatus.loading;
+            if (loading) {
+              return const Padding(
+                padding: AppSpacing.paddingLg,
+                child: ShimmerList(),
+              );
+            }
+            if (state.status == NotificationsStatus.error) {
+              return AppErrorWidget(
+                message: state.errorMessage ?? 'Unable to load notifications.',
+                onRetry: () =>
+                    context.read<NotificationsCubit>().loadNotifications(),
+              );
+            }
+
+            final visibleItems = _visibleItems(state.items);
+
+            return Column(
               children: [
-                ChoiceChip(
-                  label: const Text('All'),
-                  selected: _filterIndex == 0,
-                  onSelected: (_) => setState(() => _filterIndex = 0),
+                AppSpacing.gapMd,
+                Padding(
+                  padding: AppSpacing.horizontalLg,
+                  child: Row(
+                    children: [
+                      ChoiceChip(
+                        label: const Text('All'),
+                        selected: _filterIndex == 0,
+                        showCheckmark: false,
+                        selectedColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer.withAlpha(160),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerLow,
+                        onSelected: (_) => setState(() => _filterIndex = 0),
+                      ),
+                      AppSpacing.hGapSm,
+                      ChoiceChip(
+                        label: const Text('Unread'),
+                        selected: _filterIndex == 1,
+                        showCheckmark: false,
+                        selectedColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer.withAlpha(160),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerLow,
+                        onSelected: (_) => setState(() => _filterIndex = 1),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(width: 8),
-                ChoiceChip(
-                  label: const Text('Unread'),
-                  selected: _filterIndex == 1,
-                  onSelected: (_) => setState(() => _filterIndex = 1),
+                AppSpacing.gapSm,
+                Expanded(
+                  child: BrandedRefreshIndicator(
+                    onRefresh: () =>
+                        context.read<NotificationsCubit>().loadNotifications(),
+                    child: visibleItems.isEmpty
+                        ? LayoutBuilder(
+                            builder: (context, constraints) {
+                              return SingleChildScrollView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    minHeight: constraints.maxHeight,
+                                  ),
+                                  child: EmptyStateWidget(
+                                    illustration: const EmptyBoxIllustration(),
+                                    icon: Icons.notifications_none_rounded,
+                                    title: _filterIndex == 1
+                                        ? 'No unread notifications'
+                                        : 'No notifications',
+                                    subtitle: _filterIndex == 1
+                                        ? 'All caught up — nothing new!'
+                                        : 'You are all caught up!',
+                                  ),
+                                ),
+                              );
+                            },
+                          )
+                        : ListView.separated(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            itemCount: visibleItems.length,
+                            separatorBuilder: (_, _) =>
+                                const Divider(height: 1),
+                            itemBuilder: (context, index) {
+                              final item = visibleItems[index];
+                              return StaggeredFadeSlide(
+                                index: index,
+                                child: NotificationTile(
+                                  isRead: item.isRead,
+                                  title: item.title,
+                                  body: item.body,
+                                  time: _timeLabel(item.createdAt),
+                                  onTap: () => _onTapNotification(item),
+                                  onToggleRead: () => _onToggleRead(item),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
                 ),
               ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: visibleItems.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No notifications in this view.',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  )
-                : ListView.separated(
-                    itemCount: visibleItems.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
-                    itemBuilder: (context, index) {
-                      final item = visibleItems[index];
-                      return NotificationTile(
-                        isRead: item.isRead,
-                        title: item.title,
-                        body: item.body,
-                        time: item.time,
-                        onTap: () {
-                          setState(() => item.isRead = true);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(item.title)),
-                          );
-                        },
-                        onToggleRead: () {
-                          setState(() => item.isRead = !item.isRead);
-                        },
-                      );
-                    },
-                  ),
-          ),
-        ],
+            );
+          },
+        ),
       ),
     );
   }
-}
-
-class _NotificationItem {
-  final String title;
-  final String body;
-  final String time;
-  bool isRead;
-
-  _NotificationItem({
-    required this.title,
-    required this.body,
-    required this.time,
-    required this.isRead,
-  });
 }

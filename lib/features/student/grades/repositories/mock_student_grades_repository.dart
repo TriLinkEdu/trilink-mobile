@@ -13,6 +13,7 @@ class MockStudentGradesRepository implements StudentGradesRepository {
       score: 92,
       maxScore: 100,
       date: DateTime(2023, 9, 12),
+      term: 'Fall 2023',
     ),
     GradeModel(
       id: 'g2',
@@ -22,6 +23,7 @@ class MockStudentGradesRepository implements StudentGradesRepository {
       score: 96,
       maxScore: 100,
       date: DateTime(2023, 9, 24),
+      term: 'Fall 2023',
     ),
     GradeModel(
       id: 'g3',
@@ -31,6 +33,7 @@ class MockStudentGradesRepository implements StudentGradesRepository {
       score: 85,
       maxScore: 100,
       date: DateTime(2023, 9, 15),
+      term: 'Fall 2023',
     ),
     GradeModel(
       id: 'g4',
@@ -40,6 +43,7 @@ class MockStudentGradesRepository implements StudentGradesRepository {
       score: 84,
       maxScore: 100,
       date: DateTime(2023, 10, 5),
+      term: 'Fall 2023',
     ),
     GradeModel(
       id: 'g5',
@@ -49,6 +53,7 @@ class MockStudentGradesRepository implements StudentGradesRepository {
       score: 88,
       maxScore: 100,
       date: DateTime(2023, 9, 18),
+      term: 'Fall 2023',
     ),
     GradeModel(
       id: 'g6',
@@ -58,6 +63,7 @@ class MockStudentGradesRepository implements StudentGradesRepository {
       score: 88,
       maxScore: 100,
       date: DateTime(2023, 10, 6),
+      term: 'Fall 2023',
     ),
     GradeModel(
       id: 'g7',
@@ -67,6 +73,7 @@ class MockStudentGradesRepository implements StudentGradesRepository {
       score: 79,
       maxScore: 100,
       date: DateTime(2023, 10, 2),
+      term: 'Fall 2023',
     ),
     GradeModel(
       id: 'g8',
@@ -76,13 +83,55 @@ class MockStudentGradesRepository implements StudentGradesRepository {
       score: 95,
       maxScore: 100,
       date: DateTime(2023, 10, 8),
+      term: 'Fall 2023',
+    ),
+    GradeModel(
+      id: 'g9',
+      subjectId: 'mathematics',
+      subjectName: 'Mathematics',
+      assessmentName: 'Midterm',
+      score: 88,
+      maxScore: 100,
+      date: DateTime(2023, 3, 15),
+      term: 'Spring 2023',
+    ),
+    GradeModel(
+      id: 'g10',
+      subjectId: 'physics',
+      subjectName: 'Physics',
+      assessmentName: 'Lab Report',
+      score: 82,
+      maxScore: 100,
+      date: DateTime(2023, 4, 10),
+      term: 'Spring 2023',
+    ),
+    GradeModel(
+      id: 'g11',
+      subjectId: 'literature',
+      subjectName: 'Literature',
+      assessmentName: 'Book Review',
+      score: 91,
+      maxScore: 100,
+      date: DateTime(2023, 3, 22),
+      term: 'Spring 2023',
+    ),
+    GradeModel(
+      id: 'g12',
+      subjectId: 'history',
+      subjectName: 'History',
+      assessmentName: 'Research Paper',
+      score: 85,
+      maxScore: 100,
+      date: DateTime(2023, 4, 5),
+      term: 'Spring 2023',
     ),
   ];
 
   @override
-  Future<List<GradeModel>> fetchGrades() async {
+  Future<List<GradeModel>> fetchGrades({String? term}) async {
     await Future<void>.delayed(_latency);
-    return List<GradeModel>.from(_grades);
+    if (term == null) return List<GradeModel>.from(_grades);
+    return _grades.where((g) => g.term == term).toList();
   }
 
   @override

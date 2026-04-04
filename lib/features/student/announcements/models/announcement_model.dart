@@ -5,7 +5,7 @@ class AnnouncementModel {
   final String authorName;
   final String authorRole;
   final DateTime createdAt;
-  final String? category; // exam, event, general
+  final String? category;
 
   const AnnouncementModel({
     required this.id,
@@ -28,4 +28,14 @@ class AnnouncementModel {
       category: json['category'] as String?,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'body': body,
+        'authorName': authorName,
+        'authorRole': authorRole,
+        'createdAt': createdAt.toIso8601String(),
+        'category': category,
+      };
 }

@@ -1,337 +1,64 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'package:trilink_mobile/core/widgets/empty_state_widget.dart';
+import 'package:trilink_mobile/core/widgets/illustrations.dart';
+import 'package:trilink_mobile/core/widgets/error_widget.dart';
+import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
+
+import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../models/attendance_model.dart';
-import '../repositories/mock_student_attendance_repository.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_shadows.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
+import '../cubit/attendance_cubit.dart';
+import '../models/attendance_model.dart' as am;
 import '../repositories/student_attendance_repository.dart';
 
-class StudentAttendanceScreen extends StatefulWidget {
+class StudentAttendanceScreen extends StatelessWidget {
   const StudentAttendanceScreen({super.key});
 
   @override
-  State<StudentAttendanceScreen> createState() =>
-      _StudentAttendanceScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          AttendanceCubit(sl<StudentAttendanceRepository>())..loadAttendance(),
+      child: const _AttendanceView(),
+    );
+  }
 }
 
-class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
-  final StudentAttendanceRepository _repository =
-      MockStudentAttendanceRepository();
-  bool _isLoading = true;
-  String? _error;
-  List<AttendanceModel> _records = const [];
+class _AttendanceView extends StatefulWidget {
+  const _AttendanceView();
 
   @override
-  void initState() {
-    super.initState();
-    _loadAttendance();
-  }
+  State<_AttendanceView> createState() => _AttendanceViewState();
+}
 
-  Future<void> _loadAttendance() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final records = await _repository.fetchAttendanceRecords();
-      if (!mounted) return;
-      setState(() {
-        _records = records;
-        _isLoading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'Unable to load attendance records.';
-        _isLoading = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      body: SafeArea(
+class _AttendanceViewState extends State<_AttendanceView> {
+  void _showOptionsSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // App bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 40,
-                    child: Navigator.of(context).canPop()
-                        ? IconButton(
-                            tooltip: 'Back',
-                            onPressed: () => Navigator.of(context).pop(),
-                            icon: const Icon(
-                              Icons.arrow_back_ios_new_rounded,
-                              size: 18,
-                            ),
-                          )
-                        : null,
-                  ),
-                  const Expanded(
-                    child: Text(
-                      'Attendance Record',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: 'More attendance options',
-                    onPressed: () {
-                      showModalBottomSheet<void>(
-                        context: context,
-                        builder: (_) => SafeArea(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ListTile(
-                                leading: const Icon(Icons.calendar_month_rounded),
-                                title: const Text('This Month Summary'),
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Showing this month attendance summary.'),
-                                    ),
-                                  );
-                                },
-                              ),
-                              ListTile(
-                                leading: const Icon(Icons.file_download_rounded),
-                                title: const Text('Export Attendance'),
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Attendance export is being prepared.'),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                    icon: const Icon(
-                      Icons.more_vert,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
+            ListTile(
+              leading: const Icon(Icons.calendar_month_rounded),
+              title: const Text('This Month Summary'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _showMonthlySummary();
+              },
             ),
-
-            Expanded(
-              child: _isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        semanticsLabel: 'Loading attendance records',
-                      ),
-                    )
-                  : _error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(_error!, style: const TextStyle(color: Colors.red)),
-                          const SizedBox(height: 10),
-                          ElevatedButton(
-                            onPressed: _loadAttendance,
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
-                    )
-                  : _records.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'No attendance records yet.',
-                        style: TextStyle(color: AppColors.textSecondary),
-                      ),
-                    )
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                    // Overall Attendance Card
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 24),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF1A73E8), Color(0xFF4A90E2)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Column(
-                        children: [
-                          const Text(
-                            'Overall Attendance',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white70,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${_overallAttendance.toStringAsFixed(0)}%',
-                            style: const TextStyle(
-                              fontSize: 48,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withAlpha(40),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.check_circle_rounded,
-                                  size: 14,
-                                  color: Colors.greenAccent,
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  '12 Day Streak',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          // Stats row
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              _AttendanceStat(
-                                value: '$presentCount',
-                                label: 'PRESENT',
-                                bgColor: Colors.white.withAlpha(30),
-                              ),
-                              _AttendanceStat(
-                                value: '$absentCount',
-                                label: 'ABSENT',
-                                bgColor: Colors.white.withAlpha(30),
-                              ),
-                              _AttendanceStat(
-                                value: '$lateCount',
-                                label: 'LATE',
-                                bgColor: Colors.white.withAlpha(30),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Subject Breakdown Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Subject Breakdown',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            showDialog<void>(
-                              context: context,
-                              builder: (dialogContext) => AlertDialog(
-                                title: const Text('All Subject Attendance'),
-                                content: Text(
-                                  _subjectSummaries
-                                      .map(
-                                        (summary) =>
-                                            '${summary.name} ${summary.percentageLabel}',
-                                      )
-                                      .join('\n'),
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.of(dialogContext).pop(),
-                                    child: const Text('Close'),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                          child: const Text(
-                            'View All',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Subject rows
-                    for (int index = 0; index < _subjectSummaries.length; index++) ...[
-                      _SubjectAttendanceRow(
-                        icon: _iconForSubject(_subjectSummaries[index].name),
-                        iconColor: _colorForSubject(_subjectSummaries[index].name),
-                        name: _subjectSummaries[index].name,
-                        totalClasses: _subjectSummaries[index].total,
-                        percentage: _subjectSummaries[index].percentageLabel,
-                        dots: _subjectSummaries[index].dots,
-                      ),
-                      if (index < _subjectSummaries.length - 1)
-                        const SizedBox(height: 16),
-                    ],
-                    const SizedBox(height: 24),
-
-                    // Legend
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _LegendItem(color: Colors.green, label: 'Present'),
-                        const SizedBox(width: 16),
-                        _LegendItem(color: Colors.orange, label: 'Late'),
-                        const SizedBox(width: 16),
-                        _LegendItem(color: Colors.red, label: 'Absent'),
-                        const SizedBox(width: 16),
-                        _LegendItem(
-                          color: Colors.grey.shade300,
-                          label: 'Future',
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                  ],
-                ),
-              ),
+            ListTile(
+              leading: const Icon(Icons.file_download_rounded),
+              title: const Text('Export Attendance'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _exportAttendance();
+              },
             ),
           ],
         ),
@@ -339,39 +66,456 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
     );
   }
 
-  int get presentCount => _records.where((record) => record.isPresent).length;
+  void _showMonthlySummary() {
+    final records = context.read<AttendanceCubit>().state.records;
+    final present = _presentCount(records);
+    final absent = _absentCount(records);
+    final late_ = _lateCount(records);
+    final excused = _excusedCount(records);
+    final total = records.length;
+    final pct = total > 0 ? ((present + late_ + excused) / total * 100) : 0.0;
 
-  int get absentCount => _records.length - presentCount;
-
-  int get lateCount => 0;
-
-  double get _overallAttendance {
-    if (_records.isEmpty) return 0;
-    return (presentCount / _records.length) * 100;
+    showModalBottomSheet<void>(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Attendance Summary',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              AppSpacing.gapLg,
+              _buildSummaryRow(
+                'Present',
+                '$present',
+                dotColor: AppColors.success,
+              ),
+              _buildSummaryRow('Absent', '$absent', dotColor: AppColors.danger),
+              _buildSummaryRow('Late', '$late_', dotColor: AppColors.warning),
+              _buildSummaryRow('Excused', '$excused', dotColor: AppColors.info),
+              const Divider(height: 24),
+              _buildSummaryRow('Total Classes', '$total'),
+              _buildSummaryRow('Attendance Rate', '${pct.toStringAsFixed(1)}%'),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
-  List<_SubjectAttendanceSummary> get _subjectSummaries {
-    final grouped = <String, List<AttendanceModel>>{};
-    for (final record in _records) {
-      grouped.putIfAbsent(record.subjectId, () => <AttendanceModel>[]).add(record);
+  Widget _buildSummaryRow(String label, String value, {Color? dotColor}) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          if (dotColor != null) ...[
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: dotColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+            AppSpacing.hGapSm,
+          ],
+          Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
+          Text(
+            value,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _exportAttendance() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Preparing attendance report...')),
+    );
+    await Future<void>.delayed(const Duration(seconds: 1));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Attendance report exported')));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: theme.brightness == Brightness.dark
+                ? const [Color(0xFF0A1526), Color(0xFF10273D)]
+                : const [Color(0xFFF0F8FF), Color(0xFFE6F4FF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 40,
+                      child: Navigator.of(context).canPop()
+                          ? IconButton(
+                              tooltip: 'Back',
+                              onPressed: () => Navigator.of(context).pop(),
+                              icon: const Icon(
+                                Icons.arrow_back_ios_new_rounded,
+                                size: 18,
+                              ),
+                            )
+                          : null,
+                    ),
+                    Expanded(
+                      child: Text(
+                        'Attendance Record',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'More attendance options',
+                      onPressed: _showOptionsSheet,
+                      icon: Icon(
+                        Icons.more_vert,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: BlocBuilder<AttendanceCubit, AttendanceState>(
+                  builder: (context, state) {
+                    final loading =
+                        state.status == AttendanceStatus.initial ||
+                        state.status == AttendanceStatus.loading;
+                    if (loading) {
+                      return const Padding(
+                        padding: EdgeInsets.all(20),
+                        child: ShimmerList(),
+                      );
+                    }
+                    if (state.status == AttendanceStatus.error) {
+                      return AppErrorWidget(
+                        message:
+                            state.errorMessage ??
+                            'Unable to load attendance records.',
+                        onRetry: () =>
+                            context.read<AttendanceCubit>().loadAttendance(),
+                      );
+                    }
+
+                    final records = state.records;
+                    if (records.isEmpty) {
+                      return const EmptyStateWidget(
+                        illustration: ClipboardIllustration(),
+                        icon: Icons.fact_check_rounded,
+                        title: 'No attendance records',
+                        subtitle: 'Your attendance records will appear here.',
+                      );
+                    }
+
+                    final subjectSummaries = _subjectSummaries(records);
+
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 24),
+                            decoration: BoxDecoration(
+                              gradient: AppGradients.attendance,
+                              borderRadius: AppRadius.borderXl,
+                            ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  'Overall Attendance',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.colorScheme.onPrimary
+                                        .withAlpha(180),
+                                  ),
+                                ),
+                                AppSpacing.gapSm,
+                                Text(
+                                  '${_overallAttendance(records).toStringAsFixed(0)}%',
+                                  style: theme.textTheme.displayLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.colorScheme.onPrimary,
+                                  ),
+                                ),
+                                AppSpacing.gapSm,
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withAlpha(28),
+                                    borderRadius: AppRadius.borderXl,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.check_circle_rounded,
+                                        size: 14,
+                                        color: AppColors.success,
+                                      ),
+                                      AppSpacing.hGapXs,
+                                      Text(
+                                        '${_currentStreak(records)} Day Streak',
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              color:
+                                                  theme.colorScheme.onPrimary,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                AppSpacing.gapXl,
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  alignment: WrapAlignment.center,
+                                  children: [
+                                    _AttendanceStat(
+                                      value: '${_presentCount(records)}',
+                                      label: 'PRESENT',
+                                      bgColor: Colors.white.withAlpha(22),
+                                    ),
+                                    _AttendanceStat(
+                                      value: '${_absentCount(records)}',
+                                      label: 'ABSENT',
+                                      bgColor: Colors.white.withAlpha(22),
+                                    ),
+                                    _AttendanceStat(
+                                      value: '${_lateCount(records)}',
+                                      label: 'LATE',
+                                      bgColor: Colors.white.withAlpha(22),
+                                    ),
+                                    _AttendanceStat(
+                                      value: '${_excusedCount(records)}',
+                                      label: 'EXCUSED',
+                                      bgColor: Colors.white.withAlpha(22),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          AppSpacing.gapXxl,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Subject Breakdown',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.onSurface,
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  showDialog<void>(
+                                    context: context,
+                                    builder: (dialogContext) => AlertDialog(
+                                      title: const Text(
+                                        'All Subject Attendance',
+                                      ),
+                                      content: Text(
+                                        subjectSummaries
+                                            .map(
+                                              (summary) =>
+                                                  '${summary.name} ${summary.percentageLabel}',
+                                            )
+                                            .join('\n'),
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.of(dialogContext).pop(),
+                                          child: const Text('Close'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  'View All',
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          AppSpacing.gapSm,
+                          for (
+                            int index = 0;
+                            index < subjectSummaries.length;
+                            index++
+                          ) ...[
+                            StaggeredFadeSlide(
+                              index: index,
+                              child: _SubjectAttendanceRow(
+                                icon: _iconForSubject(
+                                  subjectSummaries[index].name,
+                                ),
+                                iconColor: _colorForSubject(
+                                  subjectSummaries[index].name,
+                                ),
+                                name: subjectSummaries[index].name,
+                                totalClasses: subjectSummaries[index].total,
+                                percentage:
+                                    subjectSummaries[index].percentageLabel,
+                                dots: subjectSummaries[index].dots,
+                              ),
+                            ),
+                            if (index < subjectSummaries.length - 1)
+                              AppSpacing.gapLg,
+                          ],
+                          AppSpacing.gapXxl,
+                          const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _LegendItem(
+                                color: AppColors.success,
+                                label: 'Present',
+                              ),
+                              AppSpacing.hGapMd,
+                              _LegendItem(
+                                color: AppColors.warning,
+                                label: 'Late',
+                              ),
+                              AppSpacing.hGapMd,
+                              _LegendItem(
+                                color: AppColors.danger,
+                                label: 'Absent',
+                              ),
+                              AppSpacing.hGapMd,
+                              _LegendItem(
+                                color: AppColors.info,
+                                label: 'Excused',
+                              ),
+                            ],
+                          ),
+                          AppSpacing.gapXl,
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  int _presentCount(List<am.AttendanceModel> records) =>
+      records.where((r) => r.status == am.AttendanceStatus.present).length;
+
+  int _absentCount(List<am.AttendanceModel> records) =>
+      records.where((r) => r.status == am.AttendanceStatus.absent).length;
+
+  int _lateCount(List<am.AttendanceModel> records) =>
+      records.where((r) => r.status == am.AttendanceStatus.late).length;
+
+  int _excusedCount(List<am.AttendanceModel> records) =>
+      records.where((r) => r.status == am.AttendanceStatus.excused).length;
+
+  double _overallAttendance(List<am.AttendanceModel> records) {
+    if (records.isEmpty) return 0;
+    final attended =
+        _presentCount(records) + _lateCount(records) + _excusedCount(records);
+    return (attended / records.length) * 100;
+  }
+
+  int _currentStreak(List<am.AttendanceModel> records) {
+    final sorted = List<am.AttendanceModel>.from(records)
+      ..sort((a, b) => b.date.compareTo(a.date));
+    int streak = 0;
+    for (final record in sorted) {
+      if (record.status == am.AttendanceStatus.absent) break;
+      streak++;
+    }
+    return streak;
+  }
+
+  List<_SubjectAttendanceSummary> _subjectSummaries(
+    List<am.AttendanceModel> records,
+  ) {
+    final grouped = <String, List<am.AttendanceModel>>{};
+    for (final record in records) {
+      grouped
+          .putIfAbsent(record.subjectId, () => <am.AttendanceModel>[])
+          .add(record);
     }
 
     return grouped.entries.map((entry) {
-      final records = entry.value..sort((a, b) => a.date.compareTo(b.date));
-      final present = records.where((record) => record.isPresent).length;
-      final percentage = records.isEmpty ? 0.0 : (present / records.length) * 100;
+      final subjectRecords = entry.value
+        ..sort((a, b) => a.date.compareTo(b.date));
+      final attended = subjectRecords
+          .where((r) => r.status != am.AttendanceStatus.absent)
+          .length;
+      final percentage = subjectRecords.isEmpty
+          ? 0.0
+          : (attended / subjectRecords.length) * 100;
 
       return _SubjectAttendanceSummary(
-        name: records.first.subjectName,
-        total: records.length,
+        name: subjectRecords.first.subjectName,
+        total: subjectRecords.length,
         percentage: percentage,
         percentageLabel: '${percentage.toStringAsFixed(0)}%',
-        dots: records
-            .map((record) => record.isPresent ? _DotStatus.present : _DotStatus.absent)
-            .toList(),
+        dots: subjectRecords.map((record) {
+          switch (record.status) {
+            case am.AttendanceStatus.present:
+              return _DotStatus.present;
+            case am.AttendanceStatus.late:
+              return _DotStatus.late;
+            case am.AttendanceStatus.excused:
+              return _DotStatus.excused;
+            case am.AttendanceStatus.absent:
+              return _DotStatus.absent;
+          }
+        }).toList(),
       );
-    }).toList()
-      ..sort((a, b) => b.percentage.compareTo(a.percentage));
+    }).toList()..sort((a, b) => b.percentage.compareTo(a.percentage));
   }
 
   IconData _iconForSubject(String subjectName) {
@@ -385,10 +529,10 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
 
   Color _colorForSubject(String subjectName) {
     return switch (subjectName.toLowerCase()) {
-      'mathematics' => AppColors.primary,
-      'physics' => Colors.purple,
-      'english literature' || 'literature' => Colors.orange,
-      _ => Colors.grey,
+      'mathematics' => AppColors.mathematics,
+      'physics' => AppColors.physics,
+      'english literature' || 'literature' => AppColors.literature,
+      _ => Theme.of(context).colorScheme.onSurfaceVariant,
     };
   }
 }
@@ -409,7 +553,7 @@ class _SubjectAttendanceSummary {
   });
 }
 
-enum _DotStatus { present, absent, late, future }
+enum _DotStatus { present, absent, late, excused, future }
 
 class _AttendanceStat extends StatelessWidget {
   final String value;
@@ -424,30 +568,29 @@ class _AttendanceStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.borderMd,
       ),
       child: Column(
         children: [
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 22,
+            style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: theme.colorScheme.onPrimary,
             ),
           ),
-          const SizedBox(height: 2),
+          AppSpacing.gapXxs,
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 10,
-              color: Colors.white70,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.5,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onPrimary.withAlpha(180),
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.35,
             ),
           ),
         ],
@@ -475,18 +618,17 @@ class _SubjectAttendanceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(8),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: theme.colorScheme.surface,
+        borderRadius: AppRadius.borderLg,
+        boxShadow: AppShadows.subtle(theme.shadowColor),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withAlpha(70),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -494,32 +636,30 @@ class _SubjectAttendanceRow extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 42,
+                height: 42,
                 decoration: BoxDecoration(
                   color: iconColor.withAlpha(25),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: AppRadius.borderSm,
                 ),
-                child: Icon(icon, color: iconColor, size: 20),
+                child: Icon(icon, color: iconColor, size: 21),
               ),
-              const SizedBox(width: 12),
+              AppSpacing.hGapMd,
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       name,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     Text(
                       'Total Classes: $totalClasses',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey.shade500,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -527,16 +667,14 @@ class _SubjectAttendanceRow extends StatelessWidget {
               ),
               Text(
                 percentage,
-                style: const TextStyle(
-                  fontSize: 18,
+                style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          // Dots
+          AppSpacing.gapMd,
           Wrap(
             spacing: 6,
             runSpacing: 6,
@@ -544,13 +682,15 @@ class _SubjectAttendanceRow extends StatelessWidget {
               Color color;
               switch (dot) {
                 case _DotStatus.present:
-                  color = Colors.green;
+                  color = AppColors.success;
                 case _DotStatus.absent:
-                  color = Colors.red;
+                  color = AppColors.danger;
                 case _DotStatus.late:
-                  color = Colors.orange;
+                  color = AppColors.warning;
+                case _DotStatus.excused:
+                  color = AppColors.info;
                 case _DotStatus.future:
-                  color = Colors.grey.shade300;
+                  color = theme.colorScheme.outlineVariant;
               }
               return Container(
                 width: 12,
@@ -573,6 +713,7 @@ class _LegendItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Row(
       children: [
         Container(
@@ -580,10 +721,12 @@ class _LegendItem extends StatelessWidget {
           height: 10,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
-        const SizedBox(width: 4),
+        AppSpacing.hGapXs,
         Text(
           label,
-          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );
