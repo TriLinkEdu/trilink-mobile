@@ -12,20 +12,39 @@ class AuthService {
   UserModel? get currentUser => _currentUser;
 
   bool get isStudent => _currentRole == 'student';
+  bool get isTeacher => _currentRole == 'teacher';
+  bool get isParent => _currentRole == 'parent';
   bool get isLoggedIn => _currentUser != null;
 
-  void setCurrentRole(String role) {
-    _currentRole = role;
-  }
+  void setCurrentRole(String role) => _currentRole = role;
 
-  Future<void> login({required String email, required String password}) async {
+  Future<void> login({
+    required String email,
+    required String password,
+    String role = 'student',
+  }) async {
     await Future<void>.delayed(const Duration(milliseconds: 500));
-    _currentRole = 'student';
+    _currentRole = role;
+
+    final userRole = switch (role) {
+      'teacher' => UserRole.teacher,
+      'parent' => UserRole.parent,
+      'admin' => UserRole.admin,
+      _ => UserRole.student,
+    };
+
+    final displayName = switch (userRole) {
+      UserRole.teacher => 'Teacher User',
+      UserRole.parent => 'Parent User',
+      UserRole.admin => 'Admin User',
+      UserRole.student => 'Sara Ahmed',
+    };
+
     _currentUser = UserModel(
-      id: 'student-1',
-      name: 'Sara Ahmed',
+      id: '$role-1',
+      name: displayName,
       email: email,
-      role: UserRole.student,
+      role: userRole,
       phone: '+251 912 345 678',
       school: 'Addis Ababa Academy',
       grade: 'Grade 11',
@@ -53,11 +72,19 @@ class AuthService {
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 500));
     _currentRole = role;
+
+    final userRole = switch (role) {
+      'teacher' => UserRole.teacher,
+      'parent' => UserRole.parent,
+      'admin' => UserRole.admin,
+      _ => UserRole.student,
+    };
+
     _currentUser = UserModel(
-      id: 'student-new',
+      id: '$role-new',
       name: name,
       email: email,
-      role: UserRole.student,
+      role: userRole,
     );
   }
 

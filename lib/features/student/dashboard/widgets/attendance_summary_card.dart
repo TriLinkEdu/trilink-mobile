@@ -7,7 +7,7 @@ class AttendanceSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double percent = attendancePercent.clamp(0.0, 1.0);
+    final double percent = attendancePercent.clamp(0.0, 1.0).toDouble();
 
     return Card(
       child: Padding(

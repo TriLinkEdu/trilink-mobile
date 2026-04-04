@@ -89,6 +89,7 @@ extension ThemeDataExt on ThemeData {
 
 // ── Theme Builder ──
 
+// ...existing code...
 class AppTheme {
   AppTheme._();
 
@@ -160,9 +161,8 @@ class AppTheme {
       textTheme: AppTextStyles.buildTextTheme(
         fontFamily ?? AppTextStyles.defaultFontFamily,
       ),
-      scaffoldBackgroundColor: isDark
-          ? AppColors.darkBackground
-          : AppColors.lightBackground,
+      scaffoldBackgroundColor:
+          isDark ? AppColors.darkBackground : AppColors.lightBackground,
       extensions: [ext],
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
@@ -177,9 +177,8 @@ class AppTheme {
         scrolledUnderElevation: 0,
         backgroundColor: Colors.transparent,
         foregroundColor: colorScheme.onSurface,
-        systemOverlayStyle: isDark
-            ? SystemUiOverlayStyle.light
-            : SystemUiOverlayStyle.dark,
+        systemOverlayStyle:
+            isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       ),
       cardTheme: CardThemeData(
         color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
@@ -269,13 +268,16 @@ class AppTheme {
           return colorScheme.outline;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return colorScheme.primaryContainer;
+          if (states.contains(WidgetState.selected)) {
+            return colorScheme.primaryContainer;
+          }
           return colorScheme.surfaceContainerHighest;
         }),
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFF1E293B),
+        backgroundColor:
+            isDark ? const Color(0xFF334155) : const Color(0xFF1E293B),
         shape: RoundedRectangleBorder(borderRadius: AppRadius.borderMd),
       ),
       dividerTheme: DividerThemeData(
@@ -294,7 +296,8 @@ class AppTheme {
           return TextStyle(
             fontSize: 11,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-            color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+            color:
+                isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
           );
         }),
       ),
