@@ -7,7 +7,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
-import '../../shared/widgets/student_page_background.dart';
 import '../cubit/achievements_list_cubit.dart';
 import '../models/gamification_models.dart';
 import '../repositories/student_gamification_repository.dart';
@@ -18,9 +17,8 @@ class AchievementsListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-          AchievementsListCubit(sl<StudentGamificationRepository>())
-            ..loadAchievements(),
+      create: (_) => AchievementsListCubit(sl<StudentGamificationRepository>())
+        ..loadAchievements(),
       child: const _AchievementsListView(),
     );
   }
@@ -35,61 +33,50 @@ class _AchievementsListView extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Achievements'), centerTitle: true),
-      body: StudentPageBackground(
-        child: BlocBuilder<AchievementsListCubit, AchievementsListState>(
-          builder: (context, state) {
-            final loading =
-                state.status == AchievementsListStatus.initial ||
-                state.status == AchievementsListStatus.loading;
-            if (loading) {
-              return const Padding(
-                padding: AppSpacing.paddingLg,
-                child: ShimmerList(itemCount: 6, itemHeight: 72),
-              );
-            }
-            final unlocked = state.achievements
-                .where((a) => a.isUnlocked)
-                .toList();
-            final locked = state.achievements
-                .where((a) => !a.isUnlocked)
-                .toList();
-
-            return ListView(
+      body: BlocBuilder<AchievementsListCubit, AchievementsListState>(
+        builder: (context, state) {
+          final loading = state.status == AchievementsListStatus.initial ||
+              state.status == AchievementsListStatus.loading;
+          if (loading) {
+            return const Padding(
               padding: AppSpacing.paddingLg,
-              children: [
-                if (unlocked.isNotEmpty) ...[
-                  Text(
-                    'Unlocked (${unlocked.length})',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  AppSpacing.gapSm,
-                  for (var i = 0; i < unlocked.length; i++)
-                    StaggeredFadeSlide(
-                      index: i,
-                      child: _AchievementTile(achievement: unlocked[i]),
-                    ),
-                  AppSpacing.gapXxl,
-                ],
-                if (locked.isNotEmpty) ...[
-                  Text(
-                    'Locked (${locked.length})',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  AppSpacing.gapSm,
-                  for (var i = 0; i < locked.length; i++)
-                    StaggeredFadeSlide(
-                      index: unlocked.length + i,
-                      child: _AchievementTile(achievement: locked[i]),
-                    ),
-                ],
-              ],
+              child: ShimmerList(itemCount: 6, itemHeight: 72),
             );
-          },
-        ),
+          }
+          final unlocked =
+              state.achievements.where((a) => a.isUnlocked).toList();
+          final locked =
+              state.achievements.where((a) => !a.isUnlocked).toList();
+
+          return ListView(
+            padding: AppSpacing.paddingLg,
+            children: [
+              if (unlocked.isNotEmpty) ...[
+                Text('Unlocked (${unlocked.length})',
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold)),
+                AppSpacing.gapSm,
+                for (var i = 0; i < unlocked.length; i++)
+                  StaggeredFadeSlide(
+                    index: i,
+                    child: _AchievementTile(achievement: unlocked[i]),
+                  ),
+                AppSpacing.gapXxl,
+              ],
+              if (locked.isNotEmpty) ...[
+                Text('Locked (${locked.length})',
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold)),
+                AppSpacing.gapSm,
+                for (var i = 0; i < locked.length; i++)
+                  StaggeredFadeSlide(
+                    index: unlocked.length + i,
+                    child: _AchievementTile(achievement: locked[i]),
+                  ),
+              ],
+            ],
+          );
+        },
       ),
     );
   }
@@ -118,9 +105,7 @@ class _AchievementTile extends StatelessWidget {
           ),
           child: Icon(
             isUnlocked ? Icons.emoji_events_rounded : Icons.lock_rounded,
-            color: isUnlocked
-                ? AppColors.leaderboardCrown
-                : theme.colorScheme.onSurfaceVariant,
+            color: isUnlocked ? AppColors.leaderboardCrown : theme.colorScheme.onSurfaceVariant,
           ),
         ),
         title: Text(
