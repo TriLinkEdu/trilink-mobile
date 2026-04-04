@@ -134,12 +134,15 @@ class AppTheme {
     final isDark = brightness == Brightness.dark;
     final seedColor = _seedForMood(moodTheme);
     final hero = _heroGradientForMood(moodTheme, isDark);
-    final onPrimaryGuess =
-        ThemeData.estimateBrightnessForColor(seedColor) == Brightness.dark
-        ? Colors.white
-        : const Color(0xFF0F172A);
+    final surfaceBase = isDark ? AppColors.darkSurface : AppColors.lightSurface;
+    final primaryContainer = Color.alphaBlend(
+      seedColor.withAlpha(isDark ? 92 : 46),
+      surfaceBase,
+    );
+    final onPrimary = _adaptiveOnColor(seedColor);
+    final onPrimaryContainer = _adaptiveOnColor(primaryContainer);
 
-    final colorScheme = isDark
+    final baseScheme = isDark
         ? ColorScheme.fromSeed(
             seedColor: seedColor,
             brightness: Brightness.dark,
@@ -155,11 +158,14 @@ class AppTheme {
             brightness: Brightness.light,
             surface: AppColors.lightSurface,
             surfaceContainerLow: AppColors.lightSurfaceDim,
-          ).copyWith(
-            primary: seedColor,
-            primaryContainer: seedColor.withAlpha(38),
-            onPrimary: onPrimaryGuess,
           );
+
+    final colorScheme = baseScheme.copyWith(
+      primary: seedColor,
+      onPrimary: onPrimary,
+      primaryContainer: primaryContainer,
+      onPrimaryContainer: onPrimaryContainer,
+    );
 
     final ext = isDark
         ? AppThemeExtension(
@@ -248,15 +254,15 @@ class AppTheme {
       ),
       chipTheme: ChipThemeData(
         backgroundColor: colorScheme.surfaceContainerLow,
-        selectedColor: colorScheme.primaryContainer.withAlpha(150),
-        checkmarkColor: colorScheme.primary,
+        selectedColor: colorScheme.primaryContainer,
+        checkmarkColor: colorScheme.onPrimaryContainer,
         side: BorderSide(color: colorScheme.outlineVariant.withAlpha(130)),
         labelStyle: TextStyle(
           color: colorScheme.onSurfaceVariant,
           fontWeight: FontWeight.w600,
         ),
         secondaryLabelStyle: TextStyle(
-          color: colorScheme.primary,
+          color: colorScheme.onPrimaryContainer,
           fontWeight: FontWeight.w700,
         ),
         shape: RoundedRectangleBorder(borderRadius: AppRadius.borderFull),
@@ -354,6 +360,12 @@ class AppTheme {
         }),
       ),
     );
+  }
+
+  static Color _adaptiveOnColor(Color background) {
+    return ThemeData.estimateBrightnessForColor(background) == Brightness.dark
+        ? Colors.white
+        : const Color(0xFF0F172A);
   }
 
   static Color _seedForMood(StudentMoodTheme moodTheme) {

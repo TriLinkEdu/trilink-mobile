@@ -2,21 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:trilink_mobile/core/widgets/celebration_overlay.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../exams/models/exam_model.dart';
+import '../widgets/badge_visuals.dart';
 
 class QuizResultScreen extends StatefulWidget {
   final ExamResultModel result;
   final List<QuestionModel>? questions;
   final List<String> newlyUnlockedAchievements;
+  final List<String> newlyUnlockedAchievementIds;
+  final List<String> newlyUnlockedBadges;
+  final List<String> newlyUnlockedBadgeIds;
   final bool leveledUp;
   final int? newLevel;
+  final int? leaderboardDelta;
 
   const QuizResultScreen({
     super.key,
     required this.result,
     this.questions,
     this.newlyUnlockedAchievements = const [],
+    this.newlyUnlockedAchievementIds = const [],
+    this.newlyUnlockedBadges = const [],
+    this.newlyUnlockedBadgeIds = const [],
     this.leveledUp = false,
     this.newLevel,
+    this.leaderboardDelta,
   });
 
   @override
@@ -66,6 +75,14 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           type: CelebrationType.achievement,
           message: 'New Achievement Unlocked!',
           subtext: widget.newlyUnlockedAchievements.first,
+        );
+      }
+
+      if (widget.newlyUnlockedBadges.isNotEmpty) {
+        CelebrationOverlay.maybeOf(context)?.celebrate(
+          type: CelebrationType.achievement,
+          message: 'New Badge Unlocked!',
+          subtext: widget.newlyUnlockedBadges.first,
         );
       }
     });
@@ -187,17 +204,64 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: widget.newlyUnlockedAchievements
-                    .map(
-                      (title) => Chip(
-                        avatar: const Icon(
-                          Icons.emoji_events_rounded,
-                          size: 18,
-                        ),
-                        label: Text(title),
-                      ),
-                    )
-                    .toList(),
+                children: widget.newlyUnlockedAchievements.asMap().entries.map((
+                  entry,
+                ) {
+                  final index = entry.key;
+                  final title = entry.value;
+                  final achievementId =
+                      index < widget.newlyUnlockedAchievementIds.length
+                      ? widget.newlyUnlockedAchievementIds[index]
+                      : '';
+                  return Chip(
+                    avatar: Icon(
+                      BadgeVisuals.iconForAchievementId(achievementId),
+                      size: 18,
+                    ),
+                    label: Text(title),
+                  );
+                }).toList(),
+              ),
+            ],
+            if (widget.newlyUnlockedBadges.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Badges',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: widget.newlyUnlockedBadges.asMap().entries.map((
+                  entry,
+                ) {
+                  final index = entry.key;
+                  final name = entry.value;
+                  final badgeId = index < widget.newlyUnlockedBadgeIds.length
+                      ? widget.newlyUnlockedBadgeIds[index]
+                      : '';
+                  return Chip(
+                    avatar: Icon(BadgeVisuals.iconForBadge(badgeId), size: 18),
+                    label: Text(name),
+                  );
+                }).toList(),
+              ),
+            ],
+            if (widget.leaderboardDelta != null &&
+                widget.leaderboardDelta! > 0) ...[
+              const SizedBox(height: 12),
+              Text(
+                'You climbed ${widget.leaderboardDelta} place${widget.leaderboardDelta == 1 ? '' : 's'} on the leaderboard.',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: AppColors.success,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ],
             if (widget.questions != null) ...[

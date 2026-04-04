@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/routes/student_shell_routes.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/celebration_overlay.dart';
 import '../../../student/chat/screens/student_chat_screen.dart';
@@ -256,18 +255,21 @@ class _ShellTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final top = MediaQuery.of(context).padding.top;
+    final bg = Color.alphaBlend(
+      theme.colorScheme.primary.withAlpha(
+        theme.brightness == Brightness.dark ? 18 : 8,
+      ),
+      theme.colorScheme.surface,
+    );
 
     return Container(
       padding: EdgeInsets.only(top: top),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : theme.colorScheme.surface,
+        color: bg,
         border: Border(
           bottom: BorderSide(
-            color: isDark
-                ? Colors.white.withAlpha(12)
-                : Colors.black.withAlpha(8),
+            color: theme.colorScheme.outlineVariant.withAlpha(120),
             width: 0.5,
           ),
         ),
@@ -391,8 +393,13 @@ class _GlassNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final bottom = MediaQuery.of(context).padding.bottom;
+    final bg = Color.alphaBlend(
+      theme.colorScheme.primary.withAlpha(
+        theme.brightness == Brightness.dark ? 16 : 6,
+      ),
+      theme.colorScheme.surface,
+    );
 
     return Container(
       padding: EdgeInsets.only(
@@ -402,12 +409,10 @@ class _GlassNavBar extends StatelessWidget {
         bottom: bottom + AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : theme.colorScheme.surface,
+        color: bg,
         border: Border(
           top: BorderSide(
-            color: isDark
-                ? Colors.white.withAlpha(12)
-                : Colors.black.withAlpha(8),
+            color: theme.colorScheme.outlineVariant.withAlpha(120),
             width: 0.5,
           ),
         ),
@@ -451,6 +456,10 @@ class _AnimatedNavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final selectedBg = Color.alphaBlend(
+      theme.colorScheme.primary.withAlpha(46),
+      theme.colorScheme.surface,
+    );
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -463,9 +472,7 @@ class _AnimatedNavItem extends StatelessWidget {
           vertical: 8,
         ),
         decoration: BoxDecoration(
-          color: isSelected
-              ? theme.colorScheme.primary.withAlpha(20)
-              : Colors.transparent,
+          color: isSelected ? selectedBg : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
@@ -478,7 +485,7 @@ class _AnimatedNavItem extends StatelessWidget {
                 key: ValueKey(isSelected),
                 size: 22,
                 color: isSelected
-                    ? theme.colorScheme.primary
+                    ? theme.colorScheme.onPrimaryContainer
                     : theme.colorScheme.onSurfaceVariant,
               ),
             ),
@@ -492,7 +499,7 @@ class _AnimatedNavItem extends StatelessWidget {
                         data.label,
                         style: theme.textTheme.labelLarge?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.primary,
+                          color: theme.colorScheme.onPrimaryContainer,
                         ),
                       ),
                     )

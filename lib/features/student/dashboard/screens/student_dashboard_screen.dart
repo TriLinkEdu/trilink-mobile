@@ -14,6 +14,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/pressable.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../../../../core/widgets/staggered_animation.dart';
+import '../../shared/widgets/student_page_background.dart';
 import '../../../auth/cubit/auth_cubit.dart';
 import '../widgets/student_shell_scope.dart';
 import '../cubit/dashboard_cubit.dart';
@@ -136,20 +137,9 @@ class _DashboardContent extends StatelessWidget {
         : 'Good evening';
     final userName = context.read<AuthCubit>().currentUser?.name ?? 'Student';
     final firstName = userName.split(' ').first;
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: isDark
-                ? const [Color(0xFF0A1628), Color(0xFF10243A)]
-                : const [Color(0xFFF0F8FF), Color(0xFFE6F4FF)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
+      body: StudentPageBackground(
         child: SafeArea(
           bottom: false,
           child: BrandedRefreshIndicator(

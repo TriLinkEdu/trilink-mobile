@@ -26,6 +26,8 @@ class GamificationCubit extends Cubit<GamificationState> {
         _repository.fetchTeamChallenge(),
         _repository.fetchXpProgress(),
         _repository.fetchNextBadgeProgress(),
+        _repository.fetchBadges(),
+        _repository.fetchStudentBadges('s1'),
       ]);
       emit(
         GamificationState(
@@ -38,6 +40,8 @@ class GamificationCubit extends Cubit<GamificationState> {
           teamChallenge: results[5] as TeamChallengeModel?,
           xpProgress: results[6] as XpProgressModel,
           nextBadgeProgress: results[7] as NextBadgeProgressModel?,
+          badges: results[8] as List<BadgeModel>,
+          studentBadges: results[9] as List<StudentBadgeModel>,
           isWeeklyRanking: state.isWeeklyRanking,
         ),
       );
@@ -71,15 +75,32 @@ class GamificationCubit extends Cubit<GamificationState> {
 
   Future<void> completeMission(String missionId) async {
     try {
-      await _repository.markMissionCompleted(missionId);
-      final missions = await _repository.fetchDailyMissions();
-      final xpProgress = await _repository.fetchXpProgress();
-      final nextBadge = await _repository.fetchNextBadgeProgress();
+      final mutation = await _repository.markMissionCompleted(missionId);
+      final refreshed = await Future.wait([
+        _repository.fetchDailyMissions(),
+        _repository.fetchXpProgress(),
+        _repository.fetchNextBadgeProgress(),
+        _repository.fetchAchievements(),
+        _repository.fetchStudentBadges('s1'),
+        _repository.fetchLeaderboard(
+          state.isWeeklyRanking ? 'weekly' : 'monthly',
+        ),
+      ]);
       emit(
         state.copyWith(
-          dailyMissions: missions,
-          xpProgress: xpProgress,
-          nextBadgeProgress: nextBadge,
+          dailyMissions: refreshed[0] as List<DailyMissionModel>,
+          xpProgress: refreshed[1] as XpProgressModel,
+          nextBadgeProgress: refreshed[2] as NextBadgeProgressModel?,
+          achievements: refreshed[3] as List<AchievementModel>,
+          studentBadges: refreshed[4] as List<StudentBadgeModel>,
+          leaderboardEntries: refreshed[5] as List<LeaderboardEntry>,
+          newlyUnlockedAchievementIds: mutation.newAchievementIds,
+          newlyUnlockedBadgeIds: mutation.newBadgeIds,
+          leaderboardDelta:
+              mutation.leaderboardBeforeRank != null &&
+                  mutation.leaderboardAfterRank != null
+              ? mutation.leaderboardBeforeRank! - mutation.leaderboardAfterRank!
+              : null,
         ),
       );
     } catch (e) {
@@ -97,7 +118,7 @@ class GamificationCubit extends Cubit<GamificationState> {
     required Map<String, int> answerMap,
   }) async {
     try {
-      await _repository.applyQuizOutcome(
+      final mutation = await _repository.applyQuizOutcome(
         quizId: quizId,
         subjectId: subjectId,
         result: ExamResultModel(
@@ -116,6 +137,10 @@ class GamificationCubit extends Cubit<GamificationState> {
         _repository.fetchDailyMissions(),
         _repository.fetchXpProgress(),
         _repository.fetchNextBadgeProgress(),
+        _repository.fetchStudentBadges('s1'),
+        _repository.fetchLeaderboard(
+          state.isWeeklyRanking ? 'weekly' : 'monthly',
+        ),
       ]);
 
       emit(
@@ -124,6 +149,15 @@ class GamificationCubit extends Cubit<GamificationState> {
           dailyMissions: refreshed[1] as List<DailyMissionModel>,
           xpProgress: refreshed[2] as XpProgressModel,
           nextBadgeProgress: refreshed[3] as NextBadgeProgressModel?,
+          studentBadges: refreshed[4] as List<StudentBadgeModel>,
+          leaderboardEntries: refreshed[5] as List<LeaderboardEntry>,
+          newlyUnlockedAchievementIds: mutation.newAchievementIds,
+          newlyUnlockedBadgeIds: mutation.newBadgeIds,
+          leaderboardDelta:
+              mutation.leaderboardBeforeRank != null &&
+                  mutation.leaderboardAfterRank != null
+              ? mutation.leaderboardBeforeRank! - mutation.leaderboardAfterRank!
+              : null,
         ),
       );
     } catch (e) {

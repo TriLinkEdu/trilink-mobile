@@ -13,6 +13,7 @@ import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
 
 import '../../../../core/widgets/pressable.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/student_page_background.dart';
 import '../cubit/ai_assistant_cubit.dart';
 import '../cubit/ai_chat_cubit.dart';
 import '../models/ai_assistant_models.dart';
@@ -127,19 +128,9 @@ class _AiAssistantViewState extends State<_AiAssistantView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: isDark
-                ? const [Color(0xFF0A1323), Color(0xFF0F2438)]
-                : const [Color(0xFFF0F8FF), Color(0xFFE6F4FF)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
+      body: StudentPageBackground(
         child: SafeArea(
           child: Column(
             children: [

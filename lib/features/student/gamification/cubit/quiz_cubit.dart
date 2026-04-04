@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../models/gamification_models.dart';
 import '../repositories/student_gamification_repository.dart';
 import 'quiz_state.dart';
 
@@ -29,31 +30,32 @@ class QuizCubit extends Cubit<QuizState> {
   Future<void> submitQuiz(String quizId, Map<String, int> answers) async {
     emit(state.copyWith(submitting: true));
     try {
-      final beforeAchievements = await _repository.fetchAchievements();
-      final beforeXp = await _repository.fetchXpProgress();
       final result = await _repository.submitQuizAnswers(quizId, answers);
+      GamificationMutationResult mutation = const GamificationMutationResult(
+        xpDelta: 0,
+        newTotalXp: 0,
+        leveledUp: false,
+        newLevel: 0,
+      );
       final subjectId = state.quiz?.subjectId;
       if (subjectId != null) {
-        await _repository.applyQuizOutcome(
+        mutation = await _repository.applyQuizOutcome(
           quizId: quizId,
           subjectId: subjectId,
           result: result,
         );
       }
 
-      final afterAchievements = await _repository.fetchAchievements();
-      final afterXp = await _repository.fetchXpProgress();
-
-      final beforeUnlocked = beforeAchievements
-          .where((a) => a.isUnlocked)
-          .map((a) => a.id)
-          .toSet();
-      final newlyUnlocked = afterAchievements
-          .where((a) => a.isUnlocked && !beforeUnlocked.contains(a.id))
+      final allAchievements = await _repository.fetchAchievements();
+      final allBadges = await _repository.fetchBadges();
+      final newlyUnlockedAchievementTitles = allAchievements
+          .where((a) => mutation.newAchievementIds.contains(a.id))
           .map((a) => a.title)
           .toList();
-
-      final leveledUp = afterXp.level > beforeXp.level;
+      final newlyUnlockedBadgeNames = allBadges
+          .where((b) => mutation.newBadgeIds.contains(b.id))
+          .map((b) => b.name)
+          .toList();
 
       emit(
         QuizState(
@@ -62,9 +64,17 @@ class QuizCubit extends Cubit<QuizState> {
           errorMessage: state.errorMessage,
           submitting: false,
           submitResult: result,
-          newlyUnlockedAchievements: newlyUnlocked,
-          leveledUp: leveledUp,
-          newLevel: afterXp.level,
+          newlyUnlockedAchievements: newlyUnlockedAchievementTitles,
+          newlyUnlockedAchievementIds: mutation.newAchievementIds,
+          newlyUnlockedBadges: newlyUnlockedBadgeNames,
+          newlyUnlockedBadgeIds: mutation.newBadgeIds,
+          leveledUp: mutation.leveledUp,
+          newLevel: mutation.newLevel,
+          leaderboardDelta:
+              mutation.leaderboardBeforeRank != null &&
+                  mutation.leaderboardAfterRank != null
+              ? mutation.leaderboardBeforeRank! - mutation.leaderboardAfterRank!
+              : null,
         ),
       );
     } catch (e) {
@@ -82,6 +92,9 @@ class QuizCubit extends Cubit<QuizState> {
         errorMessage: state.errorMessage,
         submitting: state.submitting,
         newlyUnlockedAchievements: const [],
+        newlyUnlockedAchievementIds: const [],
+        newlyUnlockedBadges: const [],
+        newlyUnlockedBadgeIds: const [],
         leveledUp: false,
       ),
     );

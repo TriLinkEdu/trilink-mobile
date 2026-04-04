@@ -80,8 +80,12 @@ class _QuizViewState extends State<_QuizView> {
               result: result,
               questions: quiz.questions,
               newlyUnlockedAchievements: state.newlyUnlockedAchievements,
+              newlyUnlockedAchievementIds: state.newlyUnlockedAchievementIds,
+              newlyUnlockedBadges: state.newlyUnlockedBadges,
+              newlyUnlockedBadgeIds: state.newlyUnlockedBadgeIds,
               leveledUp: state.leveledUp,
               newLevel: state.newLevel,
+              leaderboardDelta: state.leaderboardDelta,
             ),
           ),
         );

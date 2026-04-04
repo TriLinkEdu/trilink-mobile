@@ -14,9 +14,11 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/pressable.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/student_page_background.dart';
 import '../cubit/gamification_cubit.dart';
 import '../models/gamification_models.dart';
 import '../repositories/student_gamification_repository.dart';
+import '../widgets/badge_visuals.dart';
 
 /// Gamification hub: streaks, achievements, quick quizzes, leaderboard.
 class GamificationScreen extends StatelessWidget {
@@ -45,6 +47,20 @@ class _GamificationViewState extends State<_GamificationView> {
   bool _notifyQuizReminders = true;
   bool _notifyLeaderboard = true;
   bool _notifyAchievements = true;
+
+  String? _resolveAchievementTitle(String id, List<AchievementModel> list) {
+    for (final item in list) {
+      if (item.id == id) return item.title;
+    }
+    return null;
+  }
+
+  String? _resolveBadgeName(String id, List<BadgeModel> list) {
+    for (final item in list) {
+      if (item.id == id) return item.name;
+    }
+    return null;
+  }
 
   void _maybeCelebrateStreakMilestone(int streak) {
     if (streak < 7) return;
@@ -219,22 +235,26 @@ class _GamificationViewState extends State<_GamificationView> {
     return Icons.quiz_rounded;
   }
 
+  LeaderboardEntry? _entryByRank(List<LeaderboardEntry> entries, int rank) {
+    for (final entry in entries) {
+      if (entry.rank == rank) return entry;
+    }
+    return null;
+  }
+
+  String _formatChasingNames(List<String> names) {
+    if (names.isEmpty) return '';
+    if (names.length == 1) return names.first;
+    if (names.length == 2) return '${names[0]} and ${names[1]}';
+    return '${names[0]}, ${names[1]}, and others';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: isDark
-                ? const [Color(0xFF0A1422), Color(0xFF10253A)]
-                : const [Color(0xFFF0F8FF), Color(0xFFE6F4FF)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
+      body: StudentPageBackground(
         child: SafeArea(
           child: Column(
             children: [
@@ -317,6 +337,14 @@ class _GamificationViewState extends State<_GamificationView> {
                           _buildDailyMissionsSection(state.dailyMissions),
                           AppSpacing.gapXxl,
                           _buildTeamChallengeSection(state.teamChallenge),
+                          AppSpacing.gapXxl,
+                          _buildRecentUnlocksSection(
+                            state.newlyUnlockedAchievementIds,
+                            state.newlyUnlockedBadgeIds,
+                            state.achievements,
+                            state.badges,
+                            state.leaderboardDelta,
+                          ),
                           AppSpacing.gapXxl,
                           _buildAchievementsSection(state.achievements),
                           AppSpacing.gapXxl,
@@ -688,30 +716,115 @@ class _GamificationViewState extends State<_GamificationView> {
           )
         else
           SizedBox(
-            height: 100,
+            height: 168,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: displayAchievements.length,
-              separatorBuilder: (_, _) => AppSpacing.hGapLg,
+              separatorBuilder: (_, _) => AppSpacing.hGapMd,
               itemBuilder: (_, i) {
                 final a = displayAchievements[i];
-                final color = a.isUnlocked
-                    ? AppColors.leaderboardCrown
-                    : theme.colorScheme.onSurfaceVariant;
-                final icon = a.isUnlocked
-                    ? Icons.emoji_events_rounded
-                    : Icons.lock_rounded;
-                return _AchievementChip(
-                  icon: icon,
+                return _AchievementShowcaseCard(
+                  icon: BadgeVisuals.iconForAchievement(a),
                   label: a.title,
                   sublabel: a.isUnlocked ? 'Unlocked' : 'Locked',
-                  color: color,
+                  color: BadgeVisuals.accentForAchievement(a, theme),
+                  completion: a.completionRatio,
                   isUnlocked: a.isUnlocked,
                 );
               },
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildRecentUnlocksSection(
+    List<String> achievementIds,
+    List<String> badgeIds,
+    List<AchievementModel> achievements,
+    List<BadgeModel> badges,
+    int? leaderboardDelta,
+  ) {
+    final theme = Theme.of(context);
+    final unlockedAchievementTitles = achievementIds
+        .map((id) => _resolveAchievementTitle(id, achievements))
+        .whereType<String>()
+        .toList();
+    final unlockedBadgeNames = badgeIds
+        .map((id) => _resolveBadgeName(id, badges))
+        .whereType<String>()
+        .toList();
+    final hasContent =
+        unlockedAchievementTitles.isNotEmpty ||
+        unlockedBadgeNames.isNotEmpty ||
+        (leaderboardDelta != null && leaderboardDelta > 0);
+    if (!hasContent) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: AppRadius.borderLg,
+        boxShadow: AppShadows.subtle(theme.shadowColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Recently Unlocked',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          AppSpacing.gapSm,
+          if (unlockedAchievementTitles.isNotEmpty)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: achievementIds
+                  .map((id) {
+                    final match = achievements.where((a) => a.id == id);
+                    if (match.isEmpty) return null;
+                    final item = match.first;
+                    return Chip(
+                      avatar: Icon(
+                        BadgeVisuals.iconForAchievement(item),
+                        size: 18,
+                      ),
+                      label: Text(item.title),
+                    );
+                  })
+                  .whereType<Widget>()
+                  .toList(),
+            ),
+          if (unlockedAchievementTitles.isNotEmpty &&
+              unlockedBadgeNames.isNotEmpty)
+            AppSpacing.gapSm,
+          if (unlockedBadgeNames.isNotEmpty)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: badgeIds.map((id) {
+                final name = _resolveBadgeName(id, badges) ?? id;
+                return Chip(
+                  avatar: Icon(BadgeVisuals.iconForBadge(id), size: 18),
+                  label: Text(name),
+                );
+              }).toList(),
+            ),
+          if (leaderboardDelta != null && leaderboardDelta > 0) ...[
+            AppSpacing.gapSm,
+            Text(
+              'You climbed $leaderboardDelta place${leaderboardDelta == 1 ? '' : 's'} on the leaderboard.',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: AppColors.success,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -735,30 +848,61 @@ class _GamificationViewState extends State<_GamificationView> {
             title: 'No quizzes available',
             subtitle: 'Quick quizzes will appear here.',
           )
-        else
-          ...List.generate(availableQuizzes.length, (i) {
-            final quiz = availableQuizzes[i];
-            return StaggeredFadeSlide(
-              index: i,
-              child: Padding(
-                padding: EdgeInsets.only(
-                  bottom: i < availableQuizzes.length - 1 ? 10 : 0,
-                ),
-                child: _QuickQuizTile(
-                  icon: _iconForSubject(quiz.subjectName),
-                  title: '${quiz.subjectName}: ${quiz.title}',
-                  questions: quiz.questionCount,
-                  xp: quiz.xpReward,
-                  onStart: () {
-                    Navigator.of(context).pushNamed(
-                      RouteNames.studentQuiz,
-                      arguments: {'subjectId': quiz.subjectId},
-                    );
-                  },
-                ),
+        else ...[
+          Builder(
+            builder: (_) {
+              final recommended = availableQuizzes.first;
+              return _RecommendedQuizCard(
+                icon: _iconForSubject(recommended.subjectName),
+                title: '${recommended.subjectName}: ${recommended.title}',
+                questions: recommended.questionCount,
+                xp: recommended.xpReward,
+                difficulty: recommended.difficulty,
+                onStart: () {
+                  Navigator.of(context).pushNamed(
+                    RouteNames.studentQuiz,
+                    arguments: {'subjectId': recommended.subjectId},
+                  );
+                },
+              );
+            },
+          ),
+          if (availableQuizzes.length > 1) ...[
+            AppSpacing.gapMd,
+            Text(
+              'More Quizzes',
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
-            );
-          }),
+            ),
+            AppSpacing.gapSm,
+            ...List.generate(availableQuizzes.length - 1, (i) {
+              final quiz = availableQuizzes[i + 1];
+              return StaggeredFadeSlide(
+                index: i,
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    bottom: i < availableQuizzes.length - 2 ? 10 : 0,
+                  ),
+                  child: _QuickQuizTile(
+                    icon: _iconForSubject(quiz.subjectName),
+                    title: '${quiz.subjectName}: ${quiz.title}',
+                    questions: quiz.questionCount,
+                    xp: quiz.xpReward,
+                    difficulty: quiz.difficulty,
+                    onStart: () {
+                      Navigator.of(context).pushNamed(
+                        RouteNames.studentQuiz,
+                        arguments: {'subjectId': quiz.subjectId},
+                      );
+                    },
+                  ),
+                ),
+              );
+            }),
+          ],
+        ],
       ],
     );
   }
@@ -768,7 +912,9 @@ class _GamificationViewState extends State<_GamificationView> {
     bool isWeeklyRanking,
   ) {
     final theme = Theme.of(context);
-    final topEntries = leaderboardEntries.take(3).toList();
+    final sortedEntries = [...leaderboardEntries]
+      ..sort((a, b) => a.rank.compareTo(b.rank));
+    final topEntries = sortedEntries.take(3).toList();
     final myEntry = leaderboardEntries.firstWhere(
       (entry) => entry.studentId == 's1',
       orElse: () => const LeaderboardEntry(
@@ -778,6 +924,17 @@ class _GamificationViewState extends State<_GamificationView> {
         points: 0,
       ),
     );
+    final aheadEntry = myEntry.rank > 1
+        ? _entryByRank(sortedEntries, myEntry.rank - 1)
+        : null;
+    final pointsToNext = aheadEntry != null
+        ? (aheadEntry.points - myEntry.points).clamp(0, 99999)
+        : 0;
+    final chasingEntries = sortedEntries
+        .where((entry) => entry.rank > myEntry.rank)
+        .take(3)
+        .toList();
+    final chasingNames = chasingEntries.map((e) => e.studentName).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -824,21 +981,42 @@ class _GamificationViewState extends State<_GamificationView> {
         ),
         AppSpacing.gapMd,
         if (myEntry.rank > 0)
+          _LeaderboardMomentumCard(
+            rank: myEntry.rank,
+            points: myEntry.points,
+            pointsToNext: pointsToNext,
+          ),
+        if (chasingNames.isNotEmpty) ...[
+          AppSpacing.gapSm,
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerLow,
-              borderRadius: AppRadius.borderMd,
+              color: theme.colorScheme.surface,
+              borderRadius: AppRadius.borderLg,
+              boxShadow: AppShadows.subtle(theme.shadowColor),
             ),
-            child: Text(
-              'You are #${myEntry.rank} with ${myEntry.points} XP',
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.groups_rounded,
+                  size: 18,
+                  color: theme.colorScheme.primary,
+                ),
+                AppSpacing.hGapSm,
+                Expanded(
+                  child: Text(
+                    'Team Sprint: ${_formatChasingNames(chasingNames)} are close behind.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
+          AppSpacing.gapMd,
+        ],
         if (topEntries.isEmpty)
           const EmptyStateWidget(
             illustration: TrophyIllustration(),
@@ -872,6 +1050,7 @@ class _GamificationViewState extends State<_GamificationView> {
                   xp: '${entry.points} XP',
                   avatarColor: avatarColors[i % avatarColors.length],
                   rankColor: rankColors[i % rankColors.length],
+                  isTopSpot: entry.rank == 1,
                 ),
               ),
             );
@@ -881,18 +1060,20 @@ class _GamificationViewState extends State<_GamificationView> {
   }
 }
 
-class _AchievementChip extends StatelessWidget {
+class _AchievementShowcaseCard extends StatelessWidget {
   final IconData icon;
   final String label;
   final String sublabel;
   final Color color;
+  final double completion;
   final bool isUnlocked;
 
-  const _AchievementChip({
+  const _AchievementShowcaseCard({
     required this.icon,
     required this.label,
     required this.sublabel,
     required this.color,
+    required this.completion,
     required this.isUnlocked,
   });
 
@@ -900,46 +1081,78 @@ class _AchievementChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Column(
-      children: [
-        Container(
-          width: 54,
-          height: 54,
-          decoration: BoxDecoration(
-            color: isUnlocked
-                ? color.withAlpha(25)
-                : theme.colorScheme.surfaceContainerLow,
-            shape: BoxShape.circle,
-            border: Border.all(
+    return Container(
+      width: 128,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: AppRadius.borderLg,
+        border: Border.all(
+          color: isUnlocked
+              ? color.withAlpha(95)
+              : theme.colorScheme.outlineVariant,
+          width: 1.2,
+        ),
+        boxShadow: AppShadows.subtle(theme.shadowColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
               color: isUnlocked
-                  ? color.withAlpha(80)
-                  : theme.colorScheme.outlineVariant,
-              width: 2,
+                  ? color.withAlpha(28)
+                  : theme.colorScheme.surfaceContainerLow,
+              borderRadius: AppRadius.borderMd,
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Icon(
+                  icon,
+                  color: isUnlocked
+                      ? color
+                      : theme.colorScheme.onSurfaceVariant,
+                  size: 24,
+                ),
+                if (!isUnlocked)
+                  Positioned(
+                    right: 2,
+                    bottom: 2,
+                    child: Icon(
+                      Icons.lock_rounded,
+                      size: 12,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
             ),
           ),
-          child: Icon(
-            icon,
-            color: isUnlocked ? color : theme.colorScheme.onSurfaceVariant,
-            size: 26,
+          AppSpacing.gapSm,
+          Text(
+            label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
-        ),
-        AppSpacing.gapSm,
-        Text(
-          label,
-          style: theme.textTheme.labelSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: theme.colorScheme.onSurface,
+          AppSpacing.gapXxs,
+          Text(
+            sublabel,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: isUnlocked
+                  ? AppColors.success
+                  : theme.colorScheme.onSurfaceVariant,
+            ),
           ),
-        ),
-        Text(
-          sublabel,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: isUnlocked
-                ? AppColors.success
-                : theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
+          AppSpacing.gapXs,
+          LinearProgressIndicator(value: completion, minHeight: 5),
+        ],
+      ),
     );
   }
 }
@@ -949,6 +1162,7 @@ class _QuickQuizTile extends StatelessWidget {
   final String title;
   final int questions;
   final int xp;
+  final String difficulty;
   final VoidCallback onStart;
 
   const _QuickQuizTile({
@@ -956,6 +1170,7 @@ class _QuickQuizTile extends StatelessWidget {
     required this.title,
     required this.questions,
     required this.xp,
+    required this.difficulty,
     required this.onStart,
   });
 
@@ -971,11 +1186,26 @@ class _QuickQuizTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: AppRadius.borderLg,
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withAlpha(120),
+        ),
         boxShadow: AppShadows.subtle(theme.shadowColor),
       ),
       child: Row(
         children: [
-          Icon(icon, color: theme.colorScheme.onSurfaceVariant, size: 22),
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerLow,
+              borderRadius: AppRadius.borderSm,
+            ),
+            child: Icon(
+              icon,
+              color: theme.colorScheme.onSurfaceVariant,
+              size: 20,
+            ),
+          ),
           AppSpacing.hGapMd,
           Expanded(
             child: Column(
@@ -983,6 +1213,8 @@ class _QuickQuizTile extends StatelessWidget {
               children: [
                 Text(
                   title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: theme.colorScheme.onSurface,
@@ -990,7 +1222,9 @@ class _QuickQuizTile extends StatelessWidget {
                 ),
                 AppSpacing.gapXxs,
                 Text(
-                  '$questions Questions  •  $xp XP',
+                  '$questions Questions  •  $xp XP  •  $difficulty',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -998,19 +1232,230 @@ class _QuickQuizTile extends StatelessWidget {
               ],
             ),
           ),
-          ElevatedButton(
+          FilledButton.tonalIcon(
+            onPressed: onStart,
+            style: FilledButton.styleFrom(
+              foregroundColor: theme.colorScheme.primary,
+              backgroundColor: theme.colorScheme.primaryContainer.withAlpha(80),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: AppRadius.borderSm),
+            ),
+            icon: const Icon(Icons.play_arrow_rounded, size: 18),
+            label: const Text('Start'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecommendedQuizCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final int questions;
+  final int xp;
+  final String difficulty;
+  final VoidCallback onStart;
+
+  const _RecommendedQuizCard({
+    required this.icon,
+    required this.title,
+    required this.questions,
+    required this.xp,
+    required this.difficulty,
+    required this.onStart,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: AppRadius.borderLg,
+        border: Border.all(color: theme.colorScheme.primary.withAlpha(70)),
+        boxShadow: AppShadows.subtle(theme.shadowColor),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 430;
+          final titleText = Text(
+            title,
+            maxLines: compact ? 3 : 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          );
+
+          final metaText = Text(
+            '$questions Questions  •  $xp XP  •  $difficulty',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          );
+
+          final cta = ElevatedButton.icon(
             onPressed: onStart,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.success,
               foregroundColor: theme.colorScheme.onPrimary,
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
               shape: RoundedRectangleBorder(borderRadius: AppRadius.borderSm),
               elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
               textStyle: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
-            child: const Text('Start'),
+            icon: const Icon(Icons.play_arrow_rounded, size: 18),
+            label: const Text('Start'),
+          );
+
+          if (compact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer.withAlpha(
+                          120,
+                        ),
+                        borderRadius: AppRadius.borderMd,
+                      ),
+                      child: Icon(icon, color: theme.colorScheme.primary),
+                    ),
+                    AppSpacing.hGapMd,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Recommended Quick Quiz',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: AppColors.success,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          AppSpacing.gapXxs,
+                          titleText,
+                          AppSpacing.gapXxs,
+                          metaText,
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                AppSpacing.gapMd,
+                Align(alignment: Alignment.centerRight, child: cta),
+              ],
+            );
+          }
+
+          return Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withAlpha(120),
+                  borderRadius: AppRadius.borderMd,
+                ),
+                child: Icon(icon, color: theme.colorScheme.primary),
+              ),
+              AppSpacing.hGapMd,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Recommended Quick Quiz',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: AppColors.success,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    AppSpacing.gapXxs,
+                    titleText,
+                    AppSpacing.gapXxs,
+                    metaText,
+                  ],
+                ),
+              ),
+              AppSpacing.hGapMd,
+              cta,
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _LeaderboardMomentumCard extends StatelessWidget {
+  final int rank;
+  final int points;
+  final int pointsToNext;
+
+  const _LeaderboardMomentumCard({
+    required this.rank,
+    required this.points,
+    required this.pointsToNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isTop = rank == 1;
+    final subtitle = isTop
+        ? 'You are #1 with $points XP'
+        : 'You are #$rank with $points XP ($pointsToNext XP to next rank)';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withAlpha(90),
+        borderRadius: AppRadius.borderLg,
+        border: Border.all(color: theme.colorScheme.primary.withAlpha(70)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: AppRadius.borderMd,
+            ),
+            child: Icon(
+              isTop ? Icons.shield_rounded : Icons.trending_up_rounded,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          AppSpacing.hGapMd,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isTop ? 'Defending #1' : 'Momentum Building',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                AppSpacing.gapXxs,
+                Text(subtitle, style: theme.textTheme.bodyMedium),
+              ],
+            ),
           ),
         ],
       ),
@@ -1025,6 +1470,7 @@ class _LeaderboardRow extends StatelessWidget {
   final String xp;
   final Color avatarColor;
   final Color rankColor;
+  final bool isTopSpot;
 
   const _LeaderboardRow({
     required this.rank,
@@ -1033,7 +1479,21 @@ class _LeaderboardRow extends StatelessWidget {
     required this.xp,
     required this.avatarColor,
     required this.rankColor,
+    this.isTopSpot = false,
   });
+
+  IconData _rankIcon() {
+    switch (rank) {
+      case 1:
+        return Icons.emoji_events_rounded;
+      case 2:
+        return Icons.workspace_premium_rounded;
+      case 3:
+        return Icons.military_tech_rounded;
+      default:
+        return Icons.tag_rounded;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1047,32 +1507,49 @@ class _LeaderboardRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: AppRadius.borderLg,
+        border: Border.all(
+          color: isTopSpot
+              ? rankColor.withAlpha(150)
+              : theme.colorScheme.outlineVariant.withAlpha(100),
+        ),
         boxShadow: AppShadows.subtle(theme.shadowColor),
       ),
       child: Row(
         children: [
           Container(
-            width: 30,
-            height: 30,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               color: rankColor.withAlpha(24),
-              shape: BoxShape.circle,
+              borderRadius: AppRadius.borderMd,
             ),
-            child: Center(
-              child: Text(
-                '$rank',
-                style: theme.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: rankColor,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Icon(_rankIcon(), color: rankColor, size: 18),
+                Positioned(
+                  bottom: 2,
+                  right: 3,
+                  child: Text(
+                    '$rank',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: rankColor,
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
           AppSpacing.hGapMd,
           CircleAvatar(
             radius: 17,
             backgroundColor: avatarColor.withAlpha(24),
-            child: Icon(Icons.person_rounded, color: avatarColor, size: 19),
+            child: Icon(
+              rank == 1 ? Icons.star_rounded : Icons.person_rounded,
+              color: avatarColor,
+              size: 19,
+            ),
           ),
           AppSpacing.hGapMd,
           Expanded(
@@ -1082,7 +1559,7 @@ class _LeaderboardRow extends StatelessWidget {
                 Text(
                   name,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     color: theme.colorScheme.onSurface,
                   ),
                 ),
@@ -1096,11 +1573,18 @@ class _LeaderboardRow extends StatelessWidget {
               ],
             ),
           ),
-          Text(
-            xp,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.primary,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer.withAlpha(90),
+              borderRadius: AppRadius.borderSm,
+            ),
+            child: Text(
+              xp,
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: theme.colorScheme.primary,
+              ),
             ),
           ),
         ],

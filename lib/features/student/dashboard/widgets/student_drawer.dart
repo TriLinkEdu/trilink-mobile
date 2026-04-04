@@ -77,7 +77,7 @@ class StudentDrawer extends StatelessWidget {
                 _DrawerItem(
                   icon: Icons.assignment_rounded,
                   label: 'Assignments',
-                  color: theme.colorScheme.tertiary,
+                  color: theme.colorScheme.secondary,
                   onTap: () =>
                       _navigate(context, RouteNames.studentAssignments),
                 ),
@@ -102,7 +102,7 @@ class StudentDrawer extends StatelessWidget {
                 _DrawerItem(
                   icon: Icons.menu_book_rounded,
                   label: 'Resources',
-                  color: theme.colorScheme.tertiary,
+                  color: theme.colorScheme.secondary,
                   onTap: () =>
                       _navigate(context, RouteNames.studentCourseResources),
                 ),
@@ -132,7 +132,7 @@ class StudentDrawer extends StatelessWidget {
                 _DrawerItem(
                   icon: Icons.rate_review_rounded,
                   label: 'Feedback',
-                  color: theme.colorScheme.tertiary,
+                  color: theme.colorScheme.secondary,
                   onTap: () => _navigate(context, RouteNames.studentFeedback),
                 ),
                 _DrawerItem(
@@ -389,6 +389,14 @@ class _DrawerItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tileBg = Color.alphaBlend(
+      color.withAlpha(22),
+      theme.colorScheme.surface,
+    );
+    final iconColor =
+        ThemeData.estimateBrightnessForColor(tileBg) == Brightness.dark
+        ? Colors.white
+        : color;
 
     return Pressable(
       onTap: onTap,
@@ -400,10 +408,10 @@ class _DrawerItem extends StatelessWidget {
               width: 34,
               height: 34,
               decoration: BoxDecoration(
-                color: (isDestructive ? color : color).withAlpha(18),
+                color: tileBg,
                 borderRadius: AppRadius.borderSm,
               ),
-              child: Icon(icon, size: 18, color: color),
+              child: Icon(icon, size: 18, color: iconColor),
             ),
             AppSpacing.hGapMd,
             Expanded(

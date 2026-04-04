@@ -11,8 +11,12 @@ class QuizState extends Equatable {
   final bool submitting;
   final ExamResultModel? submitResult;
   final List<String> newlyUnlockedAchievements;
+  final List<String> newlyUnlockedAchievementIds;
+  final List<String> newlyUnlockedBadges;
+  final List<String> newlyUnlockedBadgeIds;
   final bool leveledUp;
   final int? newLevel;
+  final int? leaderboardDelta;
 
   const QuizState({
     this.status = QuizLoadStatus.initial,
@@ -21,8 +25,12 @@ class QuizState extends Equatable {
     this.submitting = false,
     this.submitResult,
     this.newlyUnlockedAchievements = const [],
+    this.newlyUnlockedAchievementIds = const [],
+    this.newlyUnlockedBadges = const [],
+    this.newlyUnlockedBadgeIds = const [],
     this.leveledUp = false,
     this.newLevel,
+    this.leaderboardDelta,
   });
 
   QuizState copyWith({
@@ -32,8 +40,12 @@ class QuizState extends Equatable {
     bool? submitting,
     ExamResultModel? submitResult,
     List<String>? newlyUnlockedAchievements,
+    List<String>? newlyUnlockedAchievementIds,
+    List<String>? newlyUnlockedBadges,
+    List<String>? newlyUnlockedBadgeIds,
     bool? leveledUp,
     int? newLevel,
+    int? leaderboardDelta,
   }) {
     return QuizState(
       status: status ?? this.status,
@@ -43,8 +55,14 @@ class QuizState extends Equatable {
       submitResult: submitResult,
       newlyUnlockedAchievements:
           newlyUnlockedAchievements ?? this.newlyUnlockedAchievements,
+      newlyUnlockedAchievementIds:
+          newlyUnlockedAchievementIds ?? this.newlyUnlockedAchievementIds,
+      newlyUnlockedBadges: newlyUnlockedBadges ?? this.newlyUnlockedBadges,
+      newlyUnlockedBadgeIds:
+          newlyUnlockedBadgeIds ?? this.newlyUnlockedBadgeIds,
       leveledUp: leveledUp ?? this.leveledUp,
       newLevel: newLevel ?? this.newLevel,
+      leaderboardDelta: leaderboardDelta ?? this.leaderboardDelta,
     );
   }
 
@@ -56,7 +74,11 @@ class QuizState extends Equatable {
     submitting,
     submitResult,
     newlyUnlockedAchievements,
+    newlyUnlockedAchievementIds,
+    newlyUnlockedBadges,
+    newlyUnlockedBadgeIds,
     leveledUp,
     newLevel,
+    leaderboardDelta,
   ];
 }

@@ -13,8 +13,8 @@ abstract class StudentGamificationRepository {
     String quizId,
     Map<String, int> answers,
   );
-  Future<void> markMissionCompleted(String missionId);
-  Future<void> applyQuizOutcome({
+  Future<GamificationMutationResult> markMissionCompleted(String missionId);
+  Future<GamificationMutationResult> applyQuizOutcome({
     required String quizId,
     required String subjectId,
     required ExamResultModel result,

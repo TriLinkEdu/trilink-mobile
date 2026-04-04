@@ -491,17 +491,26 @@ class _MoodThemeChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final onColor =
-        ThemeData.estimateBrightnessForColor(color) == Brightness.dark
+    final selectedBg = color;
+    final unselectedBg = Color.alphaBlend(
+      color.withAlpha(40),
+      theme.colorScheme.surface,
+    );
+    final onSelected =
+        ThemeData.estimateBrightnessForColor(selectedBg) == Brightness.dark
         ? Colors.white
         : const Color(0xFF0F172A);
+    final onUnselected =
+        ThemeData.estimateBrightnessForColor(unselectedBg) == Brightness.dark
+        ? Colors.white
+        : theme.colorScheme.onSurface;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
       child: Ink(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? color : color.withAlpha(36),
+          color: selected ? selectedBg : unselectedBg,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: selected ? color.withAlpha(220) : color.withAlpha(90),
@@ -514,7 +523,7 @@ class _MoodThemeChip extends StatelessWidget {
             Text(
               label,
               style: theme.textTheme.labelLarge?.copyWith(
-                color: selected ? onColor : theme.colorScheme.onSurface,
+                color: selected ? onSelected : onUnselected,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
               ),
             ),
@@ -523,7 +532,9 @@ class _MoodThemeChip extends StatelessWidget {
               Icon(
                 Icons.lock_outline_rounded,
                 size: 14,
-                color: selected ? onColor : theme.colorScheme.onSurfaceVariant,
+                color: selected
+                    ? onSelected
+                    : theme.colorScheme.onSurfaceVariant,
               ),
             ],
           ],
