@@ -48,6 +48,8 @@ class RouteNames {
   static const String studentWeeklySnapshot = '/student/weekly-snapshot';
   static const String studentActionPlan = '/student/action-plan';
   static const String studentPerformanceTrends = '/student/performance-trends';
+  static const String studentAttendanceInsights =
+      '/student/attendance-insights';
 
   // Teacher
   static const String teacherDashboard = '/teacher/dashboard';
