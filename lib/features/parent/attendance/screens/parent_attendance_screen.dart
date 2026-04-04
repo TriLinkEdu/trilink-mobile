@@ -1,63 +1,150 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/offline_banner.dart';
+import '../../../../core/services/api_service.dart';
 
 class ParentAttendanceScreen extends StatefulWidget {
+  final String? studentId;
   final String childName;
 
-  const ParentAttendanceScreen({super.key, this.childName = 'John Doe'});
+  const ParentAttendanceScreen({
+    super.key,
+    this.studentId,
+    this.childName = '',
+  });
 
   @override
   State<ParentAttendanceScreen> createState() => _ParentAttendanceScreenState();
 }
 
 class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
+  bool _loading = true;
+  String? _error;
+
+  int _selectedChildIndex = 0;
+  List<Map<String, dynamic>> _linkedChildren = [];
+
   int _selectedSubject = 0;
-  DateTime _currentMonth = DateTime(2023, 10);
-  int _selectedDay = 5;
+  DateTime _currentMonth = DateTime.now();
+  int _selectedDay = DateTime.now().day;
 
-  final List<String> _subjects = [
-    'All Subjects',
-    'Math',
-    'Science',
-    'History',
-  ];
+  List<String> _subjects = ['All Subjects'];
+  Map<int, String> _attendanceData = {};
+  List<_AttendanceRecord> _recentActivity = [];
 
-  final Map<int, String> _attendanceData = {
-    2: 'present', 3: 'present', 4: 'present',
-    5: 'absent', 6: 'present', 7: 'present',
-    8: 'present', 9: 'late', 10: 'late',
-    11: 'present', 12: 'absent', 13: 'present',
-    14: 'present', 15: 'present', 16: 'present',
-    17: 'present', 18: 'present',
-  };
+  String _attendanceRate = '--';
+  String _totalAbsences = '--';
+  String _lateArrivals = '--';
+  String _termLabel = '';
+  String _termDates = '';
 
-  final List<_AttendanceRecord> _recentActivity = [
-    _AttendanceRecord(
-      status: 'Absent',
-      date: 'Thursday, Oct 5 • All Day',
-      subjects: 'Math, Science',
-      color: AppColors.error,
-    ),
-    _AttendanceRecord(
-      status: 'Late Arrival',
-      date: 'Tuesday, Oct 10 • 15 mins',
-      subjects: 'Homeroom',
-      color: Colors.orange,
-    ),
-    _AttendanceRecord(
-      status: 'Absent',
-      date: 'Monday, Sep 24 • All Day',
-      subjects: 'Sick Leave',
-      color: AppColors.error,
-    ),
-  ];
+  String get _displayedChildName {
+    if (_linkedChildren.isEmpty) return widget.childName;
+    final c = _linkedChildren[_selectedChildIndex];
+    return c['fullName'] as String? ??
+        '${c['firstName'] ?? ''} ${c['lastName'] ?? ''}'.trim();
+  }
+
+  String get _currentStudentId {
+    if (_linkedChildren.isNotEmpty) {
+      final c = _linkedChildren[_selectedChildIndex];
+      return c['studentId'] as String? ?? c['id'] as String? ?? '';
+    }
+    return widget.studentId ?? '';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      setState(() { _loading = true; _error = null; });
+
+      final dashboard = await ApiService().getParentDashboard();
+      _linkedChildren = ((dashboard['linkedChildren'] as List<dynamic>?) ?? [])
+          .cast<Map<String, dynamic>>();
+
+      if (widget.studentId != null && _linkedChildren.isNotEmpty) {
+        final idx = _linkedChildren.indexWhere(
+            (c) => (c['studentId'] ?? c['id']) == widget.studentId);
+        if (idx >= 0) _selectedChildIndex = idx;
+      }
+
+      await _loadAttendance();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  Future<void> _loadAttendance() async {
+    try {
+      final report =
+          await ApiService().getStudentAttendanceReport(_currentStudentId);
+      if (!mounted) return;
+
+      final records = (report['records'] as List<dynamic>?) ?? [];
+      final Map<int, String> calData = {};
+      for (final r in records) {
+        final date = DateTime.tryParse(r['date'] as String? ?? '');
+        if (date != null && date.month == _currentMonth.month && date.year == _currentMonth.year) {
+          calData[date.day] = r['status'] as String? ?? 'present';
+        }
+      }
+
+      final subjectList = <String>['All Subjects'];
+      final subjectsRaw = report['subjects'] as List<dynamic>?;
+      if (subjectsRaw != null) {
+        for (final s in subjectsRaw) {
+          subjectList.add(s as String);
+        }
+      }
+
+      final recent = (report['recentActivity'] as List<dynamic>?) ?? [];
+      final recentRecords = recent.map<_AttendanceRecord>((a) {
+        final status = a['status'] as String? ?? '';
+        Color color;
+        switch (status.toLowerCase()) {
+          case 'absent':
+            color = AppColors.error;
+          case 'late':
+          case 'late arrival':
+            color = Colors.orange;
+          default:
+            color = AppColors.secondary;
+        }
+        return _AttendanceRecord(
+          status: status,
+          date: a['date'] as String? ?? '',
+          subjects: a['subjects'] as String? ?? '',
+          color: color,
+        );
+      }).toList();
+
+      setState(() {
+        _attendanceData = calData;
+        _subjects = subjectList;
+        _recentActivity = recentRecords;
+        _attendanceRate = report['attendanceRate']?.toString() ?? '--';
+        _totalAbsences = report['totalAbsences']?.toString() ?? '--';
+        _lateArrivals = report['lateArrivals']?.toString() ?? '--';
+        _termLabel = report['termLabel'] as String? ?? 'Term Overview';
+        _termDates = report['termDates'] as String? ?? '';
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
@@ -74,71 +161,105 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
                 fontSize: 17,
               ),
             ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircleAvatar(
-                    radius: 10,
-                    backgroundColor: AppColors.primary,
-                    child: Text(
-                      widget.childName.split(' ').map((w) => w[0]).take(2).join(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
+            if (_linkedChildren.length > 1) ...[
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedChildIndex =
+                        (_selectedChildIndex + 1) % _linkedChildren.length;
+                  });
+                  _loadAttendance();
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircleAvatar(
+                        radius: 10,
+                        backgroundColor: AppColors.primary,
+                        child: Text(
+                          _displayedChildName
+                              .split(' ')
+                              .map((w) => w[0])
+                              .take(2)
+                              .join(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _displayedChildName,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const Icon(Icons.keyboard_arrow_down, size: 16),
+                    ],
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    widget.childName,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const Icon(Icons.keyboard_arrow_down, size: 16),
-                ],
+                ),
               ),
-            ),
+            ],
           ],
         ),
         centerTitle: false,
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSubjectFilters(),
-            const SizedBox(height: 16),
-            _buildCalendarSection(),
-            const SizedBox(height: 12),
-            _buildLegend(),
-            const SizedBox(height: 24),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildTermOverview(),
-                  const SizedBox(height: 24),
-                  _buildRecentActivitySection(),
-                  const SizedBox(height: 16),
-                  _buildViewFullHistory(),
-                  const SizedBox(height: 32),
-                ],
-              ),
-            ),
-          ],
-        ),
+      body: OfflineBanner(
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(_error!,
+                            style: const TextStyle(color: AppColors.error)),
+                        const SizedBox(height: 12),
+                        ElevatedButton(
+                            onPressed: _loadData,
+                            child: const Text('Retry')),
+                      ],
+                    ),
+                  )
+                : SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSubjectFilters(),
+                        const SizedBox(height: 16),
+                        _buildCalendarSection(),
+                        const SizedBox(height: 12),
+                        _buildLegend(),
+                        const SizedBox(height: 24),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildTermOverview(),
+                              const SizedBox(height: 24),
+                              _buildRecentActivitySection(),
+                              const SizedBox(height: 16),
+                              _buildViewFullHistory(),
+                              const SizedBox(height: 32),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
       ),
     );
   }
@@ -146,41 +267,45 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
   Widget _buildSubjectFilters() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: List.generate(_subjects.length, (index) {
-          final isSelected = _selectedSubject == index;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: GestureDetector(
-              onTap: () => setState(() => _selectedSubject = index),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.textPrimary
-                      : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isSelected
-                        ? AppColors.textPrimary
-                        : Colors.grey.shade300,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: List.generate(_subjects.length, (index) {
+            final isSelected = _selectedSubject == index;
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: GestureDetector(
+                onTap: () => setState(() => _selectedSubject = index),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
                   ),
-                ),
-                child: Text(
-                  _subjects[index],
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: isSelected ? Colors.white : Colors.grey.shade700,
+                  decoration: BoxDecoration(
+                    color:
+                        isSelected ? AppColors.textPrimary : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isSelected
+                          ? AppColors.textPrimary
+                          : Colors.grey.shade300,
+                    ),
+                  ),
+                  child: Text(
+                    _subjects[index],
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: isSelected
+                          ? Colors.white
+                          : Colors.grey.shade700,
+                    ),
                   ),
                 ),
               ),
-            ),
-          );
-        }),
+            );
+          }),
+        ),
       ),
     );
   }
@@ -207,12 +332,15 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               GestureDetector(
-                onTap: () => setState(() {
-                  _currentMonth = DateTime(
-                    _currentMonth.year,
-                    _currentMonth.month - 1,
-                  );
-                }),
+                onTap: () {
+                  setState(() {
+                    _currentMonth = DateTime(
+                      _currentMonth.year,
+                      _currentMonth.month - 1,
+                    );
+                  });
+                  _loadAttendance();
+                },
                 child: const Icon(Icons.chevron_left),
               ),
               const SizedBox(width: 16),
@@ -225,12 +353,15 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
               ),
               const SizedBox(width: 16),
               GestureDetector(
-                onTap: () => setState(() {
-                  _currentMonth = DateTime(
-                    _currentMonth.year,
-                    _currentMonth.month + 1,
-                  );
-                }),
+                onTap: () {
+                  setState(() {
+                    _currentMonth = DateTime(
+                      _currentMonth.year,
+                      _currentMonth.month + 1,
+                    );
+                  });
+                  _loadAttendance();
+                },
                 child: const Icon(Icons.chevron_right),
               ),
             ],
@@ -349,18 +480,20 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Term 1 Overview',
-              style: TextStyle(
+            Text(
+              _termLabel.isEmpty ? 'Term Overview' : _termLabel,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
               ),
             ),
-            Text(
-              'Aug 20 - Oct 5',
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-            ),
+            if (_termDates.isNotEmpty)
+              Text(
+                _termDates,
+                style:
+                    TextStyle(fontSize: 13, color: Colors.grey.shade500),
+              ),
           ],
         ),
         const SizedBox(height: 16),
@@ -368,7 +501,9 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
           children: [
             Expanded(
               child: _TermStat(
-                value: '95%',
+                value: _attendanceRate.contains('%')
+                    ? _attendanceRate
+                    : '$_attendanceRate%',
                 label: 'Attendance\nRate',
                 color: AppColors.secondary,
               ),
@@ -376,7 +511,7 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: _TermStat(
-                value: '2',
+                value: _totalAbsences,
                 label: 'Total\nAbsences',
                 color: AppColors.error,
               ),
@@ -384,7 +519,7 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: _TermStat(
-                value: '1',
+                value: _lateArrivals,
                 label: 'Late\nArrivals',
                 color: Colors.orange,
               ),
@@ -408,6 +543,14 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
           ),
         ),
         const SizedBox(height: 12),
+        if (_recentActivity.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Center(
+              child: Text('No recent activity',
+                  style: TextStyle(color: Colors.grey.shade500)),
+            ),
+          ),
         ..._recentActivity.map((r) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Row(

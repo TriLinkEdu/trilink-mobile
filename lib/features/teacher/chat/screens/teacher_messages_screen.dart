@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/api_service.dart';
+import 'create_group_screen.dart';
+import 'teacher_chat_conversation_screen.dart';
 
 class TeacherMessagesScreen extends StatefulWidget {
   const TeacherMessagesScreen({super.key});
@@ -13,51 +16,48 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
 
-  final List<_ThreadItem> _activeThreads = [
-    _ThreadItem(
-      name: 'Biology 101 - Period 2',
-      message: "Don't forget the lab coats tomorrow! Safet...",
-      time: '2m ago',
-      avatarColor: Colors.purple,
-      icon: Icons.science,
-    ),
-    _ThreadItem(
-      name: 'Art Club',
-      message: 'Meeting moved to Room 304 due to renov...',
-      time: '15m ago',
-      avatarColor: Colors.teal,
-      icon: Icons.palette,
-    ),
-  ];
-
-  final List<_ThreadItem> _previousThreads = [
-    _ThreadItem(
-      name: 'AP Calculus',
-      message: 'Reminder: Quiz on derivatives this Friday.',
-      time: '10:30 AM',
-      avatarColor: AppColors.primary,
-      icon: Icons.calculate,
-    ),
-    _ThreadItem(
-      name: 'English Lit - Period 4',
-      message: "Please read Chapter 4 of 'The Great Gatsb...",
-      time: 'Yesterday',
-      avatarColor: Colors.orange,
-      icon: Icons.menu_book,
-    ),
-    _ThreadItem(
-      name: 'Varsity Basketball',
-      message: 'Practice schedule updated for next week.',
-      time: 'Tue',
-      avatarColor: AppColors.error,
-      icon: Icons.sports_basketball,
-    ),
-  ];
+  bool _loading = true;
+  String? _error;
+  List<Map<String, dynamic>> _conversations = [];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final conversations = await ApiService().getConversations();
+      if (!mounted) return;
+      setState(() {
+        _conversations =
+            conversations.map((c) => c as Map<String, dynamic>).toList();
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  String _timeAgo(String? dateStr) {
+    if (dateStr == null) return '';
+    try {
+      final date = DateTime.parse(dateStr);
+      final diff = DateTime.now().difference(date);
+      if (diff.inMinutes < 1) return 'Just now';
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+      if (diff.inHours < 24) return '${diff.inHours}h ago';
+      if (diff.inDays < 7) return '${diff.inDays}d ago';
+      return '${date.month}/${date.day}';
+    } catch (_) {
+      return dateStr;
+    }
   }
 
   @override
@@ -70,7 +70,6 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -86,6 +85,7 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
                 controller: _tabController,
                 children: [
                   _buildStudentGroupsTab(),
+                  _buildStudentChatsTab(),
                   _buildParentInboxTab(),
                 ],
               ),
@@ -94,7 +94,15 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const CreateGroupScreen(),
+            ),
+          );
+          _loadData();
+        },
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.edit, color: Colors.white),
       ),
@@ -103,16 +111,21 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      padding: const EdgeInsets.fromLTRB(8, 16, 20, 8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            'Messages',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+          IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
+            onPressed: () => Navigator.pop(context),
+          ),
+          const Expanded(
+            child: Text(
+              'Messages',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
             ),
           ),
           CircleAvatar(
@@ -162,6 +175,7 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
           ),
           tabs: const [
             Tab(text: 'Student Groups'),
+            Tab(text: 'Student Chats'),
             Tab(text: 'Parent Inbox'),
           ],
         ),
@@ -223,38 +237,97 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
     );
   }
 
-  Widget _buildStudentGroupsTab() {
+  Widget _buildConversationBody(List<Map<String, dynamic>> threads) {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(_error!, style: const TextStyle(color: AppColors.error)),
+            const SizedBox(height: 12),
+            ElevatedButton(onPressed: _loadData, child: const Text('Retry')),
+          ],
+        ),
+      );
+    }
+    if (threads.isEmpty) {
+      return Center(
+        child: Text(
+          'No conversations yet',
+          style: TextStyle(color: Colors.grey.shade500, fontSize: 15),
+        ),
+      );
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionLabel('ACTIVE THREADS'),
+          _buildSectionLabel('CONVERSATIONS'),
           const SizedBox(height: 8),
-          ..._activeThreads.map((t) => _ThreadTile(thread: t)),
-          const SizedBox(height: 20),
-          _buildSectionLabel('PREVIOUS'),
-          const SizedBox(height: 8),
-          ..._previousThreads.map((t) => _ThreadTile(thread: t)),
+          ...threads.map((c) {
+            final name = c['name'] as String? ?? 'Unnamed';
+            final id = c['id'] as String? ?? '';
+            final createdAt = c['createdAt'] as String?;
+            final participants = c['participants'] as List<dynamic>? ?? [];
+            final participantCount = participants.length;
+
+            return _ThreadTile(
+              thread: _ThreadItem(
+                name: name,
+                message: '$participantCount participant${participantCount == 1 ? '' : 's'}',
+                time: _timeAgo(createdAt),
+                avatarColor: AppColors.primary,
+                icon: Icons.group,
+              ),
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => TeacherChatConversationScreen(
+                      threadName: name,
+                      conversationId: id,
+                    ),
+                  ),
+                );
+              },
+            );
+          }),
         ],
       ),
     );
   }
 
+  Widget _buildStudentGroupsTab() {
+    final groups = _conversations
+        .where((c) => c['isGroup'] == true)
+        .toList();
+    return _buildConversationBody(groups);
+  }
+
+  Widget _buildStudentChatsTab() {
+    final studentChats = _conversations
+        .where((c) {
+          final subject = (c['subject'] as String? ?? '').toLowerCase();
+          return c['isGroup'] != true && subject.contains('student');
+        })
+        .toList();
+    return _buildConversationBody(studentChats);
+  }
+
   Widget _buildParentInboxTab() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.inbox_outlined, size: 48, color: Colors.grey.shade400),
-          const SizedBox(height: 12),
-          Text(
-            'No parent messages yet',
-            style: TextStyle(fontSize: 16, color: Colors.grey.shade500),
-          ),
-        ],
-      ),
-    );
+    final parentChats = _conversations
+        .where((c) {
+          final role = (c['participantRole'] as String? ??
+              c['subject'] as String? ?? '').toLowerCase();
+          return c['isGroup'] != true && role.contains('parent');
+        })
+        .toList();
+    return _buildConversationBody(parentChats);
   }
 
   Widget _buildSectionLabel(String label) {
@@ -325,58 +398,62 @@ class _ThreadItem {
 
 class _ThreadTile extends StatelessWidget {
   final _ThreadItem thread;
-  const _ThreadTile({required this.thread});
+  final VoidCallback? onTap;
+  const _ThreadTile({required this.thread, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: thread.avatarColor.withValues(alpha: 0.15),
-            child: Icon(thread.icon, color: thread.avatarColor, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        thread.name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                          color: AppColors.textPrimary,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Text(
-                      thread.time,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade500,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  thread.message,
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-              ],
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: thread.avatarColor.withValues(alpha: 0.15),
+              child: Icon(thread.icon, color: thread.avatarColor, size: 22),
             ),
-          ),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          thread.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            color: AppColors.textPrimary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Text(
+                        thread.time,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    thread.message,
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'student_analytics_screen.dart';
 
+/// Student list is currently populated with static data.
+/// TODO: Load from class offerings roster when a "list students" endpoint
+/// becomes available (e.g. via getMyClassOfferings → class roster).
 class StudentListScreen extends StatefulWidget {
   const StudentListScreen({super.key});
 
@@ -82,10 +85,12 @@ class _StudentListScreenState extends State<StudentListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: const Text(
           'Students',
           style: TextStyle(
@@ -125,7 +130,15 @@ class _StudentListScreenState extends State<StudentListScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              'Student list loaded from classes roster',
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
+            ),
+          ),
+          const SizedBox(height: 8),
           Expanded(
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(horizontal: 20),

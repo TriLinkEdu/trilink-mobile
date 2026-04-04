@@ -17,7 +17,6 @@ class StorageService {
   StorageService._internal(this._box);
 
   final Box _box;
-
   static const _keyAccessToken = 'access_token';
   static const _keyRefreshToken = 'refresh_token';
   static const _keyUser = 'user_json';

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/api_service.dart';
 
 class TeacherNotificationsScreen extends StatefulWidget {
   const TeacherNotificationsScreen({super.key});
@@ -14,82 +15,150 @@ class _TeacherNotificationsScreenState
   int _selectedFilter = 0;
   final List<String> _filters = ['All', 'Student Activity', 'System Alerts'];
 
-  final List<_NotificationGroup> _groups = [
-    _NotificationGroup(
-      label: 'TODAY',
-      items: [
-        _NotificationItem(
-          icon: Icons.assignment_turned_in,
-          iconBgColor: AppColors.primary,
-          title: 'Sara Mekonnen',
-          subtitle: 'Submitted Physics Quiz: Module 3',
-          time: '2m ago',
-          isRead: false,
-          type: 'student',
-        ),
-        _NotificationItem(
-          icon: Icons.warning_amber_rounded,
-          iconBgColor: AppColors.error,
-          title: 'System Alert',
-          subtitle:
-              'Grading system maintenance scheduled for tonight at 11:00 PM EST.',
-          time: '45m ago',
-          isRead: false,
-          type: 'system',
-        ),
-      ],
-    ),
-    _NotificationGroup(
-      label: 'YESTERDAY',
-      items: [
-        _NotificationItem(
-          icon: Icons.campaign,
-          iconBgColor: Colors.purple,
-          title: 'Admin Announcement',
-          subtitle:
-              'New holiday schedule guidelines have been posted for the upcoming semester.',
-          time: '1d ago',
-          isRead: true,
-          type: 'system',
-        ),
-        _NotificationItem(
-          icon: Icons.person,
-          iconBgColor: Colors.orange,
-          title: 'John Doe',
-          subtitle: 'Requested an extension on History Essay.',
-          time: '1d ago',
-          isRead: true,
-          type: 'student',
-          highlightText: 'History Essay',
-        ),
-      ],
-    ),
-    _NotificationGroup(
-      label: 'OLDER',
-      items: [
-        _NotificationItem(
-          icon: Icons.grading,
-          iconBgColor: AppColors.secondary,
-          title: 'Grades Published',
-          subtitle:
-              'Mid-term results have been released to students.',
-          time: '3d ago',
-          isRead: true,
-          type: 'system',
-        ),
-      ],
-    ),
-  ];
+  bool _loading = true;
+  String? _error;
+  List<Map<String, dynamic>> _notifications = [];
 
-  List<_NotificationGroup> get _filteredGroups {
-    if (_selectedFilter == 0) return _groups;
-    final filterType = _selectedFilter == 1 ? 'student' : 'system';
-    return _groups
-        .map((g) => _NotificationGroup(
-              label: g.label,
-              items: g.items.where((i) => i.type == filterType).toList(),
-            ))
-        .where((g) => g.items.isNotEmpty)
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final data = await ApiService().getNotifications();
+      if (!mounted) return;
+      setState(() {
+        _notifications =
+            data.map((n) => n as Map<String, dynamic>).toList();
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _markAllRead() async {
+    try {
+      await ApiService().markAllNotificationsRead();
+      if (!mounted) return;
+      setState(() {
+        for (final n in _notifications) {
+          n['readAt'] = DateTime.now().toIso8601String();
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to mark all read: $e')),
+      );
+    }
+  }
+
+  Future<void> _markRead(String id, int index) async {
+    try {
+      await ApiService().markNotificationRead(id);
+      if (!mounted) return;
+      setState(() {
+        _notifications[index]['readAt'] = DateTime.now().toIso8601String();
+      });
+    } catch (_) {}
+  }
+
+  String _timeAgo(String? dateStr) {
+    if (dateStr == null) return '';
+    try {
+      final date = DateTime.parse(dateStr);
+      final diff = DateTime.now().difference(date);
+      if (diff.inMinutes < 1) return 'Just now';
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+      if (diff.inHours < 24) return '${diff.inHours}h ago';
+      if (diff.inDays < 7) return '${diff.inDays}d ago';
+      return '${date.month}/${date.day}';
+    } catch (_) {
+      return dateStr;
+    }
+  }
+
+  String _groupLabel(String? dateStr) {
+    if (dateStr == null) return 'OLDER';
+    try {
+      final date = DateTime.parse(dateStr);
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final yesterday = today.subtract(const Duration(days: 1));
+      final notifDate = DateTime(date.year, date.month, date.day);
+
+      if (notifDate == today) return 'TODAY';
+      if (notifDate == yesterday) return 'YESTERDAY';
+      return 'OLDER';
+    } catch (_) {
+      return 'OLDER';
+    }
+  }
+
+  IconData _iconForType(String? type) {
+    switch (type) {
+      case 'assignment':
+        return Icons.assignment_turned_in;
+      case 'alert':
+      case 'system':
+        return Icons.warning_amber_rounded;
+      case 'announcement':
+        return Icons.campaign;
+      case 'grade':
+        return Icons.grading;
+      default:
+        return Icons.notifications;
+    }
+  }
+
+  Color _colorForType(String? type) {
+    switch (type) {
+      case 'assignment':
+        return AppColors.primary;
+      case 'alert':
+      case 'system':
+        return AppColors.error;
+      case 'announcement':
+        return Colors.purple;
+      case 'grade':
+        return AppColors.secondary;
+      default:
+        return Colors.orange;
+    }
+  }
+
+  List<_NotificationGroup> get _groupedNotifications {
+    final filtered = _selectedFilter == 0
+        ? _notifications
+        : _notifications.where((n) {
+            final type = n['type'] as String? ?? '';
+            if (_selectedFilter == 1) {
+              return type == 'assignment' || type == 'student';
+            }
+            return type == 'system' || type == 'alert' ||
+                type == 'announcement' || type == 'grade';
+          }).toList();
+
+    final Map<String, List<MapEntry<int, Map<String, dynamic>>>> grouped = {};
+    for (int i = 0; i < filtered.length; i++) {
+      final n = filtered[i];
+      final originalIndex = _notifications.indexOf(n);
+      final label = _groupLabel(n['createdAt'] as String?);
+      grouped.putIfAbsent(label, () => []).add(MapEntry(originalIndex, n));
+    }
+
+    const order = ['TODAY', 'YESTERDAY', 'OLDER'];
+    return order
+        .where((label) => grouped.containsKey(label))
+        .map((label) =>
+            _NotificationGroup(label: label, items: grouped[label]!))
         .toList();
   }
 
@@ -105,37 +174,53 @@ class _TeacherNotificationsScreenState
             const SizedBox(height: 16),
             _buildFilterChips(),
             const SizedBox(height: 8),
-            Expanded(child: _buildNotificationsList()),
+            Expanded(child: _buildBody()),
           ],
         ),
       ),
     );
   }
 
+  Widget _buildBody() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(_error!, style: const TextStyle(color: AppColors.error)),
+            const SizedBox(height: 12),
+            ElevatedButton(onPressed: _loadData, child: const Text('Retry')),
+          ],
+        ),
+      );
+    }
+    return _buildNotificationsList();
+  }
+
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      padding: const EdgeInsets.fromLTRB(8, 16, 20, 0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            'Notifications',
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+          IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
+            onPressed: () => Navigator.pop(context),
+          ),
+          const Expanded(
+            child: Text(
+              'Notifications',
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
             ),
           ),
           GestureDetector(
-            onTap: () {
-              setState(() {
-                for (final g in _groups) {
-                  for (final i in g.items) {
-                    i.isRead = true;
-                  }
-                }
-              });
-            },
+            onTap: _markAllRead,
             child: const Text(
               'Mark all as read',
               style: TextStyle(
@@ -193,7 +278,15 @@ class _TeacherNotificationsScreenState
   }
 
   Widget _buildNotificationsList() {
-    final groups = _filteredGroups;
+    final groups = _groupedNotifications;
+    if (groups.isEmpty) {
+      return Center(
+        child: Text(
+          'No notifications',
+          style: TextStyle(color: Colors.grey.shade500, fontSize: 15),
+        ),
+      );
+    }
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       itemCount: groups.length,
@@ -215,7 +308,29 @@ class _TeacherNotificationsScreenState
               ),
             ),
             const Divider(height: 1),
-            ...group.items.map((item) => _NotificationTile(item: item)),
+            ...group.items.map((entry) {
+              final n = entry.value;
+              final originalIndex = entry.key;
+              final id = n['id'] as String? ?? '';
+              final isRead = n['readAt'] != null;
+              final type = n['type'] as String?;
+
+              return GestureDetector(
+                onTap: () {
+                  if (!isRead && id.isNotEmpty) {
+                    _markRead(id, originalIndex);
+                  }
+                },
+                child: _NotificationTile(
+                  icon: _iconForType(type),
+                  iconBgColor: _colorForType(type),
+                  title: n['title'] as String? ?? '',
+                  subtitle: n['body'] as String? ?? '',
+                  time: _timeAgo(n['createdAt'] as String?),
+                  isRead: isRead,
+                ),
+              );
+            }),
             if (groupIndex < groups.length - 1)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
@@ -234,35 +349,26 @@ class _TeacherNotificationsScreenState
 
 class _NotificationGroup {
   final String label;
-  final List<_NotificationItem> items;
+  final List<MapEntry<int, Map<String, dynamic>>> items;
   _NotificationGroup({required this.label, required this.items});
 }
 
-class _NotificationItem {
+class _NotificationTile extends StatelessWidget {
   final IconData icon;
   final Color iconBgColor;
   final String title;
   final String subtitle;
   final String time;
-  bool isRead;
-  final String type;
-  final String? highlightText;
+  final bool isRead;
 
-  _NotificationItem({
+  const _NotificationTile({
     required this.icon,
     required this.iconBgColor,
     required this.title,
     required this.subtitle,
     required this.time,
     required this.isRead,
-    required this.type,
-    this.highlightText,
   });
-}
-
-class _NotificationTile extends StatelessWidget {
-  final _NotificationItem item;
-  const _NotificationTile({required this.item});
 
   @override
   Widget build(BuildContext context) {
@@ -274,10 +380,10 @@ class _NotificationTile extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: item.iconBgColor.withValues(alpha: 0.12),
+              color: iconBgColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(item.icon, color: item.iconBgColor, size: 20),
+            child: Icon(icon, color: iconBgColor, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -289,17 +395,17 @@ class _NotificationTile extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        item.title,
+                        title,
                         style: TextStyle(
                           fontWeight:
-                              item.isRead ? FontWeight.w500 : FontWeight.bold,
+                              isRead ? FontWeight.w500 : FontWeight.bold,
                           fontSize: 15,
                           color: AppColors.textPrimary,
                         ),
                       ),
                     ),
                     Text(
-                      item.time,
+                      time,
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade500,
@@ -308,11 +414,18 @@ class _NotificationTile extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 4),
-                _buildSubtitle(),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade600,
+                    height: 1.4,
+                  ),
+                ),
               ],
             ),
           ),
-          if (!item.isRead) ...[
+          if (!isRead) ...[
             const SizedBox(width: 8),
             Container(
               width: 8,
@@ -325,36 +438,6 @@ class _NotificationTile extends StatelessWidget {
             ),
           ],
         ],
-      ),
-    );
-  }
-
-  Widget _buildSubtitle() {
-    if (item.highlightText != null) {
-      final parts = item.subtitle.split(item.highlightText!);
-      return RichText(
-        text: TextSpan(
-          style: TextStyle(fontSize: 13, color: Colors.grey.shade600, height: 1.4),
-          children: [
-            TextSpan(text: parts.first),
-            TextSpan(
-              text: item.highlightText,
-              style: const TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            if (parts.length > 1) TextSpan(text: parts.last),
-          ],
-        ),
-      );
-    }
-    return Text(
-      item.subtitle,
-      style: TextStyle(
-        fontSize: 13,
-        color: Colors.grey.shade600,
-        height: 1.4,
       ),
     );
   }
