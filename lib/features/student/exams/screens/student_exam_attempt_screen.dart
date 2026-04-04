@@ -335,13 +335,40 @@ class _ExamAttemptQuestionsState extends State<_ExamAttemptQuestions> {
             ),
             AppSpacing.gapLg,
             ...List.generate(current.options.length, (index) {
-              return RadioListTile<int>(
-                value: index,
-                groupValue: selectedOption,
-                title: Text(current.options[index]),
-                onChanged: (value) {
-                  if (value != null) _selectAnswer(value);
-                },
+              final isSelected = selectedOption == index;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => _selectAnswer(index),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.outlineVariant,
+                      ),
+                      color: isSelected
+                          ? Theme.of(context)
+                              .colorScheme
+                              .primaryContainer
+                              .withValues(alpha: 0.4)
+                          : null,
+                    ),
+                    child: ListTile(
+                      leading: Icon(
+                        isSelected
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_unchecked,
+                        color: isSelected
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      title: Text(current.options[index]),
+                    ),
+                  ),
+                ),
               );
             }),
             const Spacer(),
