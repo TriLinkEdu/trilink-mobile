@@ -11,6 +11,7 @@ import '../cubit/attendance_insights_cubit.dart';
 import '../cubit/attendance_insights_state.dart';
 import '../repositories/student_analytics_repository.dart';
 import '../widgets/student_insight_cards.dart';
+import '../widgets/student_semantic_colors.dart';
 
 class StudentAttendanceInsightsScreen extends StatelessWidget {
   const StudentAttendanceInsightsScreen({super.key});
@@ -66,7 +67,7 @@ class _StudentAttendanceInsightsView extends StatelessWidget {
                   value: '${(insight.currentRate * 100).round()}%',
                   subtitle: 'Current month',
                   icon: Icons.event_available_rounded,
-                  accent: theme.colorScheme.primary,
+                  accent: StudentSemanticColors.info,
                 ),
                 AppSpacing.gapSm,
                 Align(
@@ -74,10 +75,10 @@ class _StudentAttendanceInsightsView extends StatelessWidget {
                   child: RiskBadge(
                     label: '${insight.riskLevel} risk',
                     color: insight.riskLevel.toLowerCase() == 'low'
-                        ? Colors.green
+                        ? StudentSemanticColors.success
                         : insight.riskLevel.toLowerCase() == 'medium'
-                        ? Colors.orange
-                        : Colors.red,
+                        ? StudentSemanticColors.warning
+                        : StudentSemanticColors.risk,
                   ),
                 ),
                 AppSpacing.gapSm,

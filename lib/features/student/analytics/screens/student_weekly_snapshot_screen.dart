@@ -11,6 +11,7 @@ import '../cubit/weekly_snapshot_cubit.dart';
 import '../cubit/weekly_snapshot_state.dart';
 import '../repositories/student_analytics_repository.dart';
 import '../widgets/student_insight_cards.dart';
+import '../widgets/student_semantic_colors.dart';
 
 class StudentWeeklySnapshotScreen extends StatelessWidget {
   const StudentWeeklySnapshotScreen({super.key});
@@ -64,7 +65,7 @@ class _StudentWeeklySnapshotView extends StatelessWidget {
                   value: '${(snapshot.attendanceRate * 100).round()}%',
                   subtitle: 'This week',
                   icon: Icons.event_available_rounded,
-                  accent: theme.colorScheme.primary,
+                  accent: StudentSemanticColors.info,
                 ),
                 AppSpacing.gapSm,
                 InsightMetricCard(
@@ -72,7 +73,7 @@ class _StudentWeeklySnapshotView extends StatelessWidget {
                   value: '${snapshot.averageQuizScore.round()}%',
                   subtitle: 'This week',
                   icon: Icons.quiz_rounded,
-                  accent: theme.colorScheme.primary,
+                  accent: StudentSemanticColors.success,
                 ),
                 AppSpacing.gapSm,
                 InsightMetricCard(
@@ -80,7 +81,7 @@ class _StudentWeeklySnapshotView extends StatelessWidget {
                   value: '${snapshot.dueAssignments}',
                   subtitle: 'Due soon',
                   icon: Icons.assignment_late_rounded,
-                  accent: theme.colorScheme.primary,
+                  accent: StudentSemanticColors.warning,
                 ),
                 AppSpacing.gapMd,
                 Container(

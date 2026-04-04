@@ -11,6 +11,7 @@ import '../cubit/performance_trends_cubit.dart';
 import '../cubit/performance_trends_state.dart';
 import '../repositories/student_analytics_repository.dart';
 import '../widgets/student_insight_cards.dart';
+import '../widgets/student_semantic_colors.dart';
 
 class StudentPerformanceTrendsScreen extends StatelessWidget {
   const StudentPerformanceTrendsScreen({super.key});
@@ -66,7 +67,7 @@ class _StudentPerformanceTrendsView extends StatelessWidget {
                   value: '${trends.examReadinessScore} / 100',
                   subtitle: 'Estimated from recent trends',
                   icon: Icons.analytics_rounded,
-                  accent: theme.colorScheme.primary,
+                  accent: StudentSemanticColors.info,
                 ),
                 AppSpacing.gapMd,
                 ...trends.subjects.map(
