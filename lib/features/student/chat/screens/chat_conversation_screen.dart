@@ -9,6 +9,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/chat_conversation_cubit.dart';
 import '../repositories/student_chat_repository.dart';
+import '../widgets/chat_bubble.dart';
 
 class ChatConversationScreen extends StatelessWidget {
   final String conversationId;
@@ -159,61 +160,10 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
                   itemBuilder: (context, index) {
                     final message = messages[index];
                     final isMine = message.senderId == _currentUserId;
-                    return Align(
-                      alignment: isMine
-                          ? Alignment.centerRight
-                          : Alignment.centerLeft,
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 9,
-                        ),
-                        constraints: const BoxConstraints(maxWidth: 280),
-                        decoration: BoxDecoration(
-                          color: isMine
-                              ? theme.colorScheme.primaryContainer
-                              : theme.colorScheme.surfaceContainerHighest,
-                          borderRadius: AppRadius.borderMd,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: isMine
-                              ? CrossAxisAlignment.end
-                              : CrossAxisAlignment.start,
-                          children: [
-                            if (!isMine)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 2),
-                                child: Text(
-                                  message.senderName,
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                              ),
-                            Text(
-                              message.content,
-                              style: TextStyle(
-                                color: isMine
-                                    ? theme.colorScheme.onPrimaryContainer
-                                    : theme.colorScheme.onSurface,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              DateFormat.jm().format(message.timestamp),
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                fontSize: 10,
-                                color: isMine
-                                    ? theme.colorScheme.onPrimaryContainer
-                                        .withAlpha(150)
-                                    : theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    return ChatBubble(
+                      message: message.content,
+                      isMe: isMine,
+                      time: DateFormat.jm().format(message.timestamp),
                     );
                   },
                 );
@@ -229,6 +179,7 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
                   Expanded(
                     child: TextField(
                       controller: _controller,
+                      maxLength: 800,
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _sendMessage(),
                       decoration: InputDecoration(
@@ -243,6 +194,7 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
                           horizontal: 14,
                           vertical: 10,
                         ),
+                        counterText: '',
                       ),
                     ),
                   ),

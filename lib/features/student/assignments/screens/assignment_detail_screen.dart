@@ -69,9 +69,18 @@ class _AssignmentDetailBody extends StatefulWidget {
 }
 
 class _AssignmentDetailBodyState extends State<_AssignmentDetailBody> {
-  bool _isSubmitting = false;
-  bool _hasJustSubmitted = false;
   final TextEditingController _submissionController = TextEditingController();
+
+  @override
+  void didUpdateWidget(covariant _AssignmentDetailBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If we just submitted and the assignment becomes submitted, ensure
+    // we don't keep stale draft text around.
+    if (oldWidget.assignment.status != widget.assignment.status &&
+        widget.assignment.status == AssignmentStatus.submitted) {
+      _submissionController.clear();
+    }
+  }
 
   @override
   void dispose() {
@@ -89,44 +98,23 @@ class _AssignmentDetailBodyState extends State<_AssignmentDetailBody> {
       );
       return;
     }
-
-    setState(() => _isSubmitting = true);
-    try {
-      await sl<StudentAssignmentsRepository>()
-          .submitAssignment(widget.assignment.id, text);
-      if (!mounted) return;
-      setState(() => _hasJustSubmitted = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Assignment submitted successfully!')),
-      );
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to submit assignment.')),
-      );
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
-    }
+    await context.read<AssignmentDetailCubit>().submit(text);
   }
 
   bool get _showReadOnlySubmission {
-    if (_hasJustSubmitted) return true;
     final s = widget.assignment.status;
     return s == AssignmentStatus.submitted || s == AssignmentStatus.graded;
   }
 
   String? get _submittedText {
-    if (_hasJustSubmitted) return _submissionController.text.trim();
     return widget.assignment.submittedContent;
   }
 
   @override
   Widget build(BuildContext context) {
     final a = widget.assignment;
-    final canSubmit =
-        !_hasJustSubmitted &&
-        (a.status == AssignmentStatus.pending ||
-            a.status == AssignmentStatus.overdue);
+    final canSubmit = a.status == AssignmentStatus.pending ||
+        a.status == AssignmentStatus.overdue;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -139,7 +127,7 @@ class _AssignmentDetailBodyState extends State<_AssignmentDetailBody> {
           AppSpacing.gapSm,
           Text(a.dueDateLabel),
           AppSpacing.gapXs,
-          Text('Status: ${_hasJustSubmitted ? 'Submitted' : a.statusLabel}'),
+          Text('Status: ${a.statusLabel}'),
           AppSpacing.gapXxl,
           Card(
             child: Padding(
@@ -262,15 +250,37 @@ class _AssignmentDetailBodyState extends State<_AssignmentDetailBody> {
             AppSpacing.gapLg,
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _isSubmitting ? null : _submitAssignment,
-                child: _isSubmitting
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Submit Assignment'),
+              child: BlocConsumer<AssignmentDetailCubit, AssignmentDetailState>(
+                listenWhen: (prev, next) =>
+                    prev.submitError != next.submitError ||
+                    prev.assignment?.status != next.assignment?.status,
+                listener: (context, state) {
+                  final err = state.submitError;
+                  if (err != null) {
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(SnackBar(content: Text(err)));
+                  } else if (state.assignment?.status ==
+                      AssignmentStatus.submitted) {
+                    _submissionController.clear();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Assignment submitted successfully!'),
+                      ),
+                    );
+                  }
+                },
+                builder: (context, state) {
+                  return ElevatedButton(
+                    onPressed: state.isSubmitting ? null : _submitAssignment,
+                    child: state.isSubmitting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Submit Assignment'),
+                  );
+                },
               ),
             ),
           ],

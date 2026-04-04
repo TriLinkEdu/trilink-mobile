@@ -337,7 +337,7 @@ class _ChatList extends StatelessWidget {
             onTap: openConversation,
             enableHaptic: false,
             child: ListTile(
-              onTap: openConversation,
+              onTap: null,
               leading: Hero(
                 tag: 'chat-avatar-${item.id}',
                 child: Material(

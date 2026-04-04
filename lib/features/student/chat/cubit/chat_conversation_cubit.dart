@@ -32,10 +32,14 @@ class ChatConversationCubit extends Cubit<ChatConversationState> {
   }
 
   Future<void> sendMessage(String text) async {
-    final sentMessage = await _repository.sendMessage(conversationId, text);
-    emit(state.copyWith(
-      status: ConversationStatus.loaded,
-      messages: [...state.messages, sentMessage],
-    ));
+    try {
+      final sentMessage = await _repository.sendMessage(conversationId, text);
+      emit(state.copyWith(
+        status: ConversationStatus.loaded,
+        messages: [...state.messages, sentMessage],
+      ));
+    } catch (_) {
+      rethrow;
+    }
   }
 }

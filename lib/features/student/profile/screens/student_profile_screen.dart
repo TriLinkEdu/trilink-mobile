@@ -14,6 +14,8 @@ import '../../../../core/theme/theme_notifier.dart';
 import 'package:trilink_mobile/core/widgets/celebration_overlay.dart';
 import 'package:trilink_mobile/core/widgets/pressable.dart';
 import '../../../auth/cubit/auth_cubit.dart';
+import '../../shared/models/student_progress_model.dart';
+import '../../shared/repositories/student_progress_repository.dart';
 import '../repositories/student_profile_repository.dart';
 
 class StudentProfileScreen extends StatefulWidget {
@@ -26,6 +28,7 @@ class StudentProfileScreen extends StatefulWidget {
 class _StudentProfileScreenState extends State<StudentProfileScreen>
     with SingleTickerProviderStateMixin {
   late final StudentProfileRepository _repo;
+  late final StudentProgressRepository _progressRepo;
   final StorageService _storage = sl<StorageService>();
 
   bool _pushNotifications = true;
@@ -33,16 +36,19 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
 
   int _avatarTapCount = 0;
   late final AnimationController _avatarSpinController;
+  StudentProgressModel? _progress;
 
   @override
   void initState() {
     super.initState();
     _repo = sl<StudentProfileRepository>();
+    _progressRepo = sl<StudentProgressRepository>();
     _avatarSpinController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
     _loadPreferences();
+    _loadProgress();
   }
 
   @override
@@ -71,10 +77,18 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
 
   void _loadPreferences() {
     setState(() {
-      _pushNotifications =
-          _storage.getBool('pushNotifications', defaultValue: true);
+      _pushNotifications = _storage.getBool(
+        'pushNotifications',
+        defaultValue: true,
+      );
       _language = _storage.getString('language') ?? 'English';
     });
+  }
+
+  Future<void> _loadProgress() async {
+    final progress = await _progressRepo.fetchProgress();
+    if (!mounted) return;
+    setState(() => _progress = progress);
   }
 
   @override
@@ -94,14 +108,14 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
         child: Column(
           children: [
             Padding(
-              padding:
-                  const EdgeInsets.only(right: 16, top: 4),
+              padding: const EdgeInsets.only(right: 16, top: 4),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
-                    onPressed: () => Navigator.of(context)
-                        .pushNamed(RouteNames.studentProfileEdit),
+                    onPressed: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentProfileEdit),
                     child: Text(
                       'Edit Profile',
                       style: theme.textTheme.bodyMedium?.copyWith(
@@ -122,61 +136,62 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                     GestureDetector(
                       onTap: _onAvatarTap,
                       child: Stack(
-                      clipBehavior: Clip.none,
-                      alignment: Alignment.bottomRight,
-                      children: [
-                        ClipOval(
-                          child: SizedBox(
-                            width: 96,
-                            height: 96,
-                            child: AnimatedBuilder(
-                              animation: _avatarSpinController,
-                              builder: (context, child) => Transform.rotate(
-                                alignment: Alignment.center,
-                                angle: _avatarSpinController.value * 2 * pi,
-                                child: child,
-                              ),
-                              child: CircleAvatar(
-                                radius: 48,
-                                backgroundColor: theme.colorScheme.outlineVariant,
-                                child: Icon(
-                                  Icons.person_rounded,
-                                  size: 56,
-                                  color: theme.colorScheme.onSurfaceVariant,
+                        clipBehavior: Clip.none,
+                        alignment: Alignment.bottomRight,
+                        children: [
+                          ClipOval(
+                            child: SizedBox(
+                              width: 96,
+                              height: 96,
+                              child: AnimatedBuilder(
+                                animation: _avatarSpinController,
+                                builder: (context, child) => Transform.rotate(
+                                  alignment: Alignment.center,
+                                  angle: _avatarSpinController.value * 2 * pi,
+                                  child: child,
+                                ),
+                                child: CircleAvatar(
+                                  radius: 48,
+                                  backgroundColor:
+                                      theme.colorScheme.outlineVariant,
+                                  child: Icon(
+                                    Icons.person_rounded,
+                                    size: 56,
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                        Pressable(
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Photo picker will use device camera/gallery when integrated',
+                          Pressable(
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Photo picker will use device camera/gallery when integrated',
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surfaceContainerLow,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: theme.colorScheme.surface,
+                                  width: 2,
                                 ),
                               ),
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surfaceContainerLow,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: theme.colorScheme.surface,
-                                width: 2,
+                              child: Icon(
+                                Icons.camera_alt_rounded,
+                                size: 16,
+                                color: theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
-                            child: Icon(
-                              Icons.camera_alt_rounded,
-                              size: 16,
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
                     ),
                     AppSpacing.gapLg,
                     Text(
@@ -215,7 +230,9 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                           ),
                           AppSpacing.hGapXs,
                           Text(
-                            'Level 12 Scholar',
+                            _progress != null
+                                ? 'Level ${_progress!.level} ${_progress!.levelTitle}'
+                                : 'Level --',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.primary,
                               fontWeight: FontWeight.w500,
@@ -398,80 +415,90 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                           icon: Icons.notifications_outlined,
                           label: 'Notifications',
                           showChevron: true,
-                          onTap: () => Navigator.of(context)
-                              .pushNamed(RouteNames.studentNotifications),
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(RouteNames.studentNotifications),
                         ),
                         _divider(),
                         _SettingsRow(
                           icon: Icons.chat_outlined,
                           label: 'Chat',
                           showChevron: true,
-                          onTap: () => Navigator.of(context)
-                              .pushNamed(RouteNames.studentChat),
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(RouteNames.studentChat),
                         ),
                         _divider(),
                         _SettingsRow(
                           icon: Icons.calendar_month_outlined,
                           label: 'Calendar',
                           showChevron: true,
-                          onTap: () => Navigator.of(context)
-                              .pushNamed(RouteNames.studentCalendar),
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(RouteNames.studentCalendar),
                         ),
                         _divider(),
                         _SettingsRow(
                           icon: Icons.settings_outlined,
                           label: 'App Settings',
                           showChevron: true,
-                          onTap: () => Navigator.of(context)
-                              .pushNamed(RouteNames.studentSettings),
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(RouteNames.studentSettings),
                         ),
                         _divider(),
                         _SettingsRow(
                           icon: Icons.assignment_outlined,
                           label: 'Assignments',
                           showChevron: true,
-                          onTap: () => Navigator.of(context)
-                              .pushNamed(RouteNames.studentAssignments),
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(RouteNames.studentAssignments),
                         ),
                         _divider(),
                         _SettingsRow(
                           icon: Icons.folder_outlined,
                           label: 'Courses & Resources',
                           showChevron: true,
-                          onTap: () => Navigator.of(context)
-                              .pushNamed(RouteNames.studentCourseResources),
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(RouteNames.studentCourseResources),
                         ),
                         _divider(),
                         _SettingsRow(
                           icon: Icons.fact_check_outlined,
                           label: 'Exam Attempt',
                           showChevron: true,
-                          onTap: () => Navigator.of(context)
-                              .pushNamed(RouteNames.studentExamAttempt),
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(RouteNames.studentExamAttempt),
                         ),
                         _divider(),
                         _SettingsRow(
                           icon: Icons.sync_outlined,
                           label: 'Sync Status',
                           showChevron: true,
-                          onTap: () => Navigator.of(context)
-                              .pushNamed(RouteNames.studentSyncStatus),
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(RouteNames.studentSyncStatus),
                         ),
                         _divider(),
                         _SettingsRow(
                           icon: Icons.fact_check_outlined,
                           label: 'Attendance',
                           showChevron: true,
-                          onTap: () => Navigator.of(context)
-                              .pushNamed(RouteNames.studentAttendance),
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(RouteNames.studentAttendance),
                         ),
                         _divider(),
                         _SettingsRow(
                           icon: Icons.rate_review_outlined,
                           label: 'Feedback',
                           showChevron: true,
-                          onTap: () => Navigator.of(context)
-                              .pushNamed(RouteNames.studentFeedback),
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(RouteNames.studentFeedback),
                         ),
                       ],
                     ),
@@ -484,8 +511,10 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                         onPressed: () async {
                           await context.read<AuthCubit>().logout();
                           if (!context.mounted) return;
-                          Navigator.of(context, rootNavigator: true)
-                              .pushNamedAndRemoveUntil(
+                          Navigator.of(
+                            context,
+                            rootNavigator: true,
+                          ).pushNamedAndRemoveUntil(
                             RouteNames.login,
                             (_) => false,
                           );
@@ -554,8 +583,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                   labelText: 'Current Password',
                   border: OutlineInputBorder(),
                 ),
-                validator: (v) =>
-                    (v == null || v.isEmpty) ? 'Required' : null,
+                validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
               ),
               AppSpacing.gapMd,
               TextFormField(
@@ -581,7 +609,9 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                 ),
                 validator: (v) {
                   if (v == null || v.isEmpty) return 'Required';
-                  if (v != newPwController.text) return 'Passwords do not match';
+                  if (v != newPwController.text) {
+                    return 'Passwords do not match';
+                  }
                   return null;
                 },
               ),
@@ -611,9 +641,9 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                 );
               } catch (e) {
                 if (!dialogContext.mounted) return;
-                ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  SnackBar(content: Text('Failed: $e')),
-                );
+                ScaffoldMessenger.of(
+                  dialogContext,
+                ).showSnackBar(SnackBar(content: Text('Failed: $e')));
               }
             },
             child: const Text('Update'),
@@ -635,7 +665,9 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
               AppSpacing.gapMd,
               Text(
                 'Choose Language',
-                style: sheetTheme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                style: sheetTheme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               AppSpacing.gapMd,
               ListTile(
@@ -678,10 +710,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
               AppSpacing.gapMd,
-              Text(
-                'Choose Text Size',
-                style: sheetTheme.textTheme.titleMedium,
-              ),
+              Text('Choose Text Size', style: sheetTheme.textTheme.titleMedium),
               AppSpacing.gapSm,
               for (final entry in ThemeNotifier.scaleOptions.entries)
                 ListTile(
@@ -689,12 +718,16 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                   subtitle: Text(
                     'Aa Bb Cc',
                     style: TextStyle(
-                      fontSize: sheetTheme.textTheme.bodyMedium!.fontSize! * entry.value,
+                      fontSize:
+                          sheetTheme.textTheme.bodyMedium!.fontSize! *
+                          entry.value,
                     ),
                   ),
                   trailing: tn.textScaleLabel == entry.key
-                      ? Icon(Icons.check_circle,
-                          color: sheetTheme.colorScheme.primary)
+                      ? Icon(
+                          Icons.check_circle,
+                          color: sheetTheme.colorScheme.primary,
+                        )
                       : null,
                   onTap: () {
                     tn.setTextScale(entry.key);
@@ -751,8 +784,9 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                           font,
                           style: TextStyle(
                             fontFamily: font,
-                            fontWeight:
-                                isSelected ? FontWeight.w600 : FontWeight.w400,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.w400,
                           ),
                         ),
                         subtitle: Text(
@@ -763,8 +797,10 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                           ),
                         ),
                         trailing: isSelected
-                            ? Icon(Icons.check_circle,
-                                color: sheetTheme.colorScheme.primary)
+                            ? Icon(
+                                Icons.check_circle,
+                                color: sheetTheme.colorScheme.primary,
+                              )
                             : null,
                         onTap: () {
                           tn.setFontFamily(font);
@@ -883,7 +919,9 @@ class _FaqItem extends StatelessWidget {
       children: [
         Text(
           question,
-          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
         ),
         AppSpacing.gapXs,
         Text(

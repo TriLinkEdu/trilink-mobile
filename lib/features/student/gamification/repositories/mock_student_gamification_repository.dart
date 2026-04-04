@@ -1,35 +1,139 @@
 import '../models/gamification_models.dart';
 import '../../exams/models/exam_model.dart';
+import '../../shared/repositories/student_progress_repository.dart';
 import 'student_gamification_repository.dart';
 
 class MockStudentGamificationRepository
     implements StudentGamificationRepository {
   static const Duration _latency = Duration(milliseconds: 350);
+  final StudentProgressRepository _progressRepository;
+
+  MockStudentGamificationRepository(this._progressRepository);
 
   static final Map<String, List<LeaderboardEntry>> _leaderboards = {
     'weekly': [
-      const LeaderboardEntry(studentId: 's1', studentName: 'Sara Ahmed', rank: 1, points: 520),
-      const LeaderboardEntry(studentId: 's2', studentName: 'Dawit Bekele', rank: 2, points: 480),
-      const LeaderboardEntry(studentId: 's3', studentName: 'Hana Tadesse', rank: 3, points: 455),
-      const LeaderboardEntry(studentId: 's4', studentName: 'Yonas Kebede', rank: 4, points: 430),
-      const LeaderboardEntry(studentId: 's5', studentName: 'Liya Mengistu', rank: 5, points: 410),
-      const LeaderboardEntry(studentId: 's6', studentName: 'Abel Gebre', rank: 6, points: 385),
-      const LeaderboardEntry(studentId: 's7', studentName: 'Meron Hailu', rank: 7, points: 360),
-      const LeaderboardEntry(studentId: 's8', studentName: 'Kaleb Alemu', rank: 8, points: 340),
-      const LeaderboardEntry(studentId: 's9', studentName: 'Selam Worku', rank: 9, points: 310),
-      const LeaderboardEntry(studentId: 's10', studentName: 'Naod Tesfaye', rank: 10, points: 290),
+      const LeaderboardEntry(
+        studentId: 's1',
+        studentName: 'Sara Ahmed',
+        rank: 1,
+        points: 520,
+      ),
+      const LeaderboardEntry(
+        studentId: 's2',
+        studentName: 'Dawit Bekele',
+        rank: 2,
+        points: 480,
+      ),
+      const LeaderboardEntry(
+        studentId: 's3',
+        studentName: 'Hana Tadesse',
+        rank: 3,
+        points: 455,
+      ),
+      const LeaderboardEntry(
+        studentId: 's4',
+        studentName: 'Yonas Kebede',
+        rank: 4,
+        points: 430,
+      ),
+      const LeaderboardEntry(
+        studentId: 's5',
+        studentName: 'Liya Mengistu',
+        rank: 5,
+        points: 410,
+      ),
+      const LeaderboardEntry(
+        studentId: 's6',
+        studentName: 'Abel Gebre',
+        rank: 6,
+        points: 385,
+      ),
+      const LeaderboardEntry(
+        studentId: 's7',
+        studentName: 'Meron Hailu',
+        rank: 7,
+        points: 360,
+      ),
+      const LeaderboardEntry(
+        studentId: 's8',
+        studentName: 'Kaleb Alemu',
+        rank: 8,
+        points: 340,
+      ),
+      const LeaderboardEntry(
+        studentId: 's9',
+        studentName: 'Selam Worku',
+        rank: 9,
+        points: 310,
+      ),
+      const LeaderboardEntry(
+        studentId: 's10',
+        studentName: 'Naod Tesfaye',
+        rank: 10,
+        points: 290,
+      ),
     ],
     'monthly': [
-      const LeaderboardEntry(studentId: 's2', studentName: 'Dawit Bekele', rank: 1, points: 2150),
-      const LeaderboardEntry(studentId: 's1', studentName: 'Sara Ahmed', rank: 2, points: 2080),
-      const LeaderboardEntry(studentId: 's5', studentName: 'Liya Mengistu', rank: 3, points: 1920),
-      const LeaderboardEntry(studentId: 's3', studentName: 'Hana Tadesse', rank: 4, points: 1870),
-      const LeaderboardEntry(studentId: 's7', studentName: 'Meron Hailu', rank: 5, points: 1750),
-      const LeaderboardEntry(studentId: 's4', studentName: 'Yonas Kebede', rank: 6, points: 1680),
-      const LeaderboardEntry(studentId: 's9', studentName: 'Selam Worku', rank: 7, points: 1590),
-      const LeaderboardEntry(studentId: 's6', studentName: 'Abel Gebre', rank: 8, points: 1520),
-      const LeaderboardEntry(studentId: 's10', studentName: 'Naod Tesfaye', rank: 9, points: 1430),
-      const LeaderboardEntry(studentId: 's8', studentName: 'Kaleb Alemu', rank: 10, points: 1380),
+      const LeaderboardEntry(
+        studentId: 's2',
+        studentName: 'Dawit Bekele',
+        rank: 1,
+        points: 2150,
+      ),
+      const LeaderboardEntry(
+        studentId: 's1',
+        studentName: 'Sara Ahmed',
+        rank: 2,
+        points: 2080,
+      ),
+      const LeaderboardEntry(
+        studentId: 's5',
+        studentName: 'Liya Mengistu',
+        rank: 3,
+        points: 1920,
+      ),
+      const LeaderboardEntry(
+        studentId: 's3',
+        studentName: 'Hana Tadesse',
+        rank: 4,
+        points: 1870,
+      ),
+      const LeaderboardEntry(
+        studentId: 's7',
+        studentName: 'Meron Hailu',
+        rank: 5,
+        points: 1750,
+      ),
+      const LeaderboardEntry(
+        studentId: 's4',
+        studentName: 'Yonas Kebede',
+        rank: 6,
+        points: 1680,
+      ),
+      const LeaderboardEntry(
+        studentId: 's9',
+        studentName: 'Selam Worku',
+        rank: 7,
+        points: 1590,
+      ),
+      const LeaderboardEntry(
+        studentId: 's6',
+        studentName: 'Abel Gebre',
+        rank: 8,
+        points: 1520,
+      ),
+      const LeaderboardEntry(
+        studentId: 's10',
+        studentName: 'Naod Tesfaye',
+        rank: 9,
+        points: 1430,
+      ),
+      const LeaderboardEntry(
+        studentId: 's8',
+        studentName: 'Kaleb Alemu',
+        rank: 10,
+        points: 1380,
+      ),
     ],
   };
 
@@ -236,7 +340,8 @@ class MockStudentGamificationRepository
         ),
         QuestionModel(
           id: 'ql3',
-          text: 'What literary device compares two things using "like" or "as"?',
+          text:
+              'What literary device compares two things using "like" or "as"?',
           options: ['Metaphor', 'Simile', 'Hyperbole', 'Alliteration'],
           correctIndex: 1,
         ),
@@ -296,7 +401,8 @@ class MockStudentGamificationRepository
         ),
         QuestionModel(
           id: 'qh4',
-          text: 'The fall of Constantinople in 1453 marked the end of which empire?',
+          text:
+              'The fall of Constantinople in 1453 marked the end of which empire?',
           options: [
             'Roman Republic',
             'Byzantine Empire',
@@ -307,7 +413,8 @@ class MockStudentGamificationRepository
         ),
         QuestionModel(
           id: 'qh5',
-          text: 'Which explorer is credited with initiating sustained European contact with the Americas in 1492?',
+          text:
+              'Which explorer is credited with initiating sustained European contact with the Americas in 1492?',
           options: [
             'Vasco da Gama',
             'Christopher Columbus',
@@ -327,7 +434,8 @@ class MockStudentGamificationRepository
       questions: [
         QuestionModel(
           id: 'qcs1',
-          text: 'What is the time complexity of binary search on a sorted array?',
+          text:
+              'What is the time complexity of binary search on a sorted array?',
           options: ['O(n)', 'O(log n)', 'O(n log n)', 'O(n²)'],
           correctIndex: 1,
         ),
@@ -361,7 +469,8 @@ class MockStudentGamificationRepository
         ),
         QuestionModel(
           id: 'qcs5',
-          text: 'Which algorithm design technique breaks a problem into overlapping subproblems?',
+          text:
+              'Which algorithm design technique breaks a problem into overlapping subproblems?',
           options: [
             'Greedy',
             'Divide and conquer',
@@ -547,10 +656,11 @@ class MockStudentGamificationRepository
   @override
   Future<StreakModel> fetchStreak() async {
     await Future<void>.delayed(_latency);
+    final progress = await _progressRepository.fetchProgress();
     final now = DateTime.now();
     return StreakModel(
-      currentStreak: 12,
-      longestStreak: 25,
+      currentStreak: progress.currentStreak,
+      longestStreak: progress.longestStreak,
       recentDays: List.generate(
         7,
         (i) => DateTime(now.year, now.month, now.day - (6 - i)),

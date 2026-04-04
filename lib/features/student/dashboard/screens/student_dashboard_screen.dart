@@ -81,11 +81,26 @@ class _DashboardSkeleton extends StatelessWidget {
               AppSpacing.gapXxl,
               Row(
                 children: [
-                  Expanded(child: ShimmerLoading(height: 90, borderRadius: AppRadius.borderLg)),
+                  Expanded(
+                    child: ShimmerLoading(
+                      height: 90,
+                      borderRadius: AppRadius.borderLg,
+                    ),
+                  ),
                   AppSpacing.hGapMd,
-                  Expanded(child: ShimmerLoading(height: 90, borderRadius: AppRadius.borderLg)),
+                  Expanded(
+                    child: ShimmerLoading(
+                      height: 90,
+                      borderRadius: AppRadius.borderLg,
+                    ),
+                  ),
                   AppSpacing.hGapMd,
-                  Expanded(child: ShimmerLoading(height: 90, borderRadius: AppRadius.borderLg)),
+                  Expanded(
+                    child: ShimmerLoading(
+                      height: 90,
+                      borderRadius: AppRadius.borderLg,
+                    ),
+                  ),
                 ],
               ),
               AppSpacing.gapXxl,
@@ -117,10 +132,9 @@ class _DashboardContent extends StatelessWidget {
     final greeting = hour < 12
         ? 'Good morning'
         : hour < 17
-            ? 'Good afternoon'
-            : 'Good evening';
-    final userName =
-        context.read<AuthCubit>().currentUser?.name ?? 'Student';
+        ? 'Good afternoon'
+        : 'Good evening';
+    final userName = context.read<AuthCubit>().currentUser?.name ?? 'Student';
     final firstName = userName.split(' ').first;
 
     return Scaffold(
@@ -138,8 +152,9 @@ class _DashboardContent extends StatelessWidget {
                   greeting: greeting,
                   name: firstName,
                   subtitle: _buildContextualGreeting(data),
-                  onProfileTap: () => Navigator.of(context)
-                      .pushNamed(RouteNames.studentProfile),
+                  onProfileTap: () => Navigator.of(
+                    context,
+                  ).pushNamed(RouteNames.studentProfile),
                 ),
                 AppSpacing.gapXl,
 
@@ -148,8 +163,9 @@ class _DashboardContent extends StatelessWidget {
                   xp: data.stats.totalXp,
                   level: data.stats.level,
                   levelTitle: data.stats.levelTitle,
-                  onTap: () => Navigator.of(context)
-                      .pushNamed(RouteNames.studentGamification),
+                  onTap: () => Navigator.of(
+                    context,
+                  ).pushNamed(RouteNames.studentGamification),
                 ),
                 AppSpacing.gapXxl,
 
@@ -157,8 +173,9 @@ class _DashboardContent extends StatelessWidget {
                   _SectionHeader(
                     title: 'Next Up',
                     actionLabel: 'Calendar',
-                    onAction: () => Navigator.of(context)
-                        .pushNamed(RouteNames.studentCalendar),
+                    onAction: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentCalendar),
                   ),
                   AppSpacing.gapMd,
                   _NextUpCard(data: data.nextUp!),
@@ -168,8 +185,7 @@ class _DashboardContent extends StatelessWidget {
                 _SectionHeader(
                   title: 'Quick Actions',
                   actionLabel: 'All',
-                  onAction: () =>
-                      StudentShellScope.of(context).openDrawer(),
+                  onAction: () => StudentShellScope.of(context).openDrawer(),
                 ),
                 AppSpacing.gapMd,
                 _QuickActionsRow(),
@@ -178,22 +194,25 @@ class _DashboardContent extends StatelessWidget {
                 _SectionHeader(
                   title: 'Announcements',
                   actionLabel: 'See All',
-                  onAction: () => Navigator.of(context)
-                      .pushNamed(RouteNames.studentAnnouncements),
+                  onAction: () => Navigator.of(
+                    context,
+                  ).pushNamed(RouteNames.studentAnnouncements),
                 ),
                 AppSpacing.gapMd,
-                ...data.recentAnnouncements.map((a) => Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: _AnnouncementCard(
-                        authorName: a.authorName,
-                        snippet: a.snippet,
-                        createdAt: a.createdAt,
-                        onTap: () => Navigator.of(context).pushNamed(
-                          RouteNames.studentAnnouncementDetail,
-                          arguments: {'announcementId': a.id},
-                        ),
+                ...data.recentAnnouncements.map(
+                  (a) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _AnnouncementCard(
+                      authorName: a.authorName,
+                      snippet: a.snippet,
+                      createdAt: a.createdAt,
+                      onTap: () => Navigator.of(context).pushNamed(
+                        RouteNames.studentAnnouncementDetail,
+                        arguments: {'announcementId': a.id},
                       ),
-                    )),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -484,10 +503,7 @@ class _SectionHeader extends StatelessWidget {
       children: [
         Text(title, style: theme.textTheme.titleMedium),
         if (actionLabel != null)
-          TextButton(
-            onPressed: onAction,
-            child: Text(actionLabel!),
-          ),
+          TextButton(onPressed: onAction, child: Text(actionLabel!)),
       ],
     );
   }
@@ -513,15 +529,12 @@ class _NextUpCard extends StatelessWidget {
     final theme = Theme.of(context);
     final ext = theme.ext;
     final subjectColor = AppColors.subjectColor(data.subjectName);
+    final destination = _resolveNextUpNavigation(data);
 
     return Pressable(
-      onTap: () => Navigator.of(context).pushNamed(
-        RouteNames.studentSubjectGrades,
-        arguments: {
-          'subjectId': data.subjectId,
-          'subjectName': data.subjectName,
-        },
-      ),
+      onTap: () => Navigator.of(
+        context,
+      ).pushNamed(destination.route, arguments: destination.arguments),
       child: Container(
         padding: AppSpacing.paddingLg,
         decoration: BoxDecoration(
@@ -596,24 +609,79 @@ class _NextUpCard extends StatelessWidget {
   }
 }
 
+class _NextUpNavigationTarget {
+  final String route;
+  final Map<String, dynamic>? arguments;
+
+  const _NextUpNavigationTarget({required this.route, this.arguments});
+}
+
+_NextUpNavigationTarget _resolveNextUpNavigation(NextUpItemModel item) {
+  final type = item.type.trim().toLowerCase();
+
+  switch (type) {
+    case 'quiz':
+    case 'exam':
+      return const _NextUpNavigationTarget(route: RouteNames.studentExams);
+    case 'assignment':
+    case 'homework':
+      return const _NextUpNavigationTarget(
+        route: RouteNames.studentAssignments,
+      );
+    case 'grade':
+    case 'result':
+      return _NextUpNavigationTarget(
+        route: RouteNames.studentSubjectGrades,
+        arguments: {
+          'subjectId': item.subjectId,
+          'subjectName': item.subjectName,
+        },
+      );
+    case 'calendar':
+    case 'event':
+      return const _NextUpNavigationTarget(route: RouteNames.studentCalendar);
+    case 'chat':
+    case 'message':
+      return const _NextUpNavigationTarget(route: RouteNames.studentChat);
+    default:
+      return const _NextUpNavigationTarget(route: RouteNames.studentGrades);
+  }
+}
+
 // ── Quick Actions (top 3) ──
 
 class _QuickActionsRow extends StatelessWidget {
   static const _actions = [
-    _ActionData(Icons.assignment_rounded, 'Assignments', AppColors.streakFire, RouteNames.studentAssignments),
-    _ActionData(Icons.emoji_events_rounded, 'Gamification', AppColors.xpGold, RouteNames.studentGamification),
-    _ActionData(Icons.calendar_month_rounded, 'Calendar', AppColors.physics, RouteNames.studentCalendar),
+    _ActionData(
+      Icons.assignment_rounded,
+      'Assignments',
+      AppColors.streakFire,
+      RouteNames.studentAssignments,
+    ),
+    _ActionData(
+      Icons.emoji_events_rounded,
+      'Gamification',
+      AppColors.xpGold,
+      RouteNames.studentGamification,
+    ),
+    _ActionData(
+      Icons.calendar_month_rounded,
+      'Calendar',
+      AppColors.physics,
+      RouteNames.studentCalendar,
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      children: _actions
-          .map((a) => Expanded(child: _QuickActionTile(data: a)))
-          .toList()
-          .expand<Widget>((w) => [w, AppSpacing.hGapMd])
-          .toList()
-        ..removeLast(),
+      children:
+          _actions
+              .map((a) => Expanded(child: _QuickActionTile(data: a)))
+              .toList()
+              .expand<Widget>((w) => [w, AppSpacing.hGapMd])
+              .toList()
+            ..removeLast(),
     );
   }
 }

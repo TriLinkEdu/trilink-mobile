@@ -41,6 +41,8 @@ import '../../features/student/sync/repositories/student_sync_repository.dart';
 import '../../features/student/sync/repositories/mock_student_sync_repository.dart';
 import '../../features/student/ai_assistant/repositories/student_ai_assistant_repository.dart';
 import '../../features/student/ai_assistant/repositories/mock_student_ai_assistant_repository.dart';
+import '../../features/student/shared/repositories/student_progress_repository.dart';
+import '../../features/student/shared/repositories/mock_student_progress_repository.dart';
 
 final sl = GetIt.instance;
 
@@ -49,9 +51,7 @@ Future<void> initDependencies() async {
 
   // ── Core services ──
   final settingsBox = await Hive.openBox('settings');
-  sl.registerLazySingleton<StorageService>(
-    () => StorageService(settingsBox),
-  );
+  sl.registerLazySingleton<StorageService>(() => StorageService(settingsBox));
   final themeNotifier = ThemeNotifier(sl<StorageService>());
   ThemeNotifier.instance = themeNotifier;
   sl.registerLazySingleton<ThemeNotifier>(() => themeNotifier);
@@ -67,7 +67,7 @@ Future<void> initDependencies() async {
 
   // ── Student repositories ──
   sl.registerLazySingleton<StudentDashboardRepository>(
-    () => MockStudentDashboardRepository(),
+    () => MockStudentDashboardRepository(sl<StudentProgressRepository>()),
   );
   sl.registerLazySingleton<StudentGradesRepository>(
     () => MockStudentGradesRepository(),
@@ -97,7 +97,7 @@ Future<void> initDependencies() async {
     () => MockStudentFeedbackRepository(),
   );
   sl.registerLazySingleton<StudentGamificationRepository>(
-    () => MockStudentGamificationRepository(),
+    () => MockStudentGamificationRepository(sl<StudentProgressRepository>()),
   );
   sl.registerLazySingleton<StudentExamsRepository>(
     () => MockStudentExamsRepository(),
@@ -116,5 +116,8 @@ Future<void> initDependencies() async {
   );
   sl.registerLazySingleton<StudentAiAssistantRepository>(
     () => MockStudentAiAssistantRepository(),
+  );
+  sl.registerLazySingleton<StudentProgressRepository>(
+    () => MockStudentProgressRepository(),
   );
 }

@@ -26,4 +26,25 @@ class AssignmentDetailCubit extends Cubit<AssignmentDetailState> {
       ));
     }
   }
+
+  Future<void> submit(String content) async {
+    final current = state.assignment;
+    if (current == null) return;
+
+    emit(state.copyWith(isSubmitting: true, submitError: null));
+    try {
+      await _repository.submitAssignment(current.id, content);
+      final refreshed = await _repository.fetchAssignmentById(current.id);
+      emit(state.copyWith(
+        status: AssignmentDetailStatus.loaded,
+        assignment: refreshed,
+        isSubmitting: false,
+      ));
+    } catch (_) {
+      emit(state.copyWith(
+        isSubmitting: false,
+        submitError: 'Failed to submit assignment.',
+      ));
+    }
+  }
 }

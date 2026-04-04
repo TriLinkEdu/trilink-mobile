@@ -118,6 +118,15 @@ class MockStudentNotificationsRepository
   }
 
   @override
+  Future<void> markAsUnread(String id) async {
+    await Future<void>.delayed(_latency);
+    final index = _notifications.indexWhere((n) => n.id == id);
+    if (index != -1) {
+      _notifications[index] = _notifications[index].copyWith(isRead: false);
+    }
+  }
+
+  @override
   Future<void> markAllAsRead() async {
     await Future<void>.delayed(_latency);
     for (int i = 0; i < _notifications.length; i++) {

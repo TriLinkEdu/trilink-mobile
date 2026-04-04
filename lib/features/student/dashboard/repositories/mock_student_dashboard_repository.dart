@@ -1,22 +1,27 @@
 import '../models/dashboard_data_model.dart';
+import '../../shared/repositories/student_progress_repository.dart';
 import 'student_dashboard_repository.dart';
 
 class MockStudentDashboardRepository implements StudentDashboardRepository {
   static const Duration _latency = Duration(milliseconds: 350);
+  final StudentProgressRepository _progressRepository;
+
+  MockStudentDashboardRepository(this._progressRepository);
 
   @override
   Future<DashboardDataModel> fetchDashboardData() async {
     await Future<void>.delayed(_latency);
+    final progress = await _progressRepository.fetchProgress();
 
     final now = DateTime.now();
     final tomorrow = DateTime(now.year, now.month, now.day + 1, 9, 0);
 
     return DashboardDataModel(
-      stats: const DashboardStatsModel(
-        streakDays: 5,
-        totalXp: 850,
-        level: 5,
-        levelTitle: 'Scholar',
+      stats: DashboardStatsModel(
+        streakDays: progress.currentStreak,
+        totalXp: progress.totalXp,
+        level: progress.level,
+        levelTitle: progress.levelTitle,
         attendancePercent: 0.87,
       ),
       recentGradeHighlight: const DashboardRecentGradeHighlight(

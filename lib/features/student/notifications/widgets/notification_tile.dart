@@ -28,10 +28,11 @@ class NotificationTile extends StatelessWidget {
       onTap: onTap,
       enableHaptic: false,
       child: ListTile(
-        onTap: onTap,
         leading: Icon(
           isRead ? Icons.notifications_none : Icons.notifications_active,
-          color: isRead ? theme.colorScheme.onSurfaceVariant : theme.colorScheme.primary,
+          color: isRead
+              ? theme.colorScheme.onSurfaceVariant
+              : theme.colorScheme.primary,
         ),
         title: Text(title),
         subtitle: Column(
@@ -42,7 +43,10 @@ class NotificationTile extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               time,
-              style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -50,7 +54,9 @@ class NotificationTile extends StatelessWidget {
           onPressed: onToggleRead,
           icon: Icon(
             isRead ? Icons.mark_email_read_outlined : Icons.mark_email_unread,
-            color: isRead ? theme.colorScheme.onSurfaceVariant : theme.colorScheme.primary,
+            color: isRead
+                ? theme.colorScheme.onSurfaceVariant
+                : theme.colorScheme.primary,
           ),
           tooltip: isRead ? 'Mark as unread' : 'Mark as read',
         ),

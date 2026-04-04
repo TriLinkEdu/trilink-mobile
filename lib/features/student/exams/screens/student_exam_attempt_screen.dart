@@ -89,9 +89,11 @@ class _ExamAttemptQuestions extends StatefulWidget {
 }
 
 class _ExamAttemptQuestionsState extends State<_ExamAttemptQuestions> {
+  static const String _currentUserId = 'student1';
   bool _isSubmitting = false;
   int _currentQuestionIndex = 0;
   final Map<String, int> _answers = {};
+  String? _attemptId;
 
   Timer? _timer;
   late int _remainingSeconds;
@@ -105,12 +107,52 @@ class _ExamAttemptQuestionsState extends State<_ExamAttemptQuestions> {
     if (widget.exam.isTimeLimited) {
       _timer = Timer.periodic(const Duration(seconds: 1), _onTick);
     }
+    _startAttempt();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _startAttempt() async {
+    try {
+      final attempt = await sl<StudentExamsRepository>()
+          .startAttempt(widget.exam.id, _currentUserId);
+      if (!mounted) return;
+      setState(() => _attemptId = attempt.id);
+    } catch (_) {
+      // Don't block exam attempt if attempt tracking fails.
+    }
+  }
+
+  Future<bool> _confirmSubmitIfNeeded() async {
+    final total = widget.exam.questions.length;
+    final answered = _answers.length;
+
+    return (await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Submit exam?'),
+            content: Text(
+              answered == total
+                  ? 'You answered all $total questions.'
+                  : 'You answered $answered of $total questions. Unanswered questions will be marked incorrect.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Review'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Submit'),
+              ),
+            ],
+          ),
+        )) ??
+        false;
   }
 
   void _onTick(Timer timer) {
@@ -174,8 +216,11 @@ class _ExamAttemptQuestionsState extends State<_ExamAttemptQuestions> {
     setState(() => _isSubmitting = true);
     _timer?.cancel();
     try {
-      final result =
-          await sl<StudentExamsRepository>().submitExam(widget.exam.id, _answers);
+      if (_attemptId != null) {
+        await sl<StudentExamsRepository>().submitAttempt(_attemptId!, _answers);
+      }
+      final result = await sl<StudentExamsRepository>()
+          .submitExam(widget.exam.id, _answers);
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
@@ -312,10 +357,14 @@ class _ExamAttemptQuestionsState extends State<_ExamAttemptQuestions> {
                 if (_currentQuestionIndex > 0) AppSpacing.hGapMd,
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: selectedOption == null
+                    onPressed: _isSubmitting
                         ? null
                         : isLastQuestion
-                            ? (_isSubmitting ? null : _submitExam)
+                            ? () async {
+                                final ok = await _confirmSubmitIfNeeded();
+                                if (!ok) return;
+                                await _submitExam();
+                              }
                             : _nextQuestion,
                     child: _isSubmitting
                         ? const SizedBox(

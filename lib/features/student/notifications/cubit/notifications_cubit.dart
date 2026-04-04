@@ -24,33 +24,57 @@ class NotificationsCubit extends Cubit<NotificationsState> {
   }
 
   Future<void> markAllAsRead() async {
-    await _repository.markAllAsRead();
-    emit(state.copyWith(
-      items: state.items.map((n) => n.copyWith(isRead: true)).toList(),
-    ));
+    try {
+      await _repository.markAllAsRead();
+      emit(state.copyWith(
+        items: state.items.map((n) => n.copyWith(isRead: true)).toList(),
+      ));
+    } catch (_) {
+      emit(state.copyWith(
+        status: NotificationsStatus.error,
+        errorMessage: 'Unable to mark all as read.',
+      ));
+    }
   }
 
   Future<void> markNotificationRead(String id) async {
-    await _repository.markAsRead(id);
-    emit(state.copyWith(
-      items: state.items.map((n) {
-        if (n.id == id) return n.copyWith(isRead: true);
-        return n;
-      }).toList(),
-    ));
+    try {
+      await _repository.markAsRead(id);
+      emit(state.copyWith(
+        items: state.items.map((n) {
+          if (n.id == id) return n.copyWith(isRead: true);
+          return n;
+        }).toList(),
+      ));
+    } catch (_) {
+      emit(state.copyWith(
+        status: NotificationsStatus.error,
+        errorMessage: 'Unable to mark notification as read.',
+      ));
+    }
   }
 
   Future<void> toggleRead(NotificationModel notification) async {
-    if (!notification.isRead) {
-      await _repository.markAsRead(notification.id);
+    final targetRead = !notification.isRead;
+    try {
+      if (targetRead) {
+        await _repository.markAsRead(notification.id);
+      } else {
+        await _repository.markAsUnread(notification.id);
+      }
+      emit(state.copyWith(
+        items: state.items.map((n) {
+          if (n.id == notification.id) {
+            return n.copyWith(isRead: targetRead);
+          }
+          return n;
+        }).toList(),
+      ));
+    } catch (_) {
+      emit(state.copyWith(
+        status: NotificationsStatus.error,
+        errorMessage: 'Unable to update notification status.',
+      ));
     }
-    emit(state.copyWith(
-      items: state.items.map((n) {
-        if (n.id == notification.id) {
-          return n.copyWith(isRead: !notification.isRead);
-        }
-        return n;
-      }).toList(),
-    ));
   }
 }
