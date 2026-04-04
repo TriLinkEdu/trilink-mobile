@@ -25,8 +25,9 @@ class EvaluateMeScreen extends StatelessWidget {
       );
     }
     return BlocProvider(
-      create: (_) => AiAssistantCubit(sl<StudentAiAssistantRepository>())
-        ..loadAssistantData(suppressError: true),
+      create: (_) =>
+          AiAssistantCubit(sl<StudentAiAssistantRepository>(), sl())
+            ..loadAssistantData(suppressError: true),
       child: const _EvaluateMeBlocView(),
     );
   }
@@ -41,7 +42,8 @@ class _EvaluateMeBlocView extends StatelessWidget {
       appBar: AppBar(title: const Text('Evaluate Me')),
       body: BlocBuilder<AiAssistantCubit, AiAssistantState>(
         builder: (context, state) {
-          final loading = state.status == AiAssistantStatus.initial ||
+          final loading =
+              state.status == AiAssistantStatus.initial ||
               state.status == AiAssistantStatus.loading;
           if (loading) {
             return const Padding(
@@ -109,7 +111,9 @@ class _InsightCard extends StatelessWidget {
           children: [
             Text(
               title,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
             ),
             AppSpacing.gapSm,
             Text(summary),

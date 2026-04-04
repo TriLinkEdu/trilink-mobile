@@ -28,8 +28,9 @@ class LearningPathScreen extends StatelessWidget {
       );
     }
     return BlocProvider(
-      create: (_) => AiAssistantCubit(sl<StudentAiAssistantRepository>())
-        ..loadAssistantData(suppressError: true),
+      create: (_) =>
+          AiAssistantCubit(sl<StudentAiAssistantRepository>(), sl())
+            ..loadAssistantData(suppressError: true),
       child: const _LearningPathBlocView(),
     );
   }
@@ -44,7 +45,8 @@ class _LearningPathBlocView extends StatelessWidget {
       appBar: AppBar(title: const Text('Learning Path')),
       body: BlocBuilder<AiAssistantCubit, AiAssistantState>(
         builder: (context, state) {
-          final loading = state.status == AiAssistantStatus.initial ||
+          final loading =
+              state.status == AiAssistantStatus.initial ||
               state.status == AiAssistantStatus.loading;
           if (loading) {
             return const Padding(
@@ -68,44 +70,12 @@ class _LearningPathBlocView extends StatelessWidget {
   }
 }
 
-class _LearningPathContent extends StatefulWidget {
+class _LearningPathContent extends StatelessWidget {
   final List<LearningPathItemModel> initialItems;
 
   const _LearningPathContent({required this.initialItems});
 
-  @override
-  State<_LearningPathContent> createState() => _LearningPathContentState();
-}
-
-class _LearningPathContentState extends State<_LearningPathContent> {
-  late List<LearningPathItemModel> _items;
-
-  @override
-  void initState() {
-    super.initState();
-    _items = List.of(widget.initialItems);
-  }
-
-  @override
-  void didUpdateWidget(covariant _LearningPathContent oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.initialItems != widget.initialItems) {
-      _items = List.of(widget.initialItems);
-    }
-  }
-
-  void _markComplete(int index) {
-    setState(() {
-      _items[index] = _items[index].copyWith(
-        progress: 1.0,
-        isActive: false,
-      );
-    });
-    Navigator.of(context).pop();
-  }
-
-  void _showItemDetail(int index) {
-    final item = _items[index];
+  void _showItemDetail(BuildContext context, LearningPathItemModel item) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -136,7 +106,14 @@ class _LearningPathContentState extends State<_LearningPathContent> {
           ),
           if (item.progress < 1.0)
             FilledButton(
-              onPressed: () => _markComplete(index),
+              onPressed: () async {
+                await context.read<AiAssistantCubit>().markLearningPathComplete(
+                  item,
+                );
+                if (ctx.mounted) {
+                  Navigator.of(ctx).pop();
+                }
+              },
               child: const Text('Mark as Complete'),
             ),
         ],
@@ -146,18 +123,19 @@ class _LearningPathContentState extends State<_LearningPathContent> {
 
   @override
   Widget build(BuildContext context) {
+    final items = initialItems;
     return ListView.separated(
       padding: const EdgeInsets.all(16),
-      itemCount: _items.length,
+      itemCount: items.length,
       separatorBuilder: (_, _) => AppSpacing.gapSm,
       itemBuilder: (context, index) {
-        final item = _items[index];
+        final item = items[index];
         return _LearningStepCard(
           title: item.title,
           subtitle: '${item.subject} • ${item.duration}',
           isActive: item.isActive,
           isComplete: item.progress >= 1.0,
-          onTap: () => _showItemDetail(index),
+          onTap: () => _showItemDetail(context, item),
         );
       },
     );
@@ -191,8 +169,8 @@ class _LearningStepCard extends StatelessWidget {
             isComplete
                 ? Icons.check_circle_rounded
                 : isActive
-                    ? Icons.play_circle_fill_rounded
-                    : Icons.menu_book_rounded,
+                ? Icons.play_circle_fill_rounded
+                : Icons.menu_book_rounded,
             color: isComplete ? AppColors.success : null,
           ),
           title: Text(title),
@@ -201,8 +179,8 @@ class _LearningStepCard extends StatelessWidget {
             isComplete
                 ? 'Done'
                 : isActive
-                    ? 'Continue'
-                    : 'Start',
+                ? 'Continue'
+                : 'Start',
             style: TextStyle(
               color: isComplete
                   ? AppColors.success

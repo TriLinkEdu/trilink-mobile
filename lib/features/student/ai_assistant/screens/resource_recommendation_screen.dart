@@ -27,7 +27,7 @@ class ResourceRecommendationScreen extends StatelessWidget {
     }
     return BlocProvider(
       create: (_) =>
-          AiAssistantCubit(sl<StudentAiAssistantRepository>())
+          AiAssistantCubit(sl<StudentAiAssistantRepository>(), sl())
             ..loadAssistantData(suppressError: true),
       child: const _ResourceRecommendationBlocView(),
     );

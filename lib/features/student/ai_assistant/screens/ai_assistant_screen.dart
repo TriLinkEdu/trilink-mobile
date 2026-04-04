@@ -29,7 +29,7 @@ class AiAssistantScreen extends StatelessWidget {
       providers: [
         BlocProvider(
           create: (_) =>
-              AiAssistantCubit(sl<StudentAiAssistantRepository>())
+              AiAssistantCubit(sl<StudentAiAssistantRepository>(), sl())
                 ..loadAssistantData(),
         ),
         BlocProvider(
@@ -50,7 +50,12 @@ class _AiAssistantView extends StatefulWidget {
 
 class _AiAssistantViewState extends State<_AiAssistantView> {
   int _selectedTab = 0;
-  final List<String> _tabs = ['Ask AI', 'Learning Path', 'Resources', 'Evaluate Me'];
+  final List<String> _tabs = [
+    'Ask AI',
+    'Learning Path',
+    'Resources',
+    'Evaluate Me',
+  ];
 
   void _openDetailedPage(int tabIndex) {
     // Ask AI tab (0) has no separate route
@@ -70,7 +75,8 @@ class _AiAssistantViewState extends State<_AiAssistantView> {
 
     return BlocBuilder<AiAssistantCubit, AiAssistantState>(
       builder: (context, state) {
-        final loading = state.status == AiAssistantStatus.initial ||
+        final loading =
+            state.status == AiAssistantStatus.initial ||
             state.status == AiAssistantStatus.loading;
         if (loading) {
           return const Padding(
@@ -81,10 +87,10 @@ class _AiAssistantViewState extends State<_AiAssistantView> {
 
         if (state.status == AiAssistantStatus.error) {
           return AppErrorWidget(
-            message: state.errorMessage ??
+            message:
+                state.errorMessage ??
                 'Unable to load AI assistant content right now.',
-            onRetry: () =>
-                context.read<AiAssistantCubit>().loadAssistantData(),
+            onRetry: () => context.read<AiAssistantCubit>().loadAssistantData(),
           );
         }
 
@@ -215,18 +221,19 @@ class _AiAssistantViewState extends State<_AiAssistantView> {
             ),
             AppSpacing.gapSm,
 
-            Expanded(
-              child: _buildContent(),
-            ),
+            Expanded(child: _buildContent()),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton.small(
         tooltip: 'Refresh AI suggestions',
-        onPressed: () =>
-            context.read<AiAssistantCubit>().loadAssistantData(),
+        onPressed: () => context.read<AiAssistantCubit>().loadAssistantData(),
         backgroundColor: theme.colorScheme.primary,
-        child: Icon(Icons.auto_awesome, color: theme.colorScheme.onPrimary, size: 20),
+        child: Icon(
+          Icons.auto_awesome,
+          color: theme.colorScheme.onPrimary,
+          size: 20,
+        ),
       ),
     );
   }
@@ -234,7 +241,7 @@ class _AiAssistantViewState extends State<_AiAssistantView> {
 
 // ─── Learning Path Tab ───────────────────────────────────────────────────────
 
-class _LearningPathTab extends StatefulWidget {
+class _LearningPathTab extends StatelessWidget {
   final List<LearningPathItemModel> pathItems;
   final VoidCallback onNavigateToPath;
 
@@ -244,37 +251,9 @@ class _LearningPathTab extends StatefulWidget {
   });
 
   @override
-  State<_LearningPathTab> createState() => _LearningPathTabState();
-}
-
-class _LearningPathTabState extends State<_LearningPathTab> {
-  late List<LearningPathItemModel> _items;
-
-  @override
-  void initState() {
-    super.initState();
-    _items = List.of(widget.pathItems);
-  }
-
-  @override
-  void didUpdateWidget(covariant _LearningPathTab oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.pathItems != widget.pathItems) {
-      _items = List.of(widget.pathItems);
-    }
-  }
-
-  void _toggleBookmark(int index) {
-    setState(() {
-      _items[index] = _items[index].copyWith(
-        isBookmarked: !_items[index].isBookmarked,
-      );
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final items = pathItems;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -286,9 +265,9 @@ class _LearningPathTabState extends State<_LearningPathTab> {
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerLow,
-            borderRadius: AppRadius.borderLg,
-            border: Border.all(color: theme.colorScheme.outlineVariant),
-          ),
+              borderRadius: AppRadius.borderLg,
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -323,7 +302,7 @@ class _LearningPathTabState extends State<_LearningPathTab> {
           ),
           AppSpacing.gapXl,
 
-          if (_items.isEmpty)
+          if (items.isEmpty)
             const EmptyStateWidget(
               illustration: BooksIllustration(),
               icon: Icons.route_rounded,
@@ -331,8 +310,8 @@ class _LearningPathTabState extends State<_LearningPathTab> {
               subtitle: 'Your personalized learning steps will appear here.',
             )
           else
-            ...List.generate(_items.length, (index) {
-              final item = _items[index];
+            ...List.generate(items.length, (index) {
+              final item = items[index];
               final icon = switch (index % 3) {
                 0 => Icons.rocket_launch_rounded,
                 1 => Icons.precision_manufacturing_rounded,
@@ -343,7 +322,7 @@ class _LearningPathTabState extends State<_LearningPathTab> {
                 index: index,
                 child: Padding(
                   padding: EdgeInsets.only(
-                    bottom: index == _items.length - 1 ? 0 : 14,
+                    bottom: index == items.length - 1 ? 0 : 14,
                   ),
                   child: _PathItem(
                     index: item.step,
@@ -354,10 +333,13 @@ class _LearningPathTabState extends State<_LearningPathTab> {
                     progress: item.progress,
                     isActive: item.isActive,
                     isBookmarked: item.isBookmarked,
-                    onBookmarkToggle: () => _toggleBookmark(index),
+                    onBookmarkToggle: () => context
+                        .read<AiAssistantCubit>()
+                        .toggleLearningPathBookmark(item),
                     onAction: () {
-                      Navigator.of(context)
-                          .pushNamed(RouteNames.studentLearningPath);
+                      Navigator.of(
+                        context,
+                      ).pushNamed(RouteNames.studentLearningPath);
                     },
                   ),
                 ),
@@ -398,8 +380,8 @@ class _LearningPathTabState extends State<_LearningPathTab> {
                       ),
                       AppSpacing.gapXs,
                       Text(
-                        _items.isNotEmpty
-                            ? "Your current focus is ${_items.first.title}. Continue this step before moving to the next module."
+                        items.isNotEmpty
+                            ? "Your current focus is ${items.first.title}. Continue this step before moving to the next module."
                             : 'Your personalized tips will appear after your next activity.',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
@@ -566,7 +548,9 @@ class _PathItem extends StatelessWidget {
                 ),
                 child: Text(
                   'Start',
-                  style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ),
@@ -655,8 +639,9 @@ class _ResourcesTab extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: () {
-                    Navigator.of(context)
-                        .pushNamed(RouteNames.studentResourceRecommendation);
+                    Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentResourceRecommendation);
                   },
                   child: const Text('Open'),
                 ),
