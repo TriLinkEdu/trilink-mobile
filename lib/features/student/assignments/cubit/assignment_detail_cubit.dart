@@ -9,21 +9,25 @@ class AssignmentDetailCubit extends Cubit<AssignmentDetailState> {
   final String assignmentId;
 
   AssignmentDetailCubit(this._repository, this.assignmentId)
-      : super(const AssignmentDetailState());
+    : super(const AssignmentDetailState());
 
   Future<void> loadAssignment() async {
     emit(state.copyWith(status: AssignmentDetailStatus.loading));
     try {
       final assignment = await _repository.fetchAssignmentById(assignmentId);
-      emit(AssignmentDetailState(
-        status: AssignmentDetailStatus.loaded,
-        assignment: assignment,
-      ));
-    } catch (_) {
-      emit(state.copyWith(
-        status: AssignmentDetailStatus.error,
-        errorMessage: 'Could not load assignment details.',
-      ));
+      emit(
+        AssignmentDetailState(
+          status: AssignmentDetailStatus.loaded,
+          assignment: assignment,
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: AssignmentDetailStatus.error,
+          errorMessage: 'Could not load assignment details: $e',
+        ),
+      );
     }
   }
 
@@ -35,16 +39,20 @@ class AssignmentDetailCubit extends Cubit<AssignmentDetailState> {
     try {
       await _repository.submitAssignment(current.id, content);
       final refreshed = await _repository.fetchAssignmentById(current.id);
-      emit(state.copyWith(
-        status: AssignmentDetailStatus.loaded,
-        assignment: refreshed,
-        isSubmitting: false,
-      ));
-    } catch (_) {
-      emit(state.copyWith(
-        isSubmitting: false,
-        submitError: 'Failed to submit assignment.',
-      ));
+      emit(
+        state.copyWith(
+          status: AssignmentDetailStatus.loaded,
+          assignment: refreshed,
+          isSubmitting: false,
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          isSubmitting: false,
+          submitError: 'Failed to submit assignment: $e',
+        ),
+      );
     }
   }
 }

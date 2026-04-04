@@ -7,6 +7,7 @@ import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import 'package:trilink_mobile/core/widgets/error_widget.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/student_page_background.dart';
 import '../cubit/course_resource_detail_cubit.dart';
 import '../models/course_resource_model.dart';
 import '../repositories/student_courses_repository.dart';
@@ -96,24 +97,26 @@ class _CourseResourceDetailViewState extends State<_CourseResourceDetailView> {
             state.status == CourseResourceDetailStatus.initial) {
           return Scaffold(
             appBar: AppBar(title: const Text('Resource'), centerTitle: true),
-            body: const Padding(
-              padding: EdgeInsets.all(16),
-              child: ShimmerList(),
+            body: const StudentPageBackground(
+              child: Padding(padding: EdgeInsets.all(16), child: ShimmerList()),
             ),
           );
         }
         if (state.status == CourseResourceDetailStatus.error) {
           return Scaffold(
             appBar: AppBar(title: const Text('Resource'), centerTitle: true),
-            body: AppErrorWidget(
-              message: state.errorMessage ?? 'Unable to load resource details.',
+            body: StudentPageBackground(
+              child: AppErrorWidget(
+                message:
+                    state.errorMessage ?? 'Unable to load resource details.',
+              ),
             ),
           );
         }
         final r = state.resource!;
         return Scaffold(
           appBar: AppBar(title: const Text('Resource'), centerTitle: true),
-          body: _buildContent(theme, r),
+          body: StudentPageBackground(child: _buildContent(theme, r)),
         );
       },
     );

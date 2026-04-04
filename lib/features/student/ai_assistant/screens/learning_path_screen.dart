@@ -10,6 +10,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/student_page_background.dart';
 import '../cubit/ai_assistant_cubit.dart';
 import '../models/ai_assistant_models.dart';
 import '../repositories/student_ai_assistant_repository.dart';
@@ -24,7 +25,9 @@ class LearningPathScreen extends StatelessWidget {
     if (items != null && items!.isNotEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text('Learning Path')),
-        body: _LearningPathContent(initialItems: items!),
+        body: StudentPageBackground(
+          child: _LearningPathContent(initialItems: items!),
+        ),
       );
     }
     return BlocProvider(
@@ -43,28 +46,30 @@ class _LearningPathBlocView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Learning Path')),
-      body: BlocBuilder<AiAssistantCubit, AiAssistantState>(
-        builder: (context, state) {
-          final loading =
-              state.status == AiAssistantStatus.initial ||
-              state.status == AiAssistantStatus.loading;
-          if (loading) {
-            return const Padding(
-              padding: EdgeInsets.all(16),
-              child: ShimmerList(),
-            );
-          }
-          final list = state.data?.learningPath ?? [];
-          if (list.isEmpty) {
-            return const EmptyStateWidget(
-              illustration: BooksIllustration(),
-              icon: Icons.route_rounded,
-              title: 'No learning path items',
-              subtitle: 'Your personalized learning path will appear here.',
-            );
-          }
-          return _LearningPathContent(initialItems: list);
-        },
+      body: StudentPageBackground(
+        child: BlocBuilder<AiAssistantCubit, AiAssistantState>(
+          builder: (context, state) {
+            final loading =
+                state.status == AiAssistantStatus.initial ||
+                state.status == AiAssistantStatus.loading;
+            if (loading) {
+              return const Padding(
+                padding: EdgeInsets.all(16),
+                child: ShimmerList(),
+              );
+            }
+            final list = state.data?.learningPath ?? [];
+            if (list.isEmpty) {
+              return const EmptyStateWidget(
+                illustration: BooksIllustration(),
+                icon: Icons.route_rounded,
+                title: 'No learning path items',
+                subtitle: 'Your personalized learning path will appear here.',
+              );
+            }
+            return _LearningPathContent(initialItems: list);
+          },
+        ),
       ),
     );
   }

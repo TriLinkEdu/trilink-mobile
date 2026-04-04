@@ -136,84 +136,104 @@ class _DashboardContent extends StatelessWidget {
         : 'Good evening';
     final userName = context.read<AuthCubit>().currentUser?.name ?? 'Student';
     final firstName = userName.split(' ').first;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: BrandedRefreshIndicator(
-          onRefresh: () => context.read<DashboardCubit>().loadDashboard(),
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-            child: StaggeredColumn(
-              children: [
-                _HeroGreeting(
-                  date: dateStr,
-                  greeting: greeting,
-                  name: firstName,
-                  subtitle: _buildContextualGreeting(data),
-                  onProfileTap: () => Navigator.of(
-                    context,
-                  ).pushNamed(RouteNames.studentProfile),
-                ),
-                AppSpacing.gapXl,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isDark
+                ? const [Color(0xFF0A1628), Color(0xFF10243A)]
+                : const [Color(0xFFF0F8FF), Color(0xFFE6F4FF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: BrandedRefreshIndicator(
+            onRefresh: () => context.read<DashboardCubit>().loadDashboard(),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              child: StaggeredColumn(
+                children: [
+                  _HeroGreeting(
+                    date: dateStr,
+                    greeting: greeting,
+                    name: firstName,
+                    subtitle: _buildContextualGreeting(data),
+                    onProfileTap: () {
+                      final shell = StudentShellScope.maybeOf(context);
+                      if (shell != null) {
+                        shell.switchTab(3);
+                      } else {
+                        Navigator.of(
+                          context,
+                        ).pushNamed(RouteNames.studentProfile);
+                      }
+                    },
+                  ),
+                  AppSpacing.gapXl,
 
-                _GamificationRow(
-                  streak: data.stats.streakDays,
-                  xp: data.stats.totalXp,
-                  level: data.stats.level,
-                  levelTitle: data.stats.levelTitle,
-                  onTap: () => Navigator.of(
-                    context,
-                  ).pushNamed(RouteNames.studentGamification),
-                ),
-                AppSpacing.gapXxl,
-
-                if (data.nextUp != null) ...[
-                  _SectionHeader(
-                    title: 'Next Up',
-                    actionLabel: 'Calendar',
-                    onAction: () => Navigator.of(
+                  _GamificationRow(
+                    streak: data.stats.streakDays,
+                    xp: data.stats.totalXp,
+                    level: data.stats.level,
+                    levelTitle: data.stats.levelTitle,
+                    onTap: () => Navigator.of(
                       context,
-                    ).pushNamed(RouteNames.studentCalendar),
+                    ).pushNamed(RouteNames.studentGamification),
+                  ),
+                  AppSpacing.gapXxl,
+
+                  if (data.nextUp != null) ...[
+                    _SectionHeader(
+                      title: 'Next Up',
+                      actionLabel: 'Calendar',
+                      onAction: () => Navigator.of(
+                        context,
+                      ).pushNamed(RouteNames.studentCalendar),
+                    ),
+                    AppSpacing.gapMd,
+                    _NextUpCard(data: data.nextUp!),
+                    AppSpacing.gapXxl,
+                  ],
+
+                  _SectionHeader(
+                    title: 'Quick Actions',
+                    actionLabel: 'All',
+                    onAction: () => StudentShellScope.of(context).openDrawer(),
                   ),
                   AppSpacing.gapMd,
-                  _NextUpCard(data: data.nextUp!),
+                  _QuickActionsRow(),
                   AppSpacing.gapXxl,
-                ],
 
-                _SectionHeader(
-                  title: 'Quick Actions',
-                  actionLabel: 'All',
-                  onAction: () => StudentShellScope.of(context).openDrawer(),
-                ),
-                AppSpacing.gapMd,
-                _QuickActionsRow(),
-                AppSpacing.gapXxl,
-
-                _SectionHeader(
-                  title: 'Announcements',
-                  actionLabel: 'See All',
-                  onAction: () => Navigator.of(
-                    context,
-                  ).pushNamed(RouteNames.studentAnnouncements),
-                ),
-                AppSpacing.gapMd,
-                ...data.recentAnnouncements.map(
-                  (a) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _AnnouncementCard(
-                      authorName: a.authorName,
-                      snippet: a.snippet,
-                      createdAt: a.createdAt,
-                      onTap: () => Navigator.of(context).pushNamed(
-                        RouteNames.studentAnnouncementDetail,
-                        arguments: {'announcementId': a.id},
+                  _SectionHeader(
+                    title: 'Announcements',
+                    actionLabel: 'See All',
+                    onAction: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentAnnouncements),
+                  ),
+                  AppSpacing.gapMd,
+                  ...data.recentAnnouncements.map(
+                    (a) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _AnnouncementCard(
+                        authorName: a.authorName,
+                        snippet: a.snippet,
+                        createdAt: a.createdAt,
+                        onTap: () => Navigator.of(context).pushNamed(
+                          RouteNames.studentAnnouncementDetail,
+                          arguments: {'announcementId': a.id},
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -338,7 +358,7 @@ class _HeroGreeting extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              gradient: AppGradients.primaryHero,
+              gradient: theme.ext.heroGradient,
               borderRadius: AppRadius.borderMd,
               boxShadow: AppShadows.glow(AppColors.primary),
             ),

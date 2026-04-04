@@ -22,8 +22,7 @@ class StudentExamsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-          ExamListCubit(sl<StudentExamsRepository>())..loadExams(),
+      create: (_) => ExamListCubit(sl<StudentExamsRepository>())..loadExams(),
       child: const _StudentExamsView(),
     );
   }
@@ -36,74 +35,84 @@ class _StudentExamsView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<ExamListCubit, ExamListState>(
       builder: (context, state) {
-        final loading = state.status == ExamListStatus.loading ||
+        final loading =
+            state.status == ExamListStatus.loading ||
             state.status == ExamListStatus.initial;
 
         return Scaffold(
           appBar: AppBar(title: const Text('Exams')),
-          body: loading
-              ? const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: ShimmerList(itemHeight: 120),
-                )
-              : BrandedRefreshIndicator(
-                  onRefresh: () =>
-                      context.read<ExamListCubit>().loadExams(),
-                  child: state.status == ExamListStatus.error
-                      ? LayoutBuilder(
-                          builder: (context, constraints) {
-                            return SingleChildScrollView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  minHeight: constraints.maxHeight,
-                                ),
-                                child: AppErrorWidget(
-                                  message: state.errorMessage ??
-                                      'Unable to load exams.',
-                                  onRetry: () => context
-                                      .read<ExamListCubit>()
-                                      .loadExams(),
-                                ),
-                              ),
-                            );
-                          },
-                        )
-                      : state.exams.isEmpty
-                          ? LayoutBuilder(
-                              builder: (context, constraints) {
-                                return SingleChildScrollView(
-                                  physics:
-                                      const AlwaysScrollableScrollPhysics(),
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      minHeight: constraints.maxHeight,
-                                    ),
-                                    child: const EmptyStateWidget(
-                                      illustration:
-                                          GraduationCapIllustration(),
-                                      icon: Icons.quiz_rounded,
-                                      title: 'No exams available',
-                                      subtitle:
-                                          'Scheduled exams will appear here.',
-                                    ),
+          body: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: Theme.of(context).brightness == Brightness.dark
+                    ? const [Color(0xFF0A1525), Color(0xFF0F2338)]
+                    : const [Color(0xFFF0F8FF), Color(0xFFE6F4FF)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: loading
+                ? const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: ShimmerList(itemHeight: 120),
+                  )
+                : BrandedRefreshIndicator(
+                    onRefresh: () => context.read<ExamListCubit>().loadExams(),
+                    child: state.status == ExamListStatus.error
+                        ? LayoutBuilder(
+                            builder: (context, constraints) {
+                              return SingleChildScrollView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    minHeight: constraints.maxHeight,
                                   ),
-                                );
-                              },
-                            )
-                          : ListView.separated(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              padding: const EdgeInsets.all(16),
-                              itemCount: state.exams.length,
-                              separatorBuilder: (_, _) => AppSpacing.gapMd,
-                              itemBuilder: (context, index) {
-                                return StaggeredFadeSlide(
-                                  index: index,
-                                  child: _ExamCard(exam: state.exams[index]),
-                                );
-                              },
-                            ),
-                ),
+                                  child: AppErrorWidget(
+                                    message:
+                                        state.errorMessage ??
+                                        'Unable to load exams.',
+                                    onRetry: () => context
+                                        .read<ExamListCubit>()
+                                        .loadExams(),
+                                  ),
+                                ),
+                              );
+                            },
+                          )
+                        : state.exams.isEmpty
+                        ? LayoutBuilder(
+                            builder: (context, constraints) {
+                              return SingleChildScrollView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    minHeight: constraints.maxHeight,
+                                  ),
+                                  child: const EmptyStateWidget(
+                                    illustration: GraduationCapIllustration(),
+                                    icon: Icons.quiz_rounded,
+                                    title: 'No exams available',
+                                    subtitle:
+                                        'Scheduled exams will appear here.',
+                                  ),
+                                ),
+                              );
+                            },
+                          )
+                        : ListView.separated(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.all(16),
+                            itemCount: state.exams.length,
+                            separatorBuilder: (_, _) => AppSpacing.gapMd,
+                            itemBuilder: (context, index) {
+                              return StaggeredFadeSlide(
+                                index: index,
+                                child: _ExamCard(exam: state.exams[index]),
+                              );
+                            },
+                          ),
+                  ),
+          ),
         );
       },
     );
@@ -149,18 +158,27 @@ class _ExamCard extends StatelessWidget {
   String _formatDate(DateTime? date) {
     if (date == null) return 'Not scheduled';
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
   void _onTap(BuildContext context) {
     if (!exam.canAttempt && !exam.isCompleted) return;
-    Navigator.of(context).pushNamed(
-      RouteNames.studentExamAttempt,
-      arguments: {'examId': exam.id},
-    );
+    Navigator.of(
+      context,
+    ).pushNamed(RouteNames.studentExamAttempt, arguments: {'examId': exam.id});
   }
 
   @override
@@ -192,7 +210,7 @@ class _ExamCard extends StatelessWidget {
                 : [
                     BoxShadow(
                       color: Colors.black.withAlpha(8),
-                      blurRadius: 8,
+                      blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
                   ],
@@ -203,13 +221,13 @@ class _ExamCard extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    width: 40,
-                    height: 40,
+                    width: 42,
+                    height: 42,
                     decoration: BoxDecoration(
                       color: color.withAlpha(24),
                       borderRadius: AppRadius.borderSm,
                     ),
-                    child: Icon(Icons.quiz_rounded, color: color, size: 20),
+                    child: Icon(Icons.quiz_rounded, color: color, size: 21),
                   ),
                   AppSpacing.hGapMd,
                   Expanded(
@@ -219,7 +237,7 @@ class _ExamCard extends StatelessWidget {
                         Text(
                           exam.title,
                           style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -299,18 +317,19 @@ class _LifecycleChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: color.withAlpha(20),
         borderRadius: AppRadius.borderFull,
-        border: Border.all(color: color.withAlpha(60)),
+        border: Border.all(color: color.withAlpha(46)),
       ),
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
+          color: color,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.2,
+        ),
       ),
     );
   }
@@ -329,8 +348,8 @@ class _InfoTag extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
-        const SizedBox(width: 4),
+        Icon(icon, size: 15, color: theme.colorScheme.onSurfaceVariant),
+        const SizedBox(width: 6),
         Flexible(
           child: Text(
             label,
@@ -363,14 +382,12 @@ class _CompletedBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withAlpha(16),
         borderRadius: AppRadius.borderSm,
-        border: Border.all(color: color.withAlpha(40)),
+        border: Border.all(color: color.withAlpha(34)),
       ),
       child: Row(
         children: [
           Icon(
-            passed
-                ? Icons.check_circle_rounded
-                : Icons.cancel_rounded,
+            passed ? Icons.check_circle_rounded : Icons.cancel_rounded,
             size: 18,
             color: color,
           ),

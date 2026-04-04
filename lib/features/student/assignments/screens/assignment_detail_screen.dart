@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import 'package:trilink_mobile/core/widgets/error_widget.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/student_page_background.dart';
 import '../cubit/assignment_detail_cubit.dart';
 import '../models/assignment_model.dart';
 import '../repositories/student_assignments_repository.dart';
@@ -12,10 +13,7 @@ import '../repositories/student_assignments_repository.dart';
 class AssignmentDetailScreen extends StatelessWidget {
   final String assignmentId;
 
-  const AssignmentDetailScreen({
-    super.key,
-    required this.assignmentId,
-  });
+  const AssignmentDetailScreen({super.key, required this.assignmentId});
 
   @override
   Widget build(BuildContext context) {
@@ -38,21 +36,24 @@ class _AssignmentDetailView extends StatelessWidget {
       builder: (context, state) {
         return Scaffold(
           appBar: AppBar(title: const Text('Assignment Details')),
-          body: state.status == AssignmentDetailStatus.loading ||
-                  state.status == AssignmentDetailStatus.initial
-              ? const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: ShimmerList(),
-                )
-              : state.status == AssignmentDetailStatus.error
-                  ? AppErrorWidget(
-                      message: state.errorMessage ??
-                          'Unable to load assignment details.',
-                      onRetry: () => context
-                          .read<AssignmentDetailCubit>()
-                          .loadAssignment(),
-                    )
-                  : _AssignmentDetailBody(assignment: state.assignment!),
+          body: StudentPageBackground(
+            child:
+                state.status == AssignmentDetailStatus.loading ||
+                    state.status == AssignmentDetailStatus.initial
+                ? const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: ShimmerList(),
+                  )
+                : state.status == AssignmentDetailStatus.error
+                ? AppErrorWidget(
+                    message:
+                        state.errorMessage ??
+                        'Unable to load assignment details.',
+                    onRetry: () =>
+                        context.read<AssignmentDetailCubit>().loadAssignment(),
+                  )
+                : _AssignmentDetailBody(assignment: state.assignment!),
+          ),
         );
       },
     );
@@ -113,7 +114,8 @@ class _AssignmentDetailBodyState extends State<_AssignmentDetailBody> {
   @override
   Widget build(BuildContext context) {
     final a = widget.assignment;
-    final canSubmit = a.status == AssignmentStatus.pending ||
+    final canSubmit =
+        a.status == AssignmentStatus.pending ||
         a.status == AssignmentStatus.overdue;
 
     return SingleChildScrollView(
@@ -135,8 +137,10 @@ class _AssignmentDetailBodyState extends State<_AssignmentDetailBody> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Description',
-                      style: Theme.of(context).textTheme.titleSmall),
+                  Text(
+                    'Description',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
                   AppSpacing.gapSm,
                   Text(a.description),
                 ],
@@ -173,8 +177,10 @@ class _AssignmentDetailBodyState extends State<_AssignmentDetailBody> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Feedback',
-                        style: Theme.of(context).textTheme.titleSmall),
+                    Text(
+                      'Feedback',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
                     AppSpacing.gapSm,
                     Text(a.feedback!),
                   ],
@@ -195,11 +201,16 @@ class _AssignmentDetailBodyState extends State<_AssignmentDetailBody> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.check_circle_rounded,
-                            color: AppColors.success, size: 20),
+                        const Icon(
+                          Icons.check_circle_rounded,
+                          color: AppColors.success,
+                          size: 20,
+                        ),
                         AppSpacing.hGapSm,
-                        Text('Your Submission',
-                            style: Theme.of(context).textTheme.titleSmall),
+                        Text(
+                          'Your Submission',
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
                       ],
                     ),
                     AppSpacing.gapSm,
@@ -219,8 +230,10 @@ class _AssignmentDetailBodyState extends State<_AssignmentDetailBody> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Your Submission',
-                        style: Theme.of(context).textTheme.titleSmall),
+                    Text(
+                      'Your Submission',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
                     AppSpacing.gapSm,
                     TextField(
                       controller: _submissionController,
@@ -236,7 +249,8 @@ class _AssignmentDetailBodyState extends State<_AssignmentDetailBody> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text(
-                                'File picker will be available when integrated'),
+                              'File picker will be available when integrated',
+                            ),
                           ),
                         );
                       },
@@ -257,8 +271,9 @@ class _AssignmentDetailBodyState extends State<_AssignmentDetailBody> {
                 listener: (context, state) {
                   final err = state.submitError;
                   if (err != null) {
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(SnackBar(content: Text(err)));
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(err)));
                   } else if (state.assignment?.status ==
                       AssignmentStatus.submitted) {
                     _submissionController.clear();

@@ -16,16 +16,21 @@ class LeaderboardCubit extends Cubit<LeaderboardState> {
       final entries = await _repository.fetchLeaderboard(
         state.weekly ? 'weekly' : 'monthly',
       );
-      emit(LeaderboardState(
-        status: LeaderboardStatus.loaded,
-        entries: entries,
-        weekly: state.weekly,
-      ));
-    } catch (_) {
-      emit(state.copyWith(
-        status: LeaderboardStatus.loaded,
-        entries: [],
-      ));
+      emit(
+        LeaderboardState(
+          status: LeaderboardStatus.loaded,
+          entries: entries,
+          weekly: state.weekly,
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: LeaderboardStatus.error,
+          entries: [],
+          errorMessage: 'Unable to load leaderboard.',
+        ),
+      );
     }
   }
 

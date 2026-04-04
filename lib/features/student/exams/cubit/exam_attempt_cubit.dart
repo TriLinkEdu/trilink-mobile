@@ -34,7 +34,7 @@ class ExamAttemptCubit extends Cubit<ExamAttemptState> {
       emit(
         state.copyWith(
           status: ExamAttemptStatus.error,
-          errorMessage: 'Unable to load exam: $e',
+          errorMessage: 'Unable to load exam.',
         ),
       );
     }
@@ -46,8 +46,8 @@ class ExamAttemptCubit extends Cubit<ExamAttemptState> {
     try {
       final attempt = await _repository.startAttempt(examId, studentId);
       emit(state.copyWith(attemptId: attempt.id));
-    } catch (_) {
-      // Attempt tracking is optional for frontend flow.
+    } catch (e) {
+      emit(state.copyWith(submissionErrorMessage: 'Unable to track attempt.'));
     }
   }
 
@@ -74,7 +74,7 @@ class ExamAttemptCubit extends Cubit<ExamAttemptState> {
       emit(
         state.copyWith(
           submissionStatus: ExamSubmissionStatus.error,
-          submissionErrorMessage: 'Failed to submit exam: $e',
+          submissionErrorMessage: 'Failed to submit exam.',
         ),
       );
       return null;

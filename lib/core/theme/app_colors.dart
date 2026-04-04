@@ -4,11 +4,11 @@ class AppColors {
   AppColors._();
 
   // ── Brand Palette ──
-  static const Color primary = Color(0xFF2563EB);
-  static const Color primaryLight = Color(0xFF60A5FA);
-  static const Color primaryDark = Color(0xFF1D4ED8);
-  static const Color secondary = Color(0xFF10B981);
-  static const Color accent = Color(0xFFF59E0B);
+  static const Color primary = Color(0xFF0F6FFF);
+  static const Color primaryLight = Color(0xFF5DA2FF);
+  static const Color primaryDark = Color(0xFF0A4FB8);
+  static const Color secondary = Color(0xFF00B894);
+  static const Color accent = Color(0xFFFF8A00);
   static const Color error = Color(0xFFEF4444);
 
   // ── Semantic Status ──
@@ -18,9 +18,9 @@ class AppColors {
   static const Color danger = Color(0xFFEF4444);
 
   // ── Gamification Accents ──
-  static const Color xpGold = Color(0xFFFFB800);
-  static const Color streakFire = Color(0xFFFF6B35);
-  static const Color levelPurple = Color(0xFF8B5CF6);
+  static const Color xpGold = Color(0xFFFFC53D);
+  static const Color streakFire = Color(0xFFFF6A3D);
+  static const Color levelPurple = Color(0xFF3B82F6);
   static const Color achievementEmerald = Color(0xFF10B981);
   static const Color leaderboardCrown = Color(0xFFFBBF24);
 
@@ -35,21 +35,33 @@ class AppColors {
   static const Color categoryEvent = Color(0xFFFEF3C7);
 
   // ── Subject Accents ──
-  static const Color mathematics = Color(0xFF3B82F6);
-  static const Color physics = Color(0xFF6366F1);
-  static const Color literature = Color(0xFFEC4899);
-  static const Color history = Color(0xFFF97316);
-  static const Color computerScience = Color(0xFF14B8A6);
-  static const Color biology = Color(0xFF22C55E);
+  static const Color mathematics = Color(0xFF2F80ED);
+  static const Color physics = Color(0xFF00A6FB);
+  static const Color literature = Color(0xFFE76F51);
+  static const Color history = Color(0xFFF4A261);
+  static const Color computerScience = Color(0xFF00B894);
+  static const Color biology = Color(0xFF43AA8B);
 
   static Color subjectColor(String name) {
     final lower = name.toLowerCase();
-    if (lower.contains('math') || lower.contains('calculus')) return mathematics;
-    if (lower.contains('phys')) return physics;
-    if (lower.contains('liter') || lower.contains('english')) return literature;
-    if (lower.contains('hist')) return history;
-    if (lower.contains('comput') || lower.contains('cs')) return computerScience;
-    if (lower.contains('bio')) return biology;
+    if (lower.contains('math') || lower.contains('calculus')) {
+      return mathematics;
+    }
+    if (lower.contains('phys')) {
+      return physics;
+    }
+    if (lower.contains('liter') || lower.contains('english')) {
+      return literature;
+    }
+    if (lower.contains('hist')) {
+      return history;
+    }
+    if (lower.contains('comput') || lower.contains('cs')) {
+      return computerScience;
+    }
+    if (lower.contains('bio')) {
+      return biology;
+    }
     return primary;
   }
 
@@ -76,25 +88,25 @@ class AppGradients {
   AppGradients._();
 
   static const LinearGradient primaryHero = LinearGradient(
-    colors: [Color(0xFF2563EB), Color(0xFF7C3AED)],
+    colors: [Color(0xFF2B8CFF), Color(0xFF3CB7FF)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient streak = LinearGradient(
-    colors: [Color(0xFFFF6B35), Color(0xFFFF8F65)],
+    colors: [Color(0xFFFF6A3D), Color(0xFFFF9F5A)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient xp = LinearGradient(
-    colors: [Color(0xFFFFB800), Color(0xFFFFD166)],
+    colors: [Color(0xFFFFC53D), Color(0xFFFFDF80)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient level = LinearGradient(
-    colors: [Color(0xFF8B5CF6), Color(0xFFA78BFA)],
+    colors: [Color(0xFF2F80ED), Color(0xFF56CCF2)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -106,13 +118,13 @@ class AppGradients {
   );
 
   static const LinearGradient attendance = LinearGradient(
-    colors: [Color(0xFF1A73E8), Color(0xFF4A90E2)],
+    colors: [Color(0xFF3A97FF), Color(0xFF74BBFF)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient warmDark = LinearGradient(
-    colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+    colors: [Color(0xFF0B1220), Color(0xFF172437)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
@@ -126,19 +138,13 @@ class AppGradients {
   );
 
   static LinearGradient glassLight = LinearGradient(
-    colors: [
-      Colors.white.withAlpha(180),
-      Colors.white.withAlpha(120),
-    ],
+    colors: [Colors.white.withAlpha(180), Colors.white.withAlpha(120)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static LinearGradient glassDark = LinearGradient(
-    colors: [
-      Colors.white.withAlpha(15),
-      Colors.white.withAlpha(8),
-    ],
+    colors: [Colors.white.withAlpha(15), Colors.white.withAlpha(8)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

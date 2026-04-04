@@ -8,21 +8,27 @@ export 'achievements_list_state.dart';
 class AchievementsListCubit extends Cubit<AchievementsListState> {
   final StudentGamificationRepository _repository;
 
-  AchievementsListCubit(this._repository) : super(const AchievementsListState());
+  AchievementsListCubit(this._repository)
+    : super(const AchievementsListState());
 
   Future<void> loadAchievements() async {
     emit(state.copyWith(status: AchievementsListStatus.loading));
     try {
       final achievements = await _repository.fetchAchievements();
-      emit(AchievementsListState(
-        status: AchievementsListStatus.loaded,
-        achievements: achievements,
-      ));
-    } catch (_) {
-      emit(state.copyWith(
-        status: AchievementsListStatus.loaded,
-        achievements: [],
-      ));
+      emit(
+        AchievementsListState(
+          status: AchievementsListStatus.loaded,
+          achievements: achievements,
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: AchievementsListStatus.error,
+          achievements: [],
+          errorMessage: 'Unable to load achievements.',
+        ),
+      );
     }
   }
 }

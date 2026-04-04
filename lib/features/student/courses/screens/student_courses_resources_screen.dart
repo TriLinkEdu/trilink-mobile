@@ -10,6 +10,7 @@ import 'package:trilink_mobile/core/widgets/error_widget.dart';
 import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
 import 'package:trilink_mobile/core/widgets/pressable.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/student_page_background.dart';
 import '../cubit/course_resources_cubit.dart';
 import '../models/course_resource_model.dart';
 import '../repositories/student_courses_repository.dart';
@@ -66,85 +67,92 @@ class _StudentCoursesResourcesView extends StatelessWidget {
       builder: (context, state) {
         return Scaffold(
           appBar: AppBar(title: const Text('Courses & Resources')),
-          body: state.status == CourseResourcesStatus.loading ||
-                  state.status == CourseResourcesStatus.initial
-              ? const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: ShimmerList(),
-                )
-              : state.status == CourseResourcesStatus.error
-                  ? AppErrorWidget(
-                      message: state.errorMessage ??
-                          'Unable to load resources.',
-                      onRetry: () => context
-                          .read<CourseResourcesCubit>()
-                          .loadResources(),
-                    )
-                  : state.resources.isEmpty
-                      ? const EmptyStateWidget(
-                          illustration: BooksIllustration(),
-                          icon: Icons.folder_open_rounded,
-                          title: 'No resources available',
-                          subtitle:
-                              'Course resources will appear here when added.',
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: state.resources.length,
-                          itemBuilder: (context, index) {
-                            final resource = state.resources[index];
-                            void openResource() {
-                              Navigator.of(context).pushNamed(
-                                RouteNames.studentCourseResourceDetail,
-                                arguments: {'resourceId': resource.id},
-                              );
-                            }
-                            return StaggeredFadeSlide(
-                              index: index,
-                              child: Pressable(
-                                onTap: openResource,
-                                enableHaptic: false,
-                                child: Card(
-                                  margin: const EdgeInsets.only(bottom: 12),
-                                  child: ListTile(
-                                    onTap: openResource,
-                                    leading: CircleAvatar(
-                                      backgroundColor:
-                                          _colorForType(resource.type).withAlpha(30),
-                                      child: Icon(
-                                        _iconForType(resource.type),
-                                        color: _colorForType(resource.type),
-                                        size: 22,
-                                      ),
-                                    ),
-                                    title: Text(
-                                      resource.title,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.w600),
-                                    ),
-                                    subtitle: Text(resource.subjectName),
-                                    trailing: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: _colorForType(resource.type)
-                                            .withAlpha(20),
-                                        borderRadius: AppRadius.borderSm,
-                                      ),
-                                      child: Text(
-                                        resource.typeLabel,
-                                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                          color: _colorForType(resource.type),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
+          body: StudentPageBackground(
+            child:
+                state.status == CourseResourcesStatus.loading ||
+                    state.status == CourseResourcesStatus.initial
+                ? const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: ShimmerList(),
+                  )
+                : state.status == CourseResourcesStatus.error
+                ? AppErrorWidget(
+                    message: state.errorMessage ?? 'Unable to load resources.',
+                    onRetry: () =>
+                        context.read<CourseResourcesCubit>().loadResources(),
+                  )
+                : state.resources.isEmpty
+                ? const EmptyStateWidget(
+                    illustration: BooksIllustration(),
+                    icon: Icons.folder_open_rounded,
+                    title: 'No resources available',
+                    subtitle: 'Course resources will appear here when added.',
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: state.resources.length,
+                    itemBuilder: (context, index) {
+                      final resource = state.resources[index];
+                      void openResource() {
+                        Navigator.of(context).pushNamed(
+                          RouteNames.studentCourseResourceDetail,
+                          arguments: {'resourceId': resource.id},
+                        );
+                      }
+
+                      return StaggeredFadeSlide(
+                        index: index,
+                        child: Pressable(
+                          onTap: openResource,
+                          enableHaptic: false,
+                          child: Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            child: ListTile(
+                              onTap: openResource,
+                              leading: CircleAvatar(
+                                backgroundColor: _colorForType(
+                                  resource.type,
+                                ).withAlpha(30),
+                                child: Icon(
+                                  _iconForType(resource.type),
+                                  color: _colorForType(resource.type),
+                                  size: 22,
                                 ),
                               ),
-                            );
-                          },
+                              title: Text(
+                                resource.title,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              subtitle: Text(resource.subjectName),
+                              trailing: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _colorForType(
+                                    resource.type,
+                                  ).withAlpha(20),
+                                  borderRadius: AppRadius.borderSm,
+                                ),
+                                child: Text(
+                                  resource.typeLabel,
+                                  style: Theme.of(context).textTheme.labelSmall
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: _colorForType(resource.type),
+                                      ),
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
+                      );
+                    },
+                  ),
+          ),
         );
       },
     );

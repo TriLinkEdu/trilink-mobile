@@ -14,15 +14,15 @@ class QuizCubit extends Cubit<QuizState> {
     emit(const QuizState(status: QuizLoadStatus.loading));
     try {
       final quiz = await _repository.fetchQuiz(subjectId);
-      emit(QuizState(
-        status: QuizLoadStatus.loaded,
-        quiz: quiz,
-      ));
-    } catch (_) {
-      emit(const QuizState(
-        status: QuizLoadStatus.error,
-        errorMessage: 'Could not load quiz. Please try again.',
-      ));
+      emit(QuizState(status: QuizLoadStatus.loaded, quiz: quiz));
+    } catch (e) {
+      emit(
+        const QuizState(
+          status: QuizLoadStatus.error,
+          errorMessage: 'Could not load quiz. Please try again.',
+        ),
+      );
+      emit(state.copyWith(errorMessage: 'Could not load quiz: $e'));
     }
   }
 
@@ -30,25 +30,30 @@ class QuizCubit extends Cubit<QuizState> {
     emit(state.copyWith(submitting: true));
     try {
       final result = await _repository.submitQuizAnswers(quizId, answers);
-      emit(QuizState(
-        status: state.status,
-        quiz: state.quiz,
-        errorMessage: state.errorMessage,
-        submitting: false,
-        submitResult: result,
-      ));
-    } catch (_) {
+      emit(
+        QuizState(
+          status: state.status,
+          quiz: state.quiz,
+          errorMessage: state.errorMessage,
+          submitting: false,
+          submitResult: result,
+        ),
+      );
+    } catch (e) {
       emit(state.copyWith(submitting: false));
+      emit(state.copyWith(errorMessage: 'Failed to submit quiz: $e'));
       rethrow;
     }
   }
 
   void clearSubmitResult() {
-    emit(QuizState(
-      status: state.status,
-      quiz: state.quiz,
-      errorMessage: state.errorMessage,
-      submitting: state.submitting,
-    ));
+    emit(
+      QuizState(
+        status: state.status,
+        quiz: state.quiz,
+        errorMessage: state.errorMessage,
+        submitting: state.submitting,
+      ),
+    );
   }
 }

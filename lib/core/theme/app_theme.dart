@@ -67,15 +67,35 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
     if (other == null) return this;
     return AppThemeExtension(
       heroGradient: LinearGradient.lerp(heroGradient, other.heroGradient, t)!,
-      streakGradient: LinearGradient.lerp(streakGradient, other.streakGradient, t)!,
+      streakGradient: LinearGradient.lerp(
+        streakGradient,
+        other.streakGradient,
+        t,
+      )!,
       xpGradient: LinearGradient.lerp(xpGradient, other.xpGradient, t)!,
-      levelGradient: LinearGradient.lerp(levelGradient, other.levelGradient, t)!,
-      shimmerGradient: LinearGradient.lerp(shimmerGradient, other.shimmerGradient, t)!,
-      glassGradient: LinearGradient.lerp(glassGradient, other.glassGradient, t)!,
+      levelGradient: LinearGradient.lerp(
+        levelGradient,
+        other.levelGradient,
+        t,
+      )!,
+      shimmerGradient: LinearGradient.lerp(
+        shimmerGradient,
+        other.shimmerGradient,
+        t,
+      )!,
+      glassGradient: LinearGradient.lerp(
+        glassGradient,
+        other.glassGradient,
+        t,
+      )!,
       cardBackground: Color.lerp(cardBackground, other.cardBackground, t)!,
       cardBorder: Color.lerp(cardBorder, other.cardBorder, t)!,
       shimmerBase: Color.lerp(shimmerBase, other.shimmerBase, t)!,
-      shimmerHighlight: Color.lerp(shimmerHighlight, other.shimmerHighlight, t)!,
+      shimmerHighlight: Color.lerp(
+        shimmerHighlight,
+        other.shimmerHighlight,
+        t,
+      )!,
       glassBarrier: Color.lerp(glassBarrier, other.glassBarrier, t)!,
     );
   }
@@ -120,12 +140,15 @@ class AppTheme {
             brightness: Brightness.light,
             surface: AppColors.lightSurface,
             surfaceContainerLow: AppColors.lightSurfaceDim,
+          ).copyWith(
+            primary: const Color(0xFF2F8FFF),
+            primaryContainer: const Color(0xFFDDEEFF),
           );
 
     final ext = isDark
         ? AppThemeExtension(
             heroGradient: const LinearGradient(
-              colors: [Color(0xFF1E40AF), Color(0xFF6D28D9)],
+              colors: [Color(0xFF0E4DA4), Color(0xFF007A74)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -141,7 +164,11 @@ class AppTheme {
             glassBarrier: Colors.black54,
           )
         : AppThemeExtension(
-            heroGradient: AppGradients.primaryHero,
+            heroGradient: const LinearGradient(
+              colors: [Color(0xFF2B8CFF), Color(0xFF3CB7FF)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
             streakGradient: AppGradients.streak,
             xpGradient: AppGradients.xp,
             levelGradient: AppGradients.level,
@@ -161,8 +188,9 @@ class AppTheme {
       textTheme: AppTextStyles.buildTextTheme(
         fontFamily ?? AppTextStyles.defaultFontFamily,
       ),
-      scaffoldBackgroundColor:
-          isDark ? AppColors.darkBackground : AppColors.lightBackground,
+      scaffoldBackgroundColor: isDark
+          ? AppColors.darkBackground
+          : AppColors.lightBackground,
       extensions: [ext],
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
@@ -177,8 +205,9 @@ class AppTheme {
         scrolledUnderElevation: 0,
         backgroundColor: Colors.transparent,
         foregroundColor: colorScheme.onSurface,
-        systemOverlayStyle:
-            isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+        systemOverlayStyle: isDark
+            ? SystemUiOverlayStyle.light
+            : SystemUiOverlayStyle.dark,
       ),
       cardTheme: CardThemeData(
         color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
@@ -188,7 +217,10 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: colorScheme.surfaceContainerLow,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         border: OutlineInputBorder(
           borderRadius: AppRadius.borderMd,
           borderSide: BorderSide(color: colorScheme.outlineVariant),
@@ -208,17 +240,33 @@ class AppTheme {
       ),
       chipTheme: ChipThemeData(
         backgroundColor: colorScheme.surfaceContainerLow,
-        side: BorderSide.none,
+        selectedColor: colorScheme.primaryContainer.withAlpha(150),
+        checkmarkColor: colorScheme.primary,
+        side: BorderSide(color: colorScheme.outlineVariant.withAlpha(130)),
+        labelStyle: TextStyle(
+          color: colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
+        ),
+        secondaryLabelStyle: TextStyle(
+          color: colorScheme.primary,
+          fontWeight: FontWeight.w700,
+        ),
         shape: RoundedRectangleBorder(borderRadius: AppRadius.borderFull),
       ),
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+        backgroundColor: isDark
+            ? AppColors.darkSurface
+            : AppColors.lightSurface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadius.xl),
+          ),
         ),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+        backgroundColor: isDark
+            ? AppColors.darkSurface
+            : AppColors.lightSurface,
         shape: RoundedRectangleBorder(borderRadius: AppRadius.borderXl),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -241,19 +289,13 @@ class AppTheme {
           side: BorderSide(color: colorScheme.outlineVariant),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(borderRadius: AppRadius.borderMd),
-          textStyle: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: colorScheme.primary,
-          textStyle: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
@@ -276,8 +318,9 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor:
-            isDark ? const Color(0xFF334155) : const Color(0xFF1E293B),
+        backgroundColor: isDark
+            ? const Color(0xFF334155)
+            : const Color(0xFF1E293B),
         shape: RoundedRectangleBorder(borderRadius: AppRadius.borderMd),
       ),
       dividerTheme: DividerThemeData(
@@ -296,8 +339,9 @@ class AppTheme {
           return TextStyle(
             fontSize: 11,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-            color:
-                isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+            color: isSelected
+                ? colorScheme.primary
+                : colorScheme.onSurfaceVariant,
           );
         }),
       ),

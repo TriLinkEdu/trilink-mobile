@@ -13,6 +13,7 @@ import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
 import 'package:trilink_mobile/core/widgets/pressable.dart';
 
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/student_page_background.dart';
 import '../cubit/chat_cubit.dart';
 import '../models/chat_models.dart';
 import '../repositories/student_chat_repository.dart';
@@ -228,43 +229,52 @@ class _ChatViewState extends State<_ChatView> {
             ],
           ),
         ),
-        body: BlocBuilder<ChatCubit, ChatState>(
-          builder: (context, state) {
-            final loading =
-                state.status == ChatStatus.initial ||
-                state.status == ChatStatus.loading;
-            if (loading) {
-              return const Padding(
-                padding: AppSpacing.paddingLg,
-                child: ShimmerList(),
-              );
-            }
-            if (state.status == ChatStatus.error) {
-              return AppErrorWidget(
-                message: state.errorMessage ?? 'Unable to load conversations.',
-                onRetry: () => context.read<ChatCubit>().loadConversations(),
-              );
-            }
+        body: StudentPageBackground(
+          child: BlocBuilder<ChatCubit, ChatState>(
+            builder: (context, state) {
+              final loading =
+                  state.status == ChatStatus.initial ||
+                  state.status == ChatStatus.loading;
+              if (loading) {
+                return const Padding(
+                  padding: AppSpacing.paddingLg,
+                  child: ShimmerList(),
+                );
+              }
+              if (state.status == ChatStatus.error) {
+                return AppErrorWidget(
+                  message:
+                      state.errorMessage ?? 'Unable to load conversations.',
+                  onRetry: () => context.read<ChatCubit>().loadConversations(),
+                );
+              }
 
-            final conversations = state.conversations;
-            final groups = conversations.where((c) => c.isGroup).toList();
-            final inbox = conversations.where((c) => !c.isGroup).toList();
+              final conversations = state.conversations;
+              final groups = conversations.where((c) => c.isGroup).toList();
+              final inbox = conversations.where((c) => !c.isGroup).toList();
 
-            return TabBarView(
-              children: [
-                BrandedRefreshIndicator(
-                  onRefresh: () =>
-                      context.read<ChatCubit>().loadConversations(),
-                  child: _ChatList(items: groups, onTapItem: _openConversation),
-                ),
-                BrandedRefreshIndicator(
-                  onRefresh: () =>
-                      context.read<ChatCubit>().loadConversations(),
-                  child: _ChatList(items: inbox, onTapItem: _openConversation),
-                ),
-              ],
-            );
-          },
+              return TabBarView(
+                children: [
+                  BrandedRefreshIndicator(
+                    onRefresh: () =>
+                        context.read<ChatCubit>().loadConversations(),
+                    child: _ChatList(
+                      items: groups,
+                      onTapItem: _openConversation,
+                    ),
+                  ),
+                  BrandedRefreshIndicator(
+                    onRefresh: () =>
+                        context.read<ChatCubit>().loadConversations(),
+                    child: _ChatList(
+                      items: inbox,
+                      onTapItem: _openConversation,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
         floatingActionButton: FloatingActionButton(
           tooltip: 'Start conversation',

@@ -45,15 +45,14 @@ class ExamListCubit extends Cubit<ExamListState> {
     emit(state.copyWith(status: ExamListStatus.loading));
     try {
       final exams = await _repository.fetchAvailableExams();
-      emit(ExamListState(
-        status: ExamListStatus.loaded,
-        exams: exams,
-      ));
-    } catch (_) {
-      emit(state.copyWith(
-        status: ExamListStatus.error,
-        errorMessage: 'Unable to load exams.',
-      ));
+      emit(ExamListState(status: ExamListStatus.loaded, exams: exams));
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: ExamListStatus.error,
+          errorMessage: 'Unable to load exams: $e',
+        ),
+      );
     }
   }
 }

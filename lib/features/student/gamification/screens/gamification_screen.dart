@@ -11,6 +11,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_shadows.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/pressable.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/gamification_cubit.dart';
@@ -156,19 +157,25 @@ class _GamificationViewState extends State<_GamificationView> {
                 ),
               ),
               AppSpacing.gapSm,
-              ...streak.recentDays.map((d) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.check_circle, color: AppColors.success, size: 16),
-                        AppSpacing.hGapSm,
-                        Text(
-                          '${d.day}/${d.month}/${d.year}',
-                          style: dialogTheme.textTheme.labelLarge,
-                        ),
-                      ],
-                    ),
-                  )),
+              ...streak.recentDays.map(
+                (d) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.check_circle,
+                        color: AppColors.success,
+                        size: 16,
+                      ),
+                      AppSpacing.hGapSm,
+                      Text(
+                        '${d.day}/${d.month}/${d.year}',
+                        style: dialogTheme.textTheme.labelLarge,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
           actions: [
@@ -215,94 +222,110 @@ class _GamificationViewState extends State<_GamificationView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.md),
-              child: Row(
-                children: [
-                  IconButton(
-                    tooltip: 'Back',
-                    onPressed: () {
-                      Navigator.of(context).maybePop();
-                    },
-                    icon: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 18,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      'Gamification Hub',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isDark
+                ? const [Color(0xFF0A1422), Color(0xFF10253A)]
+                : const [Color(0xFFF0F8FF), Color(0xFFE6F4FF)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xl,
+                  vertical: AppSpacing.md,
+                ),
+                child: Row(
+                  children: [
+                    IconButton(
+                      tooltip: 'Back',
+                      onPressed: () {
+                        Navigator.of(context).maybePop();
+                      },
+                      icon: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 18,
                         color: theme.colorScheme.onSurface,
                       ),
                     ),
-                  ),
-                  IconButton(
-                    tooltip: 'Gamification settings',
-                    onPressed: _showSettingsSheet,
-                    icon: Icon(
-                      Icons.settings_outlined,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            Expanded(
-              child: BlocBuilder<GamificationCubit, GamificationState>(
-                builder: (context, state) {
-                  final loading = state.status == GamificationStatus.initial ||
-                      state.status == GamificationStatus.loading;
-                  if (loading) {
-                    return const Padding(
-                      padding: AppSpacing.horizontalXl,
-                      child: ShimmerList(itemCount: 5, itemHeight: 80),
-                    );
-                  }
-
-                  final streak = state.streak?.currentStreak;
-                  const key = 'streak_milestone';
-                  if (!_celebratedKeys.contains(key) &&
-                      streak != null &&
-                      streak >= 7) {
-                    _celebratedKeys.add(key);
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (!mounted) return;
-                      _maybeCelebrateStreakMilestone(streak);
-                    });
-                  }
-
-                  return SingleChildScrollView(
-                    padding: AppSpacing.horizontalXl,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildStreakCard(state.streak),
-                        AppSpacing.gapXxl,
-                        _buildAchievementsSection(state.achievements),
-                        AppSpacing.gapXxl,
-                        _buildQuickQuizSection(state.availableQuizzes),
-                        AppSpacing.gapXxl,
-                        _buildLeaderboardSection(
-                          state.leaderboardEntries,
-                          state.isWeeklyRanking,
+                    Expanded(
+                      child: Text(
+                        'Gamification Hub',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
                         ),
-                        AppSpacing.gapXxl,
-                      ],
+                      ),
                     ),
-                  );
-                },
+                    IconButton(
+                      tooltip: 'Gamification settings',
+                      onPressed: _showSettingsSheet,
+                      icon: Icon(
+                        Icons.settings_outlined,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+
+              Expanded(
+                child: BlocBuilder<GamificationCubit, GamificationState>(
+                  builder: (context, state) {
+                    final loading =
+                        state.status == GamificationStatus.initial ||
+                        state.status == GamificationStatus.loading;
+                    if (loading) {
+                      return const Padding(
+                        padding: AppSpacing.horizontalXl,
+                        child: ShimmerList(itemCount: 5, itemHeight: 80),
+                      );
+                    }
+
+                    final streak = state.streak?.currentStreak;
+                    const key = 'streak_milestone';
+                    if (!_celebratedKeys.contains(key) &&
+                        streak != null &&
+                        streak >= 7) {
+                      _celebratedKeys.add(key);
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted) return;
+                        _maybeCelebrateStreakMilestone(streak);
+                      });
+                    }
+
+                    return SingleChildScrollView(
+                      padding: AppSpacing.horizontalXl,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildStreakCard(state.streak),
+                          AppSpacing.gapXxl,
+                          _buildAchievementsSection(state.achievements),
+                          AppSpacing.gapXxl,
+                          _buildQuickQuizSection(state.availableQuizzes),
+                          AppSpacing.gapXxl,
+                          _buildLeaderboardSection(
+                            state.leaderboardEntries,
+                            state.isWeeklyRanking,
+                          ),
+                          AppSpacing.gapXxl,
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -317,7 +340,7 @@ class _GamificationViewState extends State<_GamificationView> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 28),
         decoration: BoxDecoration(
-          gradient: AppGradients.primaryHero,
+          gradient: theme.ext.heroGradient,
           borderRadius: AppRadius.borderXl,
           border: isLegendary
               ? Border.all(color: AppColors.xpGold, width: 2.5)
@@ -325,8 +348,8 @@ class _GamificationViewState extends State<_GamificationView> {
           boxShadow: isLegendary
               ? [
                   BoxShadow(
-                    color: AppColors.xpGold.withAlpha(100),
-                    blurRadius: 20,
+                    color: AppColors.xpGold.withAlpha(70),
+                    blurRadius: 12,
                     spreadRadius: 2,
                   ),
                 ]
@@ -338,7 +361,7 @@ class _GamificationViewState extends State<_GamificationView> {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: theme.colorScheme.onPrimary.withAlpha(35),
+                color: theme.colorScheme.onPrimary.withAlpha(28),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -360,7 +383,10 @@ class _GamificationViewState extends State<_GamificationView> {
             if (isLegendary) ...[
               AppSpacing.gapXs,
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.xpGold,
                   borderRadius: AppRadius.borderSm,
@@ -384,12 +410,9 @@ class _GamificationViewState extends State<_GamificationView> {
             ),
             AppSpacing.gapLg,
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               decoration: BoxDecoration(
-                color: theme.colorScheme.onPrimary.withAlpha(40),
+                color: theme.colorScheme.onPrimary.withAlpha(28),
                 borderRadius: AppRadius.borderXl,
               ),
               child: Text(
@@ -418,20 +441,19 @@ class _GamificationViewState extends State<_GamificationView> {
             Text(
               'Achievements',
               style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
                 color: theme.colorScheme.onSurface,
               ),
             ),
             TextButton(
               onPressed: () {
-                Navigator.of(context).pushNamed(
-                  RouteNames.studentAchievements,
-                );
+                Navigator.of(context).pushNamed(RouteNames.studentAchievements);
               },
               child: Text(
                 'See All',
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -482,7 +504,7 @@ class _GamificationViewState extends State<_GamificationView> {
         Text(
           'Quick Quiz',
           style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w700,
             color: theme.colorScheme.onSurface,
           ),
         ),
@@ -549,8 +571,9 @@ class _GamificationViewState extends State<_GamificationView> {
                 children: [
                   TextButton(
                     onPressed: () {
-                      Navigator.of(context)
-                          .pushNamed(RouteNames.studentLeaderboard);
+                      Navigator.of(
+                        context,
+                      ).pushNamed(RouteNames.studentLeaderboard);
                     },
                     child: const Text('Open'),
                   ),
@@ -577,8 +600,7 @@ class _GamificationViewState extends State<_GamificationView> {
             illustration: TrophyIllustration(),
             icon: Icons.leaderboard_rounded,
             title: 'No leaderboard data',
-            subtitle:
-                'Compete with classmates to see rankings here.',
+            subtitle: 'Compete with classmates to see rankings here.',
           )
         else
           ...List.generate(topEntries.length, (i) {
@@ -588,7 +610,11 @@ class _GamificationViewState extends State<_GamificationView> {
               AppColors.rankSilver,
               AppColors.rankBronze,
             ];
-            final avatarColors = [AppColors.streakFire, AppColors.secondary, theme.colorScheme.primary];
+            final avatarColors = [
+              AppColors.streakFire,
+              AppColors.secondary,
+              theme.colorScheme.primary,
+            ];
             return StaggeredFadeSlide(
               index: i,
               child: Padding(
@@ -664,7 +690,9 @@ class _AchievementChip extends StatelessWidget {
         Text(
           sublabel,
           style: theme.textTheme.labelSmall?.copyWith(
-            color: isUnlocked ? AppColors.success : theme.colorScheme.onSurfaceVariant,
+            color: isUnlocked
+                ? AppColors.success
+                : theme.colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -692,7 +720,10 @@ class _QuickQuizTile extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm + 2,
+      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: AppRadius.borderLg,
@@ -729,9 +760,7 @@ class _QuickQuizTile extends StatelessWidget {
               backgroundColor: AppColors.success,
               foregroundColor: theme.colorScheme.onPrimary,
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: AppRadius.borderSm,
-              ),
+              shape: RoundedRectangleBorder(borderRadius: AppRadius.borderSm),
               elevation: 0,
               textStyle: theme.textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.w600,
@@ -767,7 +796,10 @@ class _LeaderboardRow extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.md,
+      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: AppRadius.borderLg,
@@ -776,10 +808,10 @@ class _LeaderboardRow extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 28,
-            height: 28,
+            width: 30,
+            height: 30,
             decoration: BoxDecoration(
-              color: rankColor.withAlpha(40),
+              color: rankColor.withAlpha(24),
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -794,9 +826,9 @@ class _LeaderboardRow extends StatelessWidget {
           ),
           AppSpacing.hGapMd,
           CircleAvatar(
-            radius: 18,
-            backgroundColor: avatarColor.withAlpha(40),
-            child: Icon(Icons.person_rounded, color: avatarColor, size: 20),
+            radius: 17,
+            backgroundColor: avatarColor.withAlpha(24),
+            child: Icon(Icons.person_rounded, color: avatarColor, size: 19),
           ),
           AppSpacing.hGapMd,
           Expanded(

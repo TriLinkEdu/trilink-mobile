@@ -127,102 +127,117 @@ class _AiAssistantViewState extends State<_AiAssistantView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 16, 0),
-              child: Row(
-                children: [
-                  Hero(
-                    tag: 'ai-tutor-hero',
-                    child: Material(
-                      color: Colors.transparent,
-                      child: Icon(
-                        Icons.auto_awesome,
-                        color: theme.colorScheme.primary,
-                        size: 28,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isDark
+                ? const [Color(0xFF0A1323), Color(0xFF0F2438)]
+                : const [Color(0xFFF0F8FF), Color(0xFFE6F4FF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 16, 0),
+                child: Row(
+                  children: [
+                    Hero(
+                      tag: 'ai-tutor-hero',
+                      child: Material(
+                        color: Colors.transparent,
+                        child: Icon(
+                          Icons.auto_awesome,
+                          color: theme.colorScheme.primary,
+                          size: 28,
+                        ),
                       ),
                     ),
-                  ),
-                  AppSpacing.hGapSm,
-                  Text(
-                    'AI Assistant',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
+                    AppSpacing.hGapSm,
+                    Text(
+                      'AI Assistant',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    tooltip: 'Open detailed page',
-                    onPressed: () => _openDetailedPage(_selectedTab),
-                    icon: Icon(
-                      Icons.open_in_new_rounded,
-                      color: theme.colorScheme.primary,
+                    const Spacer(),
+                    IconButton(
+                      tooltip: 'Open detailed page',
+                      onPressed: () => _openDetailedPage(_selectedTab),
+                      icon: Icon(
+                        Icons.open_in_new_rounded,
+                        color: theme.colorScheme.primary,
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    tooltip: 'Close AI Assistant',
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close, color: theme.colorScheme.onSurface),
-                  ),
-                ],
+                    IconButton(
+                      tooltip: 'Close AI Assistant',
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: Icon(
+                        Icons.close,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            AppSpacing.gapMd,
+              AppSpacing.gapMd,
 
-            SizedBox(
-              height: 38,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: _tabs.length,
-                separatorBuilder: (_, _) => AppSpacing.hGapSm,
-                itemBuilder: (context, i) {
-                  final isSelected = _selectedTab == i;
-                  return Pressable(
-                    onTap: () => setState(() => _selectedTab = i),
-                    child: Semantics(
-                      button: true,
-                      selected: isSelected,
-                      label: 'AI tab ${_tabs[i]}',
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 9,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.surface,
-                          borderRadius: AppRadius.borderXxl,
-                          border: Border.all(
+              SizedBox(
+                height: 38,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: _tabs.length,
+                  separatorBuilder: (_, _) => AppSpacing.hGapSm,
+                  itemBuilder: (context, i) {
+                    final isSelected = _selectedTab == i;
+                    return Pressable(
+                      onTap: () => setState(() => _selectedTab = i),
+                      child: Semantics(
+                        button: true,
+                        selected: isSelected,
+                        label: 'AI tab ${_tabs[i]}',
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 9,
+                          ),
+                          decoration: BoxDecoration(
                             color: isSelected
                                 ? theme.colorScheme.primary
-                                : theme.colorScheme.outlineVariant,
+                                : theme.colorScheme.surface,
+                            borderRadius: AppRadius.borderXxl,
+                            border: Border.all(
+                              color: isSelected
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.outlineVariant,
+                            ),
                           ),
-                        ),
-                        child: Text(
-                          _tabs[i],
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            fontWeight: FontWeight.w500,
-                            color: isSelected
-                                ? theme.colorScheme.onPrimary
-                                : theme.colorScheme.onSurfaceVariant,
+                          child: Text(
+                            _tabs[i],
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              fontWeight: FontWeight.w500,
+                              color: isSelected
+                                  ? theme.colorScheme.onPrimary
+                                  : theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
-            AppSpacing.gapSm,
+              AppSpacing.gapSm,
 
-            Expanded(child: _buildContent()),
-          ],
+              Expanded(child: _buildContent()),
+            ],
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton.small(

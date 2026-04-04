@@ -8,6 +8,7 @@ import 'package:trilink_mobile/core/widgets/illustrations.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/student_page_background.dart';
 import '../cubit/ai_assistant_cubit.dart';
 import '../models/ai_assistant_models.dart';
 import '../repositories/student_ai_assistant_repository.dart';
@@ -22,7 +23,9 @@ class ResourceRecommendationScreen extends StatelessWidget {
     if (resources != null && resources!.isNotEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text('Resources')),
-        body: _ResourceListPage(resources: resources!),
+        body: StudentPageBackground(
+          child: _ResourceListPage(resources: resources!),
+        ),
       );
     }
     return BlocProvider(
@@ -41,28 +44,30 @@ class _ResourceRecommendationBlocView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Resources')),
-      body: BlocBuilder<AiAssistantCubit, AiAssistantState>(
-        builder: (context, state) {
-          final loading =
-              state.status == AiAssistantStatus.initial ||
-              state.status == AiAssistantStatus.loading;
-          if (loading) {
-            return const Padding(
-              padding: EdgeInsets.all(16),
-              child: ShimmerList(),
-            );
-          }
-          final list = state.data?.resources ?? [];
-          if (list.isEmpty) {
-            return const EmptyStateWidget(
-              illustration: BooksIllustration(),
-              icon: Icons.menu_book_rounded,
-              title: 'No resources available',
-              subtitle: 'Recommended resources will appear here.',
-            );
-          }
-          return _ResourceListPage(resources: list);
-        },
+      body: StudentPageBackground(
+        child: BlocBuilder<AiAssistantCubit, AiAssistantState>(
+          builder: (context, state) {
+            final loading =
+                state.status == AiAssistantStatus.initial ||
+                state.status == AiAssistantStatus.loading;
+            if (loading) {
+              return const Padding(
+                padding: EdgeInsets.all(16),
+                child: ShimmerList(),
+              );
+            }
+            final list = state.data?.resources ?? [];
+            if (list.isEmpty) {
+              return const EmptyStateWidget(
+                illustration: BooksIllustration(),
+                icon: Icons.menu_book_rounded,
+                title: 'No resources available',
+                subtitle: 'Recommended resources will appear here.',
+              );
+            }
+            return _ResourceListPage(resources: list);
+          },
+        ),
       ),
     );
   }

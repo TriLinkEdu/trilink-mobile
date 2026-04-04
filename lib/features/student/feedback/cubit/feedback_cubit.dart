@@ -24,7 +24,7 @@ class FeedbackCubit extends Cubit<FeedbackState> {
       emit(
         state.copyWith(
           status: FeedbackStatus.error,
-          errorMessage: 'Unable to load feedback history: $e',
+          errorMessage: 'Unable to load feedback history.',
         ),
       );
     }
@@ -55,7 +55,7 @@ class FeedbackCubit extends Cubit<FeedbackState> {
       emit(
         state.copyWith(
           submissionStatus: FeedbackSubmissionStatus.error,
-          submissionErrorMessage: 'Failed to submit feedback: $e',
+          submissionErrorMessage: 'Failed to submit feedback.',
         ),
       );
     }

@@ -7,6 +7,7 @@ import 'package:trilink_mobile/core/widgets/illustrations.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/student_page_background.dart';
 import '../cubit/ai_assistant_cubit.dart';
 import '../models/ai_assistant_models.dart';
 import '../repositories/student_ai_assistant_repository.dart';
@@ -21,7 +22,9 @@ class EvaluateMeScreen extends StatelessWidget {
     if (insights != null && insights!.isNotEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text('Evaluate Me')),
-        body: _EvaluateMeList(insights: insights!),
+        body: StudentPageBackground(
+          child: _EvaluateMeList(insights: insights!),
+        ),
       );
     }
     return BlocProvider(
@@ -40,28 +43,30 @@ class _EvaluateMeBlocView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Evaluate Me')),
-      body: BlocBuilder<AiAssistantCubit, AiAssistantState>(
-        builder: (context, state) {
-          final loading =
-              state.status == AiAssistantStatus.initial ||
-              state.status == AiAssistantStatus.loading;
-          if (loading) {
-            return const Padding(
-              padding: EdgeInsets.all(16),
-              child: ShimmerList(),
-            );
-          }
-          final list = state.data?.insights ?? [];
-          if (list.isEmpty) {
-            return const EmptyStateWidget(
-              illustration: BrainIllustration(),
-              icon: Icons.analytics_rounded,
-              title: 'No evaluation insights',
-              subtitle: 'Complete assessments to see your evaluation here.',
-            );
-          }
-          return _EvaluateMeList(insights: list);
-        },
+      body: StudentPageBackground(
+        child: BlocBuilder<AiAssistantCubit, AiAssistantState>(
+          builder: (context, state) {
+            final loading =
+                state.status == AiAssistantStatus.initial ||
+                state.status == AiAssistantStatus.loading;
+            if (loading) {
+              return const Padding(
+                padding: EdgeInsets.all(16),
+                child: ShimmerList(),
+              );
+            }
+            final list = state.data?.insights ?? [];
+            if (list.isEmpty) {
+              return const EmptyStateWidget(
+                illustration: BrainIllustration(),
+                icon: Icons.analytics_rounded,
+                title: 'No evaluation insights',
+                subtitle: 'Complete assessments to see your evaluation here.',
+              );
+            }
+            return _EvaluateMeList(insights: list);
+          },
+        ),
       ),
     );
   }

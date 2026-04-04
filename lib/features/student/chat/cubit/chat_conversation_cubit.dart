@@ -9,7 +9,7 @@ class ChatConversationCubit extends Cubit<ChatConversationState> {
   final String conversationId;
 
   ChatConversationCubit(this._repository, this.conversationId)
-      : super(const ChatConversationState());
+    : super(const ChatConversationState());
 
   Future<void> loadMessages({bool showLoading = true}) async {
     if (showLoading) {
@@ -17,16 +17,20 @@ class ChatConversationCubit extends Cubit<ChatConversationState> {
     }
     try {
       final messages = await _repository.fetchMessages(conversationId);
-      emit(ChatConversationState(
-        status: ConversationStatus.loaded,
-        messages: messages,
-      ));
-    } catch (_) {
-      if (showLoading) {
-        emit(const ChatConversationState(
+      emit(
+        ChatConversationState(
           status: ConversationStatus.loaded,
-          messages: [],
-        ));
+          messages: messages,
+        ),
+      );
+    } catch (e) {
+      if (showLoading) {
+        emit(
+          state.copyWith(
+            status: ConversationStatus.error,
+            errorMessage: 'Unable to load messages.',
+          ),
+        );
       }
     }
   }
@@ -34,11 +38,14 @@ class ChatConversationCubit extends Cubit<ChatConversationState> {
   Future<void> sendMessage(String text) async {
     try {
       final sentMessage = await _repository.sendMessage(conversationId, text);
-      emit(state.copyWith(
-        status: ConversationStatus.loaded,
-        messages: [...state.messages, sentMessage],
-      ));
-    } catch (_) {
+      emit(
+        state.copyWith(
+          status: ConversationStatus.loaded,
+          messages: [...state.messages, sentMessage],
+        ),
+      );
+    } catch (e) {
+      emit(state.copyWith(errorMessage: 'Unable to send message.'));
       rethrow;
     }
   }

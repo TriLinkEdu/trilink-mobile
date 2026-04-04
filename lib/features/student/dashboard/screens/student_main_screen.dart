@@ -84,6 +84,11 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
     return true;
   }
 
+  void _openInCurrentTab(String route, {Object? arguments}) {
+    final nav = _navigatorKeys[_currentIndex].currentState;
+    nav?.pushNamed(route, arguments: arguments);
+  }
+
   @override
   Widget build(BuildContext context) {
     return StudentShellScope(
@@ -92,6 +97,7 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
         setState(() => _currentIndex = i);
         _titleNotifier.value = _routeObservers[i].currentTitle;
       },
+      pushInCurrentTab: _openInCurrentTab,
       currentTabIndex: _currentIndex,
       child: PopScope(
         canPop: false,
@@ -111,15 +117,20 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
                 _ShellTopBar(
                   titleNotifier: _titleNotifier,
                   onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
+                  onNotificationsTap: () =>
+                      _openInCurrentTab(RouteNames.studentNotifications),
                 ),
                 Expanded(
                   child: IndexedStack(
                     index: _currentIndex,
-                    children: List.generate(4, (i) => _TabNavigator(
-                      navigatorKey: _navigatorKeys[i],
-                      root: _tabRoots[i],
-                      observer: _routeObservers[i],
-                    )),
+                    children: List.generate(
+                      4,
+                      (i) => _TabNavigator(
+                        navigatorKey: _navigatorKeys[i],
+                        root: _tabRoots[i],
+                        observer: _routeObservers[i],
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -179,10 +190,8 @@ class _ShellRouteObserver extends NavigatorObserver {
   final ValueChanged<String> onTitleChanged;
   String currentTitle;
 
-  _ShellRouteObserver({
-    required this.rootTitle,
-    required this.onTitleChanged,
-  }) : currentTitle = rootTitle;
+  _ShellRouteObserver({required this.rootTitle, required this.onTitleChanged})
+    : currentTitle = rootTitle;
 
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
@@ -211,8 +220,13 @@ class _ShellRouteObserver extends NavigatorObserver {
 class _ShellTopBar extends StatelessWidget {
   final ValueNotifier<String> titleNotifier;
   final VoidCallback onMenuTap;
+  final VoidCallback onNotificationsTap;
 
-  const _ShellTopBar({required this.titleNotifier, required this.onMenuTap});
+  const _ShellTopBar({
+    required this.titleNotifier,
+    required this.onMenuTap,
+    required this.onNotificationsTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -244,7 +258,10 @@ class _ShellTopBar extends StatelessWidget {
                 onMenuTap();
               },
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 child: Icon(
                   Icons.menu_rounded,
                   size: 22,
@@ -272,8 +289,7 @@ class _ShellTopBar extends StatelessWidget {
             ),
             IconButton(
               icon: const Icon(Icons.notifications_outlined, size: 22),
-              onPressed: () => Navigator.of(context)
-                  .pushNamed(RouteNames.studentNotifications),
+              onPressed: onNotificationsTap,
               tooltip: 'Notifications',
             ),
           ],
@@ -303,10 +319,7 @@ class _TabNavigator extends StatelessWidget {
       observers: [observer],
       onGenerateRoute: (settings) {
         if (settings.name == '/' || settings.name == null) {
-          return MaterialPageRoute(
-            builder: (_) => root,
-            settings: settings,
-          );
+          return MaterialPageRoute(builder: (_) => root, settings: settings);
         }
         return StudentShellRoutes.onGenerateRoute(settings);
       },
@@ -323,10 +336,26 @@ class _GlassNavBar extends StatelessWidget {
   const _GlassNavBar({required this.currentIndex, required this.onTap});
 
   static const _items = [
-    _NavItemData(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),
-    _NavItemData(icon: Icons.leaderboard_outlined, activeIcon: Icons.leaderboard_rounded, label: 'Grades'),
-    _NavItemData(icon: Icons.chat_bubble_outline_rounded, activeIcon: Icons.chat_bubble_rounded, label: 'Chat'),
-    _NavItemData(icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, label: 'Profile'),
+    _NavItemData(
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home_rounded,
+      label: 'Home',
+    ),
+    _NavItemData(
+      icon: Icons.leaderboard_outlined,
+      activeIcon: Icons.leaderboard_rounded,
+      label: 'Grades',
+    ),
+    _NavItemData(
+      icon: Icons.chat_bubble_outline_rounded,
+      activeIcon: Icons.chat_bubble_rounded,
+      label: 'Chat',
+    ),
+    _NavItemData(
+      icon: Icons.person_outline_rounded,
+      activeIcon: Icons.person_rounded,
+      label: 'Profile',
+    ),
   ];
 
   @override
@@ -371,7 +400,11 @@ class _NavItemData {
   final IconData icon;
   final IconData activeIcon;
   final String label;
-  const _NavItemData({required this.icon, required this.activeIcon, required this.label});
+  const _NavItemData({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+  });
 }
 
 class _AnimatedNavItem extends StatelessWidget {

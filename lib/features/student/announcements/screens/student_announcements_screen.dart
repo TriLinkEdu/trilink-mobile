@@ -14,6 +14,7 @@ import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
 
 import '../../../../core/widgets/pressable.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/student_page_background.dart';
 import '../cubit/announcements_cubit.dart';
 import '../models/announcement_model.dart';
 import '../repositories/student_announcements_repository.dart';
@@ -44,7 +45,9 @@ class _StudentAnnouncementsViewState extends State<_StudentAnnouncementsView> {
   int _selectedFilter = 0;
   final List<String> _filters = ['All', 'Admin', 'Teacher', 'Calendar'];
 
-  List<AnnouncementModel> _visibleAnnouncements(List<AnnouncementModel> announcements) {
+  List<AnnouncementModel> _visibleAnnouncements(
+    List<AnnouncementModel> announcements,
+  ) {
     if (_selectedFilter == 0) return announcements;
     final selectedCategory = _filters[_selectedFilter].toLowerCase();
     if (selectedCategory == 'calendar') {
@@ -53,16 +56,16 @@ class _StudentAnnouncementsViewState extends State<_StudentAnnouncementsView> {
           .toList();
     }
     return announcements
-        .where((announcement) =>
-            announcement.authorRole.toLowerCase() == selectedCategory)
+        .where(
+          (announcement) =>
+              announcement.authorRole.toLowerCase() == selectedCategory,
+        )
         .toList();
   }
 
   int _recentUnreadCount(List<AnnouncementModel> announcements) {
     final oneDayAgo = DateTime.now().subtract(const Duration(hours: 24));
-    return announcements
-        .where((a) => a.createdAt.isAfter(oneDayAgo))
-        .length;
+    return announcements.where((a) => a.createdAt.isAfter(oneDayAgo)).length;
   }
 
   void _openAnnouncementDetail(AnnouncementModel announcement) {
@@ -77,236 +80,238 @@ class _StudentAnnouncementsViewState extends State<_StudentAnnouncementsView> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  Semantics(
-                    label: 'Back',
-                    button: true,
-                    child: Pressable(
-                      onTap: () => Navigator.of(context).pop(),
-                      child: Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 20,
-                        color: theme.colorScheme.onSurface,
+      body: StudentPageBackground(
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                child: Row(
+                  children: [
+                    Semantics(
+                      label: 'Back',
+                      button: true,
+                      child: Pressable(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          size: 20,
+                          color: theme.colorScheme.onSurface,
+                        ),
                       ),
                     ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      'Announcements',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurface,
+                    Expanded(
+                      child: Text(
+                        'Announcements',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onSurface,
+                        ),
                       ),
                     ),
-                  ),
-                  BlocBuilder<AnnouncementsCubit, AnnouncementsState>(
-                    buildWhen: (previous, current) =>
-                        previous.announcements != current.announcements,
-                    builder: (context, state) {
-                      final count = _recentUnreadCount(state.announcements);
-                      return Stack(
-                        children: [
-                          IconButton(
-                            tooltip: 'Announcement notifications',
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(count > 0
-                                      ? '$count announcement${count == 1 ? '' : 's'} in the last 24 hours.'
-                                      : 'No recent announcements.'),
-                                ),
-                              );
-                            },
-                            icon: Icon(
-                              Icons.notifications_outlined,
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
-                          if (count > 0)
-                            Positioned(
-                              right: 6,
-                              top: 6,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(
-                                  color: AppColors.danger,
-                                  shape: BoxShape.circle,
-                                ),
-                                constraints: const BoxConstraints(
-                                  minWidth: 18,
-                                  minHeight: 18,
-                                ),
-                                child: Text(
-                                  '$count',
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: theme.colorScheme.onError,
-                                    fontWeight: FontWeight.bold,
+                    BlocBuilder<AnnouncementsCubit, AnnouncementsState>(
+                      buildWhen: (previous, current) =>
+                          previous.announcements != current.announcements,
+                      builder: (context, state) {
+                        final count = _recentUnreadCount(state.announcements);
+                        return Stack(
+                          children: [
+                            IconButton(
+                              tooltip: 'Announcement notifications',
+                              onPressed: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      count > 0
+                                          ? '$count announcement${count == 1 ? '' : 's'} in the last 24 hours.'
+                                          : 'No recent announcements.',
+                                    ),
                                   ),
-                                  textAlign: TextAlign.center,
-                                ),
+                                );
+                              },
+                              icon: Icon(
+                                Icons.notifications_outlined,
+                                color: theme.colorScheme.primary,
                               ),
                             ),
-                        ],
-                      );
-                    },
-                  ),
-                ],
+                            if (count > 0)
+                              Positioned(
+                                right: 6,
+                                top: 6,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.danger,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 18,
+                                    minHeight: 18,
+                                  ),
+                                  child: Text(
+                                    '$count',
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: theme.colorScheme.onError,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
 
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: List.generate(_filters.length, (index) {
-                  final isSelected = _selectedFilter == index;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: Pressable(
-                      onTap: () => setState(() => _selectedFilter = index),
-                      child: Semantics(
-                        selected: isSelected,
-                        button: true,
-                        label: 'Filter ${_filters[index]}',
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.surface,
-                            borderRadius: AppRadius.borderXl,
-                            border: Border.all(
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: List.generate(_filters.length, (index) {
+                    final isSelected = _selectedFilter == index;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Pressable(
+                        onTap: () => setState(() => _selectedFilter = index),
+                        child: Semantics(
+                          selected: isSelected,
+                          button: true,
+                          label: 'Filter ${_filters[index]}',
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
                               color: isSelected
                                   ? theme.colorScheme.primary
-                                  : theme.colorScheme.outlineVariant,
+                                  : theme.colorScheme.surface,
+                              borderRadius: AppRadius.borderXl,
+                              border: Border.all(
+                                color: isSelected
+                                    ? theme.colorScheme.primary
+                                    : theme.colorScheme.outlineVariant,
+                              ),
                             ),
-                          ),
-                          child: Text(
-                            _filters[index],
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: isSelected
-                                  ? theme.colorScheme.onPrimary
-                                  : theme.colorScheme.onSurfaceVariant,
+                            child: Text(
+                              _filters[index],
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.w500,
+                                color: isSelected
+                                    ? theme.colorScheme.onPrimary
+                                    : theme.colorScheme.onSurfaceVariant,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  );
-                }),
-              ),
-            ),
-            AppSpacing.gapLg,
-
-            Expanded(
-              child: BlocBuilder<AnnouncementsCubit, AnnouncementsState>(
-                builder: (context, state) {
-                  if (state.status == AnnouncementsStatus.loading ||
-                      state.status == AnnouncementsStatus.initial) {
-                    return const Padding(
-                      padding: EdgeInsets.all(20),
-                      child: ShimmerList(),
                     );
-                  }
-                  if (state.status == AnnouncementsStatus.error) {
-                    return AppErrorWidget(
-                      message: state.errorMessage ??
-                          'Unable to load announcements.',
-                      onRetry: () => context
+                  }),
+                ),
+              ),
+              AppSpacing.gapLg,
+
+              Expanded(
+                child: BlocBuilder<AnnouncementsCubit, AnnouncementsState>(
+                  builder: (context, state) {
+                    if (state.status == AnnouncementsStatus.loading ||
+                        state.status == AnnouncementsStatus.initial) {
+                      return const Padding(
+                        padding: EdgeInsets.all(20),
+                        child: ShimmerList(),
+                      );
+                    }
+                    if (state.status == AnnouncementsStatus.error) {
+                      return AppErrorWidget(
+                        message:
+                            state.errorMessage ??
+                            'Unable to load announcements.',
+                        onRetry: () => context
+                            .read<AnnouncementsCubit>()
+                            .loadAnnouncements(),
+                      );
+                    }
+                    final announcements = state.announcements;
+                    final visible = _visibleAnnouncements(announcements);
+                    var announcementStaggerIndex = 0;
+                    return BrandedRefreshIndicator(
+                      onRefresh: () => context
                           .read<AnnouncementsCubit>()
                           .loadAnnouncements(),
-                    );
-                  }
-                  final announcements = state.announcements;
-                  final visible = _visibleAnnouncements(announcements);
-                  var announcementStaggerIndex = 0;
-                  return BrandedRefreshIndicator(
-                    onRefresh: () => context
-                        .read<AnnouncementsCubit>()
-                        .loadAnnouncements(),
-                    child: ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 20),
-                      children: [
-                      if (visible.isEmpty) ...[
-                        AppSpacing.gapHuge,
-                        EmptyStateWidget(
-                          illustration: const EmptyBoxIllustration(),
-                          icon: Icons.campaign_rounded,
-                          title: 'No announcements yet',
-                          subtitle:
-                              'Announcements for this category will appear here.',
-                        ),
-                        AppSpacing.gapHuge,
-                      ] else ...[
-                        for (final section
-                            in {'TODAY', 'YESTERDAY'}) ...[
-                          if (visible.any(
-                            (announcement) =>
-                                _sectionFor(announcement) == section,
-                          )) ...[
-                            _SectionHeader(title: section),
-                            AppSpacing.gapSm,
-                            for (final announcement
-                                in visible.where(
-                              (item) =>
-                                  _sectionFor(item) == section,
-                            )) ...[
-                              StaggeredFadeSlide(
-                                index: announcementStaggerIndex++,
-                                child: Pressable(
-                                  onTap: () => _openAnnouncementDetail(
-                                      announcement),
-                                  child: _AnnouncementItem(
-                                    icon: _iconFor(announcement),
-                                    iconColor:
-                                        _iconColorFor(announcement),
-                                    iconBgColor:
-                                        _iconBgFor(announcement),
-                                    title: announcement.title,
-                                    subtitle: announcement.authorName,
-                                    time: _timeLabel(
-                                        announcement.createdAt),
-                                    body: announcement.body,
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        children: [
+                          if (visible.isEmpty) ...[
+                            AppSpacing.gapHuge,
+                            EmptyStateWidget(
+                              illustration: const EmptyBoxIllustration(),
+                              icon: Icons.campaign_rounded,
+                              title: 'No announcements yet',
+                              subtitle:
+                                  'Announcements for this category will appear here.',
+                            ),
+                            AppSpacing.gapHuge,
+                          ] else ...[
+                            for (final section in {'TODAY', 'YESTERDAY'}) ...[
+                              if (visible.any(
+                                (announcement) =>
+                                    _sectionFor(announcement) == section,
+                              )) ...[
+                                _SectionHeader(title: section),
+                                AppSpacing.gapSm,
+                                for (final announcement in visible.where(
+                                  (item) => _sectionFor(item) == section,
+                                )) ...[
+                                  StaggeredFadeSlide(
+                                    index: announcementStaggerIndex++,
+                                    child: Pressable(
+                                      onTap: () =>
+                                          _openAnnouncementDetail(announcement),
+                                      child: _AnnouncementItem(
+                                        icon: _iconFor(announcement),
+                                        iconColor: _iconColorFor(announcement),
+                                        iconBgColor: _iconBgFor(announcement),
+                                        title: announcement.title,
+                                        subtitle: announcement.authorName,
+                                        time: _timeLabel(
+                                          announcement.createdAt,
+                                        ),
+                                        body: announcement.body,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
-                              AppSpacing.gapSm,
+                                  AppSpacing.gapSm,
+                                ],
+                                AppSpacing.gapSm,
+                              ],
                             ],
-                            AppSpacing.gapSm,
                           ],
-                        ],
-                      ],
-                      AppSpacing.gapXxl,
-                      Center(
-                        child: Text(
-                          'You\'re all caught up',
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                          AppSpacing.gapXxl,
+                          Center(
+                            child: Text(
+                              'You\'re all caught up',
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
                           ),
-                        ),
+                          AppSpacing.gapXl,
+                        ],
                       ),
-                      AppSpacing.gapXl,
-                    ],
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -439,7 +444,9 @@ class _AnnouncementItem extends StatelessWidget {
                 AppSpacing.gapXxs,
                 Text(
                   subtitle,
-                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 AppSpacing.gapSm,
                 Text(

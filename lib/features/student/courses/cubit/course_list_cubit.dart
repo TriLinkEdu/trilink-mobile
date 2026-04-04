@@ -14,15 +14,16 @@ class CourseListCubit extends Cubit<CourseListState> {
     emit(state.copyWith(status: CourseListStatus.loading));
     try {
       final subjects = await _repository.fetchSubjects();
-      emit(CourseListState(
-        status: CourseListStatus.loaded,
-        subjects: subjects,
-      ));
-    } catch (_) {
-      emit(state.copyWith(
-        status: CourseListStatus.error,
-        errorMessage: 'Unable to load courses.',
-      ));
+      emit(
+        CourseListState(status: CourseListStatus.loaded, subjects: subjects),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: CourseListStatus.error,
+          errorMessage: 'Unable to load courses: $e',
+        ),
+      );
     }
   }
 
@@ -30,15 +31,16 @@ class CourseListCubit extends Cubit<CourseListState> {
     emit(state.copyWith(topicsStatus: CourseListStatus.loading));
     try {
       final topics = await _repository.fetchTopics(subjectId);
-      emit(state.copyWith(
-        topicsStatus: CourseListStatus.loaded,
-        topics: topics,
-      ));
-    } catch (_) {
-      emit(state.copyWith(
-        topicsStatus: CourseListStatus.error,
-        errorMessage: 'Unable to load topics.',
-      ));
+      emit(
+        state.copyWith(topicsStatus: CourseListStatus.loaded, topics: topics),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          topicsStatus: CourseListStatus.error,
+          errorMessage: 'Unable to load topics: $e',
+        ),
+      );
     }
   }
 }

@@ -22,19 +22,23 @@ class GamificationCubit extends Cubit<GamificationState> {
         ),
         _repository.fetchAvailableQuizzes(),
       ]);
-      emit(GamificationState(
-        status: GamificationStatus.loaded,
-        streak: results[0] as StreakModel,
-        achievements: results[1] as List<AchievementModel>,
-        leaderboardEntries: results[2] as List<LeaderboardEntry>,
-        availableQuizzes: results[3] as List<QuizModel>,
-        isWeeklyRanking: state.isWeeklyRanking,
-      ));
-    } catch (_) {
-      emit(GamificationState(
-        status: GamificationStatus.loaded,
-        isWeeklyRanking: state.isWeeklyRanking,
-      ));
+      emit(
+        GamificationState(
+          status: GamificationStatus.loaded,
+          streak: results[0] as StreakModel,
+          achievements: results[1] as List<AchievementModel>,
+          leaderboardEntries: results[2] as List<LeaderboardEntry>,
+          availableQuizzes: results[3] as List<QuizModel>,
+          isWeeklyRanking: state.isWeeklyRanking,
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: GamificationStatus.error,
+          errorMessage: 'Unable to load gamification data: $e',
+        ),
+      );
     }
   }
 
@@ -46,6 +50,13 @@ class GamificationCubit extends Cubit<GamificationState> {
         next ? 'weekly' : 'monthly',
       );
       emit(state.copyWith(leaderboardEntries: entries));
-    } catch (_) {}
+    } catch (e) {
+      emit(
+        state.copyWith(
+          isWeeklyRanking: !next,
+          errorMessage: 'Unable to switch leaderboard period: $e',
+        ),
+      );
+    }
   }
 }

@@ -13,6 +13,7 @@ import '../../../../core/widgets/illustrations.dart';
 import '../../../../core/widgets/pressable.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../../../../core/widgets/staggered_animation.dart';
+import '../../shared/widgets/student_page_background.dart';
 import '../cubit/course_list_cubit.dart';
 import '../repositories/student_curriculum_repository.dart';
 
@@ -84,7 +85,7 @@ class _StudentCoursesView extends StatelessWidget {
       builder: (context, state) {
         return Scaffold(
           appBar: AppBar(title: const Text('My Courses')),
-          body: _buildBody(context, state),
+          body: StudentPageBackground(child: _buildBody(context, state)),
         );
       },
     );
@@ -166,10 +167,7 @@ class _CourseCard extends StatelessWidget {
         onTap: () {
           Navigator.of(context).pushNamed(
             RouteNames.studentCourseDetail,
-            arguments: {
-              'subjectId': subject.id,
-              'subjectName': subject.name,
-            },
+            arguments: {'subjectId': subject.id, 'subjectName': subject.name},
           );
         },
         child: Card(

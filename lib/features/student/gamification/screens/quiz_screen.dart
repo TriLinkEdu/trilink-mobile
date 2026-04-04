@@ -14,11 +14,7 @@ class QuizScreen extends StatelessWidget {
   final String subjectId;
   final String? chapterId;
 
-  const QuizScreen({
-    super.key,
-    required this.subjectId,
-    this.chapterId,
-  });
+  const QuizScreen({super.key, required this.subjectId, this.chapterId});
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +42,7 @@ class _QuizViewState extends State<_QuizView> {
   Future<void> _submitQuiz(ExamModel quiz) async {
     try {
       await context.read<QuizCubit>().submitQuiz(quiz.id, _answers);
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to submit quiz. Please retry.')),
@@ -80,10 +76,8 @@ class _QuizViewState extends State<_QuizView> {
         context.read<QuizCubit>().clearSubmitResult();
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (_) => QuizResultScreen(
-              result: result,
-              questions: quiz.questions,
-            ),
+            builder: (_) =>
+                QuizResultScreen(result: result, questions: quiz.questions),
           ),
         );
       },
@@ -105,9 +99,8 @@ class _QuizViewState extends State<_QuizView> {
               appBar: AppBar(title: const Text('Quiz')),
               body: AppErrorWidget(
                 message: state.errorMessage ?? 'Quiz not found.',
-                onRetry: () => context
-                    .read<QuizCubit>()
-                    .loadQuiz(widget.subjectId),
+                onRetry: () =>
+                    context.read<QuizCubit>().loadQuiz(widget.subjectId),
               ),
             );
           }
@@ -129,51 +122,48 @@ class _QuizViewState extends State<_QuizView> {
                     ),
                   )
                 : finished
-                    ? const Padding(
-                        padding: AppSpacing.paddingLg,
-                        child: ShimmerList(itemCount: 3),
-                      )
-                    : Padding(
-                        padding: AppSpacing.paddingLg,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            LinearProgressIndicator(
-                              value: (_questionIndex + 1) / quiz.questions.length,
-                            ),
-                            AppSpacing.gapLg,
-                            Text(
-                              'Question ${_questionIndex + 1} of ${quiz.questions.length}',
-                              style: const TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            AppSpacing.gapMd,
-                            Text(
-                              quiz.questions[_questionIndex].text,
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            AppSpacing.gapLg,
-                            ...List.generate(
-                              quiz.questions[_questionIndex].options.length,
-                              (index) => Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: SizedBox(
-                                  width: double.infinity,
-                                  child: OutlinedButton(
-                                    onPressed: () =>
-                                        _selectAnswer(quiz, index),
-                                    child: Text(
-                                      quiz.questions[_questionIndex]
-                                          .options[index],
-                                    ),
-                                  ),
+                ? const Padding(
+                    padding: AppSpacing.paddingLg,
+                    child: ShimmerList(itemCount: 3),
+                  )
+                : Padding(
+                    padding: AppSpacing.paddingLg,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        LinearProgressIndicator(
+                          value: (_questionIndex + 1) / quiz.questions.length,
+                        ),
+                        AppSpacing.gapLg,
+                        Text(
+                          'Question ${_questionIndex + 1} of ${quiz.questions.length}',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        AppSpacing.gapMd,
+                        Text(
+                          quiz.questions[_questionIndex].text,
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.w500),
+                        ),
+                        AppSpacing.gapLg,
+                        ...List.generate(
+                          quiz.questions[_questionIndex].options.length,
+                          (index) => Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton(
+                                onPressed: () => _selectAnswer(quiz, index),
+                                child: Text(
+                                  quiz.questions[_questionIndex].options[index],
                                 ),
                               ),
                             ),
-                          ],
+                          ),
                         ),
-                      ),
+                      ],
+                    ),
+                  ),
           );
         },
       ),

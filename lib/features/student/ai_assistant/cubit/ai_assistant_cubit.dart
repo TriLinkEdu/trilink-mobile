@@ -126,7 +126,7 @@ class AiAssistantCubit extends Cubit<AiAssistantState> {
         return decoded;
       }
       return const {};
-    } catch (_) {
+    } catch (e) {
       return const {};
     }
   }

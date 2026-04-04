@@ -9,6 +9,7 @@ import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/student_page_background.dart';
 import '../cubit/notifications_cubit.dart';
 import '../models/notification_model.dart';
 import '../repositories/student_notifications_repository.dart';
@@ -20,8 +21,9 @@ class StudentNotificationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => NotificationsCubit(sl<StudentNotificationsRepository>())
-        ..loadNotifications(),
+      create: (_) =>
+          NotificationsCubit(sl<StudentNotificationsRepository>())
+            ..loadNotifications(),
       child: const _NotificationsView(),
     );
   }
@@ -49,14 +51,15 @@ class _NotificationsViewState extends State<_NotificationsView> {
   }
 
   Future<void> _onTapNotification(NotificationModel notification) async {
-    await context.read<NotificationsCubit>().markNotificationRead(notification.id);
+    await context.read<NotificationsCubit>().markNotificationRead(
+      notification.id,
+    );
 
     if (!mounted) return;
     if (notification.routeName != null) {
-      Navigator.of(context).pushNamed(
-        notification.routeName!,
-        arguments: notification.routeArgs,
-      );
+      Navigator.of(
+        context,
+      ).pushNamed(notification.routeName!, arguments: notification.routeArgs);
     } else {
       showDialog<void>(
         context: context,
@@ -98,104 +101,117 @@ class _NotificationsViewState extends State<_NotificationsView> {
           ),
         ],
       ),
-      body: BlocBuilder<NotificationsCubit, NotificationsState>(
-        builder: (context, state) {
-          final loading = state.status == NotificationsStatus.initial ||
-              state.status == NotificationsStatus.loading;
-          if (loading) {
-            return const Padding(
-              padding: AppSpacing.paddingLg,
-              child: ShimmerList(),
-            );
-          }
-          if (state.status == NotificationsStatus.error) {
-            return AppErrorWidget(
-              message: state.errorMessage ??
-                  'Unable to load notifications.',
-              onRetry: () =>
-                  context.read<NotificationsCubit>().loadNotifications(),
-            );
-          }
+      body: StudentPageBackground(
+        child: BlocBuilder<NotificationsCubit, NotificationsState>(
+          builder: (context, state) {
+            final loading =
+                state.status == NotificationsStatus.initial ||
+                state.status == NotificationsStatus.loading;
+            if (loading) {
+              return const Padding(
+                padding: AppSpacing.paddingLg,
+                child: ShimmerList(),
+              );
+            }
+            if (state.status == NotificationsStatus.error) {
+              return AppErrorWidget(
+                message: state.errorMessage ?? 'Unable to load notifications.',
+                onRetry: () =>
+                    context.read<NotificationsCubit>().loadNotifications(),
+              );
+            }
 
-          final visibleItems = _visibleItems(state.items);
+            final visibleItems = _visibleItems(state.items);
 
-          return Column(
-            children: [
-              AppSpacing.gapMd,
-              Padding(
-                padding: AppSpacing.horizontalLg,
-                child: Row(
-                  children: [
-                    ChoiceChip(
-                      label: const Text('All'),
-                      selected: _filterIndex == 0,
-                      onSelected: (_) =>
-                          setState(() => _filterIndex = 0),
-                    ),
-                    AppSpacing.hGapSm,
-                    ChoiceChip(
-                      label: const Text('Unread'),
-                      selected: _filterIndex == 1,
-                      onSelected: (_) =>
-                          setState(() => _filterIndex = 1),
-                    ),
-                  ],
+            return Column(
+              children: [
+                AppSpacing.gapMd,
+                Padding(
+                  padding: AppSpacing.horizontalLg,
+                  child: Row(
+                    children: [
+                      ChoiceChip(
+                        label: const Text('All'),
+                        selected: _filterIndex == 0,
+                        showCheckmark: false,
+                        selectedColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer.withAlpha(160),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerLow,
+                        onSelected: (_) => setState(() => _filterIndex = 0),
+                      ),
+                      AppSpacing.hGapSm,
+                      ChoiceChip(
+                        label: const Text('Unread'),
+                        selected: _filterIndex == 1,
+                        showCheckmark: false,
+                        selectedColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer.withAlpha(160),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerLow,
+                        onSelected: (_) => setState(() => _filterIndex = 1),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              AppSpacing.gapSm,
-              Expanded(
-                child: BrandedRefreshIndicator(
-                  onRefresh: () => context
-                      .read<NotificationsCubit>()
-                      .loadNotifications(),
-                  child: visibleItems.isEmpty
-                      ? LayoutBuilder(
-                          builder: (context, constraints) {
-                            return SingleChildScrollView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  minHeight: constraints.maxHeight,
+                AppSpacing.gapSm,
+                Expanded(
+                  child: BrandedRefreshIndicator(
+                    onRefresh: () =>
+                        context.read<NotificationsCubit>().loadNotifications(),
+                    child: visibleItems.isEmpty
+                        ? LayoutBuilder(
+                            builder: (context, constraints) {
+                              return SingleChildScrollView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    minHeight: constraints.maxHeight,
+                                  ),
+                                  child: EmptyStateWidget(
+                                    illustration: const EmptyBoxIllustration(),
+                                    icon: Icons.notifications_none_rounded,
+                                    title: _filterIndex == 1
+                                        ? 'No unread notifications'
+                                        : 'No notifications',
+                                    subtitle: _filterIndex == 1
+                                        ? 'All caught up — nothing new!'
+                                        : 'You are all caught up!',
+                                  ),
                                 ),
-                                child: EmptyStateWidget(
-                                  illustration: const EmptyBoxIllustration(),
-                                  icon: Icons.notifications_none_rounded,
-                                  title: _filterIndex == 1
-                                      ? 'No unread notifications'
-                                      : 'No notifications',
-                                  subtitle: _filterIndex == 1
-                                      ? 'All caught up — nothing new!'
-                                      : 'You are all caught up!',
+                              );
+                            },
+                          )
+                        : ListView.separated(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            itemCount: visibleItems.length,
+                            separatorBuilder: (_, _) =>
+                                const Divider(height: 1),
+                            itemBuilder: (context, index) {
+                              final item = visibleItems[index];
+                              return StaggeredFadeSlide(
+                                index: index,
+                                child: NotificationTile(
+                                  isRead: item.isRead,
+                                  title: item.title,
+                                  body: item.body,
+                                  time: _timeLabel(item.createdAt),
+                                  onTap: () => _onTapNotification(item),
+                                  onToggleRead: () => _onToggleRead(item),
                                 ),
-                              ),
-                            );
-                          },
-                        )
-                      : ListView.separated(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          itemCount: visibleItems.length,
-                          separatorBuilder: (_, _) =>
-                              const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final item = visibleItems[index];
-                            return StaggeredFadeSlide(
-                              index: index,
-                              child: NotificationTile(
-                                isRead: item.isRead,
-                                title: item.title,
-                                body: item.body,
-                                time: _timeLabel(item.createdAt),
-                                onTap: () => _onTapNotification(item),
-                                onToggleRead: () => _onToggleRead(item),
-                              ),
-                            );
-                          },
-                        ),
+                              );
+                            },
+                          ),
+                  ),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }

@@ -23,7 +23,8 @@ class StudentAssignmentsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) =>
-          AssignmentsCubit(sl<StudentAssignmentsRepository>())..loadAssignments(),
+          AssignmentsCubit(sl<StudentAssignmentsRepository>())
+            ..loadAssignments(),
       child: const _StudentAssignmentsView(),
     );
   }
@@ -49,130 +50,161 @@ class _StudentAssignmentsView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<AssignmentsCubit, AssignmentsState>(
       builder: (context, state) {
-        final loading = state.status == AssignmentsStatus.loading ||
+        final loading =
+            state.status == AssignmentsStatus.loading ||
             state.status == AssignmentsStatus.initial;
         return Scaffold(
           appBar: AppBar(title: const Text('Assignments')),
-          body: loading
-              ? const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: ShimmerList(),
-                )
-              : BrandedRefreshIndicator(
-                  onRefresh: () =>
-                      context.read<AssignmentsCubit>().loadAssignments(),
-                  child: state.status == AssignmentsStatus.error
-                      ? LayoutBuilder(
-                          builder: (context, constraints) {
-                            return SingleChildScrollView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  minHeight: constraints.maxHeight,
-                                ),
-                                child: AppErrorWidget(
-                                  message: state.errorMessage ??
-                                      'Unable to load assignments.',
-                                  onRetry: () => context
-                                      .read<AssignmentsCubit>()
-                                      .loadAssignments(),
-                                ),
-                              ),
-                            );
-                          },
-                        )
-                      : state.assignments.isEmpty
-                          ? LayoutBuilder(
-                              builder: (context, constraints) {
-                                return SingleChildScrollView(
-                                  physics: const AlwaysScrollableScrollPhysics(),
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      minHeight: constraints.maxHeight,
-                                    ),
-                                    child: const EmptyStateWidget(
-                                      illustration: EmptyBoxIllustration(),
-                                      icon: Icons.assignment_turned_in_rounded,
-                                      title: 'No assignments',
-                                      subtitle:
-                                          'Assignments will appear here when available.',
-                                    ),
+          body: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: Theme.of(context).brightness == Brightness.dark
+                    ? const [Color(0xFF0A1525), Color(0xFF0F2237)]
+                    : const [Color(0xFFF0F8FF), Color(0xFFE6F4FF)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: loading
+                ? const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: ShimmerList(),
+                  )
+                : BrandedRefreshIndicator(
+                    onRefresh: () =>
+                        context.read<AssignmentsCubit>().loadAssignments(),
+                    child: state.status == AssignmentsStatus.error
+                        ? LayoutBuilder(
+                            builder: (context, constraints) {
+                              return SingleChildScrollView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    minHeight: constraints.maxHeight,
                                   ),
-                                );
-                              },
-                            )
-                          : ListView.separated(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              padding: const EdgeInsets.all(16),
-                              itemCount: state.assignments.length,
-                              separatorBuilder: (_, _) =>
-                                  AppSpacing.gapMd,
-                              itemBuilder: (context, index) {
-                                final assignment = state.assignments[index];
-                                Future<void> openDetail() async {
-                                  final result = await Navigator.pushNamed(
-                                    context,
-                                    RouteNames.studentAssignmentDetail,
-                                    arguments: {
-                                      'assignmentId': assignment.id,
-                                    },
-                                  );
-                                  if (result == true && context.mounted) {
-                                    context
+                                  child: AppErrorWidget(
+                                    message:
+                                        state.errorMessage ??
+                                        'Unable to load assignments.',
+                                    onRetry: () => context
                                         .read<AssignmentsCubit>()
-                                        .loadAssignments();
-                                  }
+                                        .loadAssignments(),
+                                  ),
+                                ),
+                              );
+                            },
+                          )
+                        : state.assignments.isEmpty
+                        ? LayoutBuilder(
+                            builder: (context, constraints) {
+                              return SingleChildScrollView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    minHeight: constraints.maxHeight,
+                                  ),
+                                  child: const EmptyStateWidget(
+                                    illustration: EmptyBoxIllustration(),
+                                    icon: Icons.assignment_turned_in_rounded,
+                                    title: 'No assignments',
+                                    subtitle:
+                                        'Assignments will appear here when available.',
+                                  ),
+                                ),
+                              );
+                            },
+                          )
+                        : ListView.separated(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.all(16),
+                            itemCount: state.assignments.length,
+                            separatorBuilder: (_, _) => AppSpacing.gapMd,
+                            itemBuilder: (context, index) {
+                              final assignment = state.assignments[index];
+                              Future<void> openDetail() async {
+                                final result = await Navigator.pushNamed(
+                                  context,
+                                  RouteNames.studentAssignmentDetail,
+                                  arguments: {'assignmentId': assignment.id},
+                                );
+                                if (result == true && context.mounted) {
+                                  context
+                                      .read<AssignmentsCubit>()
+                                      .loadAssignments();
                                 }
-                                return StaggeredFadeSlide(
-                                  index: index,
-                                  child: Pressable(
-                                    onTap: openDetail,
-                                    enableHaptic: false,
-                                    child: Card(
-                                      child: ListTile(
-                                        onTap: openDetail,
-                                        contentPadding:
-                                            const EdgeInsets.all(14),
-                                        title: Text(
-                                          assignment.title,
-                                          style: const TextStyle(
-                                              fontWeight: FontWeight.w600),
-                                        ),
-                                        subtitle: Padding(
-                                          padding:
-                                              const EdgeInsets.only(top: 6),
-                                          child: Text(
-                                            '${assignment.subject} • ${assignment.dueDateLabel}',
-                                          ),
-                                        ),
-                                        trailing: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 8, vertical: 4),
-                                          decoration: BoxDecoration(
-                                            color: _statusColor(
-                                                    assignment.status)
-                                                .withAlpha(30),
-                                            borderRadius: AppRadius.borderSm,
-                                          ),
-                                          child: Text(
-                                            assignment.statusLabel,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodySmall
-                                                ?.copyWith(
-                                              color: _statusColor(
-                                                  assignment.status),
-                                              fontWeight: FontWeight.w600,
+                              }
+
+                              return StaggeredFadeSlide(
+                                index: index,
+                                child: Pressable(
+                                  onTap: openDetail,
+                                  enableHaptic: false,
+                                  child: Card(
+                                    child: ListTile(
+                                      onTap: openDetail,
+                                      contentPadding: const EdgeInsets.all(16),
+                                      title: Text(
+                                        assignment.title,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w700,
                                             ),
+                                      ),
+                                      subtitle: Padding(
+                                        padding: const EdgeInsets.only(top: 6),
+                                        child: Text(
+                                          '${assignment.subject} • ${assignment.dueDateLabel}',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurfaceVariant,
+                                                height: 1.3,
+                                              ),
+                                        ),
+                                      ),
+                                      trailing: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 5,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: _statusColor(
+                                            assignment.status,
+                                          ).withAlpha(22),
+                                          borderRadius: AppRadius.borderSm,
+                                          border: Border.all(
+                                            color: _statusColor(
+                                              assignment.status,
+                                            ).withAlpha(36),
                                           ),
+                                        ),
+                                        child: Text(
+                                          assignment.statusLabel,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(
+                                                color: _statusColor(
+                                                  assignment.status,
+                                                ),
+                                                fontWeight: FontWeight.w700,
+                                                letterSpacing: 0.2,
+                                              ),
                                         ),
                                       ),
                                     ),
                                   ),
-                                );
-                              },
-                            ),
-                ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+          ),
         );
       },
     );

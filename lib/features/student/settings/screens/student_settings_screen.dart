@@ -6,6 +6,7 @@ import '../../../../core/services/storage_service.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/theme_notifier.dart';
+import '../../shared/widgets/student_page_background.dart';
 import '../../../auth/cubit/auth_cubit.dart';
 
 class StudentSettingsScreen extends StatefulWidget {
@@ -30,8 +31,10 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
 
   void _loadPreferences() {
     setState(() {
-      _notificationsEnabled =
-          _storage.getBool('pushNotifications', defaultValue: true);
+      _notificationsEnabled = _storage.getBool(
+        'pushNotifications',
+        defaultValue: true,
+      );
       _biometricLock = _storage.getBool('biometricLock');
       _language = _storage.getString('language') ?? 'English';
     });
@@ -50,17 +53,16 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
               AppSpacing.gapMd,
               Text(
                 'Choose Language',
-                style: sheetTheme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                style: sheetTheme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               AppSpacing.gapMd,
               ...options.map(
                 (option) => ListTile(
                   title: Text(option),
                   trailing: option == _language
-                      ? Icon(
-                          Icons.check,
-                          color: sheetTheme.colorScheme.primary,
-                        )
+                      ? Icon(Icons.check, color: sheetTheme.colorScheme.primary)
                       : null,
                   onTap: () => Navigator.pop(sheetContext, option),
                 ),
@@ -83,8 +85,9 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Log Out'),
-        content:
-            const Text('Are you sure you want to log out of your account?'),
+        content: const Text(
+          'Are you sure you want to log out of your account?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -103,8 +106,10 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
     await context.read<AuthCubit>().logout();
     if (!mounted) return;
 
-    Navigator.of(context, rootNavigator: true)
-        .pushNamedAndRemoveUntil(RouteNames.login, (_) => false);
+    Navigator.of(
+      context,
+      rootNavigator: true,
+    ).pushNamedAndRemoveUntil(RouteNames.login, (_) => false);
   }
 
   @override
@@ -113,87 +118,94 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _SectionCard(
-            title: 'Display',
-            children: [
-              SwitchListTile.adaptive(
-                value: ThemeNotifier.instance.isDark,
-                onChanged: (value) {
-                  if (value) {
-                    ThemeNotifier.instance.setDark();
-                  } else {
-                    ThemeNotifier.instance.setLight();
-                  }
-                  setState(() {});
-                },
-                title: const Text('Dark Mode'),
-                subtitle:
-                    const Text('Use a darker theme for low-light viewing.'),
-              ),
-            ],
-          ),
-          AppSpacing.gapMd,
-          _SectionCard(
-            title: 'Notifications',
-            children: [
-              SwitchListTile.adaptive(
-                value: _notificationsEnabled,
-                onChanged: (value) {
-                  setState(() => _notificationsEnabled = value);
-                  _storage.setBool('pushNotifications', value);
-                },
-                title: const Text('Push Notifications'),
-                subtitle: const Text(
-                    'Receive updates about classes and announcements.'),
-              ),
-            ],
-          ),
-          AppSpacing.gapMd,
-          _SectionCard(
-            title: 'Privacy',
-            children: [
-              SwitchListTile.adaptive(
-                value: _biometricLock,
-                onChanged: (value) {
-                  setState(() => _biometricLock = value);
-                  _storage.setBool('biometricLock', value);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        value
-                            ? 'Biometric lock enabled for next sign-in.'
-                            : 'Biometric lock disabled.',
-                      ),
-                    ),
-                  );
-                },
-                title: const Text('Biometric Lock'),
-                subtitle: const Text(
-                    'Require biometric verification on app open.'),
-              ),
-              ListTile(
-                title: const Text('Language'),
-                subtitle: Text(_language),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: _showLanguagePicker,
-              ),
-            ],
-          ),
-          AppSpacing.gapXl,
-          OutlinedButton.icon(
-            onPressed: _confirmLogout,
-            icon: Icon(Icons.logout, color: theme.colorScheme.error),
-            label:
-                Text('Log Out', style: TextStyle(color: theme.colorScheme.error)),
-            style: OutlinedButton.styleFrom(
-              side: BorderSide(color: theme.colorScheme.error),
-              minimumSize: const Size.fromHeight(46),
+      body: StudentPageBackground(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _SectionCard(
+              title: 'Display',
+              children: [
+                SwitchListTile.adaptive(
+                  value: ThemeNotifier.instance.isDark,
+                  onChanged: (value) {
+                    if (value) {
+                      ThemeNotifier.instance.setDark();
+                    } else {
+                      ThemeNotifier.instance.setLight();
+                    }
+                    setState(() {});
+                  },
+                  title: const Text('Dark Mode'),
+                  subtitle: const Text(
+                    'Use a darker theme for low-light viewing.',
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
+            AppSpacing.gapMd,
+            _SectionCard(
+              title: 'Notifications',
+              children: [
+                SwitchListTile.adaptive(
+                  value: _notificationsEnabled,
+                  onChanged: (value) {
+                    setState(() => _notificationsEnabled = value);
+                    _storage.setBool('pushNotifications', value);
+                  },
+                  title: const Text('Push Notifications'),
+                  subtitle: const Text(
+                    'Receive updates about classes and announcements.',
+                  ),
+                ),
+              ],
+            ),
+            AppSpacing.gapMd,
+            _SectionCard(
+              title: 'Privacy',
+              children: [
+                SwitchListTile.adaptive(
+                  value: _biometricLock,
+                  onChanged: (value) {
+                    setState(() => _biometricLock = value);
+                    _storage.setBool('biometricLock', value);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          value
+                              ? 'Biometric lock enabled for next sign-in.'
+                              : 'Biometric lock disabled.',
+                        ),
+                      ),
+                    );
+                  },
+                  title: const Text('Biometric Lock'),
+                  subtitle: const Text(
+                    'Require biometric verification on app open.',
+                  ),
+                ),
+                ListTile(
+                  title: const Text('Language'),
+                  subtitle: Text(_language),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: _showLanguagePicker,
+                ),
+              ],
+            ),
+            AppSpacing.gapXl,
+            OutlinedButton.icon(
+              onPressed: _confirmLogout,
+              icon: Icon(Icons.logout, color: theme.colorScheme.error),
+              label: Text(
+                'Log Out',
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: theme.colorScheme.error),
+                minimumSize: const Size.fromHeight(46),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -11,6 +11,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/pressable.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/student_page_background.dart';
 import '../models/grade_model.dart';
 import '../repositories/student_grades_repository.dart';
 
@@ -63,7 +64,7 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
         _subjectGrades = grades;
         _isLoading = false;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() {
         _error = 'Could not load ${widget.subjectName} grades.';
@@ -77,9 +78,9 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
     await Future<void>.delayed(const Duration(milliseconds: 1500));
     if (!mounted) return;
     setState(() => _isDownloading = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Report saved')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Report saved')));
   }
 
   @override
@@ -87,276 +88,277 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding:
-                  EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
-              child: Row(
-                children: [
-                  Pressable(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 20,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      widget.subjectName,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
+      body: StudentPageBackground(
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.md,
+                ),
+                child: Row(
+                  children: [
+                    Pressable(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 20,
                         color: theme.colorScheme.onSurface,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 40),
-                ],
+                    Expanded(
+                      child: Text(
+                        widget.subjectName,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 40),
+                  ],
+                ),
               ),
-            ),
-            Expanded(
-              child: _isLoading
-                  ? const Padding(
-                      padding: AppSpacing.horizontalXl,
-                      child: ShimmerList(itemCount: 6, itemHeight: 72),
-                    )
-                  : _error != null
-                      ? AppErrorWidget(
-                          message: _error!,
-                          onRetry: _loadSubjectGrades,
-                        )
-                      : _subjectGrades.isEmpty
-                          ? const EmptyStateWidget(
-                              illustration: GraduationCapIllustration(),
-                              icon: Icons.assignment_rounded,
-                              title: 'No assessments yet',
-                              subtitle:
-                                  'Assessment results for this subject will appear here.',
-                            )
-                          : SingleChildScrollView(
-                              padding: AppSpacing.horizontalXl,
+              Expanded(
+                child: _isLoading
+                    ? const Padding(
+                        padding: AppSpacing.horizontalXl,
+                        child: ShimmerList(itemCount: 6, itemHeight: 72),
+                      )
+                    : _error != null
+                    ? AppErrorWidget(
+                        message: _error!,
+                        onRetry: _loadSubjectGrades,
+                      )
+                    : _subjectGrades.isEmpty
+                    ? const EmptyStateWidget(
+                        illustration: GraduationCapIllustration(),
+                        icon: Icons.assignment_rounded,
+                        title: 'No assessments yet',
+                        subtitle:
+                            'Assessment results for this subject will appear here.',
+                      )
+                    : SingleChildScrollView(
+                        padding: AppSpacing.horizontalXl,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 24),
+                              decoration: BoxDecoration(
+                                gradient: Theme.of(context).ext.heroGradient,
+                                borderRadius: AppRadius.borderXl,
+                              ),
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 24),
-                                    decoration: BoxDecoration(
-                                      gradient: Theme.of(context).ext.heroGradient,
-                                      borderRadius: AppRadius.borderXl,
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        Text(
-                                          'CURRENT AVERAGE',
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(
-                                            color: theme.colorScheme.onPrimary
-                                                .withAlpha(180),
-                                            fontWeight: FontWeight.w600,
-                                            letterSpacing: 1,
-                                          ),
-                                        ),
-                                        AppSpacing.gapSm,
-                                        Center(
-                                          child: Hero(
-                                            tag: 'grade-hero-${widget.subjectId}',
-                                            child: Material(
-                                              color: Colors.transparent,
-                                              child: AnimatedCounter(
-                                                value: _average,
-                                                showTrend: true,
-                                                style: theme
-                                                    .textTheme.displayLarge
-                                                    ?.copyWith(
-                                                  fontWeight: FontWeight.bold,
-                                                  color: theme
-                                                      .colorScheme.onPrimary,
-                                                  height: 1,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        AppSpacing.gapSm,
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 14,
-                                            vertical: 5,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: _gradeChipColor(
-                                                    _letterGradeForAverage(
-                                                        _average))
-                                                .withAlpha(180),
-                                            borderRadius: AppRadius.borderSm,
-                                          ),
-                                          child: Text(
-                                            'Grade ${_letterGradeForAverage(_average)}',
-                                            style: theme.textTheme.labelLarge
-                                                ?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                              color: theme.colorScheme.onPrimary,
-                                            ),
-                                          ),
-                                        ),
-                                        AppSpacing.gapLg,
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceEvenly,
-                                          children: [
-                                            _StatBox(
-                                              label: 'Highest Score',
-                                              value:
-                                                  '${_highest.toStringAsFixed(0)}%',
-                                            ),
-                                            _StatBox(
-                                              label: 'Lowest Score',
-                                              value:
-                                                  '${_lowest.toStringAsFixed(0)}%',
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  AppSpacing.gapXxl,
                                   Text(
-                                    'Grade Distribution',
-                                    style: theme.textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: theme.colorScheme.onSurface,
+                                    'CURRENT AVERAGE',
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: theme.colorScheme.onPrimary
+                                          .withAlpha(180),
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 1,
                                     ),
                                   ),
-                                  AppSpacing.gapMd,
-                                  _GradeBar(
-                                    grade: 'A',
-                                    count: _bucketCount(
-                                        _subjectGrades, (p) => p >= 90),
-                                    maxCount: _subjectGrades.length,
-                                  ),
                                   AppSpacing.gapSm,
-                                  _GradeBar(
-                                    grade: 'B',
-                                    count: _bucketCount(_subjectGrades,
-                                        (p) => p >= 80 && p < 90),
-                                    maxCount: _subjectGrades.length,
-                                  ),
-                                  AppSpacing.gapSm,
-                                  _GradeBar(
-                                    grade: 'C',
-                                    count: _bucketCount(_subjectGrades,
-                                        (p) => p >= 70 && p < 80),
-                                    maxCount: _subjectGrades.length,
-                                  ),
-                                  AppSpacing.gapSm,
-                                  _GradeBar(
-                                    grade: 'D',
-                                    count: _bucketCount(
-                                        _subjectGrades, (p) => p < 70),
-                                    maxCount: _subjectGrades.length,
-                                  ),
-                                  AppSpacing.gapXxxl,
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'Assessments',
-                                        style: theme.textTheme.titleSmall
-                                            ?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          color: theme.colorScheme.onSurface,
+                                  Center(
+                                    child: Hero(
+                                      tag: 'grade-hero-${widget.subjectId}',
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        child: AnimatedCounter(
+                                          value: _average,
+                                          showTrend: true,
+                                          style: theme.textTheme.displayLarge
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                color:
+                                                    theme.colorScheme.onPrimary,
+                                                height: 1,
+                                              ),
                                         ),
                                       ),
-                                      TextButton(
-                                        onPressed: () {
-                                          setState(() =>
-                                              _sortByDateDescending =
-                                                  !_sortByDateDescending);
-                                        },
-                                        child: Text(
-                                          _sortByDateDescending
-                                              ? 'Sort by Date ↓'
-                                              : 'Sort by Date ↑',
-                                          style: theme.textTheme.labelLarge
-                                              ?.copyWith(
-                                            color: theme.colorScheme.primary,
+                                    ),
+                                  ),
+                                  AppSpacing.gapSm,
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _gradeChipColor(
+                                        _letterGradeForAverage(_average),
+                                      ).withAlpha(180),
+                                      borderRadius: AppRadius.borderSm,
+                                    ),
+                                    child: Text(
+                                      'Grade ${_letterGradeForAverage(_average)}',
+                                      style: theme.textTheme.labelLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: theme.colorScheme.onPrimary,
                                           ),
-                                        ),
+                                    ),
+                                  ),
+                                  AppSpacing.gapLg,
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      _StatBox(
+                                        label: 'Highest Score',
+                                        value:
+                                            '${_highest.toStringAsFixed(0)}%',
+                                      ),
+                                      _StatBox(
+                                        label: 'Lowest Score',
+                                        value: '${_lowest.toStringAsFixed(0)}%',
                                       ),
                                     ],
                                   ),
-                                  AppSpacing.gapSm,
-                                  for (final assessment
-                                      in _sortedAssessments) ...[
-                                    _AssessmentRow(
-                                      icon: assessment.assessmentName
-                                              .toLowerCase()
-                                              .contains('quiz')
-                                          ? Icons.quiz_rounded
-                                          : Icons.assignment_rounded,
-                                      title: assessment.assessmentName,
-                                      date: _formatDate(assessment.date),
-                                      score:
-                                          '${assessment.percentage.toStringAsFixed(0)}%',
-                                      grade: assessment.letterGrade,
-                                      gradeColor: _gradeColor(
-                                          assessment.percentage),
-                                    ),
-                                    AppSpacing.gapSm,
-                                  ],
-                                  AppSpacing.gapXxl,
-                                  SizedBox(
-                                    width: double.infinity,
-                                    height: 50,
-                                    child: ElevatedButton.icon(
-                                      onPressed: _isDownloading
-                                          ? null
-                                          : _downloadReport,
-                                      icon: _isDownloading
-                                          ? SizedBox(
-                                              width: 20,
-                                              height: 20,
-                                              child:
-                                                  CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                color: theme
-                                                    .colorScheme.onPrimary,
-                                              ),
-                                            )
-                                          : const Icon(
-                                              Icons.download_rounded,
-                                              size: 20),
-                                      label: Text(_isDownloading
-                                          ? 'Preparing...'
-                                          : 'Download Report PDF'),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor:
-                                            theme.colorScheme.primary,
-                                        foregroundColor:
-                                            theme.colorScheme.onPrimary,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: AppRadius.borderMd,
-                                        ),
-                                        elevation: 0,
-                                        textStyle: theme.textTheme.titleSmall
-                                            ?.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  AppSpacing.gapXxl,
                                 ],
                               ),
                             ),
-            ),
-          ],
+                            AppSpacing.gapXxl,
+                            Text(
+                              'Grade Distribution',
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
+                            AppSpacing.gapMd,
+                            _GradeBar(
+                              grade: 'A',
+                              count: _bucketCount(
+                                _subjectGrades,
+                                (p) => p >= 90,
+                              ),
+                              maxCount: _subjectGrades.length,
+                            ),
+                            AppSpacing.gapSm,
+                            _GradeBar(
+                              grade: 'B',
+                              count: _bucketCount(
+                                _subjectGrades,
+                                (p) => p >= 80 && p < 90,
+                              ),
+                              maxCount: _subjectGrades.length,
+                            ),
+                            AppSpacing.gapSm,
+                            _GradeBar(
+                              grade: 'C',
+                              count: _bucketCount(
+                                _subjectGrades,
+                                (p) => p >= 70 && p < 80,
+                              ),
+                              maxCount: _subjectGrades.length,
+                            ),
+                            AppSpacing.gapSm,
+                            _GradeBar(
+                              grade: 'D',
+                              count: _bucketCount(
+                                _subjectGrades,
+                                (p) => p < 70,
+                              ),
+                              maxCount: _subjectGrades.length,
+                            ),
+                            AppSpacing.gapXxxl,
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Assessments',
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.colorScheme.onSurface,
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    setState(
+                                      () => _sortByDateDescending =
+                                          !_sortByDateDescending,
+                                    );
+                                  },
+                                  child: Text(
+                                    _sortByDateDescending
+                                        ? 'Sort by Date ↓'
+                                        : 'Sort by Date ↑',
+                                    style: theme.textTheme.labelLarge?.copyWith(
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            AppSpacing.gapSm,
+                            for (final assessment in _sortedAssessments) ...[
+                              _AssessmentRow(
+                                icon:
+                                    assessment.assessmentName
+                                        .toLowerCase()
+                                        .contains('quiz')
+                                    ? Icons.quiz_rounded
+                                    : Icons.assignment_rounded,
+                                title: assessment.assessmentName,
+                                date: _formatDate(assessment.date),
+                                score:
+                                    '${assessment.percentage.toStringAsFixed(0)}%',
+                                grade: assessment.letterGrade,
+                                gradeColor: _gradeColor(assessment.percentage),
+                              ),
+                              AppSpacing.gapSm,
+                            ],
+                            AppSpacing.gapXxl,
+                            SizedBox(
+                              width: double.infinity,
+                              height: 50,
+                              child: ElevatedButton.icon(
+                                onPressed: _isDownloading
+                                    ? null
+                                    : _downloadReport,
+                                icon: _isDownloading
+                                    ? SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: theme.colorScheme.onPrimary,
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.download_rounded,
+                                        size: 20,
+                                      ),
+                                label: Text(
+                                  _isDownloading
+                                      ? 'Preparing...'
+                                      : 'Download Report PDF',
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: theme.colorScheme.primary,
+                                  foregroundColor: theme.colorScheme.onPrimary,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: AppRadius.borderMd,
+                                  ),
+                                  elevation: 0,
+                                  textStyle: theme.textTheme.titleSmall
+                                      ?.copyWith(fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                            ),
+                            AppSpacing.gapXxl,
+                          ],
+                        ),
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -417,8 +419,18 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
 
   String _formatDate(DateTime date) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
@@ -550,7 +562,10 @@ class _AssessmentRow extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.md,
+      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: AppRadius.borderMd,

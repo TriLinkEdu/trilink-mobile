@@ -19,7 +19,7 @@ class ChatCubit extends Cubit<ChatState> {
       emit(
         state.copyWith(
           status: ChatStatus.error,
-          errorMessage: 'Unable to load conversations: $e',
+          errorMessage: 'Unable to load conversations.',
         ),
       );
     }
@@ -42,7 +42,7 @@ class ChatCubit extends Cubit<ChatState> {
       emit(
         state.copyWith(
           status: ChatStatus.error,
-          errorMessage: 'Unable to create conversation: $e',
+          errorMessage: 'Unable to create conversation.',
         ),
       );
       return null;

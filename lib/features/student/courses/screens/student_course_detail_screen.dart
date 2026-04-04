@@ -13,6 +13,7 @@ import '../../../../core/widgets/illustrations.dart';
 import '../../../../core/widgets/pressable.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../../../../core/widgets/staggered_animation.dart';
+import '../../shared/widgets/student_page_background.dart';
 import '../cubit/course_list_cubit.dart';
 import '../repositories/student_curriculum_repository.dart';
 
@@ -30,11 +31,9 @@ class StudentCourseDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) =>
-          CourseListCubit(sl<StudentCurriculumRepository>())..loadTopics(subjectId),
-      child: _CourseDetailView(
-        subjectId: subjectId,
-        subjectName: subjectName,
-      ),
+          CourseListCubit(sl<StudentCurriculumRepository>())
+            ..loadTopics(subjectId),
+      child: _CourseDetailView(subjectId: subjectId, subjectName: subjectName),
     );
   }
 }
@@ -43,10 +42,7 @@ class _CourseDetailView extends StatelessWidget {
   final String subjectId;
   final String subjectName;
 
-  const _CourseDetailView({
-    required this.subjectId,
-    required this.subjectName,
-  });
+  const _CourseDetailView({required this.subjectId, required this.subjectName});
 
   static const _subjectColors = <String, Color>{
     'mathematics': AppColors.mathematics,
@@ -111,7 +107,7 @@ class _CourseDetailView extends StatelessWidget {
       builder: (context, state) {
         return Scaffold(
           appBar: AppBar(title: Text(subjectName)),
-          body: _buildBody(context, state),
+          body: StudentPageBackground(child: _buildBody(context, state)),
         );
       },
     );
@@ -188,9 +184,9 @@ class _CourseDetailView extends StatelessWidget {
             child: _ResourcesButton(
               color: _color,
               onTap: () {
-                Navigator.of(context).pushNamed(
-                  RouteNames.studentCourseResources,
-                );
+                Navigator.of(
+                  context,
+                ).pushNamed(RouteNames.studentCourseResources);
               },
             ),
           ),
@@ -224,9 +220,7 @@ class _SubjectHeader extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.borderLg,
-        side: BorderSide(
-          color: color.withAlpha(40),
-        ),
+        side: BorderSide(color: color.withAlpha(40)),
       ),
       color: color.withAlpha(8),
       child: Padding(
@@ -320,7 +314,10 @@ class _TopicExpansionTile extends StatelessWidget {
         child: Theme(
           data: theme.copyWith(dividerColor: Colors.transparent),
           child: ExpansionTile(
-            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            tilePadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 4,
+            ),
             childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             leading: Container(
               width: 36,
@@ -329,11 +326,7 @@ class _TopicExpansionTile extends StatelessWidget {
                 color: color.withAlpha(20),
                 borderRadius: AppRadius.borderSm,
               ),
-              child: Icon(
-                Icons.topic_rounded,
-                color: color,
-                size: 18,
-              ),
+              child: Icon(Icons.topic_rounded, color: color, size: 18),
             ),
             title: Text(
               topic.name,
@@ -442,10 +435,7 @@ class _ResourcesButton extends StatelessWidget {
   final Color color;
   final VoidCallback onTap;
 
-  const _ResourcesButton({
-    required this.color,
-    required this.onTap,
-  });
+  const _ResourcesButton({required this.color, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -471,11 +461,7 @@ class _ResourcesButton extends StatelessWidget {
                   color: color.withAlpha(24),
                   borderRadius: AppRadius.borderSm,
                 ),
-                child: Icon(
-                  Icons.folder_open_rounded,
-                  color: color,
-                  size: 18,
-                ),
+                child: Icon(Icons.folder_open_rounded, color: color, size: 18),
               ),
               AppSpacing.hGapMd,
               Expanded(
@@ -497,11 +483,7 @@ class _ResourcesButton extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(
-                Icons.arrow_forward_rounded,
-                color: color,
-                size: 20,
-              ),
+              Icon(Icons.arrow_forward_rounded, color: color, size: 20),
             ],
           ),
         ),

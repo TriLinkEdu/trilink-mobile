@@ -13,15 +13,19 @@ class AnnouncementsCubit extends Cubit<AnnouncementsState> {
     emit(state.copyWith(status: AnnouncementsStatus.loading));
     try {
       final announcements = await _repository.fetchAnnouncements();
-      emit(AnnouncementsState(
-        status: AnnouncementsStatus.loaded,
-        announcements: announcements,
-      ));
-    } catch (_) {
-      emit(state.copyWith(
-        status: AnnouncementsStatus.error,
-        errorMessage: 'Unable to load announcements right now.',
-      ));
+      emit(
+        AnnouncementsState(
+          status: AnnouncementsStatus.loaded,
+          announcements: announcements,
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: AnnouncementsStatus.error,
+          errorMessage: 'Unable to load announcements right now.',
+        ),
+      );
     }
   }
 }

@@ -4,6 +4,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/pressable.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/student_page_background.dart';
 import '../../../auth/cubit/auth_cubit.dart';
 import '../repositories/student_profile_repository.dart';
 
@@ -11,7 +12,8 @@ class StudentProfileEditScreen extends StatefulWidget {
   const StudentProfileEditScreen({super.key});
 
   @override
-  State<StudentProfileEditScreen> createState() => _StudentProfileEditScreenState();
+  State<StudentProfileEditScreen> createState() =>
+      _StudentProfileEditScreenState();
 }
 
 class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
@@ -70,9 +72,9 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update profile: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to update profile: $e')));
       }
     }
   }
@@ -98,125 +100,145 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
           TextButton(
             onPressed: _isSaving ? null : _handleSave,
             child: _isSaving
-                ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                 : const Text('Save'),
           ),
         ],
       ),
-      body: _isLoading
-          ? const Padding(
-              padding: EdgeInsets.all(24),
-              child: ShimmerList(),
-            )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    Pressable(
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Photo picker will use device camera/gallery when integrated')),
-                        );
-                      },
-                      child: Stack(
-                        children: [
-                          CircleAvatar(
-                            radius: 50,
-                            backgroundColor: theme.colorScheme.primaryContainer,
-                            child: Icon(Icons.person, size: 50, color: theme.colorScheme.primary),
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.primary,
-                                shape: BoxShape.circle,
+      body: StudentPageBackground(
+        child: _isLoading
+            ? const Padding(padding: EdgeInsets.all(24), child: ShimmerList())
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      Pressable(
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Photo picker will use device camera/gallery when integrated',
                               ),
-                              child: Icon(Icons.camera_alt, size: 16, color: theme.colorScheme.onPrimary),
+                            ),
+                          );
+                        },
+                        child: Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 50,
+                              backgroundColor:
+                                  theme.colorScheme.primaryContainer,
+                              child: Icon(
+                                Icons.person,
+                                size: 50,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.camera_alt,
+                                  size: 16,
+                                  color: theme.colorScheme.onPrimary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      AppSpacing.gapXxxl,
+                      TextFormField(
+                        controller: _nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Full Name',
+                          prefixIcon: Icon(Icons.person_outlined),
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (v) => v == null || v.trim().isEmpty
+                            ? 'Name is required'
+                            : null,
+                      ),
+                      AppSpacing.gapLg,
+                      TextFormField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: const InputDecoration(
+                          labelText: 'Email',
+                          prefixIcon: Icon(Icons.email_outlined),
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) {
+                            return 'Email is required';
+                          }
+                          if (!v.contains('@')) return 'Enter a valid email';
+                          return null;
+                        },
+                      ),
+                      AppSpacing.gapLg,
+                      TextFormField(
+                        controller: _phoneController,
+                        keyboardType: TextInputType.phone,
+                        decoration: const InputDecoration(
+                          labelText: 'Phone',
+                          prefixIcon: Icon(Icons.phone_outlined),
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      AppSpacing.gapLg,
+                      TextFormField(
+                        initialValue: authUser?.school ?? '',
+                        enabled: false,
+                        decoration: const InputDecoration(
+                          labelText: 'School',
+                          prefixIcon: Icon(Icons.school_outlined),
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      AppSpacing.gapLg,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              initialValue: authUser?.grade ?? '',
+                              enabled: false,
+                              decoration: const InputDecoration(
+                                labelText: 'Grade',
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          ),
+                          AppSpacing.hGapLg,
+                          Expanded(
+                            child: TextFormField(
+                              initialValue: authUser?.section ?? '',
+                              enabled: false,
+                              decoration: const InputDecoration(
+                                labelText: 'Section',
+                                border: OutlineInputBorder(),
+                              ),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                    AppSpacing.gapXxxl,
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Full Name',
-                        prefixIcon: Icon(Icons.person_outlined),
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (v) => v == null || v.trim().isEmpty ? 'Name is required' : null,
-                    ),
-                    AppSpacing.gapLg,
-                    TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: Icon(Icons.email_outlined),
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) return 'Email is required';
-                        if (!v.contains('@')) return 'Enter a valid email';
-                        return null;
-                      },
-                    ),
-                    AppSpacing.gapLg,
-                    TextFormField(
-                      controller: _phoneController,
-                      keyboardType: TextInputType.phone,
-                      decoration: const InputDecoration(
-                        labelText: 'Phone',
-                        prefixIcon: Icon(Icons.phone_outlined),
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    AppSpacing.gapLg,
-                    TextFormField(
-                      initialValue: authUser?.school ?? '',
-                      enabled: false,
-                      decoration: const InputDecoration(
-                        labelText: 'School',
-                        prefixIcon: Icon(Icons.school_outlined),
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    AppSpacing.gapLg,
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            initialValue: authUser?.grade ?? '',
-                            enabled: false,
-                            decoration: const InputDecoration(
-                              labelText: 'Grade',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                        ),
-                        AppSpacing.hGapLg,
-                        Expanded(
-                          child: TextFormField(
-                            initialValue: authUser?.section ?? '',
-                            enabled: false,
-                            decoration: const InputDecoration(
-                              labelText: 'Section',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
+      ),
     );
   }
 }

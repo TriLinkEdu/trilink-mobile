@@ -14,8 +14,10 @@ import '../../../../core/theme/theme_notifier.dart';
 import 'package:trilink_mobile/core/widgets/celebration_overlay.dart';
 import 'package:trilink_mobile/core/widgets/pressable.dart';
 import '../../../auth/cubit/auth_cubit.dart';
+import '../../dashboard/widgets/student_shell_scope.dart';
 import '../../shared/models/student_progress_model.dart';
 import '../../shared/repositories/student_progress_repository.dart';
+import '../../shared/widgets/student_page_background.dart';
 import '../repositories/student_profile_repository.dart';
 
 class StudentProfileScreen extends StatefulWidget {
@@ -104,449 +106,458 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
     final studentId = user?.id ?? '';
 
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(right: 16, top: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.of(
-                      context,
-                    ).pushNamed(RouteNames.studentProfileEdit),
-                    child: Text(
-                      'Edit Profile',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
+      body: StudentPageBackground(
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 16, top: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    AppSpacing.gapMd,
-                    GestureDetector(
-                      onTap: _onAvatarTap,
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        alignment: Alignment.bottomRight,
-                        children: [
-                          ClipOval(
-                            child: SizedBox(
-                              width: 96,
-                              height: 96,
-                              child: AnimatedBuilder(
-                                animation: _avatarSpinController,
-                                builder: (context, child) => Transform.rotate(
-                                  alignment: Alignment.center,
-                                  angle: _avatarSpinController.value * 2 * pi,
-                                  child: child,
-                                ),
-                                child: CircleAvatar(
-                                  radius: 48,
-                                  backgroundColor:
-                                      theme.colorScheme.outlineVariant,
-                                  child: Icon(
-                                    Icons.person_rounded,
-                                    size: 56,
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          Pressable(
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Photo picker will use device camera/gallery when integrated',
-                                  ),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.surfaceContainerLow,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: theme.colorScheme.surface,
-                                  width: 2,
-                                ),
-                              ),
-                              child: Icon(
-                                Icons.camera_alt_rounded,
-                                size: 16,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    AppSpacing.gapLg,
-                    Text(
-                      displayName,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                    AppSpacing.gapXs,
-                    Text(
-                      gradeSection.isNotEmpty
-                          ? '$gradeSection • ID: $studentId'
-                          : 'ID: $studentId',
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    AppSpacing.gapSm,
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withAlpha(20),
-                        borderRadius: AppRadius.borderLg,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.emoji_events_rounded,
-                            size: 14,
-                            color: theme.colorScheme.primary,
-                          ),
-                          AppSpacing.hGapXs,
-                          Text(
-                            _progress != null
-                                ? 'Level ${_progress!.level} ${_progress!.levelTitle}'
-                                : 'Level --',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.primary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    AppSpacing.gapXxxl,
-
-                    _SectionHeader(title: 'ACCOUNT'),
-                    AppSpacing.gapSm,
-                    _SettingsCard(
-                      children: [
-                        _SettingsRow(
-                          icon: Icons.email_outlined,
-                          label: 'Email',
-                          trailing: Text(
-                            displayEmail,
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                        _divider(),
-                        _SettingsRow(
-                          icon: Icons.lock_outline,
-                          label: 'Password',
-                          showChevron: true,
-                          onTap: _showChangePasswordDialog,
-                        ),
-                        _divider(),
-                        _SettingsRow(
-                          icon: Icons.language_rounded,
-                          label: 'Language',
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                _language,
-                                style: theme.textTheme.labelLarge?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                              AppSpacing.hGapXs,
-                              Icon(
-                                Icons.chevron_right,
-                                size: 20,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ],
-                          ),
-                          onTap: _showLanguagePicker,
-                        ),
-                      ],
-                    ),
-                    AppSpacing.gapXxl,
-
-                    _SectionHeader(title: 'PREFERENCES'),
-                    AppSpacing.gapSm,
-                    _SettingsCard(
-                      children: [
-                        _SettingsRow(
-                          icon: Icons.notifications_outlined,
-                          label: 'Push Notifications',
-                          trailing: Switch(
-                            value: _pushNotifications,
-                            onChanged: (v) {
-                              setState(() => _pushNotifications = v);
-                              _storage.setBool('pushNotifications', v);
-                            },
-                          ),
-                        ),
-                        _divider(),
-                        _SettingsRow(
-                          icon: Icons.dark_mode_outlined,
-                          label: 'Dark Mode',
-                          trailing: Switch(
-                            value: ThemeNotifier.instance.isDark,
-                            onChanged: (v) {
-                              if (v) {
-                                ThemeNotifier.instance.setDark();
-                              } else {
-                                ThemeNotifier.instance.setLight();
-                              }
-                            },
-                          ),
-                        ),
-                        _divider(),
-                        ListenableBuilder(
-                          listenable: sl<SoundService>(),
-                          builder: (context, _) {
-                            final soundService = sl<SoundService>();
-                            return _SettingsRow(
-                              icon: Icons.graphic_eq_rounded,
-                              label: 'Sound Effects',
-                              trailing: Switch(
-                                value: soundService.enabled,
-                                onChanged: (v) => soundService.setEnabled(v),
-                              ),
-                            );
-                          },
-                        ),
-                        _divider(),
-                        _SettingsRow(
-                          icon: Icons.text_fields_rounded,
-                          label: 'Text Size',
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                ThemeNotifier.instance.textScaleLabel,
-                                style: theme.textTheme.labelLarge?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                              AppSpacing.hGapXs,
-                              Icon(
-                                Icons.chevron_right,
-                                size: 20,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ],
-                          ),
-                          onTap: _showTextSizePicker,
-                        ),
-                        _divider(),
-                        _SettingsRow(
-                          icon: Icons.font_download_outlined,
-                          label: 'Font Family',
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                ThemeNotifier.instance.fontFamily,
-                                style: theme.textTheme.labelLarge?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                              AppSpacing.hGapXs,
-                              Icon(
-                                Icons.chevron_right,
-                                size: 20,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ],
-                          ),
-                          onTap: _showFontFamilyPicker,
-                        ),
-                      ],
-                    ),
-                    AppSpacing.gapXxl,
-
-                    _SectionHeader(title: 'SUPPORT'),
-                    AppSpacing.gapSm,
-                    _SettingsCard(
-                      children: [
-                        _SettingsRow(
-                          icon: Icons.help_outline_rounded,
-                          label: 'Help Center',
-                          showChevron: true,
-                          onTap: _showHelpCenter,
-                        ),
-                        _divider(),
-                        _SettingsRow(
-                          icon: Icons.bug_report_outlined,
-                          label: 'Report a Bug',
-                          showChevron: true,
-                          onTap: _showBugReport,
-                        ),
-                      ],
-                    ),
-                    AppSpacing.gapXxl,
-
-                    _SectionHeader(title: 'NAVIGATION'),
-                    AppSpacing.gapSm,
-                    _SettingsCard(
-                      children: [
-                        _SettingsRow(
-                          icon: Icons.notifications_outlined,
-                          label: 'Notifications',
-                          showChevron: true,
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pushNamed(RouteNames.studentNotifications),
-                        ),
-                        _divider(),
-                        _SettingsRow(
-                          icon: Icons.chat_outlined,
-                          label: 'Chat',
-                          showChevron: true,
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pushNamed(RouteNames.studentChat),
-                        ),
-                        _divider(),
-                        _SettingsRow(
-                          icon: Icons.calendar_month_outlined,
-                          label: 'Calendar',
-                          showChevron: true,
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pushNamed(RouteNames.studentCalendar),
-                        ),
-                        _divider(),
-                        _SettingsRow(
-                          icon: Icons.settings_outlined,
-                          label: 'App Settings',
-                          showChevron: true,
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pushNamed(RouteNames.studentSettings),
-                        ),
-                        _divider(),
-                        _SettingsRow(
-                          icon: Icons.assignment_outlined,
-                          label: 'Assignments',
-                          showChevron: true,
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pushNamed(RouteNames.studentAssignments),
-                        ),
-                        _divider(),
-                        _SettingsRow(
-                          icon: Icons.folder_outlined,
-                          label: 'Courses & Resources',
-                          showChevron: true,
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pushNamed(RouteNames.studentCourseResources),
-                        ),
-                        _divider(),
-                        _SettingsRow(
-                          icon: Icons.fact_check_outlined,
-                          label: 'Exam Attempt',
-                          showChevron: true,
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pushNamed(RouteNames.studentExamAttempt),
-                        ),
-                        _divider(),
-                        _SettingsRow(
-                          icon: Icons.sync_outlined,
-                          label: 'Sync Status',
-                          showChevron: true,
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pushNamed(RouteNames.studentSyncStatus),
-                        ),
-                        _divider(),
-                        _SettingsRow(
-                          icon: Icons.fact_check_outlined,
-                          label: 'Attendance',
-                          showChevron: true,
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pushNamed(RouteNames.studentAttendance),
-                        ),
-                        _divider(),
-                        _SettingsRow(
-                          icon: Icons.rate_review_outlined,
-                          label: 'Feedback',
-                          showChevron: true,
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pushNamed(RouteNames.studentFeedback),
-                        ),
-                      ],
-                    ),
-                    AppSpacing.gapXxl,
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: OutlinedButton(
-                        onPressed: () async {
-                          await context.read<AuthCubit>().logout();
-                          if (!context.mounted) return;
-                          Navigator.of(
-                            context,
-                            rootNavigator: true,
-                          ).pushNamedAndRemoveUntil(
-                            RouteNames.login,
-                            (_) => false,
-                          );
-                        },
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: theme.colorScheme.error,
-                          side: BorderSide(color: theme.colorScheme.error),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: AppRadius.borderMd,
-                          ),
-                        ),
-                        child: Text(
-                          'Log Out',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                    TextButton(
+                      onPressed: () => Navigator.of(
+                        context,
+                      ).pushNamed(RouteNames.studentProfileEdit),
+                      child: Text(
+                        'Edit Profile',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
-                    AppSpacing.gapMd,
-                    Text(
-                      'Version 2.4.0 (Build 302)',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    AppSpacing.gapXxl,
                   ],
                 ),
               ),
-            ),
-          ],
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    children: [
+                      AppSpacing.gapMd,
+                      GestureDetector(
+                        onTap: _onAvatarTap,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          alignment: Alignment.bottomRight,
+                          children: [
+                            ClipOval(
+                              child: SizedBox(
+                                width: 96,
+                                height: 96,
+                                child: AnimatedBuilder(
+                                  animation: _avatarSpinController,
+                                  builder: (context, child) => Transform.rotate(
+                                    alignment: Alignment.center,
+                                    angle: _avatarSpinController.value * 2 * pi,
+                                    child: child,
+                                  ),
+                                  child: CircleAvatar(
+                                    radius: 48,
+                                    backgroundColor:
+                                        theme.colorScheme.outlineVariant,
+                                    child: Icon(
+                                      Icons.person_rounded,
+                                      size: 56,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Pressable(
+                              onTap: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Photo picker will use device camera/gallery when integrated',
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.surfaceContainerLow,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: theme.colorScheme.surface,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.camera_alt_rounded,
+                                  size: 16,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      AppSpacing.gapLg,
+                      Text(
+                        displayName,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      AppSpacing.gapXs,
+                      Text(
+                        gradeSection.isNotEmpty
+                            ? '$gradeSection • ID: $studentId'
+                            : 'ID: $studentId',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      AppSpacing.gapSm,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary.withAlpha(20),
+                          borderRadius: AppRadius.borderLg,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.emoji_events_rounded,
+                              size: 14,
+                              color: theme.colorScheme.primary,
+                            ),
+                            AppSpacing.hGapXs,
+                            Text(
+                              _progress != null
+                                  ? 'Level ${_progress!.level} ${_progress!.levelTitle}'
+                                  : 'Level --',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      AppSpacing.gapXxxl,
+
+                      _SectionHeader(title: 'ACCOUNT'),
+                      AppSpacing.gapSm,
+                      _SettingsCard(
+                        children: [
+                          _SettingsRow(
+                            icon: Icons.email_outlined,
+                            label: 'Email',
+                            trailing: Text(
+                              displayEmail,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                          _divider(),
+                          _SettingsRow(
+                            icon: Icons.lock_outline,
+                            label: 'Password',
+                            showChevron: true,
+                            onTap: _showChangePasswordDialog,
+                          ),
+                          _divider(),
+                          _SettingsRow(
+                            icon: Icons.language_rounded,
+                            label: 'Language',
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  _language,
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                                AppSpacing.hGapXs,
+                                Icon(
+                                  Icons.chevron_right,
+                                  size: 20,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ],
+                            ),
+                            onTap: _showLanguagePicker,
+                          ),
+                        ],
+                      ),
+                      AppSpacing.gapXxl,
+
+                      _SectionHeader(title: 'PREFERENCES'),
+                      AppSpacing.gapSm,
+                      _SettingsCard(
+                        children: [
+                          _SettingsRow(
+                            icon: Icons.notifications_outlined,
+                            label: 'Push Notifications',
+                            trailing: Switch(
+                              value: _pushNotifications,
+                              onChanged: (v) {
+                                setState(() => _pushNotifications = v);
+                                _storage.setBool('pushNotifications', v);
+                              },
+                            ),
+                          ),
+                          _divider(),
+                          _SettingsRow(
+                            icon: Icons.dark_mode_outlined,
+                            label: 'Dark Mode',
+                            trailing: Switch(
+                              value: ThemeNotifier.instance.isDark,
+                              onChanged: (v) {
+                                if (v) {
+                                  ThemeNotifier.instance.setDark();
+                                } else {
+                                  ThemeNotifier.instance.setLight();
+                                }
+                              },
+                            ),
+                          ),
+                          _divider(),
+                          ListenableBuilder(
+                            listenable: sl<SoundService>(),
+                            builder: (context, _) {
+                              final soundService = sl<SoundService>();
+                              return _SettingsRow(
+                                icon: Icons.graphic_eq_rounded,
+                                label: 'Sound Effects',
+                                trailing: Switch(
+                                  value: soundService.enabled,
+                                  onChanged: (v) => soundService.setEnabled(v),
+                                ),
+                              );
+                            },
+                          ),
+                          _divider(),
+                          _SettingsRow(
+                            icon: Icons.text_fields_rounded,
+                            label: 'Text Size',
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  ThemeNotifier.instance.textScaleLabel,
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                                AppSpacing.hGapXs,
+                                Icon(
+                                  Icons.chevron_right,
+                                  size: 20,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ],
+                            ),
+                            onTap: _showTextSizePicker,
+                          ),
+                          _divider(),
+                          _SettingsRow(
+                            icon: Icons.font_download_outlined,
+                            label: 'Font Family',
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  ThemeNotifier.instance.fontFamily,
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                                AppSpacing.hGapXs,
+                                Icon(
+                                  Icons.chevron_right,
+                                  size: 20,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ],
+                            ),
+                            onTap: _showFontFamilyPicker,
+                          ),
+                        ],
+                      ),
+                      AppSpacing.gapXxl,
+
+                      _SectionHeader(title: 'SUPPORT'),
+                      AppSpacing.gapSm,
+                      _SettingsCard(
+                        children: [
+                          _SettingsRow(
+                            icon: Icons.help_outline_rounded,
+                            label: 'Help Center',
+                            showChevron: true,
+                            onTap: _showHelpCenter,
+                          ),
+                          _divider(),
+                          _SettingsRow(
+                            icon: Icons.bug_report_outlined,
+                            label: 'Report a Bug',
+                            showChevron: true,
+                            onTap: _showBugReport,
+                          ),
+                        ],
+                      ),
+                      AppSpacing.gapXxl,
+
+                      _SectionHeader(title: 'NAVIGATION'),
+                      AppSpacing.gapSm,
+                      _SettingsCard(
+                        children: [
+                          _SettingsRow(
+                            icon: Icons.notifications_outlined,
+                            label: 'Notifications',
+                            showChevron: true,
+                            onTap: () => Navigator.of(
+                              context,
+                            ).pushNamed(RouteNames.studentNotifications),
+                          ),
+                          _divider(),
+                          _SettingsRow(
+                            icon: Icons.chat_outlined,
+                            label: 'Chat',
+                            showChevron: true,
+                            onTap: () {
+                              final shell = StudentShellScope.maybeOf(context);
+                              if (shell != null) {
+                                shell.switchTab(2);
+                              } else {
+                                Navigator.of(
+                                  context,
+                                ).pushNamed(RouteNames.studentChat);
+                              }
+                            },
+                          ),
+                          _divider(),
+                          _SettingsRow(
+                            icon: Icons.calendar_month_outlined,
+                            label: 'Calendar',
+                            showChevron: true,
+                            onTap: () => Navigator.of(
+                              context,
+                            ).pushNamed(RouteNames.studentCalendar),
+                          ),
+                          _divider(),
+                          _SettingsRow(
+                            icon: Icons.settings_outlined,
+                            label: 'App Settings',
+                            showChevron: true,
+                            onTap: () => Navigator.of(
+                              context,
+                            ).pushNamed(RouteNames.studentSettings),
+                          ),
+                          _divider(),
+                          _SettingsRow(
+                            icon: Icons.assignment_outlined,
+                            label: 'Assignments',
+                            showChevron: true,
+                            onTap: () => Navigator.of(
+                              context,
+                            ).pushNamed(RouteNames.studentAssignments),
+                          ),
+                          _divider(),
+                          _SettingsRow(
+                            icon: Icons.folder_outlined,
+                            label: 'Courses & Resources',
+                            showChevron: true,
+                            onTap: () => Navigator.of(
+                              context,
+                            ).pushNamed(RouteNames.studentCourseResources),
+                          ),
+                          _divider(),
+                          _SettingsRow(
+                            icon: Icons.fact_check_outlined,
+                            label: 'Exam Attempt',
+                            showChevron: true,
+                            onTap: () => Navigator.of(
+                              context,
+                            ).pushNamed(RouteNames.studentExamAttempt),
+                          ),
+                          _divider(),
+                          _SettingsRow(
+                            icon: Icons.sync_outlined,
+                            label: 'Sync Status',
+                            showChevron: true,
+                            onTap: () => Navigator.of(
+                              context,
+                            ).pushNamed(RouteNames.studentSyncStatus),
+                          ),
+                          _divider(),
+                          _SettingsRow(
+                            icon: Icons.fact_check_outlined,
+                            label: 'Attendance',
+                            showChevron: true,
+                            onTap: () => Navigator.of(
+                              context,
+                            ).pushNamed(RouteNames.studentAttendance),
+                          ),
+                          _divider(),
+                          _SettingsRow(
+                            icon: Icons.rate_review_outlined,
+                            label: 'Feedback',
+                            showChevron: true,
+                            onTap: () => Navigator.of(
+                              context,
+                            ).pushNamed(RouteNames.studentFeedback),
+                          ),
+                        ],
+                      ),
+                      AppSpacing.gapXxl,
+
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: OutlinedButton(
+                          onPressed: () async {
+                            await context.read<AuthCubit>().logout();
+                            if (!context.mounted) return;
+                            Navigator.of(
+                              context,
+                              rootNavigator: true,
+                            ).pushNamedAndRemoveUntil(
+                              RouteNames.login,
+                              (_) => false,
+                            );
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: theme.colorScheme.error,
+                            side: BorderSide(color: theme.colorScheme.error),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: AppRadius.borderMd,
+                            ),
+                          ),
+                          child: Text(
+                            'Log Out',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      AppSpacing.gapMd,
+                      Text(
+                        'Version 2.4.0 (Build 302)',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      AppSpacing.gapXxl,
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

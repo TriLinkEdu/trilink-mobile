@@ -14,11 +14,13 @@ class SyncCubit extends Cubit<SyncState> {
     try {
       final items = await _repository.fetchSyncStatus();
       emit(SyncState(status: SyncStatus.loaded, items: items));
-    } catch (_) {
-      emit(state.copyWith(
-        status: SyncStatus.error,
-        errorMessage: 'Unable to load sync status.',
-      ));
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: SyncStatus.error,
+          errorMessage: 'Unable to load sync status.',
+        ),
+      );
     }
   }
 

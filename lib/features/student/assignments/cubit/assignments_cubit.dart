@@ -13,15 +13,19 @@ class AssignmentsCubit extends Cubit<AssignmentsState> {
     emit(state.copyWith(status: AssignmentsStatus.loading));
     try {
       final assignments = await _repository.fetchAssignments();
-      emit(AssignmentsState(
-        status: AssignmentsStatus.loaded,
-        assignments: assignments,
-      ));
-    } catch (_) {
-      emit(state.copyWith(
-        status: AssignmentsStatus.error,
-        errorMessage: 'Unable to load assignments.',
-      ));
+      emit(
+        AssignmentsState(
+          status: AssignmentsStatus.loaded,
+          assignments: assignments,
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: AssignmentsStatus.error,
+          errorMessage: 'Unable to load assignments: $e',
+        ),
+      );
     }
   }
 }

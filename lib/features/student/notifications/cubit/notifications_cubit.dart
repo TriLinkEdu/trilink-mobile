@@ -14,43 +14,55 @@ class NotificationsCubit extends Cubit<NotificationsState> {
     emit(state.copyWith(status: NotificationsStatus.loading));
     try {
       final items = await _repository.fetchNotifications();
-      emit(NotificationsState(status: NotificationsStatus.loaded, items: items));
-    } catch (_) {
-      emit(state.copyWith(
-        status: NotificationsStatus.error,
-        errorMessage: 'Unable to load notifications.',
-      ));
+      emit(
+        NotificationsState(status: NotificationsStatus.loaded, items: items),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: NotificationsStatus.error,
+          errorMessage: 'Unable to load notifications.',
+        ),
+      );
     }
   }
 
   Future<void> markAllAsRead() async {
     try {
       await _repository.markAllAsRead();
-      emit(state.copyWith(
-        items: state.items.map((n) => n.copyWith(isRead: true)).toList(),
-      ));
-    } catch (_) {
-      emit(state.copyWith(
-        status: NotificationsStatus.error,
-        errorMessage: 'Unable to mark all as read.',
-      ));
+      emit(
+        state.copyWith(
+          items: state.items.map((n) => n.copyWith(isRead: true)).toList(),
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: NotificationsStatus.error,
+          errorMessage: 'Unable to mark all as read.',
+        ),
+      );
     }
   }
 
   Future<void> markNotificationRead(String id) async {
     try {
       await _repository.markAsRead(id);
-      emit(state.copyWith(
-        items: state.items.map((n) {
-          if (n.id == id) return n.copyWith(isRead: true);
-          return n;
-        }).toList(),
-      ));
-    } catch (_) {
-      emit(state.copyWith(
-        status: NotificationsStatus.error,
-        errorMessage: 'Unable to mark notification as read.',
-      ));
+      emit(
+        state.copyWith(
+          items: state.items.map((n) {
+            if (n.id == id) return n.copyWith(isRead: true);
+            return n;
+          }).toList(),
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: NotificationsStatus.error,
+          errorMessage: 'Unable to mark notification as read.',
+        ),
+      );
     }
   }
 
@@ -62,19 +74,23 @@ class NotificationsCubit extends Cubit<NotificationsState> {
       } else {
         await _repository.markAsUnread(notification.id);
       }
-      emit(state.copyWith(
-        items: state.items.map((n) {
-          if (n.id == notification.id) {
-            return n.copyWith(isRead: targetRead);
-          }
-          return n;
-        }).toList(),
-      ));
-    } catch (_) {
-      emit(state.copyWith(
-        status: NotificationsStatus.error,
-        errorMessage: 'Unable to update notification status.',
-      ));
+      emit(
+        state.copyWith(
+          items: state.items.map((n) {
+            if (n.id == notification.id) {
+              return n.copyWith(isRead: targetRead);
+            }
+            return n;
+          }).toList(),
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: NotificationsStatus.error,
+          errorMessage: 'Unable to update notification status.',
+        ),
+      );
     }
   }
 }

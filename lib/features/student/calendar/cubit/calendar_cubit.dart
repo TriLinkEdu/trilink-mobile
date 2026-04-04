@@ -15,11 +15,13 @@ class CalendarCubit extends Cubit<CalendarState> {
     try {
       final events = await _repository.fetchEvents(month: target);
       emit(state.copyWith(status: CalendarStatus.loaded, events: events));
-    } catch (_) {
-      emit(state.copyWith(
-        status: CalendarStatus.error,
-        errorMessage: 'Unable to load calendar events.',
-      ));
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: CalendarStatus.error,
+          errorMessage: 'Unable to load calendar events: $e',
+        ),
+      );
     }
   }
 

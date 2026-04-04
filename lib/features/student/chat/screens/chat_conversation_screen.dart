@@ -6,7 +6,9 @@ import 'package:intl/intl.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/error_widget.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/student_page_background.dart';
 import '../cubit/chat_conversation_cubit.dart';
 import '../repositories/student_chat_repository.dart';
 import '../widgets/chat_bubble.dart';
@@ -24,10 +26,9 @@ class ChatConversationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => ChatConversationCubit(
-        sl<StudentChatRepository>(),
-        conversationId,
-      )..loadMessages(),
+      create: (_) =>
+          ChatConversationCubit(sl<StudentChatRepository>(), conversationId)
+            ..loadMessages(),
       child: _ChatConversationView(
         conversationId: conversationId,
         title: title,
@@ -46,8 +47,7 @@ class _ChatConversationView extends StatefulWidget {
   });
 
   @override
-  State<_ChatConversationView> createState() =>
-      _ChatConversationViewState();
+  State<_ChatConversationView> createState() => _ChatConversationViewState();
 }
 
 class _ChatConversationViewState extends State<_ChatConversationView> {
@@ -99,12 +99,12 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
         if (!mounted) return;
         _scrollToBottom();
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() => _isSending = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to send message.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to send message.')));
     }
   }
 
@@ -122,99 +122,105 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
                 type: MaterialType.transparency,
                 child: CircleAvatar(
                   radius: 18,
-                  child: Text(
-                    widget.title.characters.first.toUpperCase(),
-                  ),
+                  child: Text(widget.title.characters.first.toUpperCase()),
                 ),
               ),
             ),
             AppSpacing.hGapSm,
             Expanded(
-              child: Text(
-                widget.title,
-                overflow: TextOverflow.ellipsis,
-              ),
+              child: Text(widget.title, overflow: TextOverflow.ellipsis),
             ),
           ],
         ),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: BlocBuilder<ChatConversationCubit, ChatConversationState>(
-              builder: (context, state) {
-                final loading = state.status == ConversationStatus.initial ||
-                    state.status == ConversationStatus.loading;
-                if (loading) {
-                  return const Padding(
-                    padding: AppSpacing.paddingLg,
-                    child: ShimmerList(),
-                  );
-                }
-
-                final messages = state.messages;
-                return ListView.builder(
-                  controller: _scrollController,
-                  padding: AppSpacing.paddingMd,
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    final message = messages[index];
-                    final isMine = message.senderId == _currentUserId;
-                    return ChatBubble(
-                      message: message.content,
-                      isMe: isMine,
-                      time: DateFormat.jm().format(message.timestamp),
+      body: StudentPageBackground(
+        child: Column(
+          children: [
+            Expanded(
+              child: BlocBuilder<ChatConversationCubit, ChatConversationState>(
+                builder: (context, state) {
+                  final loading =
+                      state.status == ConversationStatus.initial ||
+                      state.status == ConversationStatus.loading;
+                  if (loading) {
+                    return const Padding(
+                      padding: AppSpacing.paddingLg,
+                      child: ShimmerList(),
                     );
-                  },
-                );
-              },
-            ),
-          ),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      maxLength: 800,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _sendMessage(),
-                      decoration: InputDecoration(
-                        hintText: 'Type a message',
-                        filled: true,
-                        fillColor: theme.colorScheme.surfaceContainerLow,
-                        border: OutlineInputBorder(
-                          borderRadius: AppRadius.borderXxl,
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
-                        ),
-                        counterText: '',
-                      ),
-                    ),
-                  ),
-                  AppSpacing.hGapSm,
-                  FloatingActionButton.small(
-                    tooltip: 'Send message',
-                    onPressed: _isSending ? null : _sendMessage,
-                    child: _isSending
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.send_rounded),
-                  ),
-                ],
+                  }
+
+                  if (state.status == ConversationStatus.error) {
+                    return AppErrorWidget(
+                      message: state.errorMessage ?? 'Unable to load messages.',
+                      onRetry: () =>
+                          context.read<ChatConversationCubit>().loadMessages(),
+                    );
+                  }
+
+                  final messages = state.messages;
+                  return ListView.builder(
+                    controller: _scrollController,
+                    padding: AppSpacing.paddingMd,
+                    itemCount: messages.length,
+                    itemBuilder: (context, index) {
+                      final message = messages[index];
+                      final isMine = message.senderId == _currentUserId;
+                      return ChatBubble(
+                        message: message.content,
+                        isMe: isMine,
+                        time: DateFormat.jm().format(message.timestamp),
+                      );
+                    },
+                  );
+                },
               ),
             ),
-          ),
-        ],
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _controller,
+                        maxLength: 800,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => _sendMessage(),
+                        decoration: InputDecoration(
+                          hintText: 'Type a message',
+                          filled: true,
+                          fillColor: theme.colorScheme.surfaceContainerLow,
+                          border: OutlineInputBorder(
+                            borderRadius: AppRadius.borderXxl,
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          counterText: '',
+                        ),
+                      ),
+                    ),
+                    AppSpacing.hGapSm,
+                    FloatingActionButton.small(
+                      tooltip: 'Send message',
+                      onPressed: _isSending ? null : _sendMessage,
+                      child: _isSending
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.send_rounded),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

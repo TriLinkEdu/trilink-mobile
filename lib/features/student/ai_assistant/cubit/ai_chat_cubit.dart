@@ -18,10 +18,12 @@ class AiChatCubit extends Cubit<AiChatState> {
       timestamp: DateTime.now(),
     );
 
-    emit(state.copyWith(
-      messages: [...state.messages, userMessage],
-      isResponding: true,
-    ));
+    emit(
+      state.copyWith(
+        messages: [...state.messages, userMessage],
+        isResponding: true,
+      ),
+    );
 
     try {
       final response = await _repository.getAiResponse(text);
@@ -31,21 +33,25 @@ class AiChatCubit extends Cubit<AiChatState> {
         timestamp: DateTime.now(),
       );
 
-      emit(state.copyWith(
-        messages: [...state.messages, aiMessage],
-        isResponding: false,
-      ));
-    } catch (_) {
+      emit(
+        state.copyWith(
+          messages: [...state.messages, aiMessage],
+          isResponding: false,
+        ),
+      );
+    } catch (e) {
       final errorMessage = AiChatMessage(
-        text: 'Sorry, I couldn\'t process that. Please try again.',
+        text: 'Sorry, I couldn\'t process that. Please try again. ($e)',
         isUser: false,
         timestamp: DateTime.now(),
       );
 
-      emit(state.copyWith(
-        messages: [...state.messages, errorMessage],
-        isResponding: false,
-      ));
+      emit(
+        state.copyWith(
+          messages: [...state.messages, errorMessage],
+          isResponding: false,
+        ),
+      );
     }
   }
 }

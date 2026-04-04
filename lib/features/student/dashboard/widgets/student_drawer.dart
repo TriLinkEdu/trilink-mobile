@@ -13,8 +13,12 @@ class StudentDrawer extends StatelessWidget {
 
   const StudentDrawer({super.key, required this.homeNavigatorKey});
 
-  void _navigate(BuildContext context, String route,
-      {Map<String, dynamic>? args, int? tabIndex}) {
+  void _navigate(
+    BuildContext context,
+    String route, {
+    Map<String, dynamic>? args,
+    int? tabIndex,
+  }) {
     Navigator.of(context).pop(); // close drawer
     final scope = StudentShellScope.of(context);
     if (tabIndex != null) {
@@ -40,7 +44,9 @@ class StudentDrawer extends StatelessWidget {
     ].join(' • ');
 
     return Drawer(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+      backgroundColor: isDark
+          ? AppColors.darkBackground
+          : AppColors.lightBackground,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.horizontal(right: Radius.circular(20)),
       ),
@@ -74,7 +80,8 @@ class StudentDrawer extends StatelessWidget {
                   icon: Icons.assignment_rounded,
                   label: 'Assignments',
                   color: AppColors.streakFire,
-                  onTap: () => _navigate(context, RouteNames.studentAssignments),
+                  onTap: () =>
+                      _navigate(context, RouteNames.studentAssignments),
                 ),
                 _DrawerItem(
                   icon: Icons.fact_check_rounded,
@@ -105,8 +112,7 @@ class StudentDrawer extends StatelessWidget {
                   icon: Icons.quiz_rounded,
                   label: 'Exams',
                   color: AppColors.mathematics,
-                  onTap: () =>
-                      _navigate(context, RouteNames.studentExams),
+                  onTap: () => _navigate(context, RouteNames.studentExams),
                 ),
 
                 AppSpacing.gapSm,
@@ -193,8 +199,10 @@ class StudentDrawer extends StatelessWidget {
                   Navigator.of(context).pop();
                   await context.read<AuthCubit>().logout();
                   if (!context.mounted) return;
-                  Navigator.of(context, rootNavigator: true)
-                      .pushNamedAndRemoveUntil(RouteNames.login, (_) => false);
+                  Navigator.of(
+                    context,
+                    rootNavigator: true,
+                  ).pushNamedAndRemoveUntil(RouteNames.login, (_) => false);
                 },
               ),
             ),
@@ -225,6 +233,9 @@ class _DrawerHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final headerForeground = isDark
+        ? Colors.white
+        : theme.colorScheme.onPrimary;
 
     return Container(
       width: double.infinity,
@@ -237,7 +248,7 @@ class _DrawerHeader extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: isDark
             ? const LinearGradient(
-                colors: [Color(0xFF1E3A5F), Color(0xFF0F172A)],
+                colors: [Color(0xFF194777), Color(0xFF0B2038)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               )
@@ -252,20 +263,22 @@ class _DrawerHeader extends StatelessWidget {
                 onTap: onProfileTap,
                 child: CircleAvatar(
                   radius: 28,
-                  backgroundColor:
-                      theme.colorScheme.onPrimary.withAlpha(40),
+                  backgroundColor: headerForeground.withAlpha(40),
                   child: Icon(
                     Icons.person_rounded,
                     size: 30,
-                    color: theme.colorScheme.onPrimary,
+                    color: headerForeground,
                   ),
                 ),
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.onPrimary.withAlpha(25),
+                  color: headerForeground.withAlpha(25),
                   borderRadius: AppRadius.borderFull,
                 ),
                 child: Row(
@@ -274,13 +287,13 @@ class _DrawerHeader extends StatelessWidget {
                     Icon(
                       Icons.school_rounded,
                       size: 14,
-                      color: theme.colorScheme.onPrimary,
+                      color: headerForeground,
                     ),
                     AppSpacing.hGapXs,
                     Text(
                       'TriLink',
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onPrimary.withAlpha(220),
+                        color: headerForeground.withAlpha(220),
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.5,
                       ),
@@ -294,7 +307,7 @@ class _DrawerHeader extends StatelessWidget {
           Text(
             name,
             style: theme.textTheme.titleMedium?.copyWith(
-              color: theme.colorScheme.onPrimary,
+              color: headerForeground,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -303,7 +316,7 @@ class _DrawerHeader extends StatelessWidget {
             Text(
               email,
               style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onPrimary.withAlpha(180),
+                color: headerForeground.withAlpha(180),
               ),
             ),
           ],
@@ -312,13 +325,13 @@ class _DrawerHeader extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: theme.colorScheme.onPrimary.withAlpha(20),
+                color: headerForeground.withAlpha(20),
                 borderRadius: AppRadius.borderFull,
               ),
               child: Text(
                 subtitle,
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onPrimary.withAlpha(200),
+                  color: headerForeground.withAlpha(200),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -343,10 +356,10 @@ class _SectionLabel extends StatelessWidget {
       child: Text(
         title,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              letterSpacing: 1.0,
-            ),
+          fontWeight: FontWeight.w700,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          letterSpacing: 1.0,
+        ),
       ),
     );
   }
@@ -394,9 +407,7 @@ class _DrawerItem extends StatelessWidget {
                 label,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w500,
-                  color: isDestructive
-                      ? color
-                      : theme.colorScheme.onSurface,
+                  color: isDestructive ? color : theme.colorScheme.onSurface,
                 ),
               ),
             ),
