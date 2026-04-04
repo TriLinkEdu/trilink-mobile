@@ -10,6 +10,7 @@ import '../../shared/widgets/student_page_background.dart';
 import '../cubit/performance_trends_cubit.dart';
 import '../cubit/performance_trends_state.dart';
 import '../repositories/student_analytics_repository.dart';
+import '../widgets/student_insight_cards.dart';
 
 class StudentPerformanceTrendsScreen extends StatelessWidget {
   const StudentPerformanceTrendsScreen({super.key});
@@ -60,44 +61,12 @@ class _StudentPerformanceTrendsView extends StatelessWidget {
             return ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    borderRadius: AppRadius.borderLg,
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withAlpha(18),
-                          borderRadius: AppRadius.borderMd,
-                        ),
-                        child: Icon(
-                          Icons.analytics_rounded,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                      AppSpacing.hGapMd,
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Exam Readiness',
-                            style: theme.textTheme.labelLarge,
-                          ),
-                          Text(
-                            '${trends.examReadinessScore} / 100',
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                InsightMetricCard(
+                  title: 'Exam Readiness',
+                  value: '${trends.examReadinessScore} / 100',
+                  subtitle: 'Estimated from recent trends',
+                  icon: Icons.analytics_rounded,
+                  accent: theme.colorScheme.primary,
                 ),
                 AppSpacing.gapMd,
                 ...trends.subjects.map(
