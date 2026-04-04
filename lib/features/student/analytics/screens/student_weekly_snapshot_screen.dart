@@ -1,0 +1,182 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/error_widget.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/student_page_background.dart';
+import '../cubit/weekly_snapshot_cubit.dart';
+import '../cubit/weekly_snapshot_state.dart';
+import '../repositories/student_analytics_repository.dart';
+
+class StudentWeeklySnapshotScreen extends StatelessWidget {
+  const StudentWeeklySnapshotScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          WeeklySnapshotCubit(sl<StudentAnalyticsRepository>())..loadSnapshot(),
+      child: const _StudentWeeklySnapshotView(),
+    );
+  }
+}
+
+class _StudentWeeklySnapshotView extends StatelessWidget {
+  const _StudentWeeklySnapshotView();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Weekly Snapshot')),
+      body: StudentPageBackground(
+        child: BlocBuilder<WeeklySnapshotCubit, WeeklySnapshotState>(
+          builder: (context, state) {
+            if (state.status == WeeklySnapshotStatus.loading ||
+                state.status == WeeklySnapshotStatus.initial) {
+              return const Padding(
+                padding: EdgeInsets.all(16),
+                child: ShimmerList(),
+              );
+            }
+
+            if (state.status == WeeklySnapshotStatus.error ||
+                state.snapshot == null) {
+              return AppErrorWidget(
+                message:
+                    state.errorMessage ?? 'Unable to load weekly snapshot.',
+                onRetry: () =>
+                    context.read<WeeklySnapshotCubit>().loadSnapshot(),
+              );
+            }
+
+            final snapshot = state.snapshot!;
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                _MetricCard(
+                  title: 'Attendance',
+                  value: '${(snapshot.attendanceRate * 100).round()}%',
+                  subtitle: 'This week',
+                  icon: Icons.event_available_rounded,
+                ),
+                AppSpacing.gapSm,
+                _MetricCard(
+                  title: 'Average Quiz Score',
+                  value: '${snapshot.averageQuizScore.round()}%',
+                  subtitle: 'This week',
+                  icon: Icons.quiz_rounded,
+                ),
+                AppSpacing.gapSm,
+                _MetricCard(
+                  title: 'Assignments Due',
+                  value: '${snapshot.dueAssignments}',
+                  subtitle: 'Due soon',
+                  icon: Icons.assignment_late_rounded,
+                ),
+                AppSpacing.gapMd,
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: AppRadius.borderLg,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Summary',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      AppSpacing.gapXs,
+                      Text(snapshot.summary),
+                      AppSpacing.gapSm,
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: snapshot.focusSubjects
+                            .map(
+                              (s) => Chip(
+                                label: Text(s),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _MetricCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final String subtitle;
+  final IconData icon;
+
+  const _MetricCard({
+    required this.title,
+    required this.value,
+    required this.subtitle,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: AppRadius.borderLg,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withAlpha(18),
+              borderRadius: AppRadius.borderMd,
+            ),
+            child: Icon(icon, color: theme.colorScheme.primary),
+          ),
+          AppSpacing.hGapMd,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: theme.textTheme.labelLarge),
+                Text(
+                  value,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            subtitle,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

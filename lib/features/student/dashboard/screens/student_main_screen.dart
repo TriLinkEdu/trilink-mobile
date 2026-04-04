@@ -185,6 +185,7 @@ const _routeTitleMap = <String, String>{
   RouteNames.studentExams: 'Exams',
   RouteNames.studentExamAttempt: 'Exam',
   RouteNames.studentSyncStatus: 'Sync Status',
+  RouteNames.studentWeeklySnapshot: 'Weekly Snapshot',
 };
 
 // ── Navigator Observer for Title Tracking ──
