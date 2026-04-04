@@ -65,7 +65,7 @@ class _GamificationViewState extends State<_GamificationView> {
       subtext = 'Two weeks strong!';
     } else {
       message = '🔥 $streak Day Streak!';
-      subtext = 'Great start — keep the fire going!';
+      subtext = 'Great start   keep the fire going!';
     }
 
     CelebrationOverlay.maybeOf(context)?.celebrate(

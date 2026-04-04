@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:trilink_mobile/core/widgets/pressable.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../auth/cubit/auth_cubit.dart';
@@ -34,7 +35,6 @@ class StudentDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final user = context.read<AuthCubit>().currentUser;
     final displayName = user?.name ?? 'Student';
     final displayEmail = user?.email ?? '';
@@ -44,9 +44,7 @@ class StudentDrawer extends StatelessWidget {
     ].join(' • ');
 
     return Drawer(
-      backgroundColor: isDark
-          ? AppColors.darkBackground
-          : AppColors.lightBackground,
+      backgroundColor: theme.colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.horizontal(right: Radius.circular(20)),
       ),
@@ -56,11 +54,11 @@ class StudentDrawer extends StatelessWidget {
             name: displayName,
             email: displayEmail,
             subtitle: gradeSection,
-            isDark: isDark,
             onProfileTap: () {
               Navigator.of(context).pop();
               StudentShellScope.of(context).switchTab(3);
             },
+            onSettingsTap: () => _navigate(context, RouteNames.studentSettings),
           ),
           Expanded(
             child: ListView(
@@ -70,7 +68,7 @@ class StudentDrawer extends StatelessWidget {
                 _DrawerItem(
                   icon: Icons.leaderboard_rounded,
                   label: 'Grades',
-                  color: AppColors.primary,
+                  color: theme.colorScheme.primary,
                   onTap: () {
                     Navigator.of(context).pop();
                     StudentShellScope.of(context).switchTab(1);
@@ -79,7 +77,7 @@ class StudentDrawer extends StatelessWidget {
                 _DrawerItem(
                   icon: Icons.assignment_rounded,
                   label: 'Assignments',
-                  color: AppColors.streakFire,
+                  color: theme.colorScheme.tertiary,
                   onTap: () =>
                       _navigate(context, RouteNames.studentAssignments),
                 ),
@@ -92,26 +90,26 @@ class StudentDrawer extends StatelessWidget {
                 _DrawerItem(
                   icon: Icons.calendar_month_rounded,
                   label: 'Calendar',
-                  color: AppColors.physics,
+                  color: theme.colorScheme.primary,
                   onTap: () => _navigate(context, RouteNames.studentCalendar),
                 ),
                 _DrawerItem(
                   icon: Icons.folder_open_rounded,
                   label: 'Courses',
-                  color: AppColors.computerScience,
+                  color: theme.colorScheme.secondary,
                   onTap: () => _navigate(context, RouteNames.studentCourses),
                 ),
                 _DrawerItem(
                   icon: Icons.menu_book_rounded,
                   label: 'Resources',
-                  color: AppColors.literature,
+                  color: theme.colorScheme.tertiary,
                   onTap: () =>
                       _navigate(context, RouteNames.studentCourseResources),
                 ),
                 _DrawerItem(
                   icon: Icons.quiz_rounded,
                   label: 'Exams',
-                  color: AppColors.mathematics,
+                  color: theme.colorScheme.primary,
                   onTap: () => _navigate(context, RouteNames.studentExams),
                 ),
 
@@ -120,7 +118,7 @@ class StudentDrawer extends StatelessWidget {
                 _DrawerItem(
                   icon: Icons.auto_awesome,
                   label: 'AI Tutor',
-                  color: AppColors.levelPurple,
+                  color: theme.colorScheme.primary,
                   onTap: () =>
                       _navigate(context, RouteNames.studentAiAssistant),
                 ),
@@ -134,13 +132,13 @@ class StudentDrawer extends StatelessWidget {
                 _DrawerItem(
                   icon: Icons.rate_review_rounded,
                   label: 'Feedback',
-                  color: AppColors.literature,
+                  color: theme.colorScheme.tertiary,
                   onTap: () => _navigate(context, RouteNames.studentFeedback),
                 ),
                 _DrawerItem(
                   icon: Icons.chat_bubble_rounded,
                   label: 'Chat',
-                  color: AppColors.secondary,
+                  color: theme.colorScheme.secondary,
                   onTap: () {
                     Navigator.of(context).pop();
                     StudentShellScope.of(context).switchTab(2);
@@ -152,14 +150,14 @@ class StudentDrawer extends StatelessWidget {
                 _DrawerItem(
                   icon: Icons.campaign_rounded,
                   label: 'Announcements',
-                  color: AppColors.biology,
+                  color: theme.colorScheme.secondary,
                   onTap: () =>
                       _navigate(context, RouteNames.studentAnnouncements),
                 ),
                 _DrawerItem(
                   icon: Icons.notifications_rounded,
                   label: 'Notifications',
-                  color: AppColors.info,
+                  color: theme.colorScheme.primary,
                   onTap: () =>
                       _navigate(context, RouteNames.studentNotifications),
                 ),
@@ -169,13 +167,13 @@ class StudentDrawer extends StatelessWidget {
                 _DrawerItem(
                   icon: Icons.settings_rounded,
                   label: 'Settings',
-                  color: AppColors.darkSurfaceBright,
+                  color: theme.colorScheme.onSurfaceVariant,
                   onTap: () => _navigate(context, RouteNames.studentSettings),
                 ),
                 _DrawerItem(
                   icon: Icons.sync_rounded,
                   label: 'Sync Status',
-                  color: AppColors.primary,
+                  color: theme.colorScheme.primary,
                   onTap: () => _navigate(context, RouteNames.studentSyncStatus),
                 ),
               ],
@@ -219,23 +217,21 @@ class _DrawerHeader extends StatelessWidget {
   final String name;
   final String email;
   final String subtitle;
-  final bool isDark;
   final VoidCallback onProfileTap;
+  final VoidCallback onSettingsTap;
 
   const _DrawerHeader({
     required this.name,
     required this.email,
     required this.subtitle,
-    required this.isDark,
     required this.onProfileTap,
+    required this.onSettingsTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final headerForeground = isDark
-        ? Colors.white
-        : theme.colorScheme.onPrimary;
+    final headerForeground = theme.colorScheme.onPrimary;
 
     return Container(
       width: double.infinity,
@@ -245,15 +241,7 @@ class _DrawerHeader extends StatelessWidget {
         right: 20,
         bottom: 20,
       ),
-      decoration: BoxDecoration(
-        gradient: isDark
-            ? const LinearGradient(
-                colors: [Color(0xFF194777), Color(0xFF0B2038)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              )
-            : AppGradients.primaryHero,
-      ),
+      decoration: BoxDecoration(gradient: theme.ext.heroGradient),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -299,6 +287,22 @@ class _DrawerHeader extends StatelessWidget {
                       ),
                     ),
                   ],
+                ),
+              ),
+              AppSpacing.hGapXs,
+              Pressable(
+                onTap: onSettingsTap,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: headerForeground.withAlpha(25),
+                    borderRadius: AppRadius.borderFull,
+                  ),
+                  child: Icon(
+                    Icons.settings_rounded,
+                    size: 16,
+                    color: headerForeground,
+                  ),
                 ),
               ),
             ],

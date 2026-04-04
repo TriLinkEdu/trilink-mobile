@@ -412,18 +412,18 @@ class _ActionPlanPreviewCard extends StatelessWidget {
 String _buildContextualGreeting(DashboardDataModel data) {
   final streak = data.stats.streakDays;
   if (streak >= 7) {
-    return "You're on a $streak-day streak — keep going!";
+    return "You're on a $streak-day streak   keep going!";
   }
 
   final next = data.nextUp;
   if (next != null && _isDueWithinDays(next.dueAt, DateTime.now(), 3)) {
     final typeLabel = _formatNextUpTypeLabel(next.type);
-    return 'You have an upcoming $typeLabel — stay prepared!';
+    return 'You have an upcoming $typeLabel   stay prepared!';
   }
 
   final highlight = data.recentGradeHighlight;
   if (highlight != null && highlight.scorePercent >= 85) {
-    return 'Great work on ${highlight.subjectName} — ${highlight.scorePercent}%!';
+    return 'Great work on ${highlight.subjectName}   ${highlight.scorePercent}%!';
   }
 
   return 'Ready to learn something new today?';

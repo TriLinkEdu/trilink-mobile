@@ -12,7 +12,7 @@ class MockStudentAiAssistantRepository implements StudentAiAssistantRepository {
     if (lower.contains('grade') || lower.contains('score')) {
       return 'Based on your recent performance, I recommend focusing on '
           'spaced repetition for weak topics. Try reviewing your lowest-scoring '
-          'areas 15 minutes daily — consistency beats cramming every time!';
+          'areas 15 minutes daily   consistency beats cramming every time!';
     }
     if (lower.contains('assignment') || lower.contains('homework')) {
       return 'Great question! Break your assignment into smaller chunks and '
@@ -21,7 +21,7 @@ class MockStudentAiAssistantRepository implements StudentAiAssistantRepository {
     }
     if (lower.contains('exam') || lower.contains('test')) {
       return 'Exam prep tip: Start with a practice test to identify gaps, '
-          'then focus your study on those areas. Mix in active recall — '
+          'then focus your study on those areas. Mix in active recall   '
           'close your notes and try to explain concepts out loud.';
     }
     return 'I\'m here to help with your studies! You can ask me about your '

@@ -39,7 +39,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
         CelebrationOverlay.maybeOf(context)?.celebrate(
           type: CelebrationType.grade,
           message: 'Outstanding Score!',
-          subtext: '${pct.round()}% — amazing work!',
+          subtext: '${pct.round()}%   amazing work!',
         );
       } else if (pct >= 70) {
         if (_celebratedKeys.contains(sessionKey)) return;
@@ -47,7 +47,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
         CelebrationOverlay.maybeOf(context)?.celebrate(
           type: CelebrationType.completion,
           message: 'Quiz Complete!',
-          subtext: '${pct.round()}% — nice job!',
+          subtext: '${pct.round()}%   nice job!',
         );
       }
 

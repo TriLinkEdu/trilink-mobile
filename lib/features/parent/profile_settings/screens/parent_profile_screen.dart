@@ -311,7 +311,7 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
                     : Text(
                         controller.text.isNotEmpty
                             ? controller.text
-                            : '—',
+                            : ' ',
                         style: const TextStyle(
                           fontSize: 14,
                           color: AppColors.textPrimary,

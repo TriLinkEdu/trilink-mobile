@@ -23,6 +23,7 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
   int _currentIndex = 0;
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   final _navigatorKeys = List.generate(4, (_) => GlobalKey<NavigatorState>());
+  final _tabAtRoot = List<bool>.filled(4, true);
 
   static const _tabTitles = ['Home', 'Grades', 'Chat', 'Profile'];
 
@@ -36,6 +37,8 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
   late final List<_ShellRouteObserver> _routeObservers;
   final _titleNotifier = ValueNotifier<String>('Home');
 
+  bool get _showShellChrome => _tabAtRoot[_currentIndex];
+
   @override
   void initState() {
     super.initState();
@@ -45,6 +48,11 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
         rootTitle: _tabTitles[i],
         onTitleChanged: (title) {
           if (i == _currentIndex) _titleNotifier.value = title;
+        },
+        onRootChanged: (isAtRoot) {
+          if (_tabAtRoot[i] == isAtRoot) return;
+          if (!mounted) return;
+          setState(() => _tabAtRoot[i] = isAtRoot);
         },
       ),
     );
@@ -112,14 +120,18 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
           child: Scaffold(
             key: _scaffoldKey,
             drawer: StudentDrawer(homeNavigatorKey: _navigatorKeys[0]),
+            drawerEnableOpenDragGesture: _showShellChrome,
             body: Column(
               children: [
-                _ShellTopBar(
-                  titleNotifier: _titleNotifier,
-                  onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
-                  onNotificationsTap: () =>
-                      _openInCurrentTab(RouteNames.studentNotifications),
-                ),
+                if (_showShellChrome)
+                  _ShellTopBar(
+                    titleNotifier: _titleNotifier,
+                    onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
+                    onNotificationsTap: () =>
+                        _openInCurrentTab(RouteNames.studentNotifications),
+                    onSettingsTap: () =>
+                        _openInCurrentTab(RouteNames.studentSettings),
+                  ),
                 Expanded(
                   child: IndexedStack(
                     index: _currentIndex,
@@ -135,10 +147,9 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
                 ),
               ],
             ),
-            bottomNavigationBar: _GlassNavBar(
-              currentIndex: _currentIndex,
-              onTap: _onTap,
-            ),
+            bottomNavigationBar: _showShellChrome
+                ? _GlassNavBar(currentIndex: _currentIndex, onTap: _onTap)
+                : null,
           ),
         ),
       ),
@@ -192,10 +203,16 @@ const _routeTitleMap = <String, String>{
 class _ShellRouteObserver extends NavigatorObserver {
   final String rootTitle;
   final ValueChanged<String> onTitleChanged;
+  final ValueChanged<bool> onRootChanged;
   String currentTitle;
+  bool isAtRoot;
 
-  _ShellRouteObserver({required this.rootTitle, required this.onTitleChanged})
-    : currentTitle = rootTitle;
+  _ShellRouteObserver({
+    required this.rootTitle,
+    required this.onTitleChanged,
+    required this.onRootChanged,
+  }) : currentTitle = rootTitle,
+       isAtRoot = true;
 
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
@@ -215,7 +232,9 @@ class _ShellRouteObserver extends NavigatorObserver {
   void _update(Route<dynamic> route) {
     final name = route.settings.name;
     currentTitle = _routeTitleMap[name] ?? rootTitle;
+    isAtRoot = route.isFirst;
     onTitleChanged(currentTitle);
+    onRootChanged(isAtRoot);
   }
 }
 
@@ -225,11 +244,13 @@ class _ShellTopBar extends StatelessWidget {
   final ValueNotifier<String> titleNotifier;
   final VoidCallback onMenuTap;
   final VoidCallback onNotificationsTap;
+  final VoidCallback onSettingsTap;
 
   const _ShellTopBar({
     required this.titleNotifier,
     required this.onMenuTap,
     required this.onNotificationsTap,
+    required this.onSettingsTap,
   });
 
   @override
@@ -295,6 +316,11 @@ class _ShellTopBar extends StatelessWidget {
               icon: const Icon(Icons.notifications_outlined, size: 22),
               onPressed: onNotificationsTap,
               tooltip: 'Notifications',
+            ),
+            IconButton(
+              icon: const Icon(Icons.settings_outlined, size: 22),
+              onPressed: onSettingsTap,
+              tooltip: 'Settings',
             ),
           ],
         ),

@@ -518,7 +518,7 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
                 SizedBox(height: 8),
                 Text(
                   'Based on current trends, assignment completion rates, and historical exam data. '
-                  '3 students may score below passing threshold — early intervention recommended.',
+                  '3 students may score below passing threshold   early intervention recommended.',
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.white70,
