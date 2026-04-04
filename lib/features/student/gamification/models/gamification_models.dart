@@ -335,6 +335,35 @@ class NextBadgeProgressModel {
   }
 }
 
+class GamificationMutationResult {
+  final int xpDelta;
+  final int newTotalXp;
+  final bool leveledUp;
+  final int newLevel;
+  final List<String> newAchievementIds;
+  final List<String> newBadgeIds;
+  final int? leaderboardBeforeRank;
+  final int? leaderboardAfterRank;
+
+  const GamificationMutationResult({
+    required this.xpDelta,
+    required this.newTotalXp,
+    required this.leveledUp,
+    required this.newLevel,
+    this.newAchievementIds = const [],
+    this.newBadgeIds = const [],
+    this.leaderboardBeforeRank,
+    this.leaderboardAfterRank,
+  });
+
+  static const empty = GamificationMutationResult(
+    xpDelta: 0,
+    newTotalXp: 0,
+    leveledUp: false,
+    newLevel: 0,
+  );
+}
+
 class StreakModel {
   final int currentStreak;
   final int longestStreak;

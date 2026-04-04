@@ -11,6 +11,7 @@ import '../../shared/widgets/student_page_background.dart';
 import '../cubit/achievements_list_cubit.dart';
 import '../models/gamification_models.dart';
 import '../repositories/student_gamification_repository.dart';
+import '../widgets/badge_visuals.dart';
 
 class AchievementsListScreen extends StatelessWidget {
   const AchievementsListScreen({super.key});
@@ -139,6 +140,7 @@ class _AchievementTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isUnlocked = achievement.isUnlocked;
+    final color = BadgeVisuals.accentForAchievement(achievement, theme);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -148,15 +150,28 @@ class _AchievementTile extends StatelessWidget {
           height: 44,
           decoration: BoxDecoration(
             color: isUnlocked
-                ? AppColors.leaderboardCrown.withAlpha(38)
+                ? color.withAlpha(38)
                 : theme.colorScheme.surfaceContainerHighest,
             borderRadius: AppRadius.borderMd,
           ),
-          child: Icon(
-            isUnlocked ? Icons.emoji_events_rounded : Icons.lock_rounded,
-            color: isUnlocked
-                ? AppColors.leaderboardCrown
-                : theme.colorScheme.onSurfaceVariant,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Icon(
+                BadgeVisuals.iconForAchievement(achievement),
+                color: isUnlocked ? color : theme.colorScheme.onSurfaceVariant,
+              ),
+              if (!isUnlocked)
+                Positioned(
+                  right: 2,
+                  bottom: 2,
+                  child: Icon(
+                    Icons.lock_rounded,
+                    size: 12,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+            ],
           ),
         ),
         title: Text(

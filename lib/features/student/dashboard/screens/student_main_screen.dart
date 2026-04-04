@@ -456,6 +456,10 @@ class _AnimatedNavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final selectedBg = Color.alphaBlend(
+      theme.colorScheme.primary.withAlpha(46),
+      theme.colorScheme.surface,
+    );
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -468,9 +472,7 @@ class _AnimatedNavItem extends StatelessWidget {
           vertical: 8,
         ),
         decoration: BoxDecoration(
-          color: isSelected
-              ? theme.colorScheme.primary.withAlpha(20)
-              : Colors.transparent,
+          color: isSelected ? selectedBg : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
@@ -483,7 +485,7 @@ class _AnimatedNavItem extends StatelessWidget {
                 key: ValueKey(isSelected),
                 size: 22,
                 color: isSelected
-                    ? theme.colorScheme.primary
+                    ? theme.colorScheme.onPrimaryContainer
                     : theme.colorScheme.onSurfaceVariant,
               ),
             ),
@@ -497,7 +499,7 @@ class _AnimatedNavItem extends StatelessWidget {
                         data.label,
                         style: theme.textTheme.labelLarge?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.primary,
+                          color: theme.colorScheme.onPrimaryContainer,
                         ),
                       ),
                     )
