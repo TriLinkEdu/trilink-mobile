@@ -6,11 +6,17 @@ import '../../exams/models/exam_model.dart';
 class QuizResultScreen extends StatefulWidget {
   final ExamResultModel result;
   final List<QuestionModel>? questions;
+  final List<String> newlyUnlockedAchievements;
+  final bool leveledUp;
+  final int? newLevel;
 
   const QuizResultScreen({
     super.key,
     required this.result,
     this.questions,
+    this.newlyUnlockedAchievements = const [],
+    this.leveledUp = false,
+    this.newLevel,
   });
 
   @override
@@ -44,6 +50,24 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           subtext: '${pct.round()}% — nice job!',
         );
       }
+
+      if (widget.leveledUp) {
+        CelebrationOverlay.maybeOf(context)?.celebrate(
+          type: CelebrationType.levelUp,
+          message: 'Level Up!',
+          subtext: widget.newLevel != null
+              ? 'You reached level ${widget.newLevel}'
+              : 'You advanced to the next level',
+        );
+      }
+
+      if (widget.newlyUnlockedAchievements.isNotEmpty) {
+        CelebrationOverlay.maybeOf(context)?.celebrate(
+          type: CelebrationType.achievement,
+          message: 'New Achievement Unlocked!',
+          subtext: widget.newlyUnlockedAchievements.first,
+        );
+      }
     });
   }
 
@@ -65,14 +89,20 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           children: [
             const SizedBox(height: 16),
             Icon(
-              passed ? Icons.celebration_rounded : Icons.sentiment_neutral_rounded,
+              passed
+                  ? Icons.celebration_rounded
+                  : Icons.sentiment_neutral_rounded,
               size: 64,
-              color: passed ? AppColors.warning : theme.colorScheme.onSurfaceVariant,
+              color: passed
+                  ? AppColors.warning
+                  : theme.colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: 16),
             Text(
               passed ? 'Great job!' : 'Keep practicing!',
-              style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 24),
             if (widget.result.correctAnswers == widget.result.totalQuestions)
@@ -92,7 +122,8 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
               )
             else
               _ScoreCircle(percentage: pct, theme: theme),
-            if (widget.result.correctAnswers == widget.result.totalQuestions) ...[
+            if (widget.result.correctAnswers ==
+                widget.result.totalQuestions) ...[
               const SizedBox(height: 12),
               Text(
                 'PERFECT!',
@@ -114,7 +145,8 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                 ),
                 _StatCard(
                   label: 'Wrong',
-                  value: '${widget.result.totalQuestions - widget.result.correctAnswers}',
+                  value:
+                      '${widget.result.totalQuestions - widget.result.correctAnswers}',
                   color: AppColors.danger,
                 ),
                 _StatCard(
@@ -124,11 +156,60 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'Progress has been applied to your missions and achievements.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            if (widget.newlyUnlockedAchievements.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Unlocked',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: widget.newlyUnlockedAchievements
+                    .map(
+                      (title) => Chip(
+                        avatar: const Icon(
+                          Icons.emoji_events_rounded,
+                          size: 18,
+                        ),
+                        label: Text(title),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ],
             if (widget.questions != null) ...[
               const SizedBox(height: 24),
               const Divider(),
               const SizedBox(height: 16),
-              Text('Question Breakdown', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+              Text(
+                'Question Breakdown',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               const SizedBox(height: 12),
               ...widget.questions!.asMap().entries.map((entry) {
                 final idx = entry.key;
@@ -140,14 +221,20 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                   child: ListTile(
                     leading: CircleAvatar(
                       radius: 14,
-                      backgroundColor: isCorrect ? AppColors.success : AppColors.danger,
+                      backgroundColor: isCorrect
+                          ? AppColors.success
+                          : AppColors.danger,
                       child: Icon(
                         isCorrect ? Icons.check : Icons.close,
                         size: 16,
                         color: theme.colorScheme.onPrimary,
                       ),
                     ),
-                    title: Text('Q${idx + 1}: ${q.text}', maxLines: 2, overflow: TextOverflow.ellipsis),
+                    title: Text(
+                      'Q${idx + 1}: ${q.text}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     subtitle: Text(
                       isCorrect
                           ? 'Correct: ${q.options[q.correctIndex]}'
@@ -180,8 +267,8 @@ class _ScoreCircle extends StatelessWidget {
     final color = percentage >= 80
         ? AppColors.success
         : percentage >= 60
-            ? AppColors.warning
-            : AppColors.danger;
+        ? AppColors.warning
+        : AppColors.danger;
     return SizedBox(
       width: 120,
       height: 120,
@@ -213,14 +300,23 @@ class _StatCard extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
-  const _StatCard({required this.label, required this.value, required this.color});
+  const _StatCard({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(value,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: color)),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
         const SizedBox(height: 4),
         Text(label, style: Theme.of(context).textTheme.bodySmall),
       ],
