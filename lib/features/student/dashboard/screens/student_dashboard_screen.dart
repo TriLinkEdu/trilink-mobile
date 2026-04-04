@@ -214,6 +214,12 @@ class _DashboardContent extends StatelessWidget {
                       context,
                     ).pushNamed(RouteNames.studentWeeklySnapshot),
                   ),
+                  AppSpacing.gapMd,
+                  _ActionPlanPreviewCard(
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentActionPlan),
+                  ),
                   AppSpacing.gapXxl,
 
                   _SectionHeader(
@@ -320,6 +326,68 @@ class _WeeklySnapshotCard extends StatelessWidget {
                   AppSpacing.gapXxs,
                   Text(
                     'See attendance, quiz trend, and your focus plan.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionPlanPreviewCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _ActionPlanPreviewCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Pressable(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: AppRadius.borderLg,
+          boxShadow: AppShadows.subtle(theme.shadowColor),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: AppColors.secondary.withAlpha(16),
+                borderRadius: AppRadius.borderMd,
+              ),
+              child: Icon(Icons.task_alt_rounded, color: AppColors.secondary),
+            ),
+            AppSpacing.hGapMd,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Action Plan',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  AppSpacing.gapXxs,
+                  Text(
+                    'Get focused tasks and mark progress as done.',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),

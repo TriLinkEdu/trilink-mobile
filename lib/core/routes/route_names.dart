@@ -46,6 +46,7 @@ class RouteNames {
       '/student/ai-assistant/resources';
   static const String studentEvaluateMe = '/student/ai-assistant/evaluate';
   static const String studentWeeklySnapshot = '/student/weekly-snapshot';
+  static const String studentActionPlan = '/student/action-plan';
 
   // Teacher
   static const String teacherDashboard = '/teacher/dashboard';
