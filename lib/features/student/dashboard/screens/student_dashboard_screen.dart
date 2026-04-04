@@ -202,6 +202,21 @@ class _DashboardContent extends StatelessWidget {
                   ],
 
                   _SectionHeader(
+                    title: 'This Week',
+                    actionLabel: 'Details',
+                    onAction: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentWeeklySnapshot),
+                  ),
+                  AppSpacing.gapMd,
+                  _WeeklySnapshotCard(
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentWeeklySnapshot),
+                  ),
+                  AppSpacing.gapXxl,
+
+                  _SectionHeader(
                     title: 'Quick Actions',
                     actionLabel: 'All',
                     onAction: () => StudentShellScope.of(context).openDrawer(),
@@ -252,6 +267,71 @@ class _DashboardContent extends StatelessWidget {
               color: Theme.of(context).colorScheme.onPrimary,
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WeeklySnapshotCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _WeeklySnapshotCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Pressable(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: AppRadius.borderLg,
+          boxShadow: AppShadows.subtle(theme.shadowColor),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withAlpha(18),
+                borderRadius: AppRadius.borderMd,
+              ),
+              child: Icon(
+                Icons.insights_rounded,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            AppSpacing.hGapMd,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Weekly Snapshot',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  AppSpacing.gapXxs,
+                  Text(
+                    'See attendance, quiz trend, and your focus plan.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ],
         ),
       ),
     );
