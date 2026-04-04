@@ -271,6 +271,21 @@ class _GradesViewState extends State<_GradesView> {
                                               ),
                                         ),
                                       ),
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.of(context).pushNamed(
+                                            RouteNames.studentPerformanceTrends,
+                                          );
+                                        },
+                                        child: Text(
+                                          'Trends',
+                                          style: theme.textTheme.labelLarge
+                                              ?.copyWith(
+                                                color:
+                                                    theme.colorScheme.primary,
+                                              ),
+                                        ),
+                                      ),
                                     ],
                                   ),
                                   AppSpacing.gapSm,
