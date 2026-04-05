@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:trilink_mobile/core/widgets/pressable.dart';
+import '../../../../core/constants/asset_constants.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -272,10 +273,11 @@ class _DrawerHeader extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.school_rounded,
-                      size: 14,
-                      color: headerForeground,
+                    Image.asset(
+                      AssetConstants.logoPath,
+                      width: 14,
+                      height: 14,
+                      fit: BoxFit.contain,
                     ),
                     AppSpacing.hGapXs,
                     Text(

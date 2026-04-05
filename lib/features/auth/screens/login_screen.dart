@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/routes/route_names.dart';
+import '../../../core/constants/asset_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_shadows.dart';
@@ -60,10 +61,10 @@ class _LoginScreenState extends State<LoginScreen>
     HapticFeedback.mediumImpact();
     try {
       await context.read<AuthCubit>().login(
-            email: _emailController.text.trim(),
-            password: _passwordController.text,
-            role: _selectedRole.name,
-          );
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        role: _selectedRole.name,
+      );
 
       if (!mounted) return;
       final route = switch (_selectedRole) {
@@ -74,9 +75,9 @@ class _LoginScreenState extends State<LoginScreen>
       Navigator.of(context).pushReplacementNamed(route);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Login failed: $e')));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -90,9 +91,9 @@ class _LoginScreenState extends State<LoginScreen>
       Navigator.of(context).pushReplacementNamed(RouteNames.studentDashboard);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Offline login failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Offline login failed: $e')));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -117,7 +118,9 @@ class _LoginScreenState extends State<LoginScreen>
                     child: IconButton(
                       onPressed: () => ThemeNotifier.instance.toggle(),
                       icon: Icon(
-                        isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                        isDark
+                            ? Icons.light_mode_rounded
+                            : Icons.dark_mode_rounded,
                       ),
                     ),
                   ),
@@ -131,11 +134,21 @@ class _LoginScreenState extends State<LoginScreen>
                         borderRadius: BorderRadius.circular(AppRadius.xl),
                         boxShadow: AppShadows.glow(AppColors.primary),
                       ),
-                      child: const Icon(Icons.school_rounded, color: Colors.white, size: 44),
+                      child: Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Image.asset(
+                          AssetConstants.logoPath,
+                          fit: BoxFit.contain,
+                          filterQuality: FilterQuality.high,
+                        ),
+                      ),
                     ),
                   ),
                   AppSpacing.gapXl,
-                  Text('Welcome to TriLink', style: theme.textTheme.headlineSmall),
+                  Text(
+                    'Welcome to TriLink',
+                    style: theme.textTheme.headlineSmall,
+                  ),
                   AppSpacing.gapXs,
                   Text(
                     'Learn smarter, grow faster',
@@ -152,7 +165,9 @@ class _LoginScreenState extends State<LoginScreen>
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () => Navigator.of(context).pushNamed(RouteNames.forgotPassword),
+                      onPressed: () => Navigator.of(
+                        context,
+                      ).pushNamed(RouteNames.forgotPassword),
                       child: const Text('Forgot password?'),
                     ),
                   ),
@@ -183,7 +198,9 @@ class _LoginScreenState extends State<LoginScreen>
                         style: theme.textTheme.bodyMedium,
                       ),
                       TextButton(
-                        onPressed: () => Navigator.of(context).pushNamed(RouteNames.register),
+                        onPressed: () => Navigator.of(
+                          context,
+                        ).pushNamed(RouteNames.register),
                         child: const Text('Sign Up'),
                       ),
                     ],
@@ -216,7 +233,9 @@ class _LoginScreenState extends State<LoginScreen>
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: isSelected ? theme.colorScheme.primary : Colors.transparent,
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Center(
@@ -226,7 +245,9 @@ class _LoginScreenState extends State<LoginScreen>
                       color: isSelected
                           ? theme.colorScheme.onPrimary
                           : theme.colorScheme.onSurfaceVariant,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                     ),
                   ),
                 ),
@@ -247,7 +268,9 @@ class _LoginScreenState extends State<LoginScreen>
         prefixIcon: Icon(Icons.email_outlined),
       ),
       validator: (value) {
-        if (value == null || value.trim().isEmpty) return 'Please enter your email';
+        if (value == null || value.trim().isEmpty) {
+          return 'Please enter your email';
+        }
         return null;
       },
     );
@@ -263,7 +286,9 @@ class _LoginScreenState extends State<LoginScreen>
         suffixIcon: IconButton(
           onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
           icon: Icon(
-            _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+            _obscurePassword
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
           ),
         ),
       ),
