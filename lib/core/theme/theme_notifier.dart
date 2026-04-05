@@ -152,9 +152,6 @@ class ThemeNotifier extends ChangeNotifier {
     if (_selectedMoodTheme == mood) return;
     _selectedMoodTheme = mood;
     _storage.setString(_moodThemeKey, mood.name);
-    if (!_autoApplyThemes) {
-      _applyMoodBrightnessRule(mood);
-    }
     notifyListeners();
   }
 
@@ -208,9 +205,6 @@ class ThemeNotifier extends ChangeNotifier {
     if (_previewMoodTheme != null) {
       _selectedMoodTheme = _previewMoodTheme!;
       _storage.setString(_moodThemeKey, _selectedMoodTheme.name);
-      if (!_autoApplyThemes) {
-        _applyMoodBrightnessRule(_selectedMoodTheme);
-      }
     }
     if (_previewTextureStyle != null) {
       _textureStyle = _previewTextureStyle!;

@@ -30,8 +30,7 @@ class _TeacherNotificationsScreenState
       final data = await ApiService().getNotifications();
       if (!mounted) return;
       setState(() {
-        _notifications =
-            data.map((n) => n as Map<String, dynamic>).toList();
+        _notifications = data.map((n) => n as Map<String, dynamic>).toList();
         _loading = false;
       });
     } catch (e) {
@@ -54,9 +53,9 @@ class _TeacherNotificationsScreenState
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to mark all read: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to mark all read: $e')));
     }
   }
 
@@ -142,8 +141,10 @@ class _TeacherNotificationsScreenState
             if (_selectedFilter == 1) {
               return type == 'assignment' || type == 'student';
             }
-            return type == 'system' || type == 'alert' ||
-                type == 'announcement' || type == 'grade';
+            return type == 'system' ||
+                type == 'alert' ||
+                type == 'announcement' ||
+                type == 'grade';
           }).toList();
 
     final Map<String, List<MapEntry<int, Map<String, dynamic>>>> grouped = {};
@@ -157,15 +158,17 @@ class _TeacherNotificationsScreenState
     const order = ['TODAY', 'YESTERDAY', 'OLDER'];
     return order
         .where((label) => grouped.containsKey(label))
-        .map((label) =>
-            _NotificationGroup(label: label, items: grouped[label]!))
+        .map(
+          (label) => _NotificationGroup(label: label, items: grouped[label]!),
+        )
         .toList();
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,7 +209,11 @@ class _TeacherNotificationsScreenState
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
+            icon: const Icon(
+              Icons.arrow_back_ios_new,
+              color: AppColors.textPrimary,
+              size: 20,
+            ),
             onPressed: () => Navigator.pop(context),
           ),
           const Expanded(
@@ -251,9 +258,7 @@ class _TeacherNotificationsScreenState
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.textPrimary
-                      : Colors.white,
+                  color: isSelected ? AppColors.textPrimary : Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: isSelected
@@ -397,8 +402,9 @@ class _NotificationTile extends StatelessWidget {
                       child: Text(
                         title,
                         style: TextStyle(
-                          fontWeight:
-                              isRead ? FontWeight.w500 : FontWeight.bold,
+                          fontWeight: isRead
+                              ? FontWeight.w500
+                              : FontWeight.bold,
                           fontSize: 15,
                           color: AppColors.textPrimary,
                         ),

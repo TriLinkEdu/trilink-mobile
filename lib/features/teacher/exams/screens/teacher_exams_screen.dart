@@ -69,19 +69,20 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Exams & Assessments',
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -89,9 +90,9 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen>
         centerTitle: true,
         bottom: TabBar(
           controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textSecondary,
-          indicatorColor: AppColors.primary,
+          labelColor: theme.colorScheme.primary,
+          unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+          indicatorColor: theme.colorScheme.primary,
           indicatorWeight: 3,
           labelStyle: const TextStyle(
             fontWeight: FontWeight.w600,
@@ -110,31 +111,36 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen>
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.error_outline,
-                          size: 48, color: Colors.grey.shade400),
-                      const SizedBox(height: 12),
-                      Text(_error!,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.grey.shade600)),
-                      const SizedBox(height: 16),
-                      OutlinedButton(
-                        onPressed: _loadData,
-                        child: const Text('Retry'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Colors.grey.shade400,
                   ),
-                )
-              : TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildExamList(_upcomingExams, _ExamTab.upcoming),
-                    _buildExamList(_completedExams, _ExamTab.completed),
-                  ],
-                ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _error!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 16),
+                  OutlinedButton(
+                    onPressed: _loadData,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          : TabBarView(
+              controller: _tabController,
+              children: [
+                _buildExamList(_upcomingExams, _ExamTab.upcoming),
+                _buildExamList(_completedExams, _ExamTab.completed),
+              ],
+            ),
     );
   }
 
@@ -298,7 +304,11 @@ class _ExamCard extends StatelessWidget {
       case _ExamTab.completed:
         return [
           _CardAction('Analytics', Icons.bar_chart, AppColors.primary),
-          _CardAction('Results', Icons.assignment_outlined, AppColors.secondary),
+          _CardAction(
+            'Results',
+            Icons.assignment_outlined,
+            AppColors.secondary,
+          ),
         ];
     }
   }
@@ -371,7 +381,11 @@ class _ExamCard extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade500),
+                Icon(
+                  Icons.calendar_today,
+                  size: 14,
+                  color: Colors.grey.shade500,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   exam.date,
@@ -386,7 +400,11 @@ class _ExamCard extends StatelessWidget {
                 ),
                 if (exam.studentCount > 0) ...[
                   const SizedBox(width: 16),
-                  Icon(Icons.people_outline, size: 14, color: Colors.grey.shade500),
+                  Icon(
+                    Icons.people_outline,
+                    size: 14,
+                    color: Colors.grey.shade500,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     '${exam.studentCount} students',

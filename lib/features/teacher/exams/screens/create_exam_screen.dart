@@ -29,11 +29,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
   void _insertSymbol(String symbol) {
     final text = _latexController.text;
     final selection = _latexController.selection;
-    final newText = text.replaceRange(
-      selection.start,
-      selection.end,
-      symbol,
-    );
+    final newText = text.replaceRange(selection.start, selection.end, symbol);
     _latexController.value = TextEditingValue(
       text: newText,
       selection: TextSelection.collapsed(
@@ -76,16 +72,14 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(publish ? 'Exam published!' : 'Draft saved!'),
-        ),
+        SnackBar(content: Text(publish ? 'Exam published!' : 'Draft saved!')),
       );
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -93,23 +87,24 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text(
+          child: Text(
             'Cancel',
-            style: TextStyle(color: AppColors.primary, fontSize: 15),
+            style: TextStyle(color: theme.colorScheme.primary, fontSize: 15),
           ),
         ),
         leadingWidth: 80,
-        title: const Text(
+        title: Text(
           'Create New Exam',
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.bold,
             fontSize: 17,
           ),
@@ -213,10 +208,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
           child: Column(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 6,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade50,
                   borderRadius: const BorderRadius.vertical(
@@ -261,10 +253,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.all(16),
                 ),
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 14,
-                ),
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 14),
               ),
               Padding(
                 padding: const EdgeInsets.only(right: 12, bottom: 8),

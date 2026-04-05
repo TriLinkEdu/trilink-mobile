@@ -50,11 +50,10 @@ class _TeacherChatConversationScreenState
           final senderMap = map['sender'] as Map<String, dynamic>?;
           final senderName = senderMap != null
               ? '${senderMap['firstName'] ?? ''} ${senderMap['lastName'] ?? ''}'
-                  .trim()
+                    .trim()
               : 'Unknown';
-          final senderId = senderMap?['id'] as String? ??
-              map['senderId'] as String? ??
-              '';
+          final senderId =
+              senderMap?['id'] as String? ?? map['senderId'] as String? ?? '';
           final currentUserId = AuthService().currentUser?.id ?? '';
           final isSent = senderId == currentUserId;
 
@@ -107,22 +106,21 @@ class _TeacherChatConversationScreenState
 
     setState(() {
       _sending = true;
-      _messages.add(_ChatMessage(
-        sender: 'You',
-        text: text,
-        time: 'Sending...',
-        isSent: true,
-        date: 'Today',
-      ));
+      _messages.add(
+        _ChatMessage(
+          sender: 'You',
+          text: text,
+          time: 'Sending...',
+          isSent: true,
+          date: 'Today',
+        ),
+      );
       _messageController.clear();
     });
     _scrollToBottom();
 
     try {
-      await ApiService().sendMessage(
-        widget.conversationId,
-        {'content': text},
-      );
+      await ApiService().sendMessage(widget.conversationId, {'content': text});
       if (!mounted) return;
       final now = DateTime.now();
       setState(() {
@@ -142,9 +140,9 @@ class _TeacherChatConversationScreenState
         _messages.removeLast();
         _sending = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to send: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to send: $e')));
     }
   }
 
@@ -169,19 +167,20 @@ class _TeacherChatConversationScreenState
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0.5,
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        iconTheme: IconThemeData(color: theme.colorScheme.onSurface),
         title: Row(
           children: [
             Expanded(
               child: Text(
                 widget.threadName,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface,
                   fontWeight: FontWeight.w600,
                   fontSize: 16,
                 ),
@@ -201,7 +200,10 @@ class _TeacherChatConversationScreenState
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.more_vert, color: AppColors.textSecondary),
+            icon: Icon(
+              Icons.more_vert,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             onPressed: () {},
           ),
         ],
@@ -227,7 +229,9 @@ class _TeacherChatConversationScreenState
             Text(_error!, style: const TextStyle(color: AppColors.error)),
             const SizedBox(height: 12),
             ElevatedButton(
-                onPressed: _loadMessages, child: const Text('Retry')),
+              onPressed: _loadMessages,
+              child: const Text('Retry'),
+            ),
           ],
         ),
       );
@@ -294,8 +298,9 @@ class _TeacherChatConversationScreenState
           maxWidth: MediaQuery.of(context).size.width * 0.75,
         ),
         child: Column(
-          crossAxisAlignment:
-              isSent ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: isSent
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
           children: [
             if (!isSent)
               Padding(

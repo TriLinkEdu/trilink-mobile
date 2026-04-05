@@ -21,10 +21,8 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
 
   List<Map<String, dynamic>> _linkedChildren = [];
 
-  String get _userName =>
-      AuthService().currentUser?.fullName ?? 'Parent';
-  String get _userEmail =>
-      AuthService().currentUser?.email ?? '';
+  String get _userName => AuthService().currentUser?.fullName ?? 'Parent';
+  String get _userEmail => AuthService().currentUser?.email ?? '';
 
   @override
   void initState() {
@@ -34,7 +32,10 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
 
   Future<void> _loadData() async {
     try {
-      setState(() { _loading = true; _error = null; });
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
       final results = await Future.wait([
         ApiService().getUserSettings(),
         ApiService().getParentDashboard(),
@@ -45,10 +46,8 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
 
       if (!mounted) return;
       setState(() {
-        _systemAnnouncements =
-            settings['systemAnnouncements'] as bool? ?? true;
-        _enhancedPrivacy =
-            settings['enhancedPrivacy'] as bool? ?? false;
+        _systemAnnouncements = settings['systemAnnouncements'] as bool? ?? true;
+        _enhancedPrivacy = settings['enhancedPrivacy'] as bool? ?? false;
 
         _linkedChildren =
             ((dashboard['linkedChildren'] as List<dynamic>?) ?? [])
@@ -57,7 +56,10 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
     }
   }
 
@@ -69,12 +71,16 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
         content: const Text('Are you sure you want to log out?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Log Out',
-                  style: TextStyle(color: AppColors.error))),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              'Log Out',
+              style: TextStyle(color: AppColors.error),
+            ),
+          ),
         ],
       ),
     );
@@ -82,8 +88,9 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
 
     await AuthService().logout();
     if (!mounted) return;
-    Navigator.of(context).pushNamedAndRemoveUntil(
-        RouteNames.login, (route) => false);
+    Navigator.of(
+      context,
+    ).pushNamedAndRemoveUntil(RouteNames.login, (route) => false);
   }
 
   @override
@@ -121,45 +128,44 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(_error!,
-                          style: const TextStyle(color: AppColors.error)),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                          onPressed: _loadData,
-                          child: const Text('Retry')),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(_error!, style: const TextStyle(color: AppColors.error)),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: _loadData,
+                    child: const Text('Retry'),
                   ),
-                )
-              : SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 12),
-                      _buildProfileCard(),
-                      const SizedBox(height: 24),
-                      _buildSection('PERSONAL INFORMATION', [
-                        _SettingsTile(title: 'Edit Profile', onTap: () {}),
-                        _SettingsTile(
-                            title: 'Change Password', onTap: () {}),
-                      ]),
-                      const SizedBox(height: 24),
-                      _buildLinkedChildren(),
-                      const SizedBox(height: 24),
-                      _buildNotificationPreferences(),
-                      const SizedBox(height: 24),
-                      _buildAppSettings(),
-                      const SizedBox(height: 32),
-                      _buildLogout(),
-                      const SizedBox(height: 12),
-                      _buildVersionInfo(),
-                      const SizedBox(height: 32),
-                    ],
-                  ),
-                ),
+                ],
+              ),
+            )
+          : SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 12),
+                  _buildProfileCard(),
+                  const SizedBox(height: 24),
+                  _buildSection('PERSONAL INFORMATION', [
+                    _SettingsTile(title: 'Edit Profile', onTap: () {}),
+                    _SettingsTile(title: 'Change Password', onTap: () {}),
+                  ]),
+                  const SizedBox(height: 24),
+                  _buildLinkedChildren(),
+                  const SizedBox(height: 24),
+                  _buildNotificationPreferences(),
+                  const SizedBox(height: 24),
+                  _buildAppSettings(),
+                  const SizedBox(height: 32),
+                  _buildLogout(),
+                  const SizedBox(height: 12),
+                  _buildVersionInfo(),
+                  const SizedBox(height: 32),
+                ],
+              ),
+            ),
     );
   }
 
@@ -254,10 +260,11 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
   Widget _buildLinkedChildren() {
     return _buildSection('LINKED CHILDREN', [
       ..._linkedChildren.map<Widget>((child) {
-        final name = child['fullName'] as String? ??
+        final name =
+            child['fullName'] as String? ??
             '${child['firstName'] ?? ''} ${child['lastName'] ?? ''}'.trim();
-        final id = child['studentId'] as String? ??
-            child['id'] as String? ?? '';
+        final id =
+            child['studentId'] as String? ?? child['id'] as String? ?? '';
         final avatar = child['avatar'] as String? ?? '';
         return _ChildTile(
           name: name,
@@ -267,8 +274,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
         );
       }),
       Padding(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         child: GestureDetector(
           onTap: () {},
           child: Row(
@@ -304,8 +310,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
   Widget _buildNotificationPreferences() {
     return _buildSection('NOTIFICATION PREFERENCES', [
       Padding(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Row(
           children: [
             Expanded(
@@ -323,10 +328,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                   const SizedBox(height: 2),
                   Text(
                     'Updates about TriLink ecosystem',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade500,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                   ),
                 ],
               ),
@@ -335,8 +337,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
               value: _systemAnnouncements,
               onChanged: (val) {
                 setState(() => _systemAnnouncements = val);
-                ApiService().updateUserSettings(
-                    {'systemAnnouncements': val});
+                ApiService().updateUserSettings({'systemAnnouncements': val});
               },
               activeTrackColor: AppColors.primary,
             ),
@@ -356,9 +357,13 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
         ),
         onTap: () {},
       ),
+      _SettingsTile(
+        title: 'Theme and Appearance',
+        onTap: () =>
+            Navigator.pushNamed(context, RouteNames.themeCustomization),
+      ),
       Padding(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Row(
           children: [
             const Expanded(
@@ -383,8 +388,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
         ),
       ),
       Padding(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Row(
           children: [
             Expanded(
@@ -402,10 +406,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                   const SizedBox(height: 2),
                   Text(
                     'Automatically deletes detailed activity logs older than 30 days.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade500,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                   ),
                 ],
               ),
@@ -414,8 +415,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
               value: _enhancedPrivacy,
               onChanged: (val) {
                 setState(() => _enhancedPrivacy = val);
-                ApiService()
-                    .updateUserSettings({'enhancedPrivacy': val});
+                ApiService().updateUserSettings({'enhancedPrivacy': val});
               },
               activeTrackColor: AppColors.primary,
             ),
@@ -467,8 +467,7 @@ class _SettingsTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         child: Row(
           children: [
             Expanded(
@@ -481,12 +480,8 @@ class _SettingsTile extends StatelessWidget {
                 ),
               ),
             ),
-            if (trailing != null) ...[
-              trailing!,
-              const SizedBox(width: 4),
-            ],
-            Icon(Icons.chevron_right,
-                size: 20, color: Colors.grey.shade400),
+            if (trailing != null) ...[trailing!, const SizedBox(width: 4)],
+            Icon(Icons.chevron_right, size: 20, color: Colors.grey.shade400),
           ],
         ),
       ),
@@ -520,8 +515,7 @@ class _ChildTile extends StatelessWidget {
                 )
               : CircleAvatar(
                   radius: 20,
-                  backgroundColor:
-                      AppColors.primary.withValues(alpha: 0.1),
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                   child: Text(
                     name
                         .split(' ')
@@ -530,9 +524,10 @@ class _ChildTile extends StatelessWidget {
                         .join()
                         .toUpperCase(),
                     style: const TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12),
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
           const SizedBox(width: 12),
@@ -550,8 +545,7 @@ class _ChildTile extends StatelessWidget {
                 ),
                 Text(
                   schoolId,
-                  style: TextStyle(
-                      fontSize: 12, color: Colors.grey.shade500),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                 ),
               ],
             ),

@@ -42,6 +42,7 @@ import '../../features/parent/announcements/screens/parent_announcements_screen.
 import '../../features/parent/feedback/screens/parent_feedback_screen.dart';
 import '../../features/parent/reports/screens/weekly_report_screen.dart';
 import '../../features/parent/reports/screens/report_comparison_screen.dart';
+import '../../features/shared/screens/theme_customization_screen.dart';
 
 class AppRouter {
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -64,13 +65,19 @@ class AppRouter {
       case RouteNames.teacherDashboard:
         return MaterialPageRoute(builder: (_) => const TeacherMainScreen());
       case RouteNames.teacherAttendance:
-        return MaterialPageRoute(builder: (_) => const TeacherAttendanceScreen());
+        return MaterialPageRoute(
+          builder: (_) => const TeacherAttendanceScreen(),
+        );
       case RouteNames.teacherCreateExam:
         return MaterialPageRoute(builder: (_) => const CreateExamScreen());
       case RouteNames.teacherLiveExam:
-        return MaterialPageRoute(builder: (_) => const LiveExamMonitoringScreen());
+        return MaterialPageRoute(
+          builder: (_) => const LiveExamMonitoringScreen(),
+        );
       case RouteNames.teacherCreateAnnouncement:
-        return MaterialPageRoute(builder: (_) => const CreateAnnouncementScreen());
+        return MaterialPageRoute(
+          builder: (_) => const CreateAnnouncementScreen(),
+        );
       case RouteNames.teacherStudentList:
         return MaterialPageRoute(builder: (_) => const StudentListScreen());
       case RouteNames.teacherStudentAnalytics:
@@ -84,30 +91,21 @@ class AppRouter {
       case RouteNames.teacherMessages:
         return MaterialPageRoute(builder: (_) => const TeacherMessagesScreen());
       case RouteNames.teacherCalendar:
-        return MaterialPageRoute(
-          builder: (_) => const TeacherCalendarScreen(),
-        );
+        return MaterialPageRoute(builder: (_) => const TeacherCalendarScreen());
       case RouteNames.teacherExams:
-        return MaterialPageRoute(
-          builder: (_) => const TeacherExamsScreen(),
-        );
+        return MaterialPageRoute(builder: (_) => const TeacherExamsScreen());
       case RouteNames.teacherExamBank:
-        return MaterialPageRoute(
-          builder: (_) => const ExamBankScreen(),
-        );
+        return MaterialPageRoute(builder: (_) => const ExamBankScreen());
       case RouteNames.teacherExamAnalytics:
         final args = settings.arguments as Map<String, String>?;
         return MaterialPageRoute(
-          builder: (_) => ExamAnalyticsScreen(
-            examId: args?['examId'] ?? '',
-          ),
+          builder: (_) => ExamAnalyticsScreen(examId: args?['examId'] ?? ''),
         );
       case RouteNames.teacherEvaluateSubmissions:
         final args = settings.arguments as Map<String, String>?;
         return MaterialPageRoute(
-          builder: (_) => EvaluateSubmissionsScreen(
-            examId: args?['examId'] ?? '',
-          ),
+          builder: (_) =>
+              EvaluateSubmissionsScreen(examId: args?['examId'] ?? ''),
         );
       case RouteNames.teacherAnnouncements:
         return MaterialPageRoute(
@@ -118,13 +116,9 @@ class AppRouter {
           builder: (_) => const AttendanceAnalyticsScreen(),
         );
       case RouteNames.teacherClasses:
-        return MaterialPageRoute(
-          builder: (_) => const ClassListScreen(),
-        );
+        return MaterialPageRoute(builder: (_) => const ClassListScreen());
       case RouteNames.teacherSettings:
-        return MaterialPageRoute(
-          builder: (_) => const TeacherSettingsScreen(),
-        );
+        return MaterialPageRoute(builder: (_) => const TeacherSettingsScreen());
       case RouteNames.teacherNotifications:
         return MaterialPageRoute(
           builder: (_) => const TeacherNotificationsScreen(),
@@ -139,9 +133,7 @@ class AppRouter {
           ),
         );
       case RouteNames.teacherCreateGroup:
-        return MaterialPageRoute(
-          builder: (_) => const CreateGroupScreen(),
-        );
+        return MaterialPageRoute(builder: (_) => const CreateGroupScreen());
       case RouteNames.teacherAiAssistant:
         return MaterialPageRoute(
           builder: (_) => const TeacherAiAssistantScreen(),
@@ -151,34 +143,25 @@ class AppRouter {
       case RouteNames.parentHome:
         return MaterialPageRoute(builder: (_) => const ParentHomeScreen());
       case RouteNames.parentDashboard:
-        return MaterialPageRoute(
-          builder: (_) => const ParentDashboardScreen(),
-        );
+        return MaterialPageRoute(builder: (_) => const ParentDashboardScreen());
       case RouteNames.parentAttendance:
-        return MaterialPageRoute(builder: (_) => const ParentAttendanceScreen());
-      case RouteNames.parentResults:
         return MaterialPageRoute(
-          builder: (_) => const ParentResultsScreen(),
+          builder: (_) => const ParentAttendanceScreen(),
         );
+      case RouteNames.parentResults:
+        return MaterialPageRoute(builder: (_) => const ParentResultsScreen());
       case RouteNames.parentStudentInfo:
         final args = settings.arguments as Map<String, String>?;
         return MaterialPageRoute(
-          builder: (_) => ParentStudentInfoScreen(
-            childName: args?['childName'] ?? '',
-          ),
+          builder: (_) =>
+              ParentStudentInfoScreen(childName: args?['childName'] ?? ''),
         );
       case RouteNames.parentChat:
-        return MaterialPageRoute(
-          builder: (_) => const ParentChatScreen(),
-        );
+        return MaterialPageRoute(builder: (_) => const ParentChatScreen());
       case RouteNames.parentProfile:
-        return MaterialPageRoute(
-          builder: (_) => const ParentProfileScreen(),
-        );
+        return MaterialPageRoute(builder: (_) => const ParentProfileScreen());
       case RouteNames.parentSettings:
-        return MaterialPageRoute(
-          builder: (_) => const ParentSettingsScreen(),
-        );
+        return MaterialPageRoute(builder: (_) => const ParentSettingsScreen());
       case RouteNames.parentNotifications:
         return MaterialPageRoute(
           builder: (_) => const ParentNotificationsScreen(),
@@ -188,26 +171,27 @@ class AppRouter {
           builder: (_) => const ParentAnnouncementsScreen(),
         );
       case RouteNames.parentFeedback:
-        return MaterialPageRoute(
-          builder: (_) => const ParentFeedbackScreen(),
-        );
+        return MaterialPageRoute(builder: (_) => const ParentFeedbackScreen());
       case RouteNames.parentWeeklyReport:
         final args = settings.arguments as Map<String, String>?;
         return MaterialPageRoute(
-          builder: (_) => WeeklyReportScreen(
-            childName: args?['childName'] ?? '',
-          ),
+          builder: (_) =>
+              WeeklyReportScreen(childName: args?['childName'] ?? ''),
         );
       case RouteNames.parentReportComparison:
         return MaterialPageRoute(
           builder: (_) => const ReportComparisonScreen(),
         );
 
+      case RouteNames.themeCustomization:
+        return MaterialPageRoute(
+          builder: (_) => const ThemeCustomizationScreen(),
+        );
+
       default:
         return MaterialPageRoute(
-          builder: (_) => const Scaffold(
-            body: Center(child: Text('Route not found')),
-          ),
+          builder: (_) =>
+              const Scaffold(body: Center(child: Text('Route not found'))),
         );
     }
   }

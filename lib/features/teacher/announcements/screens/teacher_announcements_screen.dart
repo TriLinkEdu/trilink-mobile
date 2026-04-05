@@ -35,8 +35,7 @@ class _TeacherAnnouncementsScreenState
       final raw = await ApiService().getAnnouncements();
       setState(() {
         _announcements = raw
-            .map((a) =>
-                _AnnouncementItem.fromJson(a as Map<String, dynamic>))
+            .map((a) => _AnnouncementItem.fromJson(a as Map<String, dynamic>))
             .toList();
       });
     } catch (e) {
@@ -64,15 +63,16 @@ class _TeacherAnnouncementsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Announcements',
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -81,76 +81,77 @@ class _TeacherAnnouncementsScreenState
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.error_outline,
-                          size: 48, color: Colors.grey.shade400),
-                      const SizedBox(height: 12),
-                      Text(_error!,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.grey.shade600)),
-                      const SizedBox(height: 16),
-                      OutlinedButton(
-                        onPressed: _loadData,
-                        child: const Text('Retry'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Colors.grey.shade400,
                   ),
-                )
-              : Column(
-                  children: [
-                    _buildFilterChips(),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: _filteredAnnouncements.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.campaign_outlined,
-                                    size: 48,
-                                    color: Colors.grey.shade400,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    'No $_selectedFilter announcements',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      color: Colors.grey.shade500,
-                                    ),
-                                  ),
-                                ],
+                  const SizedBox(height: 12),
+                  Text(
+                    _error!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 16),
+                  OutlinedButton(
+                    onPressed: _loadData,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          : Column(
+              children: [
+                _buildFilterChips(),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: _filteredAnnouncements.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.campaign_outlined,
+                                size: 48,
+                                color: Colors.grey.shade400,
                               ),
-                            )
-                          : RefreshIndicator(
-                              onRefresh: _loadData,
-                              child: ListView.separated(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 20),
-                                itemCount: _filteredAnnouncements.length,
-                                separatorBuilder: (context, index) =>
-                                    const SizedBox(height: 12),
-                                itemBuilder: (context, index) {
-                                  return _AnnouncementCard(
-                                    announcement:
-                                        _filteredAnnouncements[index],
-                                  );
-                                },
+                              const SizedBox(height: 12),
+                              Text(
+                                'No $_selectedFilter announcements',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: Colors.grey.shade500,
+                                ),
                               ),
-                            ),
-                    ),
-                  ],
+                            ],
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: _loadData,
+                          child: ListView.separated(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            itemCount: _filteredAnnouncements.length,
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              return _AnnouncementCard(
+                                announcement: _filteredAnnouncements[index],
+                              );
+                            },
+                          ),
+                        ),
                 ),
+              ],
+            ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final created = await Navigator.push<bool>(
             context,
-            MaterialPageRoute(
-              builder: (_) => const CreateAnnouncementScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => const CreateAnnouncementScreen()),
           );
           if (created == true) _loadData();
         },
@@ -172,14 +173,17 @@ class _TeacherAnnouncementsScreenState
             child: GestureDetector(
               onTap: () => setState(() => _selectedFilter = filter),
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: isSelected ? AppColors.primary : Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color:
-                        isSelected ? AppColors.primary : Colors.grey.shade300,
+                    color: isSelected
+                        ? AppColors.primary
+                        : Colors.grey.shade300,
                   ),
                 ),
                 child: Text(
@@ -260,8 +264,10 @@ class _AnnouncementCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: _statusColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
@@ -294,8 +300,10 @@ class _AnnouncementCard extends StatelessWidget {
             runSpacing: 6,
             children: announcement.audiences.map((audience) {
               return Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
@@ -326,8 +334,7 @@ class _AnnouncementCard extends StatelessWidget {
                 const SizedBox(width: 4),
                 Text(
                   '${announcement.attachments} file${announcement.attachments > 1 ? 's' : ''}',
-                  style:
-                      TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                 ),
               ],
             ],
@@ -373,12 +380,14 @@ class _AnnouncementItem {
 
     final audienceRaw = json['audiences'] ?? json['targetAudience'] ?? [];
     final audiences = (audienceRaw is List)
-        ? audienceRaw.map((a) => a is Map ? (a['name'] ?? a.toString()) : a.toString()).toList().cast<String>()
+        ? audienceRaw
+              .map((a) => a is Map ? (a['name'] ?? a.toString()) : a.toString())
+              .toList()
+              .cast<String>()
         : <String>[];
 
     final attachmentsRaw = json['attachments'];
-    final attachmentCount =
-        attachmentsRaw is List ? attachmentsRaw.length : 0;
+    final attachmentCount = attachmentsRaw is List ? attachmentsRaw.length : 0;
 
     return _AnnouncementItem(
       title: json['title'] ?? '',

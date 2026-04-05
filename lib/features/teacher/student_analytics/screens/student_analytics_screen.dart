@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../shared/widgets/role_page_background.dart';
 
 class StudentAnalyticsScreen extends StatefulWidget {
   final String studentId;
@@ -55,31 +56,40 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
       _profile = results[1];
 
       final gpaVal = _performance['gpa'];
-      _gpa = gpaVal is num ? gpaVal.toDouble() : double.tryParse(gpaVal?.toString() ?? '') ?? 0.0;
-      _gpaRank = _performance['gpaRank'] as String? ??
-          _performance['classRank'] as String? ?? '';
+      _gpa = gpaVal is num
+          ? gpaVal.toDouble()
+          : double.tryParse(gpaVal?.toString() ?? '') ?? 0.0;
+      _gpaRank =
+          _performance['gpaRank'] as String? ??
+          _performance['classRank'] as String? ??
+          '';
       final absVal = _performance['absences'] ?? _performance['totalAbsences'];
-      _absences = absVal is num ? absVal.toInt() : int.tryParse(absVal?.toString() ?? '') ?? 0;
+      _absences = absVal is num
+          ? absVal.toInt()
+          : int.tryParse(absVal?.toString() ?? '') ?? 0;
       final attVal = _performance['attendancePercent'];
-      _attendancePercent = attVal is num ? attVal.toDouble() : double.tryParse(attVal?.toString() ?? '') ?? 0.0;
+      _attendancePercent = attVal is num
+          ? attVal.toDouble()
+          : double.tryParse(attVal?.toString() ?? '') ?? 0.0;
 
-      final trendsRaw = _performance['gradeTrends'] as List<dynamic>? ??
-          _performance['gradeTrend'] as List<dynamic>? ?? [];
-      _gradeTrends =
-          trendsRaw.map((e) => (e as num).toDouble()).toList();
+      final trendsRaw =
+          _performance['gradeTrends'] as List<dynamic>? ??
+          _performance['gradeTrend'] as List<dynamic>? ??
+          [];
+      _gradeTrends = trendsRaw.map((e) => (e as num).toDouble()).toList();
       _trendLabels =
           (_performance['trendLabels'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           [];
-      _trendChange =
-          (_performance['trendChange'] as num?)?.toDouble() ?? 0.0;
+      _trendChange = (_performance['trendChange'] as num?)?.toDouble() ?? 0.0;
 
       final insight = _performance['insight'] as Map<String, dynamic>?;
       _insightTitle = insight?['title'] as String? ?? '';
       _insightBody = insight?['body'] as String? ?? '';
 
-      _tags = (_profile['tags'] as List<dynamic>?)
+      _tags =
+          (_profile['tags'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           [];
@@ -97,29 +107,33 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Student Details',
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.more_horiz, color: AppColors.textPrimary),
+            icon: Icon(Icons.more_horiz, color: theme.colorScheme.onSurface),
             onPressed: () {},
           ),
         ],
       ),
-      body: _buildBody(),
+      body: RolePageBackground(
+        flavor: RoleThemeFlavor.teacher,
+        child: _buildBody(),
+      ),
     );
   }
 
@@ -172,6 +186,7 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
   }
 
   Widget _buildProfileSection() {
+    final theme = Theme.of(context);
     return Column(
       children: [
         Stack(
@@ -198,16 +213,19 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
         const SizedBox(height: 14),
         Text(
           widget.studentName,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           '${_grade.isNotEmpty ? _grade : 'Student'} | ID: #${widget.studentId}',
-          style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+          style: TextStyle(
+            fontSize: 14,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
         if (_tags.isNotEmpty) ...[
           const SizedBox(height: 12),
@@ -215,10 +233,12 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: _tags
                 .take(3)
-                .map((t) => Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: _Tag(label: t),
-                    ))
+                .map(
+                  (t) => Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: _Tag(label: t),
+                  ),
+                )
                 .toList(),
           ),
         ],
@@ -227,6 +247,7 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
   }
 
   Widget _buildStatsRow() {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
@@ -235,9 +256,9 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(color: theme.colorScheme.outlineVariant),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,7 +268,7 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
                       Icon(
                         Icons.school_outlined,
                         size: 16,
-                        color: Colors.grey.shade500,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: 6),
                       Text(
@@ -255,7 +276,7 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade500,
+                          color: theme.colorScheme.onSurfaceVariant,
                           letterSpacing: 0.5,
                         ),
                       ),
@@ -267,10 +288,10 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
                     children: [
                       Text(
                         _gpa.toStringAsFixed(1),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 30,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       if (_gpaRank.isNotEmpty) ...[
@@ -298,9 +319,9 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(color: theme.colorScheme.outlineVariant),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -310,7 +331,7 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
                       Icon(
                         Icons.event_busy_outlined,
                         size: 16,
-                        color: Colors.grey.shade500,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: 6),
                       Text(
@@ -318,7 +339,7 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade500,
+                          color: theme.colorScheme.onSurfaceVariant,
                           letterSpacing: 0.5,
                         ),
                       ),
@@ -330,10 +351,10 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
                     children: [
                       Text(
                         '$_absences',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 30,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -343,7 +364,7 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
                           'This term',
                           style: TextStyle(
                             fontSize: 13,
-                            color: Colors.grey.shade500,
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),
@@ -359,6 +380,7 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
   }
 
   Widget _buildGradeTrends() {
+    final theme = Theme.of(context);
     final isDown = _trendChange < 0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -369,25 +391,30 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Grade Trends',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   'Semester 1 Performance',
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
             if (_trendChange != 0)
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: (isDown ? AppColors.error : AppColors.secondary)
                       .withValues(alpha: 0.1),
@@ -398,8 +425,7 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
                     Icon(
                       isDown ? Icons.trending_down : Icons.trending_up,
                       size: 14,
-                      color:
-                          isDown ? AppColors.error : AppColors.secondary,
+                      color: isDown ? AppColors.error : AppColors.secondary,
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -407,8 +433,7 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color:
-                            isDown ? AppColors.error : AppColors.secondary,
+                        color: isDown ? AppColors.error : AppColors.secondary,
                       ),
                     ),
                   ],
@@ -424,6 +449,10 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
             painter: _GradeTrendPainter(
               grades: _gradeTrends,
               labels: _trendLabels,
+              gridColor: theme.colorScheme.outlineVariant,
+              labelColor: theme.colorScheme.onSurfaceVariant,
+              accentColor: theme.colorScheme.primary,
+              dotBorderColor: theme.colorScheme.surface,
             ),
           ),
         ),
@@ -432,14 +461,16 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
   }
 
   Widget _buildAttendanceSection() {
+    final theme = Theme.of(context);
     final pct = _attendancePercent > 1
         ? _attendancePercent / 100
         : _attendancePercent;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -447,18 +478,21 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Attendance',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 'Year to Date',
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -466,14 +500,18 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
             width: 60,
             height: 60,
             child: CustomPaint(
-              painter: _AttendanceCirclePainter(percentage: pct),
+              painter: _AttendanceCirclePainter(
+                percentage: pct,
+                trackColor: theme.colorScheme.outlineVariant,
+                progressColor: theme.colorScheme.primary,
+              ),
               child: Center(
                 child: Text(
                   '${(pct * 100).round()}%',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -485,6 +523,7 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
   }
 
   Widget _buildInsightCard() {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -502,17 +541,16 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
               Expanded(
                 child: Text(
                   _insightTitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
               ),
               const SizedBox(width: 8),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: AppColors.error,
                   borderRadius: BorderRadius.circular(4),
@@ -534,7 +572,7 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
             _insightBody,
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey.shade700,
+              color: theme.colorScheme.onSurfaceVariant,
               height: 1.5,
             ),
           ),
@@ -549,8 +587,8 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.textPrimary,
-                foregroundColor: Colors.white,
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -592,8 +630,19 @@ class _Tag extends StatelessWidget {
 class _GradeTrendPainter extends CustomPainter {
   final List<double> grades;
   final List<String> labels;
+  final Color gridColor;
+  final Color labelColor;
+  final Color accentColor;
+  final Color dotBorderColor;
 
-  _GradeTrendPainter({required this.grades, required this.labels});
+  _GradeTrendPainter({
+    required this.grades,
+    required this.labels,
+    required this.gridColor,
+    required this.labelColor,
+    required this.accentColor,
+    required this.dotBorderColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -612,18 +661,14 @@ class _GradeTrendPainter extends CustomPainter {
     final chartH = size.height - bottomPad - topPad;
 
     final gridPaint = Paint()
-      ..color = const Color(0xFFE8E8E8)
+      ..color = gridColor
       ..strokeWidth = 1;
 
-    final labelStyle = TextStyle(fontSize: 11, color: Colors.grey.shade500);
+    final labelStyle = TextStyle(fontSize: 11, color: labelColor);
 
     for (int i = 0; i < yLabels.length; i++) {
       final y = topPad + chartH - (chartH * (i + 1) / 4);
-      canvas.drawLine(
-        Offset(leftPad, y),
-        Offset(size.width, y),
-        gridPaint,
-      );
+      canvas.drawLine(Offset(leftPad, y), Offset(size.width, y), gridPaint);
       final tp = TextPainter(
         text: TextSpan(text: yLabels[i], style: labelStyle),
         textDirection: TextDirection.ltr,
@@ -631,8 +676,7 @@ class _GradeTrendPainter extends CustomPainter {
       tp.paint(canvas, Offset(0, y - tp.height / 2));
     }
 
-    final stepX =
-        grades.length > 1 ? chartW / (grades.length - 1) : chartW;
+    final stepX = grades.length > 1 ? chartW / (grades.length - 1) : chartW;
     for (int i = 0; i < months.length && i < grades.length; i++) {
       final tp = TextPainter(
         text: TextSpan(text: months[i], style: labelStyle),
@@ -651,8 +695,7 @@ class _GradeTrendPainter extends CustomPainter {
       points.add(Offset(x, y));
     }
 
-    final fillPath = Path()
-      ..moveTo(points.first.dx, topPad + chartH);
+    final fillPath = Path()..moveTo(points.first.dx, topPad + chartH);
     for (final p in points) {
       fillPath.lineTo(p.dx, p.dy);
     }
@@ -663,8 +706,8 @@ class _GradeTrendPainter extends CustomPainter {
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
       colors: [
-        AppColors.primary.withValues(alpha: 0.15),
-        AppColors.primary.withValues(alpha: 0.0),
+        accentColor.withValues(alpha: 0.15),
+        accentColor.withValues(alpha: 0.0),
       ],
     );
     final fillPaint = Paint()
@@ -674,7 +717,7 @@ class _GradeTrendPainter extends CustomPainter {
     canvas.drawPath(fillPath, fillPaint);
 
     final linePaint = Paint()
-      ..color = AppColors.primary
+      ..color = accentColor
       ..strokeWidth = 3
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -685,9 +728,9 @@ class _GradeTrendPainter extends CustomPainter {
     }
     canvas.drawPath(path, linePaint);
 
-    final dotPaint = Paint()..color = AppColors.primary;
+    final dotPaint = Paint()..color = accentColor;
     final dotBorder = Paint()
-      ..color = Colors.white
+      ..color = dotBorderColor
       ..strokeWidth = 3
       ..style = PaintingStyle.stroke;
     for (final p in points) {
@@ -698,12 +741,23 @@ class _GradeTrendPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _GradeTrendPainter oldDelegate) =>
-      oldDelegate.grades != grades || oldDelegate.labels != labels;
+      oldDelegate.grades != grades ||
+      oldDelegate.labels != labels ||
+      oldDelegate.gridColor != gridColor ||
+      oldDelegate.labelColor != labelColor ||
+      oldDelegate.accentColor != accentColor ||
+      oldDelegate.dotBorderColor != dotBorderColor;
 }
 
 class _AttendanceCirclePainter extends CustomPainter {
   final double percentage;
-  _AttendanceCirclePainter({required this.percentage});
+  final Color trackColor;
+  final Color progressColor;
+  _AttendanceCirclePainter({
+    required this.percentage,
+    required this.trackColor,
+    required this.progressColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -712,13 +766,13 @@ class _AttendanceCirclePainter extends CustomPainter {
     const strokeWidth = 5.0;
 
     final bgPaint = Paint()
-      ..color = Colors.grey.shade200
+      ..color = trackColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth;
     canvas.drawCircle(center, radius, bgPaint);
 
     final fgPaint = Paint()
-      ..color = AppColors.primary
+      ..color = progressColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
@@ -733,5 +787,7 @@ class _AttendanceCirclePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _AttendanceCirclePainter oldDelegate) =>
-      oldDelegate.percentage != percentage;
+      oldDelegate.percentage != percentage ||
+      oldDelegate.trackColor != trackColor ||
+      oldDelegate.progressColor != progressColor;
 }

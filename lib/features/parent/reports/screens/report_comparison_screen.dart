@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../shared/widgets/role_page_background.dart';
 
 class ReportComparisonScreen extends StatefulWidget {
   final String? studentId;
@@ -8,8 +9,7 @@ class ReportComparisonScreen extends StatefulWidget {
   const ReportComparisonScreen({super.key, this.studentId});
 
   @override
-  State<ReportComparisonScreen> createState() =>
-      _ReportComparisonScreenState();
+  State<ReportComparisonScreen> createState() => _ReportComparisonScreenState();
 }
 
 class _ReportComparisonScreenState extends State<ReportComparisonScreen> {
@@ -26,93 +26,116 @@ class _ReportComparisonScreenState extends State<ReportComparisonScreen> {
 
   Future<void> _loadData() async {
     try {
-      setState(() { _loading = true; _error = null; });
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
 
       _studentId = widget.studentId ?? '';
       if (_studentId.isEmpty) {
         final dashboard = await ApiService().getParentDashboard();
-        final linked =
-            (dashboard['linkedChildren'] as List<dynamic>?) ?? [];
+        final linked = (dashboard['linkedChildren'] as List<dynamic>?) ?? [];
         if (linked.isNotEmpty) {
-          _studentId = linked[0]['studentId'] as String? ??
-              linked[0]['id'] as String? ?? '';
+          _studentId =
+              linked[0]['studentId'] as String? ??
+              linked[0]['id'] as String? ??
+              '';
         }
       }
 
       if (_studentId.isEmpty) {
         if (!mounted) return;
-        setState(() { _loading = false; });
+        setState(() {
+          _loading = false;
+        });
         return;
       }
 
       final data = await ApiService().getStudentCompare(_studentId);
       if (!mounted) return;
-      setState(() { _comparison = data; _loading = false; });
+      setState(() {
+        _comparison = data;
+        _loading = false;
+      });
     } catch (e) {
       if (!mounted) return;
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(title: const Text('Compare Reports')),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(_error!,
-                          style: const TextStyle(color: AppColors.error)),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                          onPressed: _loadData,
-                          child: const Text('Retry')),
-                    ],
-                  ),
-                )
-              : _comparison.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.compare_arrows,
-                              size: 56, color: Colors.grey.shade400),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No comparison data available',
-                            style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey.shade600),
-                          ),
-                        ],
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadData,
-                      child: SingleChildScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildOverallComparison(),
-                            const SizedBox(height: 16),
-                            _buildSubjectComparison(),
-                            const SizedBox(height: 16),
-                            _buildTrendSection(),
-                          ],
-                        ),
+      body: RolePageBackground(
+        flavor: RoleThemeFlavor.parent,
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+            ? Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _error!,
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: _loadData,
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              )
+            : _comparison.isEmpty
+            ? Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.compare_arrows,
+                      size: 56,
+                      color: theme.colorScheme.outline,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No comparison data available',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
+                  ],
+                ),
+              )
+            : RefreshIndicator(
+                onRefresh: _loadData,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildOverallComparison(),
+                      const SizedBox(height: 16),
+                      _buildSubjectComparison(),
+                      const SizedBox(height: 16),
+                      _buildTrendSection(),
+                    ],
+                  ),
+                ),
+              ),
+      ),
     );
   }
 
   Widget _buildOverallComparison() {
+    final theme = Theme.of(context);
     final current = _comparison['currentPeriod'] as Map<String, dynamic>?;
     final previous = _comparison['previousPeriod'] as Map<String, dynamic>?;
     if (current == null && previous == null) return const SizedBox.shrink();
@@ -125,9 +148,10 @@ class _ReportComparisonScreenState extends State<ReportComparisonScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Overall Comparison',
-                style:
-                    TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text(
+              'Overall Comparison',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 16),
             Row(
               children: [
@@ -143,7 +167,7 @@ class _ReportComparisonScreenState extends State<ReportComparisonScreen> {
                   child: _ComparisonBlock(
                     label: previous?['label'] as String? ?? 'Previous',
                     value: previous?['average']?.toString() ?? '--',
-                    color: Colors.grey,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -153,7 +177,9 @@ class _ReportComparisonScreenState extends State<ReportComparisonScreen> {
               Center(
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 6),
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.secondary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
@@ -175,8 +201,8 @@ class _ReportComparisonScreenState extends State<ReportComparisonScreen> {
   }
 
   Widget _buildSubjectComparison() {
-    final subjects =
-        (_comparison['subjects'] as List<dynamic>?) ?? [];
+    final theme = Theme.of(context);
+    final subjects = (_comparison['subjects'] as List<dynamic>?) ?? [];
     if (subjects.isEmpty) return const SizedBox.shrink();
 
     return Card(
@@ -187,9 +213,10 @@ class _ReportComparisonScreenState extends State<ReportComparisonScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('By Subject',
-                style:
-                    TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text(
+              'By Subject',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
             ...subjects.map<Widget>((s) {
               final subj = s as Map<String, dynamic>;
@@ -199,23 +226,28 @@ class _ReportComparisonScreenState extends State<ReportComparisonScreen> {
                   children: [
                     Expanded(
                       flex: 2,
-                      child: Text(subj['name'] as String? ?? '',
-                          style: const TextStyle(fontSize: 14)),
+                      child: Text(
+                        subj['name'] as String? ?? '',
+                        style: const TextStyle(fontSize: 14),
+                      ),
                     ),
                     Expanded(
                       child: Text(
                         subj['current']?.toString() ?? '--',
                         textAlign: TextAlign.center,
                         style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primary),
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
+                        ),
                       ),
                     ),
                     Expanded(
                       child: Text(
                         subj['previous']?.toString() ?? '--',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey.shade500),
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                     Expanded(
@@ -224,8 +256,8 @@ class _ReportComparisonScreenState extends State<ReportComparisonScreen> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          color: (subj['change']?.toString() ?? '')
-                                  .startsWith('-')
+                          color:
+                              (subj['change']?.toString() ?? '').startsWith('-')
                               ? AppColors.error
                               : AppColors.secondary,
                         ),
@@ -242,6 +274,7 @@ class _ReportComparisonScreenState extends State<ReportComparisonScreen> {
   }
 
   Widget _buildTrendSection() {
+    final theme = Theme.of(context);
     final notes = _comparison['notes'] as String?;
     if (notes == null || notes.isEmpty) return const SizedBox.shrink();
 
@@ -253,15 +286,19 @@ class _ReportComparisonScreenState extends State<ReportComparisonScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Notes',
-                style:
-                    TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text(
+              'Notes',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
-            Text(notes,
-                style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
-                    height: 1.5)),
+            Text(
+              notes,
+              style: TextStyle(
+                fontSize: 14,
+                color: theme.colorScheme.onSurfaceVariant,
+                height: 1.5,
+              ),
+            ),
           ],
         ),
       ),
@@ -282,6 +319,7 @@ class _ComparisonBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -291,13 +329,21 @@ class _ComparisonBlock extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text(label,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
           const SizedBox(height: 8),
           Text(
             value.contains('%') ? value : '$value%',
             style: TextStyle(
-                fontSize: 28, fontWeight: FontWeight.bold, color: color),
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
         ],
       ),
