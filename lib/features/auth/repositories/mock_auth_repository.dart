@@ -6,6 +6,7 @@ class MockAuthRepository implements AuthRepository {
   Future<UserModel> login({
     required String email,
     required String password,
+    required String role,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 500));
     return UserModel(

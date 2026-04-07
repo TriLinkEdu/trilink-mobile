@@ -49,21 +49,8 @@ class AuthService {
       _currentRole = role;
 
       return _currentUser!;
-    } catch (_) {
-      // Fallback to dummy user so UI can be tested without backend
-      final dummyUser = role == 'parent'
-          ? DummyData.parentUser
-          : DummyData.teacherUser;
-      // Override role to match selection for student/teacher/parent
-      dummyUser['role'] = role;
-
-      await _storage.saveUser(dummyUser);
-      await _storage.saveRole(role);
-
-      _currentUser = UserModel.fromJson(dummyUser);
-      _currentRole = role;
-
-      return _currentUser!;
+    } catch (e) {
+      rethrow;
     }
   }
 

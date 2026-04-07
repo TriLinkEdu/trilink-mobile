@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'route_names.dart';
 import '../../features/auth/screens/login_screen.dart';
-import '../../features/auth/screens/forgot_password_screen.dart';
-import '../../features/auth/screens/register_screen.dart';
+
+
 import '../../features/auth/screens/role_selection_screen.dart';
 
 import '../../features/student/dashboard/screens/student_main_screen.dart';
@@ -50,10 +50,7 @@ class AppRouter {
       // ── Auth ──
       case RouteNames.login:
         return MaterialPageRoute(builder: (_) => const LoginScreen());
-      case RouteNames.forgotPassword:
-        return MaterialPageRoute(builder: (_) => const ForgotPasswordScreen());
-      case RouteNames.register:
-        return MaterialPageRoute(builder: (_) => const RegisterScreen());
+
       case RouteNames.roleSelection:
         return MaterialPageRoute(builder: (_) => const RoleSelectionScreen());
 
