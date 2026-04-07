@@ -42,7 +42,13 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
         _error = null;
       });
       final dashboard = await ApiService().getParentDashboard();
-      final linked = (dashboard['linkedChildren'] as List<dynamic>?) ?? [];
+      final rawLinked = dashboard['linkedChildren'];
+      List<dynamic> linked;
+      if (rawLinked is List) {
+        linked = rawLinked;
+      } else {
+        linked = [];
+      }
       if (!mounted) return;
       setState(() {
         _children = linked.map<_LinkedChild>((c) {

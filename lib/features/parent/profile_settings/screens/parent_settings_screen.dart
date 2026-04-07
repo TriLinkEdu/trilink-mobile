@@ -49,9 +49,14 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
         _systemAnnouncements = settings['systemAnnouncements'] as bool? ?? true;
         _enhancedPrivacy = settings['enhancedPrivacy'] as bool? ?? false;
 
-        _linkedChildren =
-            ((dashboard['linkedChildren'] as List<dynamic>?) ?? [])
-                .cast<Map<String, dynamic>>();
+        final rawLinked = dashboard['linkedChildren'];
+        List<Map<String, dynamic>> parsedChildren;
+        if (rawLinked is List) {
+          parsedChildren = rawLinked.cast<Map<String, dynamic>>();
+        } else {
+          parsedChildren = [];
+        }
+        _linkedChildren = parsedChildren;
         _loading = false;
       });
     } catch (e) {

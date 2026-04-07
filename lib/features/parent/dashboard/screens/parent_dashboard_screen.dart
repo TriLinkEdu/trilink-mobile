@@ -42,10 +42,15 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         _error = null;
       });
       final dashboard = await ApiService().getParentDashboard();
-      final linked = (dashboard['linkedChildren'] as List<dynamic>? ?? [])
-          .cast<Map<String, dynamic>>();
+      final linked = dashboard['linkedChildren'];
+      List<Map<String, dynamic>> children;
+      if (linked is List) {
+        children = linked.cast<Map<String, dynamic>>();
+      } else {
+        children = [];
+      }
 
-      if (linked.isEmpty) {
+      if (children.isEmpty) {
         if (!mounted) return;
         setState(() {
           _children = [];
@@ -55,13 +60,12 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       }
 
       if (widget.initialChildId != null) {
-        final idx = linked.indexWhere(
-          (c) => (c['studentId'] ?? c['id']) == widget.initialChildId,
-        );
+        final idx = children.indexWhere((c) =>
+            (c['studentId'] ?? c['id']) == widget.initialChildId);
         if (idx >= 0) _selectedChildIndex = idx;
       }
 
-      _children = linked;
+      _children = children;
       await _loadChildSummary();
     } catch (e) {
       if (!mounted) return;

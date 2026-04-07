@@ -146,8 +146,6 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                 _buildGreeting(firstName),
                 const SizedBox(height: 36),
                 _buildChildCards(context),
-                const SizedBox(height: 28),
-                _buildAddChild(),
                 const Spacer(flex: 2),
               ],
             ),
