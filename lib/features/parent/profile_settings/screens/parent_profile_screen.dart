@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../features/auth/services/auth_service.dart';
+import '../../../shared/widgets/role_page_background.dart';
 
 class ParentProfileScreen extends StatefulWidget {
   const ParentProfileScreen({super.key});
@@ -36,19 +37,21 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
 
   Future<void> _loadData() async {
     try {
-      setState(() { _loading = true; _error = null; });
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
       final dashboard = await ApiService().getParentDashboard();
-      final linked =
-          (dashboard['linkedChildren'] as List<dynamic>?) ?? [];
+      final linked = (dashboard['linkedChildren'] as List<dynamic>?) ?? [];
       if (!mounted) return;
       setState(() {
         _children = linked.map<_LinkedChild>((c) {
           final m = c as Map<String, dynamic>;
           return _LinkedChild(
-            name: m['fullName'] as String? ??
+            name:
+                m['fullName'] as String? ??
                 '${m['firstName'] ?? ''} ${m['lastName'] ?? ''}'.trim(),
-            grade: m['gradeSection'] as String? ??
-                m['grade'] as String? ?? '',
+            grade: m['gradeSection'] as String? ?? m['grade'] as String? ?? '',
             school: m['school'] as String? ?? '',
           );
         }).toList();
@@ -56,7 +59,10 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
     }
   }
 
@@ -79,7 +85,10 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
       });
       await AuthService().fetchMe();
       if (!mounted) return;
-      setState(() { _isEditing = false; _saving = false; });
+      setState(() {
+        _isEditing = false;
+        _saving = false;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Profile updated successfully'),
@@ -109,15 +118,14 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'My Profile',
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -126,7 +134,7 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
           IconButton(
             icon: Icon(
               _isEditing ? Icons.close : Icons.edit_outlined,
-              color: AppColors.primary,
+              color: theme.colorScheme.primary,
             ),
             onPressed: () {
               setState(() => _isEditing = !_isEditing);
@@ -134,56 +142,65 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
           ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(_error!,
-                          style: const TextStyle(color: AppColors.error)),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                          onPressed: _loadData,
-                          child: const Text('Retry')),
-                    ],
-                  ),
-                )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildAvatarSection(),
-                      const SizedBox(height: 24),
-                      _buildSectionTitle('Personal Information'),
-                      const SizedBox(height: 12),
-                      _buildPersonalInfoCard(),
-                      const SizedBox(height: 24),
-                      _buildSectionTitle('Linked Children'),
-                      const SizedBox(height: 12),
-                      if (_children.isEmpty)
-                        Padding(
-                          padding:
-                              const EdgeInsets.symmetric(vertical: 16),
-                          child: Center(
-                            child: Text('No children linked',
-                                style: TextStyle(
-                                    color: Colors.grey.shade500)),
+      body: RolePageBackground(
+        flavor: RoleThemeFlavor.parent,
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+            ? Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _error!,
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: _loadData,
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              )
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildAvatarSection(),
+                    const SizedBox(height: 24),
+                    _buildSectionTitle('Personal Information'),
+                    const SizedBox(height: 12),
+                    _buildPersonalInfoCard(),
+                    const SizedBox(height: 24),
+                    _buildSectionTitle('Linked Children'),
+                    const SizedBox(height: 12),
+                    if (_children.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Center(
+                          child: Text(
+                            'No children linked',
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ),
-                      ..._children.map(_buildChildCard),
-                      const SizedBox(height: 24),
-                      if (_isEditing) _buildSaveButton(),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
+                      ),
+                    ..._children.map(_buildChildCard),
+                    const SizedBox(height: 24),
+                    if (_isEditing) _buildSaveButton(),
+                    const SizedBox(height: 20),
+                  ],
                 ),
+              ),
+      ),
     );
   }
 
   Widget _buildAvatarSection() {
+    final theme = Theme.of(context);
     final user = AuthService().currentUser;
     return Center(
       child: Column(
@@ -203,10 +220,10 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
           const SizedBox(height: 12),
           Text(
             user?.fullName ?? '',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 4),
@@ -214,7 +231,7 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
             user?.email ?? '',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey.shade600,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -223,22 +240,24 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
   }
 
   Widget _buildSectionTitle(String title) {
+    final theme = Theme.of(context);
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 17,
         fontWeight: FontWeight.bold,
-        color: AppColors.textPrimary,
+        color: theme.colorScheme.onSurface,
       ),
     );
   }
 
   Widget _buildPersonalInfoCard() {
+    final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Column(
         children: [
@@ -247,19 +266,19 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
             label: 'Full Name',
             controller: _nameController,
           ),
-          Divider(height: 1, color: Colors.grey.shade200),
+          Divider(height: 1, color: theme.colorScheme.outlineVariant),
           _buildInfoField(
             icon: Icons.email_outlined,
             label: 'Email',
             controller: _emailController,
           ),
-          Divider(height: 1, color: Colors.grey.shade200),
+          Divider(height: 1, color: theme.colorScheme.outlineVariant),
           _buildInfoField(
             icon: Icons.phone_outlined,
             label: 'Phone',
             controller: _phoneController,
           ),
-          Divider(height: 1, color: Colors.grey.shade200),
+          Divider(height: 1, color: theme.colorScheme.outlineVariant),
           _buildInfoField(
             icon: Icons.location_on_outlined,
             label: 'Address',
@@ -275,11 +294,12 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
     required String label,
     required TextEditingController controller,
   }) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: AppColors.textSecondary),
+          Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -290,31 +310,28 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
-                    color: Colors.grey.shade500,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 2),
                 _isEditing
                     ? TextField(
                         controller: controller,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: AppColors.textPrimary,
+                          color: theme.colorScheme.onSurface,
                         ),
                         decoration: const InputDecoration(
                           isDense: true,
-                          contentPadding:
-                              EdgeInsets.symmetric(vertical: 4),
+                          contentPadding: EdgeInsets.symmetric(vertical: 4),
                           border: UnderlineInputBorder(),
                         ),
                       )
                     : Text(
-                        controller.text.isNotEmpty
-                            ? controller.text
-                            : ' ',
-                        style: const TextStyle(
+                        controller.text.isNotEmpty ? controller.text : ' ',
+                        style: TextStyle(
                           fontSize: 14,
-                          color: AppColors.textPrimary,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
               ],
@@ -326,13 +343,14 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
   }
 
   Widget _buildChildCard(_LinkedChild child) {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Row(
         children: [
@@ -359,29 +377,36 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
               children: [
                 Text(
                   child.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   child.grade,
                   style: TextStyle(
-                      fontSize: 12, color: Colors.grey.shade600),
+                    fontSize: 12,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 if (child.school.isNotEmpty)
                   Text(
                     child.school,
                     style: TextStyle(
-                        fontSize: 11, color: Colors.grey.shade500),
+                      fontSize: 11,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
               ],
             ),
           ),
-          Icon(Icons.chevron_right,
-              color: Colors.grey.shade400, size: 20),
+          Icon(
+            Icons.chevron_right,
+            color: theme.colorScheme.onSurfaceVariant,
+            size: 20,
+          ),
         ],
       ),
     );
@@ -405,12 +430,13 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Colors.white),
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
               )
             : const Text(
                 'Save Changes',
-                style: TextStyle(
-                    fontSize: 15, fontWeight: FontWeight.w600),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
               ),
       ),
     );
@@ -422,9 +448,5 @@ class _LinkedChild {
   final String grade;
   final String school;
 
-  _LinkedChild({
-    required this.name,
-    required this.grade,
-    required this.school,
-  });
+  _LinkedChild({required this.name, required this.grade, required this.school});
 }

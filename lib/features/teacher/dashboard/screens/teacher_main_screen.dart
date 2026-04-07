@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../features/auth/services/auth_service.dart';
+import '../../../shared/widgets/role_page_background.dart';
 import 'teacher_dashboard_screen.dart';
 import '../../classes/screens/class_list_screen.dart';
 import '../../student_analytics/screens/student_list_screen.dart';
@@ -30,15 +31,17 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
   @override
   Widget build(BuildContext context) {
     final user = AuthService().currentUser;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       key: _scaffoldKey,
-      drawer: _buildDrawer(context, user, isDark),
-      body: IndexedStack(index: _currentIndex, children: _screens),
+      drawer: _buildDrawer(context, user),
+      body: RolePageBackground(
+        flavor: RoleThemeFlavor.teacher,
+        child: IndexedStack(index: _currentIndex, children: _screens),
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: isDark ? Colors.grey.shade900 : Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
@@ -51,9 +54,9 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
           currentIndex: _currentIndex,
           onTap: (index) => setState(() => _currentIndex = index),
           type: BottomNavigationBarType.fixed,
-          backgroundColor: isDark ? Colors.grey.shade900 : Colors.white,
-          selectedItemColor: AppColors.primary,
-          unselectedItemColor: Colors.grey.shade400,
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          selectedItemColor: Theme.of(context).colorScheme.primary,
+          unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
           selectedFontSize: 12,
           unselectedFontSize: 12,
           elevation: 0,
@@ -89,18 +92,20 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
     );
   }
 
-  Widget _buildDrawer(BuildContext context, dynamic user, bool isDark) {
+  Widget _buildDrawer(BuildContext context, dynamic user) {
+    final theme = Theme.of(context);
+    final drawerSurface = Color.alphaBlend(
+      theme.colorScheme.primary.withAlpha(
+        theme.brightness == Brightness.dark ? 18 : 10,
+      ),
+      theme.colorScheme.surface,
+    );
     return Drawer(
+      backgroundColor: drawerSurface,
       child: Column(
         children: [
           DrawerHeader(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.primary, Color(0xFF1A237E)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
+            decoration: BoxDecoration(gradient: theme.ext.heroGradient),
             child: Row(
               children: [
                 CircleAvatar(
@@ -198,7 +203,10 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                   label: 'Attendance Analytics',
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.pushNamed(context, RouteNames.teacherAttendanceAnalytics);
+                    Navigator.pushNamed(
+                      context,
+                      RouteNames.teacherAttendanceAnalytics,
+                    );
                   },
                 ),
                 _DrawerItem(
@@ -230,7 +238,10 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                   label: 'Evaluate Submissions',
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.pushNamed(context, RouteNames.teacherEvaluateSubmissions);
+                    Navigator.pushNamed(
+                      context,
+                      RouteNames.teacherEvaluateSubmissions,
+                    );
                   },
                 ),
                 const Divider(height: 1),
@@ -240,7 +251,10 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                   label: 'Announcements',
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.pushNamed(context, RouteNames.teacherAnnouncements);
+                    Navigator.pushNamed(
+                      context,
+                      RouteNames.teacherAnnouncements,
+                    );
                   },
                 ),
                 _DrawerItem(
@@ -256,7 +270,10 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                   label: 'Notifications',
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.pushNamed(context, RouteNames.teacherNotifications);
+                    Navigator.pushNamed(
+                      context,
+                      RouteNames.teacherNotifications,
+                    );
                   },
                 ),
                 const Divider(height: 1),
@@ -289,7 +306,7 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                 _DrawerItem(
                   icon: Icons.logout,
                   label: 'Logout',
-                  color: Colors.red.shade600,
+                  color: theme.colorScheme.error,
                   onTap: () async {
                     Navigator.pop(context);
                     final confirm = await showDialog<bool>(
@@ -298,14 +315,29 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                         title: const Text('Logout'),
                         content: const Text('Are you sure you want to logout?'),
                         actions: [
-                          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Logout', style: TextStyle(color: Colors.red))),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text(
+                              'Logout',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
                         ],
                       ),
                     );
                     if (confirm == true && mounted) {
                       await AuthService().logout();
-                      if (mounted) Navigator.pushReplacementNamed(context, RouteNames.login);
+                      if (!mounted) {
+                        return;
+                      }
+                      Navigator.pushReplacementNamed(
+                        this.context,
+                        RouteNames.login,
+                      );
                     }
                   },
                 ),
@@ -327,6 +359,7 @@ class _DrawerSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
       child: Text(
@@ -334,7 +367,7 @@ class _DrawerSection extends StatelessWidget {
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w700,
-          color: Colors.grey.shade500,
+          color: theme.colorScheme.onSurfaceVariant,
           letterSpacing: 1.2,
         ),
       ),
@@ -357,15 +390,20 @@ class _DrawerItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return ListTile(
       dense: true,
-      leading: Icon(icon, size: 22, color: color ?? Colors.grey.shade700),
+      leading: Icon(
+        icon,
+        size: 22,
+        color: color ?? theme.colorScheme.onSurfaceVariant,
+      ),
       title: Text(
         label,
         style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w500,
-          color: color ?? Colors.grey.shade800,
+          color: color ?? theme.colorScheme.onSurface,
         ),
       ),
       onTap: onTap,

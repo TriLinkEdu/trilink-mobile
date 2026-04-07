@@ -11,6 +11,7 @@ import '../../feedback/screens/parent_feedback_screen.dart';
 import '../../reports/screens/weekly_report_screen.dart';
 import '../../notifications/screens/parent_notifications_screen.dart';
 import '../../profile_settings/screens/parent_settings_screen.dart';
+import '../../../shared/widgets/role_page_background.dart';
 
 class ParentDashboardScreen extends StatefulWidget {
   final String? initialChildId;
@@ -36,20 +37,27 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
 
   Future<void> _loadData() async {
     try {
-      setState(() { _loading = true; _error = null; });
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
       final dashboard = await ApiService().getParentDashboard();
       final linked = (dashboard['linkedChildren'] as List<dynamic>? ?? [])
           .cast<Map<String, dynamic>>();
 
       if (linked.isEmpty) {
         if (!mounted) return;
-        setState(() { _children = []; _loading = false; });
+        setState(() {
+          _children = [];
+          _loading = false;
+        });
         return;
       }
 
       if (widget.initialChildId != null) {
-        final idx = linked.indexWhere((c) =>
-            (c['studentId'] ?? c['id']) == widget.initialChildId);
+        final idx = linked.indexWhere(
+          (c) => (c['studentId'] ?? c['id']) == widget.initialChildId,
+        );
         if (idx >= 0) _selectedChildIndex = idx;
       }
 
@@ -57,21 +65,30 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       await _loadChildSummary();
     } catch (e) {
       if (!mounted) return;
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
     }
   }
 
   Future<void> _loadChildSummary() async {
     try {
       final child = _children[_selectedChildIndex];
-      final studentId = child['studentId'] as String? ??
-          child['id'] as String? ?? '';
+      final studentId =
+          child['studentId'] as String? ?? child['id'] as String? ?? '';
       final summary = await ApiService().getChildSummary(studentId);
       if (!mounted) return;
-      setState(() { _currentSummary = summary; _loading = false; });
+      setState(() {
+        _currentSummary = summary;
+        _loading = false;
+      });
     } catch (e) {
       if (!mounted) return;
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
     }
   }
 
@@ -99,13 +116,15 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           children: [
             const Padding(
               padding: EdgeInsets.all(16),
-              child: Text('Select Child',
-                  style: TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.bold)),
+              child: Text(
+                'Select Child',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
             ),
             ...List.generate(_children.length, (i) {
               final child = _children[i];
-              final name = child['fullName'] as String? ??
+              final name =
+                  child['fullName'] as String? ??
                   '${child['firstName'] ?? ''} ${child['lastName'] ?? ''}'
                       .trim();
               final avatar = child['avatar'] as String? ?? '';
@@ -113,9 +132,13 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                 leading: avatar.isNotEmpty
                     ? CircleAvatar(backgroundImage: NetworkImage(avatar))
                     : CircleAvatar(
-                        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                        child: Text(name.isNotEmpty ? name[0] : '?',
-                            style: const TextStyle(color: AppColors.primary)),
+                        backgroundColor: AppColors.primary.withValues(
+                          alpha: 0.1,
+                        ),
+                        child: Text(
+                          name.isNotEmpty ? name[0] : '?',
+                          style: const TextStyle(color: AppColors.primary),
+                        ),
                       ),
                 title: Text(name),
                 trailing: _selectedChildIndex == i
@@ -137,51 +160,57 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      body: OfflineBanner(
-        child: SafeArea(
-          child: _loading
-              ? const Center(child: CircularProgressIndicator())
-              : _error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(_error!,
-                              style: const TextStyle(color: AppColors.error)),
-                          const SizedBox(height: 12),
-                          ElevatedButton(
-                              onPressed: _loadData,
-                              child: const Text('Retry')),
-                        ],
-                      ),
-                    )
-                  : SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildHeader(context),
-                          Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 20),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 20),
-                                _buildOverviewSection(),
-                                const SizedBox(height: 24),
-                                _buildFeatureGrid(context),
-                                const SizedBox(height: 24),
-                                _buildContactTeacher(),
-                                const SizedBox(height: 24),
-                                _buildRecentActivity(),
-                                const SizedBox(height: 24),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+      body: RolePageBackground(
+        flavor: RoleThemeFlavor.parent,
+        child: OfflineBanner(
+          child: SafeArea(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _error!,
+                          style: TextStyle(color: theme.colorScheme.error),
+                        ),
+                        const SizedBox(height: 12),
+                        ElevatedButton(
+                          onPressed: _loadData,
+                          child: const Text('Retry'),
+                        ),
+                      ],
                     ),
+                  )
+                : SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildHeader(context),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 20),
+                              _buildOverviewSection(),
+                              const SizedBox(height: 24),
+                              _buildFeatureGrid(context),
+                              const SizedBox(height: 24),
+                              _buildContactTeacher(),
+                              const SizedBox(height: 24),
+                              _buildRecentActivity(),
+                              const SizedBox(height: 24),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+          ),
         ),
       ),
       bottomNavigationBar: _buildBottomNav(),
@@ -189,12 +218,17 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 12, 20, 0),
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
+            icon: Icon(
+              Icons.arrow_back_ios_new,
+              color: theme.colorScheme.onSurface,
+              size: 20,
+            ),
             onPressed: () => Navigator.pop(context),
           ),
           const SizedBox(width: 4),
@@ -218,13 +252,17 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
               children: [
                 Text(
                   _childName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
-                const Icon(Icons.keyboard_arrow_down, size: 20),
+                Icon(
+                  Icons.keyboard_arrow_down,
+                  size: 20,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ],
             ),
           ),
@@ -232,17 +270,19 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           GestureDetector(
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const ParentNotificationsScreen()),
+              MaterialPageRoute(
+                builder: (_) => const ParentNotificationsScreen(),
+              ),
             ),
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: theme.colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 Icons.notifications_outlined,
-                color: Colors.grey.shade700,
+                color: theme.colorScheme.onSurfaceVariant,
                 size: 20,
               ),
             ),
@@ -253,12 +293,15 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   }
 
   Widget _buildOverviewSection() {
+    final theme = Theme.of(context);
     final average = _currentSummary['average']?.toString() ?? '--';
     final avgDelta = _currentSummary['avgDelta']?.toString() ?? '';
     final attendance = _currentSummary['attendance']?.toString() ?? '--';
     final absences = _currentSummary['absences']?.toString() ?? '--';
-    final tasks = _currentSummary['pendingTasks']?.toString() ??
-        _currentSummary['tasks']?.toString() ?? '0';
+    final tasks =
+        _currentSummary['pendingTasks']?.toString() ??
+        _currentSummary['tasks']?.toString() ??
+        '0';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -271,16 +314,16 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade500,
+                color: theme.colorScheme.onSurfaceVariant,
                 letterSpacing: 0.8,
               ),
             ),
-            const Text(
+            Text(
               'View Report',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: AppColors.primary,
+                color: theme.colorScheme.primary,
               ),
             ),
           ],
@@ -306,7 +349,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                 label: 'ATTENDANCE',
                 value: attendance.contains('%') ? attendance : '$attendance%',
                 subtitle: absences,
-                subtitleColor: Colors.grey.shade500,
+                subtitleColor: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(width: 8),
@@ -327,10 +370,11 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   }
 
   Widget _buildFeatureGrid(BuildContext context) {
+    final theme = Theme.of(context);
     final childId = _children.isNotEmpty
         ? (_children[_selectedChildIndex]['studentId'] as String? ??
-            _children[_selectedChildIndex]['id'] as String? ??
-            '')
+              _children[_selectedChildIndex]['id'] as String? ??
+              '')
         : '';
 
     final features = <_FeatureItem>[
@@ -395,7 +439,9 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         color: const Color(0xFFE91E63),
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => WeeklyReportScreen(childName: _childName)),
+          MaterialPageRoute(
+            builder: (_) => WeeklyReportScreen(childName: _childName),
+          ),
         ),
       ),
       _FeatureItem(
@@ -426,7 +472,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: Colors.grey.shade500,
+            color: theme.colorScheme.onSurfaceVariant,
             letterSpacing: 0.8,
           ),
         ),
@@ -461,7 +507,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade700,
+                      color: theme.colorScheme.onSurfaceVariant,
                       height: 1.2,
                     ),
                   ),
@@ -517,8 +563,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
               color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(10),
             ),
-            child:
-                const Icon(Icons.chat_bubble, color: Colors.white, size: 20),
+            child: const Icon(Icons.chat_bubble, color: Colors.white, size: 20),
           ),
         ],
       ),
@@ -526,6 +571,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   }
 
   Widget _buildRecentActivity() {
+    final theme = Theme.of(context);
     final activities =
         (_currentSummary['recentActivity'] as List<dynamic>?) ?? [];
     return Column(
@@ -539,11 +585,15 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade500,
+                color: theme.colorScheme.onSurfaceVariant,
                 letterSpacing: 0.8,
               ),
             ),
-            Icon(Icons.tune, size: 18, color: Colors.grey.shade500),
+            Icon(
+              Icons.tune,
+              size: 18,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ],
         ),
         const SizedBox(height: 12),
@@ -551,8 +601,10 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 24),
             child: Center(
-              child: Text('No recent activity',
-                  style: TextStyle(color: Colors.grey.shade500)),
+              child: Text(
+                'No recent activity',
+                style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+              ),
             ),
           ),
         ...activities.map<Widget>((a) {
@@ -595,7 +647,9 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   }
 
   Widget _buildBottomNav() {
+    final theme = Theme.of(context);
     return Container(
+      color: theme.colorScheme.surface,
       decoration: BoxDecoration(
         boxShadow: [
           BoxShadow(
@@ -608,8 +662,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       child: BottomNavigationBar(
         currentIndex: 0,
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: Colors.grey.shade400,
+        selectedItemColor: theme.colorScheme.primary,
+        unselectedItemColor: theme.colorScheme.onSurfaceVariant,
         selectedFontSize: 12,
         unselectedFontSize: 12,
         elevation: 0,
@@ -625,10 +679,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
               screen = const ParentSettingsScreen();
           }
           if (screen != null) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => screen!),
-            );
+            Navigator.push(context, MaterialPageRoute(builder: (_) => screen!));
           }
         },
         items: const [
@@ -674,12 +725,13 @@ class _OverviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Column(
         children: [
@@ -687,10 +739,10 @@ class _OverviewCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 2),
@@ -699,7 +751,7 @@ class _OverviewCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
-              color: Colors.grey.shade500,
+              color: theme.colorScheme.onSurfaceVariant,
               letterSpacing: 0.5,
             ),
           ),
@@ -727,7 +779,6 @@ class _ActivityItem extends StatelessWidget {
   final String time;
   final String? teacher;
   final String? tag;
-  final Color? tagColor;
 
   const _ActivityItem({
     required this.icon,
@@ -738,18 +789,18 @@ class _ActivityItem extends StatelessWidget {
     required this.time,
     this.teacher,
     this.tag,
-    this.tagColor,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -772,17 +823,17 @@ class _ActivityItem extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
-                        color: AppColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     Text(
                       time,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade500,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -792,7 +843,7 @@ class _ActivityItem extends StatelessWidget {
                   subtitle,
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey.shade600,
+                    color: theme.colorScheme.onSurfaceVariant,
                     height: 1.4,
                   ),
                 ),
@@ -802,8 +853,9 @@ class _ActivityItem extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         radius: 10,
-                        backgroundColor:
-                            AppColors.secondary.withValues(alpha: 0.15),
+                        backgroundColor: AppColors.secondary.withValues(
+                          alpha: 0.15,
+                        ),
                         child: const Icon(
                           Icons.person,
                           size: 12,
@@ -815,7 +867,7 @@ class _ActivityItem extends StatelessWidget {
                         teacher!,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -829,8 +881,7 @@ class _ActivityItem extends StatelessWidget {
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: (tagColor ?? AppColors.primary)
-                          .withValues(alpha: 0.1),
+                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -838,7 +889,7 @@ class _ActivityItem extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: tagColor ?? AppColors.primary,
+                        color: theme.colorScheme.primary,
                       ),
                     ),
                   ),

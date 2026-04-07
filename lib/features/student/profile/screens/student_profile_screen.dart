@@ -271,7 +271,10 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
 
                       LayoutBuilder(
                         builder: (context, constraints) {
-                          final cardWidth = (constraints.maxWidth - 14) / 2;
+                          final isCompact = constraints.maxWidth < 560;
+                          final cardWidth = isCompact
+                              ? constraints.maxWidth
+                              : (constraints.maxWidth - 14) / 2;
                           return Wrap(
                             spacing: 14,
                             runSpacing: 14,
@@ -280,10 +283,12 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                                 width: cardWidth,
                                 child: _ProfileGroupCard(
                                   title: 'Account',
+                                  compact: isCompact,
                                   children: [
                                     _SettingsRow(
                                       icon: Icons.email_outlined,
                                       label: 'Email',
+                                      compact: isCompact,
                                       showChevron: true,
                                       onTap: () =>
                                           Navigator.of(context).pushNamed(
@@ -294,6 +299,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                                     _SettingsRow(
                                       icon: Icons.lock_outline,
                                       label: 'Password',
+                                      compact: isCompact,
                                       showChevron: true,
                                       onTap: _showChangePasswordDialog,
                                     ),
@@ -310,6 +316,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                                                   .onSurfaceVariant,
                                             ),
                                       ),
+                                      compact: isCompact,
                                       showChevron: true,
                                       onTap: _showLanguagePicker,
                                     ),
@@ -320,10 +327,12 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                                 width: cardWidth,
                                 child: _ProfileGroupCard(
                                   title: 'Preferences',
+                                  compact: isCompact,
                                   children: [
                                     _SettingsRow(
                                       icon: Icons.notifications_outlined,
                                       label: 'Push Notifications',
+                                      compact: isCompact,
                                       trailing: Switch(
                                         value: _pushNotifications,
                                         onChanged: (v) {
@@ -341,6 +350,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                                     _SettingsRow(
                                       icon: Icons.dark_mode_outlined,
                                       label: 'Dark Mode',
+                                      compact: isCompact,
                                       trailing: Switch(
                                         value: ThemeNotifier.instance.isDark,
                                         onChanged: (v) {
@@ -356,6 +366,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                                     _SettingsRow(
                                       icon: Icons.text_fields_rounded,
                                       label: 'Text Size',
+                                      compact: isCompact,
                                       trailing: Text(
                                         ThemeNotifier.instance.textScaleLabel,
                                         style: theme.textTheme.labelLarge
@@ -372,6 +383,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                                     _SettingsRow(
                                       icon: Icons.font_download_outlined,
                                       label: 'Font Family',
+                                      compact: isCompact,
                                       trailing: Text(
                                         ThemeNotifier.instance.fontFamily,
                                         style: theme.textTheme.labelLarge
@@ -392,6 +404,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                                         return _SettingsRow(
                                           icon: Icons.graphic_eq_rounded,
                                           label: 'Sound Effects',
+                                          compact: isCompact,
                                           trailing: Switch(
                                             value: soundService.enabled,
                                             onChanged: (v) =>
@@ -407,10 +420,12 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                                 width: cardWidth,
                                 child: _ProfileGroupCard(
                                   title: 'Support',
+                                  compact: isCompact,
                                   children: [
                                     _SettingsRow(
                                       icon: Icons.help_outline_rounded,
                                       label: 'Help Center',
+                                      compact: isCompact,
                                       showChevron: true,
                                       onTap: _showHelpCenter,
                                     ),
@@ -418,6 +433,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                                     _SettingsRow(
                                       icon: Icons.bug_report_outlined,
                                       label: 'Report a Bug',
+                                      compact: isCompact,
                                       showChevron: true,
                                       onTap: _showBugReport,
                                     ),
@@ -428,10 +444,12 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                                 width: cardWidth,
                                 child: _ProfileGroupCard(
                                   title: 'Quick Links',
+                                  compact: isCompact,
                                   children: [
                                     _SettingsRow(
                                       icon: Icons.assignment_outlined,
                                       label: 'Assignments',
+                                      compact: isCompact,
                                       showChevron: true,
                                       onTap: () =>
                                           Navigator.of(context).pushNamed(
@@ -442,6 +460,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                                     _SettingsRow(
                                       icon: Icons.calendar_month_outlined,
                                       label: 'Calendar',
+                                      compact: isCompact,
                                       showChevron: true,
                                       onTap: () => Navigator.of(
                                         context,
@@ -451,6 +470,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                                     _SettingsRow(
                                       icon: Icons.folder_outlined,
                                       label: 'Courses & Resources',
+                                      compact: isCompact,
                                       showChevron: true,
                                       onTap: () =>
                                           Navigator.of(context).pushNamed(
@@ -461,6 +481,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                                     _SettingsRow(
                                       icon: Icons.more_horiz_rounded,
                                       label: 'More Links',
+                                      compact: isCompact,
                                       showChevron: true,
                                       onTap: _showMoreLinks,
                                     ),
@@ -984,8 +1005,13 @@ class _FaqItem extends StatelessWidget {
 class _ProfileGroupCard extends StatelessWidget {
   final String title;
   final List<Widget> children;
+  final bool compact;
 
-  const _ProfileGroupCard({required this.title, required this.children});
+  const _ProfileGroupCard({
+    required this.title,
+    required this.children,
+    this.compact = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1001,17 +1027,24 @@ class _ProfileGroupCard extends StatelessWidget {
         boxShadow: AppShadows.subtle(theme.shadowColor),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: EdgeInsets.symmetric(vertical: compact ? 8 : 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                compact ? 4 : 6,
+                16,
+                compact ? 6 : 8,
+              ),
               child: Text(
                 title,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+                style:
+                    (compact
+                            ? theme.textTheme.titleMedium
+                            : theme.textTheme.titleLarge)
+                        ?.copyWith(fontWeight: FontWeight.w700),
               ),
             ),
             ...children,
@@ -1028,6 +1061,7 @@ class _SettingsRow extends StatelessWidget {
   final Widget? trailing;
   final bool showChevron;
   final VoidCallback? onTap;
+  final bool compact;
 
   const _SettingsRow({
     required this.icon,
@@ -1035,6 +1069,7 @@ class _SettingsRow extends StatelessWidget {
     this.trailing,
     this.showChevron = false,
     this.onTap,
+    this.compact = false,
   });
 
   @override
@@ -1044,26 +1079,42 @@ class _SettingsRow extends StatelessWidget {
     return Pressable(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 12 : 14,
+          vertical: compact ? 8 : 10,
+        ),
         child: Row(
           children: [
-            Icon(icon, size: 22, color: theme.colorScheme.onSurfaceVariant),
-            AppSpacing.hGapLg,
+            Icon(
+              icon,
+              size: compact ? 20 : 22,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            SizedBox(width: compact ? 10 : 14),
             Expanded(
               child: Text(
                 label,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w500,
                   color: theme.colorScheme.onSurface,
                 ),
               ),
             ),
-            if (trailing != null) ...[trailing!],
+            if (trailing != null) ...[
+              SizedBox(width: compact ? 8 : 10),
+              Align(alignment: Alignment.centerRight, child: trailing!),
+            ],
             if (showChevron)
-              Icon(
-                Icons.chevron_right,
-                size: 20,
-                color: theme.colorScheme.onSurfaceVariant,
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Icon(
+                  Icons.chevron_right,
+                  size: 20,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
           ],
         ),

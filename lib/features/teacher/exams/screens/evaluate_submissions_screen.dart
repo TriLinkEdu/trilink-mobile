@@ -50,8 +50,7 @@ class _EvaluateSubmissionsScreenState extends State<EvaluateSubmissionsScreen> {
       final attempts = await ApiService().getExamAttempts(widget.examId);
       setState(() {
         _submissions = attempts
-            .map((a) =>
-                _StudentSubmission.fromJson(a as Map<String, dynamic>))
+            .map((a) => _StudentSubmission.fromJson(a as Map<String, dynamic>))
             .toList();
       });
     } catch (e) {
@@ -63,19 +62,20 @@ class _EvaluateSubmissionsScreenState extends State<EvaluateSubmissionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Evaluate Submissions',
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.bold,
             fontSize: 17,
           ),
@@ -85,32 +85,37 @@ class _EvaluateSubmissionsScreenState extends State<EvaluateSubmissionsScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.error_outline,
-                          size: 48, color: Colors.grey.shade400),
-                      const SizedBox(height: 12),
-                      Text(_error!,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.grey.shade600)),
-                      const SizedBox(height: 16),
-                      OutlinedButton(
-                        onPressed: _loadData,
-                        child: const Text('Retry'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Colors.grey.shade400,
                   ),
-                )
-              : Column(
-                  children: [
-                    _buildSummaryBar(),
-                    _buildFilterChips(),
-                    const SizedBox(height: 4),
-                    Expanded(child: _buildSubmissionList()),
-                  ],
-                ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _error!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 16),
+                  OutlinedButton(
+                    onPressed: _loadData,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          : Column(
+              children: [
+                _buildSummaryBar(),
+                _buildFilterChips(),
+                const SizedBox(height: 4),
+                Expanded(child: _buildSubmissionList()),
+              ],
+            ),
     );
   }
 
@@ -123,9 +128,7 @@ class _EvaluateSubmissionsScreenState extends State<EvaluateSubmissionsScreen> {
         decoration: BoxDecoration(
           color: AppColors.primary.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.15),
-          ),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -135,21 +138,13 @@ class _EvaluateSubmissionsScreenState extends State<EvaluateSubmissionsScreen> {
               label: 'Submitted',
               color: AppColors.primary,
             ),
-            Container(
-              width: 1,
-              height: 30,
-              color: AppColors.divider,
-            ),
+            Container(width: 1, height: 30, color: AppColors.divider),
             _SummaryItem(
               value: '$_totalGraded',
               label: 'Graded',
               color: AppColors.secondary,
             ),
-            Container(
-              width: 1,
-              height: 30,
-              color: AppColors.divider,
-            ),
+            Container(width: 1, height: 30, color: AppColors.divider),
             _SummaryItem(
               value: '$_totalPending',
               label: 'Pending',
@@ -183,8 +178,9 @@ class _EvaluateSubmissionsScreenState extends State<EvaluateSubmissionsScreen> {
                       : Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color:
-                        isSelected ? AppColors.primary : Colors.grey.shade300,
+                    color: isSelected
+                        ? AppColors.primary
+                        : Colors.grey.shade300,
                   ),
                 ),
                 child: Text(
@@ -192,8 +188,9 @@ class _EvaluateSubmissionsScreenState extends State<EvaluateSubmissionsScreen> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                    color:
-                        isSelected ? AppColors.primary : Colors.grey.shade600,
+                    color: isSelected
+                        ? AppColors.primary
+                        : Colors.grey.shade600,
                   ),
                 ),
               ),
@@ -211,8 +208,11 @@ class _EvaluateSubmissionsScreenState extends State<EvaluateSubmissionsScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.assignment_outlined,
-                size: 48, color: Colors.grey.shade300),
+            Icon(
+              Icons.assignment_outlined,
+              size: 48,
+              color: Colors.grey.shade300,
+            ),
             const SizedBox(height: 12),
             Text(
               'No submissions found',
@@ -249,9 +249,9 @@ class _EvaluateSubmissionsScreenState extends State<EvaluateSubmissionsScreen> {
       _loadData();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
@@ -302,8 +302,7 @@ class _EvaluateSubmissionsScreenState extends State<EvaluateSubmissionsScreen> {
                   const SizedBox(height: 4),
                   Text(
                     submission.studentId,
-                    style:
-                        TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
                   ),
                   const SizedBox(height: 20),
                   const Text(
@@ -333,8 +332,7 @@ class _EvaluateSubmissionsScreenState extends State<EvaluateSubmissionsScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide:
-                            const BorderSide(color: AppColors.primary),
+                        borderSide: const BorderSide(color: AppColors.primary),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 14,
@@ -370,8 +368,7 @@ class _EvaluateSubmissionsScreenState extends State<EvaluateSubmissionsScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide:
-                            const BorderSide(color: AppColors.primary),
+                        borderSide: const BorderSide(color: AppColors.primary),
                       ),
                     ),
                   ),
@@ -382,15 +379,14 @@ class _EvaluateSubmissionsScreenState extends State<EvaluateSubmissionsScreen> {
                       onPressed: submitting
                           ? null
                           : () async {
-                              final score =
-                                  int.tryParse(scoreController.text);
-                              if (score == null ||
-                                  score < 0 ||
-                                  score > 100) {
+                              final messenger = ScaffoldMessenger.of(context);
+                              final score = int.tryParse(scoreController.text);
+                              if (score == null || score < 0 || score > 100) {
                                 ScaffoldMessenger.of(ctx).showSnackBar(
                                   const SnackBar(
                                     content: Text(
-                                        'Enter a valid score (0-100)'),
+                                      'Enter a valid score (0-100)',
+                                    ),
                                   ),
                                 );
                                 return;
@@ -401,13 +397,12 @@ class _EvaluateSubmissionsScreenState extends State<EvaluateSubmissionsScreen> {
                                   submission.attemptId,
                                   {
                                     'score': score,
-                                    'feedback':
-                                        feedbackController.text.trim(),
+                                    'feedback': feedbackController.text.trim(),
                                   },
                                 );
                                 if (!ctx.mounted) return;
                                 Navigator.pop(ctx);
-                                ScaffoldMessenger.of(context).showSnackBar(
+                                messenger.showSnackBar(
                                   SnackBar(
                                     content: Text(
                                       '${submission.name} graded: $score/100',
@@ -416,20 +411,17 @@ class _EvaluateSubmissionsScreenState extends State<EvaluateSubmissionsScreen> {
                                 );
                                 _loadData();
                               } catch (e) {
-                                setSheetState(
-                                    () => submitting = false);
+                                setSheetState(() => submitting = false);
                                 if (!ctx.mounted) return;
                                 ScaffoldMessenger.of(ctx).showSnackBar(
-                                  SnackBar(
-                                      content: Text('Error: $e')),
+                                  SnackBar(content: Text('Error: $e')),
                                 );
                               }
                             },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -483,7 +475,8 @@ class _StudentSubmission {
 
   factory _StudentSubmission.fromJson(Map<String, dynamic> json) {
     final student = json['student'] as Map<String, dynamic>?;
-    final name = student?['name'] ??
+    final name =
+        student?['name'] ??
         '${student?['firstName'] ?? ''} ${student?['lastName'] ?? ''}'.trim();
     final status = (json['status'] as String?) ?? '';
     final isGraded = status == 'graded' || status == 'released';
@@ -561,10 +554,7 @@ class _SubmissionCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-          ),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
         ],
       ),
       child: Row(
@@ -694,10 +684,7 @@ class _SubmissionCard extends StatelessWidget {
               ),
               child: const Text(
                 'Grade',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
               ),
             ),
         ],

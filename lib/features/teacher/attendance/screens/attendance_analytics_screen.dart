@@ -68,8 +68,9 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
         _error = null;
       });
 
-      final report =
-          await ApiService().getClassAttendanceReport(_selectedClassId!);
+      final report = await ApiService().getClassAttendanceReport(
+        _selectedClassId!,
+      );
 
       if (!mounted) return;
       setState(() {
@@ -129,15 +130,16 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Attendance Analytics',
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -255,10 +257,7 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
           ),
           items: _classOfferings.map((c) {
             final id = c['id'] as String;
-            return DropdownMenuItem(
-              value: id,
-              child: Text(_labelFor(c)),
-            );
+            return DropdownMenuItem(value: id, child: Text(_labelFor(c)));
           }).toList(),
           onChanged: (val) {
             if (val != null && val != _selectedClassId) {
@@ -511,8 +510,8 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
                             day.percentage >= 95
                                 ? AppColors.secondary
                                 : day.percentage >= 90
-                                    ? AppColors.primary
-                                    : AppColors.accent,
+                                ? AppColors.primary
+                                : AppColors.accent,
                           ),
                         ),
                       ),
@@ -661,9 +660,12 @@ class _TrendChartPainter extends CustomPainter {
       final cp1x = points[i - 1].dx + (points[i].dx - points[i - 1].dx) / 3;
       final cp2x = points[i].dx - (points[i].dx - points[i - 1].dx) / 3;
       linePath.cubicTo(
-        cp1x, points[i - 1].dy,
-        cp2x, points[i].dy,
-        points[i].dx, points[i].dy,
+        cp1x,
+        points[i - 1].dy,
+        cp2x,
+        points[i].dy,
+        points[i].dx,
+        points[i].dy,
       );
     }
 

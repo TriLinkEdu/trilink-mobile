@@ -61,9 +61,9 @@ class _TeacherSettingsScreenState extends State<TeacherSettingsScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to save settings: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to save settings: $e')));
     }
   }
 
@@ -80,8 +80,10 @@ class _TeacherSettingsScreenState extends State<TeacherSettingsScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Log Out',
-                style: TextStyle(color: AppColors.error)),
+            child: const Text(
+              'Log Out',
+              style: TextStyle(color: AppColors.error),
+            ),
           ),
         ],
       ),
@@ -91,29 +93,29 @@ class _TeacherSettingsScreenState extends State<TeacherSettingsScreen> {
 
     await AuthService().logout();
     if (!mounted) return;
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      RouteNames.login,
-      (_) => false,
-    );
+    Navigator.of(
+      context,
+    ).pushNamedAndRemoveUntil(RouteNames.login, (_) => false);
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
         leading: TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text(
+          child: Text(
             'Back',
-            style: TextStyle(color: AppColors.primary, fontSize: 15),
+            style: TextStyle(color: theme.colorScheme.primary, fontSize: 15),
           ),
         ),
         leadingWidth: 70,
-        title: const Text(
+        title: Text(
           'Profile & Settings',
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.bold,
             fontSize: 17,
           ),
@@ -122,9 +124,9 @@ class _TeacherSettingsScreenState extends State<TeacherSettingsScreen> {
         actions: [
           TextButton(
             onPressed: () {},
-            child: const Text(
+            child: Text(
               'Edit',
-              style: TextStyle(color: AppColors.primary, fontSize: 15),
+              style: TextStyle(color: theme.colorScheme.primary, fontSize: 15),
             ),
           ),
         ],
@@ -154,6 +156,7 @@ class _TeacherSettingsScreenState extends State<TeacherSettingsScreen> {
   }
 
   Widget _buildProfileHeader() {
+    final theme = Theme.of(context);
     return Column(
       children: [
         Stack(
@@ -180,26 +183,36 @@ class _TeacherSettingsScreenState extends State<TeacherSettingsScreen> {
         const SizedBox(height: 14),
         Text(
           _fullName.isNotEmpty ? _fullName : 'Teacher',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           _subject.isNotEmpty ? _subject : _email,
-          style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+          style: TextStyle(
+            fontSize: 14,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: 4),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.email_outlined, size: 14, color: Colors.grey.shade500),
+            Icon(
+              Icons.email_outlined,
+              size: 14,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(width: 4),
             Text(
               _email,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+              style: TextStyle(
+                fontSize: 13,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -235,14 +248,15 @@ class _TeacherSettingsScreenState extends State<TeacherSettingsScreen> {
   }
 
   Widget _buildSignatureSection() {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.grey.shade50,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,18 +266,14 @@ class _TeacherSettingsScreenState extends State<TeacherSettingsScreen> {
               children: [
                 Row(
                   children: [
-                    Icon(
-                      Icons.verified,
-                      color: AppColors.secondary,
-                      size: 18,
-                    ),
+                    Icon(Icons.verified, color: AppColors.secondary, size: 18),
                     const SizedBox(width: 8),
-                    const Text(
+                    Text(
                       'Authorized Signature',
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
-                        color: AppColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ],
@@ -303,7 +313,10 @@ class _TeacherSettingsScreenState extends State<TeacherSettingsScreen> {
             const SizedBox(height: 10),
             Text(
               'This signature is securely stored and used to authorize student report cards.',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -312,6 +325,7 @@ class _TeacherSettingsScreenState extends State<TeacherSettingsScreen> {
   }
 
   Widget _buildPreferencesSection() {
+    final theme = Theme.of(context);
     return _Section(
       label: 'PREFERENCES',
       children: [
@@ -336,12 +350,12 @@ class _TeacherSettingsScreenState extends State<TeacherSettingsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Predictive Insights',
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
-                        color: AppColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -349,7 +363,7 @@ class _TeacherSettingsScreenState extends State<TeacherSettingsScreen> {
                       'Enable AI analysis for early warning alerts on student performance trends.',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade500,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -389,13 +403,13 @@ class _TeacherSettingsScreenState extends State<TeacherSettingsScreen> {
                 ),
               ),
               const SizedBox(width: 14),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Dark Mode',
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 15,
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -409,6 +423,12 @@ class _TeacherSettingsScreenState extends State<TeacherSettingsScreen> {
               ),
             ],
           ),
+        ),
+        _SettingsTile(
+          icon: Icons.palette_outlined,
+          title: 'Theme and Appearance',
+          onTap: () =>
+              Navigator.pushNamed(context, RouteNames.themeCustomization),
         ),
         _SettingsTile(
           icon: Icons.accessibility_new,
@@ -449,9 +469,10 @@ class _TeacherSettingsScreenState extends State<TeacherSettingsScreen> {
   }
 
   Widget _buildVersionInfo() {
+    final theme = Theme.of(context);
     return Text(
       'TriLink v2.4.1 (Build 892)',
-      style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+      style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
     );
   }
 }
@@ -464,6 +485,7 @@ class _Section extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -474,7 +496,7 @@ class _Section extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: Colors.grey.shade500,
+              color: theme.colorScheme.onSurfaceVariant,
               letterSpacing: 0.8,
             ),
           ),
@@ -503,29 +525,35 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         child: Row(
           children: [
-            Icon(icon, size: 22, color: iconColor ?? Colors.grey.shade700),
+            Icon(
+              icon,
+              size: 22,
+              color: iconColor ?? theme.colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(width: 14),
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
             ),
-            if (trailing != null) ...[
-              trailing!,
-              const SizedBox(width: 4),
-            ],
-            Icon(Icons.chevron_right, size: 20, color: Colors.grey.shade400),
+            if (trailing != null) ...[trailing!, const SizedBox(width: 4)],
+            Icon(
+              Icons.chevron_right,
+              size: 20,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ],
         ),
       ),

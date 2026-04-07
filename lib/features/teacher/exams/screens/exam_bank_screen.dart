@@ -12,7 +12,13 @@ class ExamBankScreen extends StatefulWidget {
 class _ExamBankScreenState extends State<ExamBankScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _selectedFilter = 'All';
-  final List<String> _filters = ['All', 'MCQ', 'Short Answer', 'Essay', 'LaTeX'];
+  final List<String> _filters = [
+    'All',
+    'MCQ',
+    'Short Answer',
+    'Essay',
+    'LaTeX',
+  ];
 
   bool _loading = true;
   String? _error;
@@ -62,9 +68,11 @@ class _ExamBankScreenState extends State<ExamBankScreen> {
     final query = _searchController.text.toLowerCase();
     if (query.isNotEmpty) {
       results = results
-          .where((q) =>
-              q.text.toLowerCase().contains(query) ||
-              q.subject.toLowerCase().contains(query))
+          .where(
+            (q) =>
+                q.text.toLowerCase().contains(query) ||
+                q.subject.toLowerCase().contains(query),
+          )
           .toList();
     }
     return results;
@@ -78,19 +86,20 @@ class _ExamBankScreenState extends State<ExamBankScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Question Bank',
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -98,7 +107,7 @@ class _ExamBankScreenState extends State<ExamBankScreen> {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.search, color: AppColors.textPrimary),
+            icon: Icon(Icons.search, color: theme.colorScheme.onSurface),
             onPressed: () {},
           ),
         ],
@@ -106,32 +115,37 @@ class _ExamBankScreenState extends State<ExamBankScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.error_outline,
-                          size: 48, color: Colors.grey.shade400),
-                      const SizedBox(height: 12),
-                      Text(_error!,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.grey.shade600)),
-                      const SizedBox(height: 16),
-                      OutlinedButton(
-                        onPressed: _loadData,
-                        child: const Text('Retry'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Colors.grey.shade400,
                   ),
-                )
-              : Column(
-                  children: [
-                    _buildSearchBar(),
-                    _buildFilterChips(),
-                    const SizedBox(height: 4),
-                    Expanded(child: _buildQuestionList()),
-                  ],
-                ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _error!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 16),
+                  OutlinedButton(
+                    onPressed: _loadData,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          : Column(
+              children: [
+                _buildSearchBar(),
+                _buildFilterChips(),
+                const SizedBox(height: 4),
+                Expanded(child: _buildQuestionList()),
+              ],
+            ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddQuestionSheet,
         backgroundColor: AppColors.primary,
@@ -187,15 +201,21 @@ class _ExamBankScreenState extends State<ExamBankScreen> {
                         : Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: isSelected ? AppColors.primary : Colors.grey.shade300,
+                      color: isSelected
+                          ? AppColors.primary
+                          : Colors.grey.shade300,
                     ),
                   ),
                   child: Text(
                     filter,
                     style: TextStyle(
                       fontSize: 13,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                      color: isSelected ? AppColors.primary : Colors.grey.shade600,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                      color: isSelected
+                          ? AppColors.primary
+                          : Colors.grey.shade600,
                     ),
                   ),
                 ),
@@ -249,9 +269,12 @@ class _ExamBankScreenState extends State<ExamBankScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Question deleted'),
-        action: SnackBarAction(label: 'Undo', onPressed: () {
-          setState(() => _questions.add(question));
-        }),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () {
+            setState(() => _questions.add(question));
+          },
+        ),
       ),
     );
   }
@@ -330,7 +353,9 @@ class _ExamBankScreenState extends State<ExamBankScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: AppColors.primary),
+                          borderSide: const BorderSide(
+                            color: AppColors.primary,
+                          ),
                         ),
                       ),
                     ),
@@ -396,7 +421,9 @@ class _ExamBankScreenState extends State<ExamBankScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: AppColors.primary),
+                          borderSide: const BorderSide(
+                            color: AppColors.primary,
+                          ),
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 14,
@@ -413,9 +440,7 @@ class _ExamBankScreenState extends State<ExamBankScreen> {
                             label: 'Add LaTeX',
                             isActive: _newHasLatex,
                             onTap: () {
-                              setSheetState(
-                                () => _newHasLatex = !_newHasLatex,
-                              );
+                              setSheetState(() => _newHasLatex = !_newHasLatex);
                             },
                           ),
                         ),
@@ -426,9 +451,7 @@ class _ExamBankScreenState extends State<ExamBankScreen> {
                             label: 'Add Image',
                             isActive: _newHasImage,
                             onTap: () {
-                              setSheetState(
-                                () => _newHasImage = !_newHasImage,
-                              );
+                              setSheetState(() => _newHasImage = !_newHasImage);
                             },
                           ),
                         ),
@@ -568,7 +591,11 @@ class _BankQuestion {
       id: json['_id'] ?? json['id'] ?? '',
       text: json['text'] ?? json['question'] ?? '',
       type: json['type'] ?? 'MCQ',
-      subject: json['subject']?['name'] ?? json['subjectName'] ?? json['subject'] ?? '',
+      subject:
+          json['subject']?['name'] ??
+          json['subjectName'] ??
+          json['subject'] ??
+          '',
       points: (json['points'] ?? json['marks'] ?? 5) as int,
       hasLatex: json['hasLatex'] == true,
       hasImage: json['hasImage'] == true || (json['image'] != null),
@@ -611,10 +638,7 @@ class _QuestionCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-          ),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
         ],
       ),
       child: Column(
@@ -659,10 +683,7 @@ class _QuestionCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 3,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: _typeBadgeColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
@@ -678,10 +699,7 @@ class _QuestionCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 3,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(6),

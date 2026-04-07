@@ -45,21 +45,28 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
 
   Future<void> _loadData() async {
     try {
-      setState(() { _loading = true; _error = null; });
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
 
       String userId = widget.studentUserId ?? '';
       if (userId.isEmpty) {
         final dashboard = await ApiService().getParentDashboard();
         final linked = (dashboard['linkedChildren'] as List<dynamic>?) ?? [];
         if (linked.isNotEmpty) {
-          userId = linked[0]['userId'] as String? ??
-              linked[0]['id'] as String? ?? '';
+          userId =
+              linked[0]['userId'] as String? ??
+              linked[0]['id'] as String? ??
+              '';
         }
       }
 
       if (userId.isEmpty) {
         if (!mounted) return;
-        setState(() { _loading = false; });
+        setState(() {
+          _loading = false;
+        });
         return;
       }
 
@@ -84,10 +91,12 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
       ];
 
       setState(() {
-        _studentName = profile['fullName'] as String? ??
+        _studentName =
+            profile['fullName'] as String? ??
             '${profile['firstName'] ?? ''} ${profile['lastName'] ?? ''}'.trim();
         if (_studentName.isEmpty) _studentName = widget.childName;
-        _gradeSection = profile['gradeSection'] as String? ??
+        _gradeSection =
+            profile['gradeSection'] as String? ??
             '${profile['grade'] ?? ''} ${profile['section'] != null ? '• Section ${profile['section']}' : ''}'
                 .trim();
         _studentIdLabel = profile['studentId'] as String? ?? '';
@@ -107,7 +116,11 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
         _teachers = teachersRaw.asMap().entries.map((entry) {
           final t = entry.value as Map<String, dynamic>;
           final name = t['name'] as String? ?? '';
-          final initials = name.split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join();
+          final initials = name
+              .split(' ')
+              .map((w) => w.isNotEmpty ? w[0] : '')
+              .take(2)
+              .join();
           return _TeacherInfo(
             name: name,
             initials: initials.toUpperCase(),
@@ -119,21 +132,25 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         title: Text(
           _studentName,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
+          style: TextStyle(
+            color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -142,48 +159,49 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(_error!,
-                          style: const TextStyle(color: AppColors.error)),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                          onPressed: _loadData,
-                          child: const Text('Retry')),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(_error!, style: const TextStyle(color: AppColors.error)),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: _loadData,
+                    child: const Text('Retry'),
                   ),
-                )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildProfileHeader(),
-                      const SizedBox(height: 24),
-                      _buildSectionTitle('Current Classes'),
-                      const SizedBox(height: 12),
-                      if (_classes.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          child: Center(
-                            child: Text('No classes found',
-                                style: TextStyle(
-                                    color: Colors.grey.shade500)),
-                          ),
+                ],
+              ),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildProfileHeader(),
+                  const SizedBox(height: 24),
+                  _buildSectionTitle('Current Classes'),
+                  const SizedBox(height: 12),
+                  if (_classes.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Center(
+                        child: Text(
+                          'No classes found',
+                          style: TextStyle(color: Colors.grey.shade500),
                         ),
-                      ..._classes.map(_buildClassCard),
-                      const SizedBox(height: 24),
-                      _buildSectionTitle('Teachers'),
-                      const SizedBox(height: 12),
-                      _buildTeachersRow(),
-                      const SizedBox(height: 24),
-                      _buildQuickLinks(),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
-                ),
+                      ),
+                    ),
+                  ..._classes.map(_buildClassCard),
+                  const SizedBox(height: 24),
+                  _buildSectionTitle('Teachers'),
+                  const SizedBox(height: 12),
+                  _buildTeachersRow(),
+                  const SizedBox(height: 24),
+                  _buildQuickLinks(),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
     );
   }
 
@@ -228,19 +246,13 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
           const SizedBox(height: 4),
           Text(
             _gradeSection,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
           ),
           if (_studentIdLabel.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(
               'Student ID: $_studentIdLabel',
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade500,
-              ),
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
             ),
           ],
         ],
@@ -295,18 +307,12 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                 const SizedBox(height: 2),
                 Text(
                   item.teacher,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   '${item.schedule}  •  ${item.room}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey.shade500,
-                  ),
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                 ),
               ],
             ),
@@ -322,8 +328,10 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 16),
         child: Center(
-          child:
-              Text('No teachers found', style: TextStyle(color: Colors.grey.shade500)),
+          child: Text(
+            'No teachers found',
+            style: TextStyle(color: Colors.grey.shade500),
+          ),
         ),
       );
     }

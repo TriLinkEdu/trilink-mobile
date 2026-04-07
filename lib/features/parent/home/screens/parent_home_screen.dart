@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../features/auth/services/auth_service.dart';
+import '../../../shared/widgets/role_page_background.dart';
 import '../../dashboard/screens/parent_dashboard_screen.dart';
 import '../../notifications/screens/parent_notifications_screen.dart';
 import '../../profile_settings/screens/parent_settings_screen.dart';
@@ -37,15 +39,19 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
         if (linked is List) {
           _linkedChildren = linked.cast<Map<String, dynamic>>();
         } else if (linked is int) {
-          _linkedChildren = List.generate(linked, (i) => {
-            'id': 'child-$i',
-            'studentId': 'child-$i',
-            'firstName': i == 0 ? 'Ali' : 'Leila',
-            'lastName': 'Hassan',
-            'grade': i == 0 ? 'Grade 9' : 'Grade 7',
-          });
+          _linkedChildren = List.generate(
+            linked,
+            (i) => {
+              'id': 'child-$i',
+              'studentId': 'child-$i',
+              'firstName': i == 0 ? 'Ali' : 'Leila',
+              'lastName': 'Hassan',
+              'grade': i == 0 ? 'Grade 9' : 'Grade 7',
+            },
+          );
         }
-        _unreadNotifications = (data['unreadNotifications'] as num?)?.toInt() ?? 0;
+        _unreadNotifications =
+            (data['unreadNotifications'] as num?)?.toInt() ?? 0;
         _loading = false;
       });
     } catch (_) {
@@ -65,7 +71,6 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
   Widget build(BuildContext context) {
     final user = AuthService().currentUser;
     final firstName = user?.firstName ?? 'Parent';
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final screens = <Widget>[
       _buildHomeBody(firstName),
@@ -75,11 +80,14 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
 
     return Scaffold(
       key: _scaffoldKey,
-      drawer: _buildDrawer(context, user, isDark),
-      body: IndexedStack(index: _currentIndex, children: screens),
+      drawer: _buildDrawer(context, user),
+      body: RolePageBackground(
+        flavor: RoleThemeFlavor.parent,
+        child: IndexedStack(index: _currentIndex, children: screens),
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: isDark ? Colors.grey.shade900 : Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
@@ -92,9 +100,9 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
           currentIndex: _currentIndex,
           onTap: (i) => setState(() => _currentIndex = i),
           type: BottomNavigationBarType.fixed,
-          backgroundColor: isDark ? Colors.grey.shade900 : Colors.white,
-          selectedItemColor: AppColors.primary,
-          unselectedItemColor: Colors.grey.shade400,
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          selectedItemColor: Theme.of(context).colorScheme.primary,
+          unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
           selectedFontSize: 12,
           unselectedFontSize: 12,
           elevation: 0,
@@ -107,7 +115,10 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
             BottomNavigationBarItem(
               icon: Badge(
                 isLabelVisible: _unreadNotifications > 0,
-                label: Text('$_unreadNotifications', style: const TextStyle(fontSize: 10)),
+                label: Text(
+                  '$_unreadNotifications',
+                  style: const TextStyle(fontSize: 10),
+                ),
                 child: const Icon(Icons.notifications_outlined),
               ),
               activeIcon: const Icon(Icons.notifications),
@@ -144,6 +155,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
   }
 
   Widget _buildHeader() {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
       child: Row(
@@ -154,25 +166,33 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: theme.colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(Icons.menu, color: Colors.grey.shade700, size: 22),
+              child: Icon(
+                Icons.menu,
+                color: theme.colorScheme.onSurfaceVariant,
+                size: 22,
+              ),
             ),
           ),
-          const Text(
+          Text(
             'TriLink',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           Stack(
             children: [
               GestureDetector(
                 onTap: () => setState(() => _currentIndex = 2),
-                child: Icon(Icons.settings_outlined, color: Colors.grey.shade600, size: 24),
+                child: Icon(
+                  Icons.settings_outlined,
+                  color: theme.colorScheme.onSurfaceVariant,
+                  size: 24,
+                ),
               ),
               if (_unreadNotifications > 0)
                 Positioned(
@@ -195,14 +215,15 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
   }
 
   Widget _buildGreeting(String firstName) {
+    final theme = Theme.of(context);
     return Column(
       children: [
         Text(
           '${_getGreeting()}, $firstName',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 8),
@@ -211,7 +232,11 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
               ? 'No children linked yet.\nAdd a child to get started.'
               : "Which child's progress would you like to\nview?",
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 15, color: Colors.grey, height: 1.4),
+          style: TextStyle(
+            fontSize: 15,
+            color: theme.colorScheme.onSurfaceVariant,
+            height: 1.4,
+          ),
         ),
       ],
     );
@@ -226,13 +251,14 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
         spacing: 20,
         runSpacing: 16,
         children: _linkedChildren.map<Widget>((child) {
-          final name = child['firstName'] as String? ??
+          final name =
+              child['firstName'] as String? ??
               child['fullName'] as String? ??
               child['name'] as String? ??
               'Child';
           final grade = child['grade'] as String? ?? '';
-          final studentId = child['studentId'] as String? ??
-              child['id'] as String? ?? '';
+          final studentId =
+              child['studentId'] as String? ?? child['id'] as String? ?? '';
           return _ChildCard(
             name: name,
             grade: grade,
@@ -240,9 +266,8 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => ParentDashboardScreen(
-                    initialChildId: studentId,
-                  ),
+                  builder: (_) =>
+                      ParentDashboardScreen(initialChildId: studentId),
                 ),
               );
             },
@@ -253,14 +278,16 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
   }
 
   Widget _buildAddChild() {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: () {},
       child: Container(
         width: 110,
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
         ),
         child: Column(
           children: [
@@ -268,10 +295,14 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: Colors.grey.shade200,
+                color: theme.colorScheme.surfaceContainerLow,
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.add, color: Colors.grey.shade500, size: 28),
+              child: Icon(
+                Icons.add,
+                color: theme.colorScheme.onSurfaceVariant,
+                size: 28,
+              ),
             ),
             const SizedBox(height: 10),
             Text(
@@ -279,7 +310,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: Colors.grey.shade600,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -288,18 +319,20 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
     );
   }
 
-  Widget _buildDrawer(BuildContext context, dynamic user, bool isDark) {
+  Widget _buildDrawer(BuildContext context, dynamic user) {
+    final theme = Theme.of(context);
+    final drawerSurface = Color.alphaBlend(
+      theme.colorScheme.primary.withAlpha(
+        theme.brightness == Brightness.dark ? 18 : 10,
+      ),
+      theme.colorScheme.surface,
+    );
     return Drawer(
+      backgroundColor: drawerSurface,
       child: Column(
         children: [
           DrawerHeader(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.primary, Color(0xFF1A237E)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
+            decoration: BoxDecoration(gradient: theme.ext.heroGradient),
             child: Row(
               children: [
                 CircleAvatar(
@@ -415,7 +448,10 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                   label: 'Announcements',
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.pushNamed(context, RouteNames.parentAnnouncements);
+                    Navigator.pushNamed(
+                      context,
+                      RouteNames.parentAnnouncements,
+                    );
                   },
                 ),
                 _DrawerItem(
@@ -441,8 +477,11 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                   label: 'Weekly Report',
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.pushNamed(context, RouteNames.parentWeeklyReport,
-                        arguments: {'childName': 'Ali'});
+                    Navigator.pushNamed(
+                      context,
+                      RouteNames.parentWeeklyReport,
+                      arguments: {'childName': 'Ali'},
+                    );
                   },
                 ),
                 _DrawerItem(
@@ -450,7 +489,10 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                   label: 'Compare Reports',
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.pushNamed(context, RouteNames.parentReportComparison);
+                    Navigator.pushNamed(
+                      context,
+                      RouteNames.parentReportComparison,
+                    );
                   },
                 ),
                 const Divider(height: 1),
@@ -473,7 +515,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                 _DrawerItem(
                   icon: Icons.logout,
                   label: 'Logout',
-                  color: Colors.red.shade600,
+                  color: theme.colorScheme.error,
                   onTap: () async {
                     Navigator.pop(context);
                     final confirm = await showDialog<bool>(
@@ -482,14 +524,29 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                         title: const Text('Logout'),
                         content: const Text('Are you sure you want to logout?'),
                         actions: [
-                          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Logout', style: TextStyle(color: Colors.red))),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text(
+                              'Logout',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
                         ],
                       ),
                     );
                     if (confirm == true && mounted) {
                       await AuthService().logout();
-                      if (mounted) Navigator.pushReplacementNamed(context, RouteNames.login);
+                      if (!mounted) {
+                        return;
+                      }
+                      Navigator.pushReplacementNamed(
+                        this.context,
+                        RouteNames.login,
+                      );
                     }
                   },
                 ),
@@ -516,14 +573,16 @@ class _ChildCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 120,
         padding: const EdgeInsets.symmetric(vertical: 24),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.06),
@@ -536,7 +595,7 @@ class _ChildCard extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 36,
-              backgroundColor: Colors.grey.shade100,
+              backgroundColor: theme.colorScheme.surfaceContainerLow,
               child: Text(
                 name.isNotEmpty ? name[0].toUpperCase() : '?',
                 style: const TextStyle(
@@ -549,10 +608,10 @@ class _ChildCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               name,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: theme.colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 2),
@@ -577,6 +636,7 @@ class _DrawerSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
       child: Text(
@@ -584,7 +644,7 @@ class _DrawerSection extends StatelessWidget {
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w700,
-          color: Colors.grey.shade500,
+          color: theme.colorScheme.onSurfaceVariant,
           letterSpacing: 1.2,
         ),
       ),
@@ -607,15 +667,20 @@ class _DrawerItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return ListTile(
       dense: true,
-      leading: Icon(icon, size: 22, color: color ?? Colors.grey.shade700),
+      leading: Icon(
+        icon,
+        size: 22,
+        color: color ?? theme.colorScheme.onSurfaceVariant,
+      ),
       title: Text(
         label,
         style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w500,
-          color: color ?? Colors.grey.shade800,
+          color: color ?? theme.colorScheme.onSurface,
         ),
       ),
       onTap: onTap,

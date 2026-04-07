@@ -160,6 +160,8 @@ class AppTheme {
             surfaceContainerLow: AppColors.lightSurfaceDim,
           );
 
+    final scaffoldBg = _scaffoldBackgroundForMood(seedColor, isDark);
+
     final colorScheme = baseScheme.copyWith(
       primary: seedColor,
       onPrimary: onPrimary,
@@ -202,9 +204,7 @@ class AppTheme {
       textTheme: AppTextStyles.buildTextTheme(
         fontFamily ?? AppTextStyles.defaultFontFamily,
       ),
-      scaffoldBackgroundColor: isDark
-          ? AppColors.darkBackground
-          : AppColors.lightBackground,
+      scaffoldBackgroundColor: scaffoldBg,
       extensions: [ext],
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
@@ -366,6 +366,12 @@ class AppTheme {
     return ThemeData.estimateBrightnessForColor(background) == Brightness.dark
         ? Colors.white
         : const Color(0xFF0F172A);
+  }
+
+  static Color _scaffoldBackgroundForMood(Color seedColor, bool isDark) {
+    final base = isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final alpha = isDark ? 36 : 24;
+    return Color.alphaBlend(seedColor.withAlpha(alpha), base);
   }
 
   static Color _seedForMood(StudentMoodTheme moodTheme) {

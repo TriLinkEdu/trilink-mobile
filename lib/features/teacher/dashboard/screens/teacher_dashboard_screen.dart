@@ -39,8 +39,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
       if (!mounted) return;
       setState(() {
         _myClasses = (data['myClasses'] as num?)?.toInt() ?? 0;
-        _pendingGrading =
-            (data['pendingGradingApprox'] as num?)?.toInt() ?? 0;
+        _pendingGrading = (data['pendingGradingApprox'] as num?)?.toInt() ?? 0;
         _unreadNotifications =
             (data['unreadNotifications'] as num?)?.toInt() ?? 0;
         _loading = false;
@@ -69,37 +68,37 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: OfflineBanner(
         child: SafeArea(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : _error != null
-                  ? _buildErrorState()
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildGreetingHeader(),
-                          const SizedBox(height: 24),
-                          _buildUpNextCard(context),
-                          const SizedBox(height: 20),
-                          _buildStatsRow(),
-                          const SizedBox(height: 28),
-                          _buildQuickActions(context),
-                          const SizedBox(height: 28),
-                          _buildRecentActivity(),
-                        ],
-                      ),
-                    ),
+              ? _buildErrorState(theme)
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildGreetingHeader(),
+                      const SizedBox(height: 24),
+                      _buildUpNextCard(context),
+                      const SizedBox(height: 20),
+                      _buildStatsRow(),
+                      const SizedBox(height: 28),
+                      _buildQuickActions(context),
+                      const SizedBox(height: 28),
+                      _buildRecentActivity(),
+                    ],
+                  ),
+                ),
         ),
       ),
     );
   }
 
-  Widget _buildErrorState() {
+  Widget _buildErrorState(ThemeData theme) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -113,7 +112,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
+                color: theme.colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
@@ -128,8 +127,8 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               icon: const Icon(Icons.refresh, size: 18),
               label: const Text('Retry'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -142,6 +141,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   }
 
   Widget _buildGreetingHeader() {
+    final theme = Theme.of(context);
     final now = DateTime.now();
     final dateStr = DateFormat('EEEE, MMM d').format(now);
 
@@ -152,10 +152,14 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           child: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+              color: theme.colorScheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(Icons.menu, color: Colors.grey.shade700, size: 22),
+            child: Icon(
+              Icons.menu,
+              color: theme.colorScheme.onSurfaceVariant,
+              size: 22,
+            ),
           ),
         ),
         const SizedBox(width: 12),
@@ -165,14 +169,17 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             children: [
               Text(
                 dateStr,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               Text(
                 '$_greeting, $_teacherName',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
             ],
@@ -181,7 +188,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
@@ -195,7 +202,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             label: Text('$_unreadNotifications'),
             child: Icon(
               Icons.notifications_outlined,
-              color: Colors.grey.shade700,
+              color: theme.colorScheme.onSurfaceVariant,
               size: 22,
             ),
           ),
@@ -205,6 +212,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   }
 
   Widget _buildUpNextCard(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -213,7 +221,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: Colors.grey.shade600,
+            color: theme.colorScheme.onSurfaceVariant,
             letterSpacing: 0.8,
           ),
         ),
@@ -246,8 +254,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                     ),
                     child: Text(
                       '$_myClasses classes today',
-                      style:
-                          const TextStyle(color: Colors.white, fontSize: 12),
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
                     ),
                   ),
                   Container(
@@ -276,16 +283,11 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               const SizedBox(height: 6),
               Row(
                 children: [
-                  const Icon(
-                    Icons.person,
-                    color: Colors.white70,
-                    size: 16,
-                  ),
+                  const Icon(Icons.person, color: Colors.white70, size: 16),
                   const SizedBox(width: 4),
                   Text(
                     AuthService().currentUser?.fullName ?? '',
-                    style:
-                        const TextStyle(color: Colors.white70, fontSize: 13),
+                    style: const TextStyle(color: Colors.white70, fontSize: 13),
                   ),
                 ],
               ),
@@ -297,6 +299,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   }
 
   Widget _buildStatsRow() {
+    final theme = Theme.of(context);
     return Row(
       children: [
         Expanded(
@@ -317,7 +320,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             label: 'Pending Grades',
             value: '$_pendingGrading',
             subtitle: 'papers',
-            subtitleColor: Colors.grey.shade500,
+            subtitleColor: theme.colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -325,15 +328,16 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   }
 
   Widget _buildQuickActions(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Quick Actions',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 16),
@@ -360,9 +364,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const CreateExamScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const CreateExamScreen()),
                 );
               },
             ),
@@ -386,25 +388,26 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   }
 
   Widget _buildRecentActivity() {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'Recent Activity',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+                color: theme.colorScheme.onSurface,
               ),
             ),
             TextButton(
               onPressed: () {},
-              child: const Text(
+              child: Text(
                 'View All',
-                style: TextStyle(color: AppColors.primary),
+                style: TextStyle(color: theme.colorScheme.primary),
               ),
             ),
           ],
@@ -460,10 +463,11 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
@@ -484,7 +488,7 @@ class _StatCard extends StatelessWidget {
                   label,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey.shade600,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
@@ -496,10 +500,10 @@ class _StatCard extends StatelessWidget {
             children: [
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               const SizedBox(width: 6),
@@ -537,6 +541,7 @@ class _QuickActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -557,7 +562,7 @@ class _QuickActionButton extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: Colors.grey.shade700,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -585,16 +590,14 @@ class _ActivityTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-          ),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8),
         ],
       ),
       child: Row(
@@ -618,17 +621,17 @@ class _ActivityTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
-                        color: AppColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     Text(
                       time,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade500,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -638,7 +641,7 @@ class _ActivityTile extends StatelessWidget {
                   subtitle,
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey.shade600,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],

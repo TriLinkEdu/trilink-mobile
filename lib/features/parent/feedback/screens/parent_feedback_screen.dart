@@ -83,24 +83,25 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Feedback & Comments',
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
         centerTitle: true,
         bottom: TabBar(
           controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textSecondary,
-          indicatorColor: AppColors.primary,
+          labelColor: theme.colorScheme.primary,
+          unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+          indicatorColor: theme.colorScheme.primary,
           indicatorWeight: 3,
           labelStyle: const TextStyle(
             fontWeight: FontWeight.w600,
@@ -114,10 +115,7 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen>
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          _buildSendFeedbackTab(),
-          _buildInfoTab(),
-        ],
+        children: [_buildSendFeedbackTab(), _buildInfoTab()],
       ),
     );
   }
@@ -136,7 +134,11 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.feedback_outlined, size: 48, color: Colors.grey.shade400),
+            Icon(
+              Icons.feedback_outlined,
+              size: 48,
+              color: Colors.grey.shade400,
+            ),
             const SizedBox(height: 16),
             Text(
               'Your feedback helps us improve',
@@ -185,10 +187,7 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen>
             value: _selectedType,
             decoration: InputDecoration(
               labelText: 'Feedback Type',
-              labelStyle: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade600,
-              ),
+              labelStyle: TextStyle(fontSize: 13, color: Colors.grey.shade600),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide(color: Colors.grey.shade300),
@@ -197,11 +196,12 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen>
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide(color: Colors.grey.shade300),
               ),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
             ),
-            style:
-                const TextStyle(fontSize: 13, color: AppColors.textPrimary),
+            style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
             items: _feedbackTypes.map((t) {
               return DropdownMenuItem(
                 value: t,
@@ -215,14 +215,10 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen>
           const SizedBox(height: 14),
           TextField(
             controller: _subjectController,
-            style:
-                const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+            style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
             decoration: InputDecoration(
               hintText: 'Subject (optional)',
-              hintStyle: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade500,
-              ),
+              hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade500),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide(color: Colors.grey.shade300),
@@ -242,14 +238,10 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen>
           TextField(
             controller: _feedbackController,
             maxLines: 4,
-            style:
-                const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+            style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
             decoration: InputDecoration(
               hintText: 'Write your feedback or question...',
-              hintStyle: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade500,
-              ),
+              hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade500),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide(color: Colors.grey.shade300),
@@ -275,13 +267,17 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen>
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : const Icon(Icons.send, size: 18),
               label: Text(
                 _sending ? 'Sending...' : 'Send Feedback',
                 style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w600),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,

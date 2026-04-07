@@ -34,11 +34,16 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
 
   Future<void> _loadData() async {
     if (widget.conversationId == null || widget.conversationId!.isEmpty) {
-      setState(() { _loading = false; });
+      setState(() {
+        _loading = false;
+      });
       return;
     }
     try {
-      setState(() { _loading = true; _error = null; });
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
       final msgs = await ApiService().getMessages(widget.conversationId!);
       if (!mounted) return;
       setState(() {
@@ -47,43 +52,50 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
           children: [
             Text(
               widget.teacherName,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
             ),
             Text(
               widget.subject,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.info_outline,
-              color: AppColors.textPrimary,
+              color: theme.colorScheme.onSurface,
               size: 22,
             ),
             onPressed: () {},
@@ -98,27 +110,30 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(_error!,
-                                style: const TextStyle(
-                                    color: AppColors.error)),
-                            const SizedBox(height: 12),
-                            ElevatedButton(
-                                onPressed: _loadData,
-                                child: const Text('Retry')),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _error!,
+                          style: const TextStyle(color: AppColors.error),
                         ),
-                      )
-                    : _messages.isEmpty
-                        ? Center(
-                            child: Text('No messages yet',
-                                style: TextStyle(
-                                    color: Colors.grey.shade500)),
-                          )
-                        : _buildChatMessages(),
+                        const SizedBox(height: 12),
+                        ElevatedButton(
+                          onPressed: _loadData,
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  )
+                : _messages.isEmpty
+                ? Center(
+                    child: Text(
+                      'No messages yet',
+                      style: TextStyle(color: Colors.grey.shade500),
+                    ),
+                  )
+                : _buildChatMessages(),
           ),
           _buildReadOnlyFooter(),
         ],
@@ -187,8 +202,7 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
                 ),
                 Text(
                   'Masks sensitive grade data in public',
-                  style:
-                      TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                 ),
               ],
             ),
@@ -213,7 +227,8 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
         final senderId = msg['senderId'] as String? ?? '';
         final senderName = msg['senderName'] as String? ?? '';
         final body = msg['body'] as String? ?? msg['content'] as String? ?? '';
-        final time = msg['createdAt'] as String? ?? msg['time'] as String? ?? '';
+        final time =
+            msg['createdAt'] as String? ?? msg['time'] as String? ?? '';
         final avatar = msg['senderAvatar'] as String? ?? '';
         final hasSensitive = msg['hasSensitiveData'] as bool? ?? false;
         final isOwnChild = senderId == currentUserId;
@@ -256,10 +271,7 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          time,
-          style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-        ),
+        Text(time, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
         const SizedBox(height: 6),
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -320,10 +332,7 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Text(
-          time,
-          style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-        ),
+        Text(time, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
         const SizedBox(height: 6),
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
@@ -394,18 +403,14 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
             ),
             const SizedBox(width: 12),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
                 'Score: •••\n(•••)',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey.shade500,
-                ),
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
               ),
             ),
           ],

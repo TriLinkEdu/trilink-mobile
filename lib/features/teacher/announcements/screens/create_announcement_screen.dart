@@ -40,20 +40,22 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
     final message = _messageController.text.trim();
 
     if (title.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a title')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please enter a title')));
       return;
     }
     if (message.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a message')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please enter a message')));
       return;
     }
 
-    final selectedAudiences =
-        _audiences.where((a) => a.selected).map((a) => a.label).toList();
+    final selectedAudiences = _audiences
+        .where((a) => a.selected)
+        .map((a) => a.label)
+        .toList();
 
     setState(() => _submitting = true);
     try {
@@ -68,16 +70,18 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            _scheduleForLater ? 'Announcement scheduled!' : 'Announcement sent!',
+            _scheduleForLater
+                ? 'Announcement scheduled!'
+                : 'Announcement sent!',
           ),
         ),
       );
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -85,13 +89,14 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: AppColors.textPrimary),
+          icon: Icon(Icons.close, color: theme.colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
         title: Container(
@@ -100,10 +105,10 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
             border: Border.all(color: AppColors.primary),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Text(
+          child: Text(
             'New Announcement',
             style: TextStyle(
-              color: AppColors.textPrimary,
+              color: theme.colorScheme.onSurface,
               fontWeight: FontWeight.bold,
               fontSize: 15,
             ),
@@ -240,9 +245,7 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: a.selected
-                      ? AppColors.primary
-                      : Colors.white,
+                  color: a.selected ? AppColors.primary : Colors.white,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
                     color: a.selected
@@ -262,9 +265,7 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: a.selected
-                            ? Colors.white
-                            : Colors.grey.shade700,
+                        color: a.selected ? Colors.white : Colors.grey.shade700,
                       ),
                     ),
                   ],
@@ -291,64 +292,66 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        ..._attachments.map((a) => Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.error.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.picture_as_pdf,
-                      color: AppColors.error,
-                      size: 20,
-                    ),
+        ..._attachments.map(
+          (a) => Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          a.name,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
+                  child: const Icon(
+                    Icons.picture_as_pdf,
+                    color: AppColors.error,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        a.name,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          a.size,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade500,
-                          ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        a.size,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade500,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.delete_outline,
-                      color: Colors.grey.shade500,
-                      size: 20,
-                    ),
-                    onPressed: () {
-                      setState(() => _attachments.remove(a));
-                    },
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.delete_outline,
+                    color: Colors.grey.shade500,
+                    size: 20,
                   ),
-                ],
-              ),
-            )),
+                  onPressed: () {
+                    setState(() => _attachments.remove(a));
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
         const SizedBox(height: 8),
         OutlinedButton.icon(
           onPressed: () {},

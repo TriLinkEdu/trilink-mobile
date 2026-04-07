@@ -258,7 +258,7 @@ class _ShellTopBar extends StatelessWidget {
     final top = MediaQuery.of(context).padding.top;
     final bg = Color.alphaBlend(
       theme.colorScheme.primary.withAlpha(
-        theme.brightness == Brightness.dark ? 18 : 8,
+        theme.brightness == Brightness.dark ? 12 : 6,
       ),
       theme.colorScheme.surface,
     );
@@ -396,7 +396,7 @@ class _GlassNavBar extends StatelessWidget {
     final bottom = MediaQuery.of(context).padding.bottom;
     final bg = Color.alphaBlend(
       theme.colorScheme.primary.withAlpha(
-        theme.brightness == Brightness.dark ? 16 : 6,
+        theme.brightness == Brightness.dark ? 14 : 6,
       ),
       theme.colorScheme.surface,
     );
