@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../core/network/api_exceptions.dart';
-
 import '../../../core/routes/route_names.dart';
 import '../../../core/constants/asset_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_shadows.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/theme_notifier.dart';
 
 import '../cubit/auth_cubit.dart';
 
@@ -99,9 +98,9 @@ class _LoginScreenState extends State<LoginScreen>
       Navigator.of(context).pushReplacementNamed(route);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Login failed: $e')));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -115,9 +114,9 @@ class _LoginScreenState extends State<LoginScreen>
       Navigator.of(context).pushReplacementNamed(RouteNames.studentDashboard);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Offline login failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Offline login failed: $e')));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -138,6 +137,7 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       body: SafeArea(
@@ -153,7 +153,9 @@ class _LoginScreenState extends State<LoginScreen>
                     child: IconButton(
                       onPressed: () => ThemeNotifier.instance.toggle(),
                       icon: Icon(
-                        isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                        isDark
+                            ? Icons.light_mode_rounded
+                            : Icons.dark_mode_rounded,
                       ),
                     ),
                   ),
@@ -198,7 +200,9 @@ class _LoginScreenState extends State<LoginScreen>
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () => Navigator.of(context).pushNamed(RouteNames.forgotPassword),
+                      onPressed: () => Navigator.of(
+                        context,
+                      ).pushNamed(RouteNames.forgotPassword),
                       child: const Text('Forgot password?'),
                     ),
                   ),
@@ -231,7 +235,9 @@ class _LoginScreenState extends State<LoginScreen>
                         style: theme.textTheme.bodyMedium,
                       ),
                       TextButton(
-                        onPressed: () => Navigator.of(context).pushNamed(RouteNames.register),
+                        onPressed: () => Navigator.of(
+                          context,
+                        ).pushNamed(RouteNames.register),
                         child: const Text('Sign Up'),
                       ),
                     ],
@@ -348,7 +354,9 @@ class _LoginScreenState extends State<LoginScreen>
         children: [
           Text(
             'Test Accounts',
-            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           ),
           AppSpacing.gapXs,
           Text(
@@ -381,7 +389,8 @@ class _LoginScreenState extends State<LoginScreen>
       padding: const EdgeInsets.only(bottom: 8),
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
-        onTap: () => _useTestAccount(email: email, password: password, role: role),
+        onTap: () =>
+            _useTestAccount(email: email, password: password, role: role),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -392,7 +401,11 @@ class _LoginScreenState extends State<LoginScreen>
           ),
           child: Row(
             children: [
-              Icon(Icons.bug_report_outlined, size: 18, color: theme.colorScheme.primary),
+              Icon(
+                Icons.bug_report_outlined,
+                size: 18,
+                color: theme.colorScheme.primary,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(

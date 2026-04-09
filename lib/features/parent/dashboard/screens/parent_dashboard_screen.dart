@@ -60,8 +60,9 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       }
 
       if (widget.initialChildId != null) {
-        final idx = children.indexWhere((c) =>
-            (c['studentId'] ?? c['id']) == widget.initialChildId);
+        final idx = children.indexWhere(
+          (c) => (c['studentId'] ?? c['id']) == widget.initialChildId,
+        );
         if (idx >= 0) _selectedChildIndex = idx;
       }
 
