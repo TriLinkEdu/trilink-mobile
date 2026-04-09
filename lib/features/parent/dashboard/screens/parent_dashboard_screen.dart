@@ -41,15 +41,10 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         _loading = true;
         _error = null;
       });
-      final dashboard = await ApiService().getParentDashboard();
-      final linked = dashboard['linkedChildren'];
-      List<Map<String, dynamic>> children;
-      if (linked is List) {
-        children = linked.cast<Map<String, dynamic>>();
-      } else {
-        children = [];
-      }
-
+      
+      // Load children list using new API
+      final children = await ApiService().getMyChildren();
+      
       if (children.isEmpty) {
         if (!mounted) return;
         setState(() {
@@ -59,14 +54,28 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         return;
       }
 
+      // Convert to proper format
+      _children = children.map<Map<String, dynamic>>((child) {
+        final student = child['student'] as Map<String, dynamic>?;
+        return {
+          'id': child['id'],
+          'studentId': student?['id'] ?? child['studentId'],
+          'firstName': student?['firstName'] ?? child['firstName'],
+          'lastName': student?['lastName'] ?? child['lastName'],
+          'fullName': '${student?['firstName'] ?? ''} ${student?['lastName'] ?? ''}'.trim(),
+          'grade': student?['grade'] ?? child['grade'],
+          'section': student?['section'] ?? child['section'],
+          'avatar': '',
+        };
+      }).toList();
+
       if (widget.initialChildId != null) {
-        final idx = children.indexWhere(
-          (c) => (c['studentId'] ?? c['id']) == widget.initialChildId,
+        final idx = _children.indexWhere(
+          (c) => c['studentId'] == widget.initialChildId,
         );
         if (idx >= 0) _selectedChildIndex = idx;
       }
 
-      _children = children;
       await _loadChildSummary();
     } catch (e) {
       if (!mounted) return;
@@ -107,60 +116,6 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   String get _childAvatar {
     if (_children.isEmpty) return '';
     return _children[_selectedChildIndex]['avatar'] as String? ?? '';
-  }
-
-  void _showChildPicker() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text(
-                'Select Child',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
-            ...List.generate(_children.length, (i) {
-              final child = _children[i];
-              final name =
-                  child['fullName'] as String? ??
-                  '${child['firstName'] ?? ''} ${child['lastName'] ?? ''}'
-                      .trim();
-              final avatar = child['avatar'] as String? ?? '';
-              return ListTile(
-                leading: avatar.isNotEmpty
-                    ? CircleAvatar(backgroundImage: NetworkImage(avatar))
-                    : CircleAvatar(
-                        backgroundColor: AppColors.primary.withValues(
-                          alpha: 0.1,
-                        ),
-                        child: Text(
-                          name.isNotEmpty ? name[0] : '?',
-                          style: const TextStyle(color: AppColors.primary),
-                        ),
-                      ),
-                title: Text(name),
-                trailing: _selectedChildIndex == i
-                    ? const Icon(Icons.check_circle, color: AppColors.primary)
-                    : null,
-                onTap: () {
-                  setState(() => _selectedChildIndex = i);
-                  Navigator.pop(ctx);
-                  _loadChildSummary();
-                },
-              );
-            }),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
   }
 
   @override
@@ -251,24 +206,12 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                   ),
                 ),
           const SizedBox(width: 8),
-          GestureDetector(
-            onTap: _showChildPicker,
-            child: Row(
-              children: [
-                Text(
-                  _childName,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-                Icon(
-                  Icons.keyboard_arrow_down,
-                  size: 20,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ],
+          Text(
+            _childName,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           const Spacer(),
@@ -382,6 +325,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
               '')
         : '';
 
+    // Only show 4 main quick actions
     final features = <_FeatureItem>[
       _FeatureItem(
         icon: Icons.person_outline,
@@ -429,44 +373,6 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           MaterialPageRoute(builder: (_) => const ParentChatScreen()),
         ),
       ),
-      _FeatureItem(
-        icon: Icons.campaign_outlined,
-        label: 'Announce-\nments',
-        color: Colors.orange,
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const ParentAnnouncementsScreen()),
-        ),
-      ),
-      _FeatureItem(
-        icon: Icons.summarize_outlined,
-        label: 'Weekly\nReport',
-        color: const Color(0xFFE91E63),
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => WeeklyReportScreen(childName: _childName),
-          ),
-        ),
-      ),
-      _FeatureItem(
-        icon: Icons.feedback_outlined,
-        label: 'Feedback',
-        color: const Color(0xFFFF6D00),
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const ParentFeedbackScreen()),
-        ),
-      ),
-      _FeatureItem(
-        icon: Icons.notifications_outlined,
-        label: 'Notifica-\ntions',
-        color: const Color(0xFF546E7A),
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const ParentNotificationsScreen()),
-        ),
-      ),
     ];
 
     return Column(
@@ -482,41 +388,38 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        GridView.count(
-          crossAxisCount: 4,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 8,
-          childAspectRatio: 0.85,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: features.map((f) {
-            return GestureDetector(
-              onTap: f.onTap,
-              child: Column(
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: f.color.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(14),
+            return Expanded(
+              child: GestureDetector(
+                onTap: f.onTap,
+                child: Column(
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: f.color.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(f.icon, color: f.color, size: 26),
                     ),
-                    child: Icon(f.icon, color: f.color, size: 24),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    f.label,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: theme.colorScheme.onSurfaceVariant,
-                      height: 1.2,
+                    const SizedBox(height: 8),
+                    Text(
+                      f.label,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: theme.colorScheme.onSurfaceVariant,
+                        height: 1.2,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           }).toList(),
@@ -579,6 +482,10 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     final theme = Theme.of(context);
     final activities =
         (_currentSummary['recentActivity'] as List<dynamic>?) ?? [];
+    
+    // Show only top 3 activities
+    final displayActivities = activities.take(3).toList();
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -594,15 +501,30 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                 letterSpacing: 0.8,
               ),
             ),
-            Icon(
-              Icons.tune,
-              size: 18,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            if (activities.length > 3)
+              GestureDetector(
+                onTap: () {
+                  // Navigate to notifications screen to see all
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ParentNotificationsScreen(),
+                    ),
+                  );
+                },
+                child: Text(
+                  'View All',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ),
           ],
         ),
         const SizedBox(height: 12),
-        if (activities.isEmpty)
+        if (displayActivities.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 24),
             child: Center(
@@ -612,7 +534,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
               ),
             ),
           ),
-        ...activities.map<Widget>((a) {
+        ...displayActivities.map<Widget>((a) {
           final type = a['type'] as String? ?? '';
           IconData icon;
           Color iconColor;
@@ -620,10 +542,12 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           switch (type) {
             case 'quiz':
             case 'exam':
+            case 'grade':
               icon = Icons.quiz;
               iconColor = AppColors.primary;
               iconBgColor = AppColors.primary.withValues(alpha: 0.1);
             case 'submission':
+            case 'assignment':
               icon = Icons.description;
               iconColor = Colors.grey.shade600;
               iconBgColor = Colors.grey.shade100;
@@ -642,7 +566,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
             iconColor: iconColor,
             title: a['title'] as String? ?? '',
             subtitle: a['description'] as String? ?? '',
-            time: a['time'] as String? ?? '',
+            time: a['time'] as String? ?? a['date'] as String? ?? '',
             teacher: a['teacher'] as String?,
             tag: a['tag'] as String?,
           );
@@ -654,8 +578,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   Widget _buildBottomNav() {
     final theme = Theme.of(context);
     return Container(
-      color: theme.colorScheme.surface,
       decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),

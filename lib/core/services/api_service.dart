@@ -1,10 +1,7 @@
 import '../network/api_client.dart';
 import '../constants/api_constants.dart';
 import 'dummy_data.dart';
-
-/// Set to false to force dummy data without trying the API.
-/// Set to true to try API first, fallback to dummy on failure.
-const bool _tryApiFirst = true;
+import 'feature_flags.dart';
 
 /// Centralized service wrapping all backend API calls.
 /// Falls back to dummy data when the API is unreachable or returns errors.
@@ -16,10 +13,35 @@ class ApiService {
   final ApiClient _api = ApiClient();
 
   Future<T> _tryOr<T>(Future<T> Function() apiCall, T fallback) async {
-    if (!_tryApiFirst) return fallback;
+    // Use feature flag to determine behavior
+    if (!FeatureFlags.useRealApi) {
+      if (FeatureFlags.verboseLogging) {
+        print('[API] Using mock data (FeatureFlags.useRealApi = false)');
+      }
+      return fallback;
+    }
+
+    // Simulate slow network if enabled
+    if (FeatureFlags.simulateSlowNetwork) {
+      await Future.delayed(
+        Duration(milliseconds: FeatureFlags.networkDelayMs),
+      );
+    }
+
+    // Try real API, fallback to mock on error
     try {
-      return await apiCall();
-    } catch (_) {
+      if (FeatureFlags.verboseLogging) {
+        print('[API] Attempting real API call...');
+      }
+      final result = await apiCall();
+      if (FeatureFlags.verboseLogging) {
+        print('[API] Real API call succeeded');
+      }
+      return result;
+    } catch (e) {
+      if (FeatureFlags.verboseLogging) {
+        print('[API] Real API call failed: $e, using mock data');
+      }
       return fallback;
     }
   }
@@ -249,6 +271,18 @@ class ApiService {
       _tryOr(() => _api.patch(ApiConstants.userSettings, data: data),
           {...DummyData.userSettings, ...data});
 
+  /// Change user password
+  Future<void> changePassword(
+      String currentPassword, String newPassword) async {
+    await _tryOr(() async {
+      await _api.post(ApiConstants.changePassword, data: {
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+      });
+      return true;
+    }, true);
+  }
+
   // ─── Feedback ───────────────────────────────────────────
   Future<Map<String, dynamic>> submitFeedback(Map<String, dynamic> data) =>
       _tryOr(() => _api.post(ApiConstants.feedback, data: data),
@@ -296,4 +330,90 @@ class ApiService {
   Future<Map<String, dynamic>> getAiLearningPath(String studentId) =>
       _tryOr(() => _api.get(ApiConstants.aiLearningPath(studentId)),
           {'learningPath': []});
+
+  // ═══════════════════════════════════════════════════════
+  // ─── PARENT-SPECIFIC ENDPOINTS ─────────────────────────
+  // ═══════════════════════════════════════════════════════
+
+  /// Get list of children linked to current parent
+  Future<List<dynamic>> getMyChildren() =>
+      _tryOr(() => _api.getList(ApiConstants.myChildren),
+          DummyData.myChildren);
+
+  /// Get child enrollments (classes)
+  Future<List<dynamic>> getChildEnrollments(String studentId) =>
+      _tryOr(() => _api.getList(ApiConstants.childEnrollments(studentId)),
+          DummyData.childEnrollments(studentId));
+
+  /// Get child goals
+  Future<List<dynamic>> getChildGoals(String studentId) =>
+      _tryOr(() => _api.getList(ApiConstants.childGoals(studentId)),
+          DummyData.childGoals(studentId));
+
+  /// Get parent-specific notifications
+  Future<List<dynamic>> getParentNotifications({bool? unreadOnly}) =>
+      _tryOr(
+          () => _api.getList(ApiConstants.notifications,
+              queryParameters:
+                  unreadOnly != null ? {'unreadOnly': unreadOnly} : null),
+          DummyData.parentNotifications);
+
+  /// Get parent-specific announcements
+  Future<List<dynamic>> getParentAnnouncements() =>
+      _tryOr(() => _api.getList(ApiConstants.announcementsForMe),
+          DummyData.parentAnnouncements);
+
+  /// Get child performance report
+  Future<Map<String, dynamic>> getChildPerformanceReport(String studentId) =>
+      _tryOr(() => _api.get(ApiConstants.studentPerformance(studentId)),
+          DummyData.childPerformanceReport(studentId));
+
+  /// Get period comparison report
+  Future<Map<String, dynamic>> getPeriodComparisonReport(
+    String studentId, {
+    required String period1Start,
+    required String period1End,
+    required String period2Start,
+    required String period2End,
+  }) =>
+      _tryOr(
+          () => _api.get(ApiConstants.studentCompare(studentId),
+              queryParameters: {
+                'period1Start': period1Start,
+                'period1End': period1End,
+                'period2Start': period2Start,
+                'period2End': period2End,
+              }),
+          DummyData.periodComparisonReport(studentId));
+
+  /// Get weekly parent summary
+  Future<Map<String, dynamic>> getWeeklyParentSummary({String? childStudentId}) =>
+      _tryOr(
+          () => _api.get(ApiConstants.parentWeeklySummary,
+              queryParameters: childStudentId != null
+                  ? {'childStudentId': childStudentId}
+                  : null),
+          DummyData.weeklyParentSummary(childStudentId: childStudentId));
+
+  /// Get parent calendar events
+  Future<List<dynamic>> getParentCalendarEvents({
+    String? from,
+    String? to,
+    String? academicYearId,
+    String? classOfferingId,
+  }) =>
+      _tryOr(
+          () => _api.getList(ApiConstants.calendarEvents, queryParameters: {
+                if (from != null) 'from': from,
+                if (to != null) 'to': to,
+                if (academicYearId != null) 'academicYearId': academicYearId,
+                if (classOfferingId != null)
+                  'classOfferingId': classOfferingId,
+              }),
+          DummyData.parentCalendarEvents);
+
+  /// Get child exam results
+  Future<List<dynamic>> getChildExamResults(String studentId) =>
+      _tryOr(() => _api.getList('/attempts/student/$studentId/results'),
+          DummyData.childExamResults(studentId));
 }

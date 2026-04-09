@@ -107,4 +107,17 @@ class ApiConstants {
   static String aiLearningPath(String studentId) =>
       '/ai/students/$studentId/learning-path';
   static const String aiFeedbackAssistant = '/ai/feedback-assistant';
+
+  // ═══════════════════════════════════════════════════════
+  // ─── PARENT-SPECIFIC ENDPOINTS ─────────────────────────
+  // ═══════════════════════════════════════════════════════
+
+  // Parent-Children Links
+  static const String myChildren = '/parent-students/mychildren';
+
+  // Child Academic Data
+  static String childEnrollments(String studentId) =>
+      '/enrollments/children/$studentId';
+  static String childGoals(String studentId) =>
+      '/goals/students/$studentId';
 }

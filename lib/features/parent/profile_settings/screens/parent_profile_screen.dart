@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../features/auth/services/auth_service.dart';
+import '../../../../core/routes/route_names.dart';
 import '../../../shared/widgets/role_page_background.dart';
 
 class ParentProfileScreen extends StatefulWidget {
@@ -12,26 +13,14 @@ class ParentProfileScreen extends StatefulWidget {
 }
 
 class _ParentProfileScreenState extends State<ParentProfileScreen> {
-  bool _isEditing = false;
   bool _loading = true;
   String? _error;
-  bool _saving = false;
-
-  late TextEditingController _nameController;
-  late TextEditingController _emailController;
-  late TextEditingController _phoneController;
-  late TextEditingController _addressController;
 
   List<_LinkedChild> _children = [];
 
   @override
   void initState() {
     super.initState();
-    final user = AuthService().currentUser;
-    _nameController = TextEditingController(text: user?.fullName ?? '');
-    _emailController = TextEditingController(text: user?.email ?? '');
-    _phoneController = TextEditingController(text: user?.phone ?? '');
-    _addressController = TextEditingController();
     _loadData();
   }
 
@@ -41,24 +30,20 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
         _loading = true;
         _error = null;
       });
-      final dashboard = await ApiService().getParentDashboard();
-      final rawLinked = dashboard['linkedChildren'];
-      List<dynamic> linked;
-      if (rawLinked is List) {
-        linked = rawLinked;
-      } else {
-        linked = [];
-      }
+      
+      // Use new API to get children
+      final children = await ApiService().getMyChildren();
+      
       if (!mounted) return;
       setState(() {
-        _children = linked.map<_LinkedChild>((c) {
-          final m = c as Map<String, dynamic>;
+        _children = children.map<_LinkedChild>((child) {
+          final student = child['student'] as Map<String, dynamic>?;
+          final name = '${student?['firstName'] ?? ''} ${student?['lastName'] ?? ''}'.trim();
+          final grade = student?['grade'] as String? ?? '';
           return _LinkedChild(
-            name:
-                m['fullName'] as String? ??
-                '${m['firstName'] ?? ''} ${m['lastName'] ?? ''}'.trim(),
-            grade: m['gradeSection'] as String? ?? m['grade'] as String? ?? '',
-            school: m['school'] as String? ?? '',
+            name: name,
+            grade: grade,
+            school: '',
           );
         }).toList();
         _loading = false;
@@ -69,47 +54,6 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
         _error = e.toString();
         _loading = false;
       });
-    }
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
-    _addressController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _saveProfile() async {
-    setState(() => _saving = true);
-    try {
-      await ApiService().updateUserSettings({
-        'fullName': _nameController.text.trim(),
-        'phone': _phoneController.text.trim(),
-        'address': _addressController.text.trim(),
-      });
-      await AuthService().fetchMe();
-      if (!mounted) return;
-      setState(() {
-        _isEditing = false;
-        _saving = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profile updated successfully'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to save: $e'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
     }
   }
 
@@ -136,17 +80,6 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
           ),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(
-              _isEditing ? Icons.close : Icons.edit_outlined,
-              color: theme.colorScheme.primary,
-            ),
-            onPressed: () {
-              setState(() => _isEditing = !_isEditing);
-            },
-          ),
-        ],
       ),
       body: RolePageBackground(
         flavor: RoleThemeFlavor.parent,
@@ -196,7 +129,7 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
                       ),
                     ..._children.map(_buildChildCard),
                     const SizedBox(height: 24),
-                    if (_isEditing) _buildSaveButton(),
+                    _buildActionButtons(),
                     const SizedBox(height: 20),
                   ],
                 ),
@@ -259,6 +192,8 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
 
   Widget _buildPersonalInfoCard() {
     final theme = Theme.of(context);
+    final user = AuthService().currentUser;
+    
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -267,42 +202,42 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
       ),
       child: Column(
         children: [
-          _buildInfoField(
+          _buildInfoRow(
             icon: Icons.person_outline,
             label: 'Full Name',
-            controller: _nameController,
+            value: user?.fullName ?? '',
           ),
           Divider(height: 1, color: theme.colorScheme.outlineVariant),
-          _buildInfoField(
+          _buildInfoRow(
             icon: Icons.email_outlined,
             label: 'Email',
-            controller: _emailController,
+            value: user?.email ?? '',
           ),
           Divider(height: 1, color: theme.colorScheme.outlineVariant),
-          _buildInfoField(
+          _buildInfoRow(
             icon: Icons.phone_outlined,
             label: 'Phone',
-            controller: _phoneController,
+            value: user?.phone ?? 'Not provided',
           ),
           Divider(height: 1, color: theme.colorScheme.outlineVariant),
-          _buildInfoField(
-            icon: Icons.location_on_outlined,
-            label: 'Address',
-            controller: _addressController,
+          _buildInfoRow(
+            icon: Icons.badge_outlined,
+            label: 'Role',
+            value: 'Parent',
           ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoField({
+  Widget _buildInfoRow({
     required IconData icon,
     required String label,
-    required TextEditingController controller,
+    required String value,
   }) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
           Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant),
@@ -319,27 +254,14 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
-                const SizedBox(height: 2),
-                _isEditing
-                    ? TextField(
-                        controller: controller,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                        decoration: const InputDecoration(
-                          isDense: true,
-                          contentPadding: EdgeInsets.symmetric(vertical: 4),
-                          border: UnderlineInputBorder(),
-                        ),
-                      )
-                    : Text(
-                        controller.text.isNotEmpty ? controller.text : ' ',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
               ],
             ),
           ),
@@ -397,54 +319,76 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
-                if (child.school.isNotEmpty)
-                  Text(
-                    child.school,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
               ],
             ),
-          ),
-          Icon(
-            Icons.chevron_right,
-            color: theme.colorScheme.onSurfaceVariant,
-            size: 20,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSaveButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: _saving ? null : _saveProfile,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+  Widget _buildActionButtons() {
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () {
+              Navigator.pushNamed(context, RouteNames.parentSettings);
+            },
+            icon: const Icon(Icons.lock_outline, size: 18),
+            label: const Text('Change Password'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
           ),
         ),
-        child: _saving
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (_) => AlertDialog(
+                  title: const Text('Logout'),
+                  content: const Text('Are you sure you want to logout?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text(
+                        'Logout',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
                 ),
-              )
-            : const Text(
-                'Save Changes',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              );
+              if (confirm == true && mounted) {
+                await AuthService().logout();
+                if (!mounted) return;
+                Navigator.pushReplacementNamed(context, RouteNames.login);
+              }
+            },
+            icon: const Icon(Icons.logout, size: 18, color: Colors.red),
+            label: const Text('Logout', style: TextStyle(color: Colors.red)),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              side: const BorderSide(color: Colors.red),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-      ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
