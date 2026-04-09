@@ -105,17 +105,11 @@ class _LoginScreenState extends State<LoginScreen>
   ({String email, String password}) _testCredentialsForRole(_Role role) {
     return switch (role) {
       _Role.student => (
-          email: 'nebiyumusbah378@gmail.com',
-          password: 'Student@123',
-        ),
-      _Role.parent => (
-          email: 'musbahyesuf@gmail.com',
-          password: 'Parent@123',
-        ),
-      _Role.teacher => (
-          email: 'abduisa@gmail.com',
-          password: 'Teacher@1234',
-        ),
+        email: 'nebiyumusbah378@gmail.com',
+        password: 'Student@123',
+      ),
+      _Role.parent => (email: 'musbahyesuf@gmail.com', password: 'Parent@123'),
+      _Role.teacher => (email: 'abduisa@gmail.com', password: 'Teacher@1234'),
     };
   }
 
