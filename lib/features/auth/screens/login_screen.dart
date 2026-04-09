@@ -15,6 +15,13 @@ import '../cubit/auth_cubit.dart';
 
 enum _Role { student, teacher, parent }
 
+class _TestAccount {
+  final String email;
+  final String password;
+
+  const _TestAccount({required this.email, required this.password});
+}
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -24,6 +31,21 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
+  static const Map<_Role, _TestAccount> _testAccounts = {
+    _Role.student: _TestAccount(
+      email: 'nebiyumusbah378@gmail.com',
+      password: 'Student@123',
+    ),
+    _Role.parent: _TestAccount(
+      email: 'musbahyesuf@gmail.com',
+      password: 'Parent@123',
+    ),
+    _Role.teacher: _TestAccount(
+      email: 'abduisa@gmail.com',
+      password: 'Teacher@1234',
+    ),
+  };
+
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -99,6 +121,18 @@ class _LoginScreenState extends State<LoginScreen>
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _useTestAccount({
+    required String email,
+    required String password,
+    required _Role role,
+  }) {
+    setState(() {
+      _selectedRole = role;
+      _emailController.text = email;
+      _passwordController.text = password;
+    });
   }
 
   @override
@@ -182,6 +216,8 @@ class _LoginScreenState extends State<LoginScreen>
                           : const Text('LOG IN'),
                     ),
                   ),
+                  AppSpacing.gapLg,
+                  _buildTestAccounts(theme),
                   AppSpacing.gapSm,
                   TextButton(
                     onPressed: _isLoading ? null : _handleOffline,
@@ -291,6 +327,83 @@ class _LoginScreenState extends State<LoginScreen>
         if (value == null || value.isEmpty) return 'Please enter your password';
         return null;
       },
+    );
+  }
+
+  Widget _buildTestAccounts(ThemeData theme) {
+    final account = _testAccounts[_selectedRole]!;
+    final roleLabel =
+        _selectedRole.name[0].toUpperCase() + _selectedRole.name.substring(1);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: AppRadius.borderMd,
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Test Accounts',
+            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          AppSpacing.gapXs,
+          Text(
+            'Showing test account for selected role: $roleLabel.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          AppSpacing.gapSm,
+          _buildTestAccountTile(
+            theme: theme,
+            roleLabel: roleLabel,
+            role: _selectedRole,
+            email: account.email,
+            password: account.password,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTestAccountTile({
+    required ThemeData theme,
+    required String roleLabel,
+    required _Role role,
+    required String email,
+    required String password,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () => _useTestAccount(email: email, password: password, role: role),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.bug_report_outlined, size: 18, color: theme.colorScheme.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  '$roleLabel  •  $email  •  $password',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
