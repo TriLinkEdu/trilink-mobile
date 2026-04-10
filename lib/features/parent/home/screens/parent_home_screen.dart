@@ -4,6 +4,9 @@ import '../../../../core/services/api_service.dart';
 import '../../../../features/auth/services/auth_service.dart';
 import '../../../shared/widgets/role_page_background.dart';
 import '../../dashboard/screens/parent_dashboard_screen.dart';
+import '../../chat/screens/parent_chat_screen.dart';
+import '../../announcements/screens/parent_announcements_screen.dart';
+import '../../profile_settings/screens/parent_settings_screen.dart';
 
 class ParentHomeScreen extends StatefulWidget {
   const ParentHomeScreen({super.key});
@@ -15,6 +18,7 @@ class ParentHomeScreen extends StatefulWidget {
 class _ParentHomeScreenState extends State<ParentHomeScreen> {
   bool _loading = true;
   List<Map<String, dynamic>> _linkedChildren = [];
+  int _currentIndex = 0;
 
   @override
   void initState() {
@@ -50,24 +54,36 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
     final user = AuthService().currentUser;
     final firstName = user?.firstName ?? 'Parent';
 
+    final screens = <Widget>[
+      _buildHomeBody(firstName),
+      const ParentChatScreen(),
+      const ParentAnnouncementsScreen(),
+      const ParentSettingsScreen(),
+    ];
+
     return Scaffold(
       body: RolePageBackground(
         flavor: RoleThemeFlavor.parent,
-        child: SafeArea(
-          child: _loading
-              ? const Center(child: CircularProgressIndicator())
-              : Column(
-                  children: [
-                    _buildHeader(),
-                    const Spacer(flex: 1),
-                    _buildGreeting(firstName),
-                    const SizedBox(height: 36),
-                    _buildChildCards(context),
-                    const Spacer(flex: 2),
-                  ],
-                ),
-        ),
+        child: IndexedStack(index: _currentIndex, children: screens),
       ),
+      bottomNavigationBar: _buildBottomNav(),
+    );
+  }
+
+  Widget _buildHomeBody(String firstName) {
+    return SafeArea(
+      child: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                _buildHeader(),
+                const Spacer(flex: 1),
+                _buildGreeting(firstName),
+                const SizedBox(height: 36),
+                _buildChildCards(context),
+                const Spacer(flex: 2),
+              ],
+            ),
     );
   }
 
@@ -160,6 +176,53 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
             },
           );
         }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildBottomNav() {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: theme.colorScheme.primary,
+        unselectedItemColor: theme.colorScheme.onSurfaceVariant,
+        selectedFontSize: 12,
+        unselectedFontSize: 12,
+        elevation: 0,
+        onTap: (index) {
+          setState(() => _currentIndex = index);
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat_bubble_outline),
+            label: 'Messages',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.campaign_outlined),
+            label: 'Announcements',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings_outlined),
+            label: 'Settings',
+          ),
+        ],
       ),
     );
   }

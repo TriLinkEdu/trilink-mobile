@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/routes/route_names.dart';
 import '../../../../core/widgets/offline_banner.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../features/auth/services/auth_service.dart';
 import '../../student_info/screens/parent_student_info_screen.dart';
 import '../../student_info/screens/parent_results_screen.dart';
 import '../../attendance/screens/parent_attendance_screen.dart';
@@ -11,7 +14,9 @@ import '../../feedback/screens/parent_feedback_screen.dart';
 import '../../reports/screens/weekly_report_screen.dart';
 import '../../notifications/screens/parent_notifications_screen.dart';
 import '../../profile_settings/screens/parent_settings_screen.dart';
+import '../../profile_settings/screens/parent_profile_screen.dart';
 import '../../../shared/widgets/role_page_background.dart';
+import '../../home/screens/parent_home_screen.dart';
 
 class ParentDashboardScreen extends StatefulWidget {
   final String? initialChildId;
@@ -122,6 +127,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
+      drawer: _buildDrawer(context),
       body: RolePageBackground(
         flavor: RoleThemeFlavor.parent,
         child: OfflineBanner(
@@ -183,13 +189,15 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       padding: const EdgeInsets.fromLTRB(8, 12, 20, 0),
       child: Row(
         children: [
-          IconButton(
-            icon: Icon(
-              Icons.arrow_back_ios_new,
-              color: theme.colorScheme.onSurface,
-              size: 20,
+          Builder(
+            builder: (context) => IconButton(
+              icon: Icon(
+                Icons.menu,
+                color: theme.colorScheme.onSurface,
+                size: 24,
+              ),
+              onPressed: () => Scaffold.of(context).openDrawer(),
             ),
-            onPressed: () => Navigator.pop(context),
           ),
           const SizedBox(width: 4),
           _childAvatar.isNotEmpty
@@ -240,6 +248,276 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     );
   }
 
+  Widget _buildDrawer(BuildContext context) {
+    final theme = Theme.of(context);
+    final user = AuthService().currentUser;
+    final drawerSurface = Color.alphaBlend(
+      theme.colorScheme.primary.withAlpha(
+        theme.brightness == Brightness.dark ? 18 : 10,
+      ),
+      theme.colorScheme.surface,
+    );
+    
+    return Drawer(
+      backgroundColor: drawerSurface,
+      child: Column(
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(gradient: theme.ext.heroGradient),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 30,
+                  backgroundColor: Colors.white.withValues(alpha: 0.2),
+                  child: Text(
+                    user?.firstName?.isNotEmpty == true
+                        ? user!.firstName[0].toUpperCase()
+                        : 'P',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user?.fullName ?? 'Parent',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Parent',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 13,
+                        ),
+                      ),
+                      Text(
+                        user?.email ?? '',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.6),
+                          fontSize: 12,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                _DrawerSection(title: 'MAIN'),
+                _DrawerItem(
+                  icon: Icons.home_outlined,
+                  label: 'Home',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ParentHomeScreen()),
+                    );
+                  },
+                ),
+                _DrawerItem(
+                  icon: Icons.dashboard_outlined,
+                  label: 'Dashboard',
+                  onTap: () => Navigator.pop(context),
+                ),
+                const Divider(height: 1),
+                _DrawerSection(title: 'CHILD'),
+                _DrawerItem(
+                  icon: Icons.person_search_outlined,
+                  label: 'Student Info',
+                  onTap: () {
+                    Navigator.pop(context);
+                    final childId = _children.isNotEmpty
+                        ? (_children[_selectedChildIndex]['studentId'] as String? ??
+                              _children[_selectedChildIndex]['id'] as String? ??
+                              '')
+                        : '';
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ParentStudentInfoScreen(
+                          childName: _childName,
+                          studentUserId: childId,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                _DrawerItem(
+                  icon: Icons.school_outlined,
+                  label: 'Results & Grades',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ParentResultsScreen()),
+                    );
+                  },
+                ),
+                _DrawerItem(
+                  icon: Icons.fact_check_outlined,
+                  label: 'Attendance',
+                  onTap: () {
+                    Navigator.pop(context);
+                    final childId = _children.isNotEmpty
+                        ? (_children[_selectedChildIndex]['studentId'] as String? ??
+                              _children[_selectedChildIndex]['id'] as String? ??
+                              '')
+                        : '';
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ParentAttendanceScreen(
+                          studentId: childId,
+                          childName: _childName,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const Divider(height: 1),
+                _DrawerSection(title: 'COMMUNICATION'),
+                _DrawerItem(
+                  icon: Icons.chat_outlined,
+                  label: 'Chat',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ParentChatScreen()),
+                    );
+                  },
+                ),
+                _DrawerItem(
+                  icon: Icons.campaign_outlined,
+                  label: 'Announcements',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ParentAnnouncementsScreen()),
+                    );
+                  },
+                ),
+                _DrawerItem(
+                  icon: Icons.notifications_outlined,
+                  label: 'Notifications',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ParentNotificationsScreen()),
+                    );
+                  },
+                ),
+                _DrawerItem(
+                  icon: Icons.feedback_outlined,
+                  label: 'Feedback',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ParentFeedbackScreen()),
+                    );
+                  },
+                ),
+                const Divider(height: 1),
+                _DrawerSection(title: 'REPORTS'),
+                _DrawerItem(
+                  icon: Icons.assessment_outlined,
+                  label: 'Weekly Report',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => WeeklyReportScreen(childName: _childName),
+                      ),
+                    );
+                  },
+                ),
+                const Divider(height: 1),
+                _DrawerItem(
+                  icon: Icons.person_outline,
+                  label: 'Profile',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ParentProfileScreen()),
+                    );
+                  },
+                ),
+                _DrawerItem(
+                  icon: Icons.settings_outlined,
+                  label: 'Settings',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ParentSettingsScreen()),
+                    );
+                  },
+                ),
+                _DrawerItem(
+                  icon: Icons.logout,
+                  label: 'Logout',
+                  color: theme.colorScheme.error,
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                        title: const Text('Logout'),
+                        content: const Text('Are you sure you want to logout?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text(
+                              'Logout',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm == true && mounted) {
+                      await AuthService().logout();
+                      if (!mounted) return;
+                      Navigator.pushReplacementNamed(context, RouteNames.login);
+                    }
+                  },
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
   Widget _buildOverviewSection() {
     final theme = Theme.of(context);
     final average = _currentSummary['average']?.toString() ?? '--';
@@ -631,6 +909,62 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _DrawerSection extends StatelessWidget {
+  final String title;
+  const _DrawerSection({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: Colors.grey.shade500,
+          letterSpacing: 0.8,
+        ),
+      ),
+    );
+  }
+}
+
+class _DrawerItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final Color? color;
+
+  const _DrawerItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final itemColor = color ?? theme.colorScheme.onSurface;
+    
+    return ListTile(
+      leading: Icon(icon, color: itemColor, size: 22),
+      title: Text(
+        label,
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+          color: itemColor,
+        ),
+      ),
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+      minLeadingWidth: 24,
     );
   }
 }
