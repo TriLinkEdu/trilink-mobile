@@ -1,5 +1,5 @@
 /// Feature flags for controlling app behavior
-/// 
+///
 /// Use these flags to toggle between mock data and real API calls
 /// without changing UI code.
 class FeatureFlags {
@@ -7,7 +7,7 @@ class FeatureFlags {
 
   /// Set to true to use real backend API
   /// Set to false to use dummy/mock data only
-  static const bool useRealApi = false;
+  static const bool useRealApi = true;
 
   /// Set to true to show debug info in UI (like data source indicator)
   static const bool showDebugInfo = true;

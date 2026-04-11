@@ -4,8 +4,7 @@ import '../../../../core/services/api_service.dart';
 import '../../../../features/auth/services/auth_service.dart';
 import '../../../shared/widgets/role_page_background.dart';
 import '../../dashboard/screens/parent_dashboard_screen.dart';
-import '../../chat/screens/parent_chat_screen.dart';
-import '../../announcements/screens/parent_announcements_screen.dart';
+import '../../profile_settings/screens/parent_profile_screen.dart';
 import '../../profile_settings/screens/parent_settings_screen.dart';
 
 class ParentHomeScreen extends StatefulWidget {
@@ -31,7 +30,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
       // Use the new parent-specific API endpoint
       final children = await ApiService().getMyChildren();
       if (!mounted) return;
-      
+
       setState(() {
         _linkedChildren = children.cast<Map<String, dynamic>>();
         _loading = false;
@@ -56,8 +55,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
 
     final screens = <Widget>[
       _buildHomeBody(firstName),
-      const ParentChatScreen(),
-      const ParentAnnouncementsScreen(),
+      const ParentProfileScreen(),
       const ParentSettingsScreen(),
     ];
 
@@ -152,14 +150,12 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
               child['fullName'] as String? ??
               child['name'] as String? ??
               'Child';
-          final grade = 
-              student?['grade'] as String? ??
-              child['grade'] as String? ?? 
-              '';
+          final grade =
+              student?['grade'] as String? ?? child['grade'] as String? ?? '';
           final studentId =
               student?['id'] as String? ??
-              child['studentId'] as String? ?? 
-              child['id'] as String? ?? 
+              child['studentId'] as String? ??
+              child['id'] as String? ??
               '';
           return _ChildCard(
             name: name,
@@ -211,12 +207,9 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble_outline),
-            label: 'Messages',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.campaign_outlined),
-            label: 'Announcements',
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings_outlined),

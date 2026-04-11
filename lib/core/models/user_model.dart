@@ -23,6 +23,13 @@ class UserModel {
   final String? createdAt;
   final String? updatedAt;
   final String? legacyName;
+  
+  // Profile fields
+  final String? profileImageFileId;
+  final String? profileImagePath;
+  final String? country;
+  final String? cityState;
+  final String? postalCode;
 
   const UserModel({
     required this.id,
@@ -42,6 +49,11 @@ class UserModel {
     this.mustChangePassword = false,
     this.createdAt,
     this.updatedAt,
+    this.profileImageFileId,
+    this.profileImagePath,
+    this.country,
+    this.cityState,
+    this.postalCode,
     String? name,
   }) : legacyName = name;
 
@@ -75,6 +87,11 @@ class UserModel {
     bool? mustChangePassword,
     String? createdAt,
     String? updatedAt,
+    String? profileImageFileId,
+    String? profileImagePath,
+    String? country,
+    String? cityState,
+    String? postalCode,
     String? name,
   }) {
     return UserModel(
@@ -95,6 +112,11 @@ class UserModel {
       mustChangePassword: mustChangePassword ?? this.mustChangePassword,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      profileImageFileId: profileImageFileId ?? this.profileImageFileId,
+      profileImagePath: profileImagePath ?? this.profileImagePath,
+      country: country ?? this.country,
+      cityState: cityState ?? this.cityState,
+      postalCode: postalCode ?? this.postalCode,
       name: name ?? legacyName,
     );
   }
@@ -110,24 +132,36 @@ class UserModel {
       last = parts.length > 1 ? parts.sublist(1).join(' ') : '';
     }
 
+    // Helper function to handle "null" strings from API
+    String? parseNullableString(dynamic value) {
+      if (value == null || value == 'null') return null;
+      final str = value as String?;
+      return str?.trim().isEmpty == true ? null : str?.trim();
+    }
+
     return UserModel(
       id: json['id'] as String? ?? '',
       email: json['email'] as String? ?? '',
       role: _parseRole(json['role']),
-      avatarUrl: json['avatarUrl'] as String?,
-      school: json['school'] as String?,
+      avatarUrl: parseNullableString(json['avatarUrl']),
+      school: parseNullableString(json['school']),
       firstName: first,
       lastName: last,
-      phone: json['phone'] as String?,
-      grade: json['grade'] as String?,
-      section: json['section'] as String?,
-      subject: json['subject'] as String?,
-      department: json['department'] as String?,
-      childName: json['childName'] as String?,
-      relationship: json['relationship'] as String?,
+      phone: parseNullableString(json['phone']),
+      grade: parseNullableString(json['grade']),
+      section: parseNullableString(json['section']),
+      subject: parseNullableString(json['subject']),
+      department: parseNullableString(json['department']),
+      childName: parseNullableString(json['childName']),
+      relationship: parseNullableString(json['relationship']),
       mustChangePassword: json['mustChangePassword'] as bool? ?? false,
-      createdAt: json['createdAt'] as String?,
-      updatedAt: json['updatedAt'] as String?,
+      createdAt: parseNullableString(json['createdAt']),
+      updatedAt: parseNullableString(json['updatedAt']),
+      profileImageFileId: parseNullableString(json['profileImageFileId']),
+      profileImagePath: parseNullableString(json['profileImagePath']),
+      country: parseNullableString(json['country']),
+      cityState: parseNullableString(json['cityState']),
+      postalCode: parseNullableString(json['postalCode']),
       name: legacyName,
     );
   }
@@ -151,6 +185,11 @@ class UserModel {
         'mustChangePassword': mustChangePassword,
         'createdAt': createdAt,
         'updatedAt': updatedAt,
+        'profileImageFileId': profileImageFileId,
+        'profileImagePath': profileImagePath,
+        'country': country,
+        'cityState': cityState,
+        'postalCode': postalCode,
       };
 
   static UserRole _parseRole(dynamic role) {
