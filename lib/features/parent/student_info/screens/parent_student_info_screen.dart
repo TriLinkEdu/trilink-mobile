@@ -52,13 +52,11 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
 
       String userId = widget.studentUserId ?? '';
       if (userId.isEmpty) {
-        final dashboard = await ApiService().getParentDashboard();
-        final linked = (dashboard['linkedChildren'] as List<dynamic>?) ?? [];
-        if (linked.isNotEmpty) {
-          userId =
-              linked[0]['userId'] as String? ??
-              linked[0]['id'] as String? ??
-              '';
+        // Get first child from myChildren
+        final children = await ApiService().getMyChildren();
+        if (children.isNotEmpty) {
+          final student = children[0]['student'] as Map<String, dynamic>?;
+          userId = student?['id'] as String? ?? children[0]['studentId'] as String? ?? '';
         }
       }
 
@@ -70,11 +68,11 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
         return;
       }
 
-      final profile = await ApiService().getStudentProfile(userId);
+      // Load enrollments (classes) for the student
+      final enrollments = await ApiService().getChildEnrollments(userId);
+      
       if (!mounted) return;
 
-      final classesRaw = (profile['classes'] as List<dynamic>?) ?? [];
-      final teachersRaw = (profile['teachers'] as List<dynamic>?) ?? [];
       final colors = [
         AppColors.primary,
         AppColors.secondary,
@@ -91,42 +89,52 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
       ];
 
       setState(() {
-        _studentName =
-            profile['fullName'] as String? ??
-            '${profile['firstName'] ?? ''} ${profile['lastName'] ?? ''}'.trim();
-        if (_studentName.isEmpty) _studentName = widget.childName;
-        _gradeSection =
-            profile['gradeSection'] as String? ??
-            '${profile['grade'] ?? ''} ${profile['section'] != null ? '• Section ${profile['section']}' : ''}'
-                .trim();
-        _studentIdLabel = profile['studentId'] as String? ?? '';
+        _studentName = widget.childName;
+        
+        // Extract grade and section from first enrollment
+        if (enrollments.isNotEmpty) {
+          final first = enrollments[0] as Map<String, dynamic>;
+          final grade = first['grade'] as String? ?? '';
+          final section = first['section'] as String? ?? '';
+          _gradeSection = section.isNotEmpty ? '$grade • Section $section' : grade;
+        }
 
-        _classes = classesRaw.asMap().entries.map((entry) {
-          final c = entry.value as Map<String, dynamic>;
+        _classes = enrollments.asMap().entries.map((entry) {
+          final e = entry.value as Map<String, dynamic>;
+          final subject = e['subject'] as Map<String, dynamic>?;
+          final teacher = e['teacher'] as Map<String, dynamic>?;
+          
           return _ClassItem(
-            subject: c['subject'] as String? ?? '',
-            teacher: c['teacher'] as String? ?? '',
-            schedule: c['schedule'] as String? ?? '',
-            room: c['room'] as String? ?? '',
+            subject: subject?['name'] as String? ?? '',
+            teacher: '${teacher?['firstName'] ?? ''} ${teacher?['lastName'] ?? ''}'.trim(),
+            schedule: e['schedule'] as String? ?? '',
+            room: e['room'] as String? ?? '',
             color: colors[entry.key % colors.length],
             icon: icons[entry.key % icons.length],
           );
         }).toList();
 
-        _teachers = teachersRaw.asMap().entries.map((entry) {
-          final t = entry.value as Map<String, dynamic>;
-          final name = t['name'] as String? ?? '';
-          final initials = name
-              .split(' ')
-              .map((w) => w.isNotEmpty ? w[0] : '')
-              .take(2)
-              .join();
-          return _TeacherInfo(
-            name: name,
-            initials: initials.toUpperCase(),
-            color: colors[entry.key % colors.length],
-          );
-        }).toList();
+        // Extract unique teachers
+        final teacherSet = <String, _TeacherInfo>{};
+        for (var i = 0; i < enrollments.length; i++) {
+          final e = enrollments[i] as Map<String, dynamic>;
+          final teacher = e['teacher'] as Map<String, dynamic>?;
+          if (teacher != null) {
+            final firstName = teacher['firstName'] as String? ?? '';
+            final lastName = teacher['lastName'] as String? ?? '';
+            final fullName = '$firstName $lastName'.trim();
+            final initials = '${firstName.isNotEmpty ? firstName[0] : ''}${lastName.isNotEmpty ? lastName[0] : ''}'.toUpperCase();
+            
+            if (!teacherSet.containsKey(fullName)) {
+              teacherSet[fullName] = _TeacherInfo(
+                name: fullName,
+                initials: initials,
+                color: colors[teacherSet.length % colors.length],
+              );
+            }
+          }
+        }
+        _teachers = teacherSet.values.toList();
 
         _loading = false;
       });

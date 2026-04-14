@@ -93,11 +93,6 @@ class _ParentChatScreenState extends State<ParentChatScreen> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.chat, color: Colors.white),
-      ),
     );
   }
 
@@ -119,15 +114,6 @@ class _ParentChatScreenState extends State<ParentChatScreen> {
                 color: AppColors.textPrimary,
               ),
             ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.edit_outlined,
-                color: AppColors.primary, size: 20),
           ),
         ],
       ),
