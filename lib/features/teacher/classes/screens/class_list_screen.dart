@@ -14,6 +14,32 @@ class _ClassListScreenState extends State<ClassListScreen> {
   String? _error;
   List<Map<String, dynamic>> _classes = [];
 
+  String? _stringValue(dynamic value) {
+    if (value == null) return null;
+    final v = value.toString().trim();
+    return v.isEmpty ? null : v;
+  }
+
+  String? _extractAcademicYearId(Map<String, dynamic> data) {
+    // Check direct id
+    final direct = _stringValue(data['id']);
+    if (direct != null) return direct;
+
+    // Check data.id (backend response format)
+    final dataField = data['data'];
+    if (dataField is Map<String, dynamic>) {
+      final dataId = _stringValue(dataField['id']);
+      if (dataId != null) return dataId;
+    }
+
+    // Check nested academicYear.id
+    final nestedYear = data['academicYear'];
+    if (nestedYear is Map<String, dynamic>) {
+      return _stringValue(nestedYear['id']);
+    }
+    return null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -28,12 +54,18 @@ class _ClassListScreenState extends State<ClassListScreen> {
       });
 
       final yearData = await ApiService().getActiveAcademicYear();
-      final yearId = yearData['id'] as String;
+      final yearId = _extractAcademicYearId(yearData);
+      if (yearId == null) {
+        throw Exception('Active academic year is missing id');
+      }
       final offerings = await ApiService().getMyClassOfferings(yearId);
 
       if (!mounted) return;
       setState(() {
-        _classes = offerings.cast<Map<String, dynamic>>();
+        _classes = offerings
+            .whereType<Map<String, dynamic>>()
+            .where((o) => _stringValue(o['id']) != null)
+            .toList();
         _loading = false;
       });
     } catch (e) {
@@ -74,13 +106,17 @@ class _ClassListScreenState extends State<ClassListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final canPop = Navigator.of(context).canPop();
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Classes'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: canPop,
+        leading: canPop
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
       ),
       body: _buildBody(),
     );
