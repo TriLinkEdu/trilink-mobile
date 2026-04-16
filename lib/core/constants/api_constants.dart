@@ -1,13 +1,63 @@
+enum ApiEnvironment { local, production }
+
 class ApiConstants {
   ApiConstants._();
 
-  static const String baseUrl = 'http://localhost:4000/api';
+  // Single switch point for API mode.
+  // Change this to ApiEnvironment.production when needed.
+  static const ApiEnvironment environment = ApiEnvironment.local;
+
+  // Single switch point for data source mode.
+  // Keep true to use real backend APIs.
+  // Set false to force mock repositories.
+  static const bool useRealApi = true;
+
+  static const String localBaseUrl = 'http://localhost:4000/api';
+  static const String productionBaseUrl =
+      'https://trilink-backend-ms68.onrender.com/api';
+  static const String productionDocsUrl =
+      'https://trilink-backend-ms68.onrender.com/api-docs';
+
+  // Optional override for special cases:
+  // --dart-define=API_BASE_URL=...
+  static String get baseUrl {
+    const overrideUrl = String.fromEnvironment(
+      'API_BASE_URL',
+      defaultValue: '',
+    );
+    if (overrideUrl.isNotEmpty) return overrideUrl;
+
+    return environment == ApiEnvironment.production
+        ? productionBaseUrl
+        : localBaseUrl;
+  }
+
+  // Base URL without /api suffix for file downloads
+  static String get fileBaseUrl {
+    const overrideUrl = String.fromEnvironment(
+      'API_BASE_URL',
+      defaultValue: '',
+    );
+    if (overrideUrl.isNotEmpty) {
+      // Remove /api suffix if present
+      return overrideUrl.endsWith('/api')
+          ? overrideUrl.substring(0, overrideUrl.length - 4)
+          : overrideUrl;
+    }
+
+    return environment == ApiEnvironment.production
+        ? 'https://trilink-backend-ms68.onrender.com'
+        : 'http://localhost:4000';
+  }
 
   // Auth
   static const String login = '/auth/login';
   static const String refresh = '/auth/refresh';
   static const String me = '/auth/me';
   static const String changePassword = '/auth/change-password';
+
+  // Users
+  static const String updateProfile = '/users/me';
 
   // Dashboard
   static const String dashboardTeacher = '/dashboard/teacher';

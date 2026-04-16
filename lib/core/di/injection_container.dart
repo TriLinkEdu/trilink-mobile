@@ -3,16 +3,20 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import '../services/sound_service.dart';
 import '../services/storage_service.dart';
+import '../services/feature_flags.dart';
 import '../theme/theme_notifier.dart';
 import '../../features/auth/cubit/auth_cubit.dart';
 import '../../features/auth/repositories/auth_repository.dart';
 import '../../features/auth/repositories/mock_auth_repository.dart';
 import '../../features/student/dashboard/repositories/student_dashboard_repository.dart';
 import '../../features/student/dashboard/repositories/mock_student_dashboard_repository.dart';
+import '../../features/student/dashboard/repositories/real_student_dashboard_repository.dart';
 import '../../features/student/grades/repositories/student_grades_repository.dart';
 import '../../features/student/grades/repositories/mock_student_grades_repository.dart';
+import '../../features/student/grades/repositories/real_student_grades_repository.dart';
 import '../../features/student/attendance/repositories/student_attendance_repository.dart';
 import '../../features/student/attendance/repositories/mock_student_attendance_repository.dart';
+import '../../features/student/attendance/repositories/real_student_attendance_repository.dart';
 import '../../features/student/profile/repositories/student_profile_repository.dart';
 import '../../features/student/profile/repositories/mock_student_profile_repository.dart';
 import '../../features/student/assignments/repositories/student_assignments_repository.dart';
@@ -68,14 +72,25 @@ Future<void> initDependencies() async {
   );
 
   // ── Student repositories ──
+  final useRealStudentData = FeatureFlags.useRealApi;
+
   sl.registerLazySingleton<StudentDashboardRepository>(
-    () => MockStudentDashboardRepository(sl<StudentProgressRepository>()),
+    () => useRealStudentData
+        ? RealStudentDashboardRepository(
+            progressRepository: sl<StudentProgressRepository>(),
+            storageService: sl<StorageService>(),
+          )
+        : MockStudentDashboardRepository(sl<StudentProgressRepository>()),
   );
   sl.registerLazySingleton<StudentGradesRepository>(
-    () => MockStudentGradesRepository(),
+    () => useRealStudentData
+        ? RealStudentGradesRepository()
+        : MockStudentGradesRepository(),
   );
   sl.registerLazySingleton<StudentAttendanceRepository>(
-    () => MockStudentAttendanceRepository(),
+    () => useRealStudentData
+        ? RealStudentAttendanceRepository(storageService: sl<StorageService>())
+        : MockStudentAttendanceRepository(),
   );
   sl.registerLazySingleton<StudentProfileRepository>(
     () => MockStudentProfileRepository(),
