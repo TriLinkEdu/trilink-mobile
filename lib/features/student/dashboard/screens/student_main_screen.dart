@@ -24,6 +24,7 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
   int _currentIndex = 0;
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   final _navigatorKeys = List.generate(4, (_) => GlobalKey<NavigatorState>());
+  final _tabAtRoot = List<bool>.filled(4, true);
 
   static const _tabTitles = ['Home', 'Grades', 'Chat', 'Profile'];
 
@@ -37,6 +38,8 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
   late final List<_ShellRouteObserver> _routeObservers;
   final _titleNotifier = ValueNotifier<String>('Home');
 
+  bool get _showShellChrome => _tabAtRoot[_currentIndex];
+
   @override
   void initState() {
     super.initState();
@@ -46,6 +49,11 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
         rootTitle: _tabTitles[i],
         onTitleChanged: (title) {
           if (i == _currentIndex) _titleNotifier.value = title;
+        },
+        onRootChanged: (isAtRoot) {
+          if (_tabAtRoot[i] == isAtRoot) return;
+          if (!mounted) return;
+          setState(() => _tabAtRoot[i] = isAtRoot);
         },
       ),
     );
@@ -116,14 +124,18 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
                 ? AppColors.darkBackground
                 : const Color(0xFFF2FAFF),
             drawer: StudentDrawer(homeNavigatorKey: _navigatorKeys[0]),
+            drawerEnableOpenDragGesture: _showShellChrome,
             body: Column(
               children: [
-                _ShellTopBar(
-                  titleNotifier: _titleNotifier,
-                  onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
-                  onNotificationsTap: () =>
-                      _openInCurrentTab(RouteNames.studentNotifications),
-                ),
+                if (_showShellChrome)
+                  _ShellTopBar(
+                    titleNotifier: _titleNotifier,
+                    onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
+                    onNotificationsTap: () =>
+                        _openInCurrentTab(RouteNames.studentNotifications),
+                    onSettingsTap: () =>
+                        _openInCurrentTab(RouteNames.studentSettings),
+                  ),
                 Expanded(
                   child: IndexedStack(
                     index: _currentIndex,
@@ -139,10 +151,9 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
                 ),
               ],
             ),
-            bottomNavigationBar: _GlassNavBar(
-              currentIndex: _currentIndex,
-              onTap: _onTap,
-            ),
+            bottomNavigationBar: _showShellChrome
+                ? _GlassNavBar(currentIndex: _currentIndex, onTap: _onTap)
+                : null,
           ),
         ),
       ),
@@ -196,10 +207,16 @@ const _routeTitleMap = <String, String>{
 class _ShellRouteObserver extends NavigatorObserver {
   final String rootTitle;
   final ValueChanged<String> onTitleChanged;
+  final ValueChanged<bool> onRootChanged;
   String currentTitle;
+  bool isAtRoot;
 
-  _ShellRouteObserver({required this.rootTitle, required this.onTitleChanged})
-    : currentTitle = rootTitle;
+  _ShellRouteObserver({
+    required this.rootTitle,
+    required this.onTitleChanged,
+    required this.onRootChanged,
+  }) : currentTitle = rootTitle,
+       isAtRoot = true;
 
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
@@ -219,7 +236,9 @@ class _ShellRouteObserver extends NavigatorObserver {
   void _update(Route<dynamic> route) {
     final name = route.settings.name;
     currentTitle = _routeTitleMap[name] ?? rootTitle;
+    isAtRoot = route.isFirst;
     onTitleChanged(currentTitle);
+    onRootChanged(isAtRoot);
   }
 }
 
@@ -229,30 +248,35 @@ class _ShellTopBar extends StatelessWidget {
   final ValueNotifier<String> titleNotifier;
   final VoidCallback onMenuTap;
   final VoidCallback onNotificationsTap;
+  final VoidCallback onSettingsTap;
 
   const _ShellTopBar({
     required this.titleNotifier,
     required this.onMenuTap,
     required this.onNotificationsTap,
+    required this.onSettingsTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final top = MediaQuery.of(context).padding.top;
     final now = DateTime.now();
     final dateStr = intl.DateFormat('EEEE, MMM d').format(now);
+    final bg = Color.alphaBlend(
+      theme.colorScheme.primary.withAlpha(
+        theme.brightness == Brightness.dark ? 12 : 6,
+      ),
+      theme.colorScheme.surface,
+    );
 
     return Container(
       padding: EdgeInsets.only(top: top),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : const Color(0xFFF2F8FF),
+        color: bg,
         border: Border(
           bottom: BorderSide(
-            color: isDark
-                ? Colors.white.withAlpha(12)
-                : const Color(0xFFD7E7FF),
+            color: theme.colorScheme.outlineVariant.withAlpha(120),
             width: 0.5,
           ),
         ),
@@ -312,14 +336,15 @@ class _ShellTopBar extends StatelessWidget {
             Container(
               margin: const EdgeInsets.only(right: 8),
               decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.white.withAlpha(10)
-                    : Colors.white.withAlpha(210),
+                color: Color.alphaBlend(
+                  theme.colorScheme.primary.withAlpha(
+                    theme.brightness == Brightness.dark ? 14 : 4,
+                  ),
+                  theme.colorScheme.surface,
+                ),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isDark
-                      ? Colors.white.withAlpha(18)
-                      : const Color(0xFFDCEBFF),
+                  color: theme.colorScheme.outlineVariant.withAlpha(110),
                 ),
               ),
               child: IconButton(
@@ -327,6 +352,11 @@ class _ShellTopBar extends StatelessWidget {
                 onPressed: onNotificationsTap,
                 tooltip: 'Notifications',
               ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.settings_outlined, size: 22),
+              onPressed: onSettingsTap,
+              tooltip: 'Settings',
             ),
           ],
         ),
@@ -397,8 +427,13 @@ class _GlassNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final bottom = MediaQuery.of(context).padding.bottom;
+    final bg = Color.alphaBlend(
+      theme.colorScheme.primary.withAlpha(
+        theme.brightness == Brightness.dark ? 14 : 6,
+      ),
+      theme.colorScheme.surface,
+    );
 
     return Container(
       padding: EdgeInsets.only(
@@ -408,12 +443,10 @@ class _GlassNavBar extends StatelessWidget {
         bottom: bottom + AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : const Color(0xFFF2F8FF),
+        color: bg,
         border: Border(
           top: BorderSide(
-            color: isDark
-                ? Colors.white.withAlpha(12)
-                : const Color(0xFFD7E7FF),
+            color: theme.colorScheme.outlineVariant.withAlpha(120),
             width: 0.5,
           ),
         ),
@@ -457,6 +490,10 @@ class _AnimatedNavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final selectedBg = Color.alphaBlend(
+      theme.colorScheme.primary.withAlpha(46),
+      theme.colorScheme.surface,
+    );
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -469,9 +506,7 @@ class _AnimatedNavItem extends StatelessWidget {
           vertical: 8,
         ),
         decoration: BoxDecoration(
-          color: isSelected
-              ? theme.colorScheme.primary.withAlpha(18)
-              : Colors.transparent,
+          color: isSelected ? selectedBg : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
@@ -484,7 +519,7 @@ class _AnimatedNavItem extends StatelessWidget {
                 key: ValueKey(isSelected),
                 size: 22,
                 color: isSelected
-                    ? theme.colorScheme.primary
+                    ? theme.colorScheme.onPrimaryContainer
                     : theme.colorScheme.onSurfaceVariant,
               ),
             ),
@@ -498,7 +533,7 @@ class _AnimatedNavItem extends StatelessWidget {
                         data.label,
                         style: theme.textTheme.labelLarge?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.primary,
+                          color: theme.colorScheme.onPrimaryContainer,
                         ),
                       ),
                     )

@@ -750,4 +750,572 @@ class DummyData {
         ],
         'submittedAt': '2026-03-20T12:00:00Z',
       };
+
+  // ═══════════════════════════════════════════════════════
+  // ─── PARENT-SPECIFIC DATA ──────────────────────────────
+  // ═══════════════════════════════════════════════════════
+
+  // ─── My Children (Parent-Student Links) ────────────────
+  static List<dynamic> get myChildren => [
+        {
+          'id': 'link-001',
+          'parentId': 'parent-001',
+          'studentId': 'stu-001',
+          'relationship': 'Father',
+          'isPrimary': true,
+          'createdAt': '2025-09-01T08:00:00Z',
+          'student': {
+            'id': 'stu-001',
+            'firstName': 'Ali',
+            'lastName': 'Hassan',
+            'email': 'ali.hassan@school.edu',
+            'grade': 'Grade 9',
+            'section': 'A',
+          },
+        },
+        {
+          'id': 'link-002',
+          'parentId': 'parent-001',
+          'studentId': 'stu-010',
+          'relationship': 'Father',
+          'isPrimary': false,
+          'createdAt': '2025-09-01T08:00:00Z',
+          'student': {
+            'id': 'stu-010',
+            'firstName': 'Leila',
+            'lastName': 'Hassan',
+            'email': 'leila.hassan@school.edu',
+            'grade': 'Grade 7',
+            'section': 'B',
+          },
+        },
+      ];
+
+  // ─── Child Enrollments ─────────────────────────────────
+  static List<dynamic> childEnrollments(String studentId) => [
+        {
+          'enrollmentId': 'enr-001',
+          'academicYearId': 'ay-001',
+          'classOfferingId': 'co-001',
+          'className': 'Grade 9-A Mathematics',
+          'grade': 'Grade 9',
+          'section': 'A',
+          'subject': {
+            'id': 'sub-001',
+            'name': 'Mathematics',
+            'code': 'MATH-9',
+          },
+          'teacher': {
+            'id': 'teacher-001',
+            'firstName': 'Sara',
+            'lastName': 'Ahmed',
+            'email': 'sara.ahmed@school.edu',
+          },
+          'schedule': 'Mon/Wed 9:00 AM',
+          'room': 'Room 201',
+        },
+        {
+          'enrollmentId': 'enr-002',
+          'academicYearId': 'ay-001',
+          'classOfferingId': 'co-002',
+          'className': 'Grade 9-A Physics',
+          'grade': 'Grade 9',
+          'section': 'A',
+          'subject': {
+            'id': 'sub-002',
+            'name': 'Physics',
+            'code': 'PHY-9',
+          },
+          'teacher': {
+            'id': 'teacher-002',
+            'firstName': 'Dawit',
+            'lastName': 'Lemma',
+            'email': 'dawit.lemma@school.edu',
+          },
+          'schedule': 'Tue/Thu 10:00 AM',
+          'room': 'Lab 305',
+        },
+        {
+          'enrollmentId': 'enr-003',
+          'academicYearId': 'ay-001',
+          'classOfferingId': 'co-003',
+          'className': 'Grade 9-A Chemistry',
+          'grade': 'Grade 9',
+          'section': 'A',
+          'subject': {
+            'id': 'sub-003',
+            'name': 'Chemistry',
+            'code': 'CHEM-9',
+          },
+          'teacher': {
+            'id': 'teacher-003',
+            'firstName': 'Helen',
+            'lastName': 'Tadesse',
+            'email': 'helen.tadesse@school.edu',
+          },
+          'schedule': 'Mon/Wed 11:00 AM',
+          'room': 'Lab 102',
+        },
+        {
+          'enrollmentId': 'enr-004',
+          'academicYearId': 'ay-001',
+          'classOfferingId': 'co-004',
+          'className': 'Grade 9-A English',
+          'grade': 'Grade 9',
+          'section': 'A',
+          'subject': {
+            'id': 'sub-004',
+            'name': 'English',
+            'code': 'ENG-9',
+          },
+          'teacher': {
+            'id': 'teacher-004',
+            'firstName': 'John',
+            'lastName': 'Peters',
+            'email': 'john.peters@school.edu',
+          },
+          'schedule': 'Tue/Thu 9:00 AM',
+          'room': 'Room 108',
+        },
+        {
+          'enrollmentId': 'enr-005',
+          'academicYearId': 'ay-001',
+          'classOfferingId': 'co-005',
+          'className': 'Grade 9-A History',
+          'grade': 'Grade 9',
+          'section': 'A',
+          'subject': {
+            'id': 'sub-005',
+            'name': 'History',
+            'code': 'HIST-9',
+          },
+          'teacher': {
+            'id': 'teacher-005',
+            'firstName': 'Rahel',
+            'lastName': 'Mengistu',
+            'email': 'rahel.mengistu@school.edu',
+          },
+          'schedule': 'Fri 10:00 AM',
+          'room': 'Room 204',
+        },
+        {
+          'enrollmentId': 'enr-006',
+          'academicYearId': 'ay-001',
+          'classOfferingId': 'co-006',
+          'className': 'Grade 9-A Biology',
+          'grade': 'Grade 9',
+          'section': 'A',
+          'subject': {
+            'id': 'sub-006',
+            'name': 'Biology',
+            'code': 'BIO-9',
+          },
+          'teacher': {
+            'id': 'teacher-006',
+            'firstName': 'Meron',
+            'lastName': 'Bekele',
+            'email': 'meron.bekele@school.edu',
+          },
+          'schedule': 'Wed/Fri 2:00 PM',
+          'room': 'Lab 201',
+        },
+      ];
+
+  // ─── Child Goals ───────────────────────────────────────
+  static List<dynamic> childGoals(String studentId) => [
+        {
+          'id': 'goal-001',
+          'studentId': studentId,
+          'title': 'Improve Algebra Skills',
+          'description': 'Practice algebra problems for 30 minutes daily and complete all homework assignments on time.',
+          'targetDate': '2026-06-01',
+          'status': 'active',
+          'progressPercent': 65,
+          'createdAt': '2026-02-15T10:00:00Z',
+          'updatedAt': '2026-04-08T14:30:00Z',
+        },
+        {
+          'id': 'goal-002',
+          'studentId': studentId,
+          'title': 'Perfect Attendance',
+          'description': 'Maintain 100% attendance for the entire term.',
+          'targetDate': '2026-06-30',
+          'status': 'active',
+          'progressPercent': 95,
+          'createdAt': '2026-01-10T08:00:00Z',
+          'updatedAt': '2026-04-09T09:00:00Z',
+        },
+        {
+          'id': 'goal-003',
+          'studentId': studentId,
+          'title': 'Science Fair Project',
+          'description': 'Complete and present a science fair project on renewable energy.',
+          'targetDate': '2026-04-15',
+          'status': 'active',
+          'progressPercent': 80,
+          'createdAt': '2026-03-01T10:00:00Z',
+          'updatedAt': '2026-04-07T16:00:00Z',
+        },
+        {
+          'id': 'goal-004',
+          'studentId': studentId,
+          'title': 'Read 10 Books',
+          'description': 'Read at least 10 books this semester to improve reading comprehension.',
+          'targetDate': '2026-06-30',
+          'status': 'active',
+          'progressPercent': 40,
+          'createdAt': '2026-01-15T08:00:00Z',
+          'updatedAt': '2026-04-05T12:00:00Z',
+        },
+      ];
+
+  // ─── Parent Notifications ──────────────────────────────
+  static List<dynamic> get parentNotifications => [
+        {
+          'id': 'notif-p001',
+          'userId': 'parent-001',
+          'type': 'attendance',
+          'title': 'Attendance Alert',
+          'body': 'Ali was marked absent in Mathematics class on April 8, 2026.',
+          'payloadJson': '{"studentId":"stu-001","date":"2026-04-08","subject":"Mathematics"}',
+          'readAt': null,
+          'createdAt': DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
+        },
+        {
+          'id': 'notif-p002',
+          'userId': 'parent-001',
+          'type': 'exam',
+          'title': 'Exam Result Released',
+          'body': 'Ali\'s Chemistry Final exam result has been released. Score: 87/100',
+          'payloadJson': '{"studentId":"stu-001","examId":"exam-003","score":87}',
+          'readAt': null,
+          'createdAt': DateTime.now().subtract(const Duration(hours: 5)).toIso8601String(),
+        },
+        {
+          'id': 'notif-p003',
+          'userId': 'parent-001',
+          'type': 'announcement',
+          'title': 'Parent-Teacher Meeting',
+          'body': 'Parent-Teacher conference scheduled for April 10, 2026 at 2:00 PM.',
+          'payloadJson': '{"eventId":"evt-002","date":"2026-04-10"}',
+          'readAt': null,
+          'createdAt': DateTime.now().subtract(const Duration(hours: 24)).toIso8601String(),
+        },
+        {
+          'id': 'notif-p004',
+          'userId': 'parent-001',
+          'type': 'grade',
+          'title': 'New Grade Posted',
+          'body': 'Ali received 92% on the Mathematics Midterm exam.',
+          'payloadJson': '{"studentId":"stu-001","subject":"Mathematics","grade":92}',
+          'readAt': DateTime.now().subtract(const Duration(hours: 30)).toIso8601String(),
+          'createdAt': DateTime.now().subtract(const Duration(days: 2)).toIso8601String(),
+        },
+        {
+          'id': 'notif-p005',
+          'userId': 'parent-001',
+          'type': 'attendance',
+          'title': 'Perfect Attendance Week',
+          'body': 'Congratulations! Leila had perfect attendance this week.',
+          'payloadJson': '{"studentId":"stu-010","week":"2026-W14"}',
+          'readAt': DateTime.now().subtract(const Duration(days: 3)).toIso8601String(),
+          'createdAt': DateTime.now().subtract(const Duration(days: 3)).toIso8601String(),
+        },
+      ];
+
+  // ─── Parent Announcements ──────────────────────────────
+  static List<dynamic> get parentAnnouncements => [
+        {
+          'id': 'ann-p001',
+          'title': 'Parent-Teacher Conference Schedule',
+          'message': 'The parent-teacher conferences will be held on April 10-12. Please check your email for your scheduled time slot.',
+          'targetAudience': ['parent'],
+          'status': 'published',
+          'createdAt': '2026-04-01T10:00:00Z',
+          'author': {'firstName': 'Principal', 'lastName': 'Tesfaye'},
+        },
+        {
+          'id': 'ann-p002',
+          'title': 'School Fees Payment Reminder',
+          'message': 'Reminder: Second semester fees are due by April 15, 2026. Please visit the finance office or pay online.',
+          'targetAudience': ['parent'],
+          'status': 'published',
+          'createdAt': '2026-03-28T09:00:00Z',
+          'author': {'firstName': 'Finance', 'lastName': 'Office'},
+        },
+        {
+          'id': 'ann-p003',
+          'title': 'Science Fair - Parent Invitation',
+          'message': 'You are invited to attend the annual Science Fair on April 15, 2026 from 8:00 AM to 3:00 PM in the school auditorium.',
+          'targetAudience': ['parent', 'student'],
+          'status': 'published',
+          'createdAt': '2026-03-25T14:00:00Z',
+          'author': {'firstName': 'Science', 'lastName': 'Department'},
+        },
+        {
+          'id': 'ann-p004',
+          'title': 'Updated School Calendar',
+          'message': 'The school calendar has been updated with new exam dates. Please check the calendar section for details.',
+          'targetAudience': ['parent', 'student', 'teacher'],
+          'status': 'published',
+          'createdAt': '2026-03-20T11:00:00Z',
+          'author': {'firstName': 'Admin', 'lastName': 'Office'},
+        },
+      ];
+
+  // ─── Child Performance Report (Enhanced) ───────────────
+  static Map<String, dynamic> childPerformanceReport(String studentId) => {
+        'studentId': studentId,
+        'student': {
+          'firstName': 'Ali',
+          'lastName': 'Hassan',
+          'grade': 'Grade 9',
+          'section': 'A',
+        },
+        'generatedAt': DateTime.now().toIso8601String(),
+        'attendanceAllTime': {
+          'totalMarks': 120,
+          'byStatus': {'present': 100, 'late': 8, 'absent': 12},
+          'presentOrLateRate': 0.9,
+        },
+        'attendanceLast90Days': {
+          'totalMarks': 30,
+          'byStatus': {'present': 25, 'late': 2, 'absent': 3},
+          'presentOrLateRate': 0.9,
+        },
+        'examsReleased': {
+          'releasedAttempts': 5,
+          'averageScore': 87.4,
+          'recent': [
+            {
+              'examTitle': 'Mathematics Midterm',
+              'score': 92,
+              'maxScore': 100,
+              'releasedAt': '2026-04-05T10:00:00Z',
+            },
+            {
+              'examTitle': 'Chemistry Final',
+              'score': 87,
+              'maxScore': 100,
+              'releasedAt': '2026-03-22T10:00:00Z',
+            },
+            {
+              'examTitle': 'Physics Quiz',
+              'score': 85,
+              'maxScore': 100,
+              'releasedAt': '2026-03-15T14:00:00Z',
+            },
+          ],
+        },
+        'overallGPA': 3.8,
+        'termAverage': 89.3,
+        'classRank': '5th out of 32 students',
+      };
+
+  // ─── Period Comparison Report ──────────────────────────
+  static Map<String, dynamic> periodComparisonReport(String studentId) => {
+        'studentId': studentId,
+        'period1': {
+          'start': '2026-01-01',
+          'end': '2026-02-15',
+          'attendance': {
+            'totalMarks': 45,
+            'byStatus': {'present': 40, 'late': 3, 'absent': 2},
+            'presentOrLateRate': 0.956,
+          },
+          'exams': {
+            'count': 3,
+            'averageScore': 85.3,
+          },
+          'termAverage': 87.5,
+        },
+        'period2': {
+          'start': '2026-02-16',
+          'end': '2026-03-31',
+          'attendance': {
+            'totalMarks': 42,
+            'byStatus': {'present': 38, 'late': 2, 'absent': 2},
+            'presentOrLateRate': 0.952,
+          },
+          'exams': {
+            'count': 4,
+            'averageScore': 88.5,
+          },
+          'termAverage': 89.3,
+        },
+        'comparison': {
+          'attendanceChange': -0.004,
+          'examScoreChange': 3.2,
+          'termAverageChange': 1.8,
+          'trend': 'improving',
+        },
+      };
+
+  // ─── Weekly Parent Summary (Enhanced) ──────────────────
+  static Map<String, dynamic> weeklyParentSummary({String? childStudentId}) => {
+        'weekFrom': '2026-04-02',
+        'weekThrough': '2026-04-09',
+        'generatedAt': DateTime.now().toIso8601String(),
+        'children': [
+          {
+            'studentId': 'stu-001',
+            'name': 'Ali Hassan',
+            'attendanceThisWeek': {
+              'totalMarks': 5,
+              'byStatus': {'present': 4, 'late': 1, 'absent': 0},
+              'presentOrLateRate': 1.0,
+            },
+            'examsReleasedThisWeek': 1,
+            'exams': [
+              {
+                'title': 'Mathematics Midterm',
+                'score': 92,
+                'maxScore': 100,
+                'releasedAt': '2026-04-05T10:00:00Z',
+              },
+            ],
+            'highlights': [
+              'Scored 92% on Mathematics Midterm',
+              'Perfect attendance this week',
+              'Completed all homework assignments',
+            ],
+            'concerns': [],
+          },
+          if (childStudentId == null)
+            {
+              'studentId': 'stu-010',
+              'name': 'Leila Hassan',
+              'attendanceThisWeek': {
+                'totalMarks': 5,
+                'byStatus': {'present': 5, 'late': 0, 'absent': 0},
+                'presentOrLateRate': 1.0,
+              },
+              'examsReleasedThisWeek': 0,
+              'exams': [],
+              'highlights': [
+                'Perfect attendance this week',
+                'Participated in Science Fair preparation',
+              ],
+              'concerns': [],
+            },
+        ],
+      };
+
+  // ─── Parent Calendar Events ────────────────────────────
+  static List<dynamic> get parentCalendarEvents => [
+        {
+          'id': 'evt-p001',
+          'academicYearId': 'ay-001',
+          'title': 'Parent-Teacher Conference',
+          'date': '2026-04-10',
+          'time': '14:00',
+          'type': 'meeting',
+          'description': 'Individual parent-teacher meetings to discuss student progress.',
+          'classOfferingId': null,
+          'createdById': 'admin-001',
+          'createdAt': '2026-03-15T10:00:00Z',
+          'updatedAt': '2026-03-15T10:00:00Z',
+        },
+        {
+          'id': 'evt-p002',
+          'academicYearId': 'ay-001',
+          'title': 'Science Fair',
+          'date': '2026-04-15',
+          'time': '08:00',
+          'type': 'event',
+          'description': 'Annual school science fair. Parents are welcome to attend.',
+          'classOfferingId': null,
+          'createdById': 'admin-001',
+          'createdAt': '2026-03-20T09:00:00Z',
+          'updatedAt': '2026-03-20T09:00:00Z',
+        },
+        {
+          'id': 'evt-p003',
+          'academicYearId': 'ay-001',
+          'title': 'School Holiday',
+          'date': '2026-04-08',
+          'time': '00:00',
+          'type': 'holiday',
+          'description': 'National holiday - school closed.',
+          'classOfferingId': null,
+          'createdById': 'admin-001',
+          'createdAt': '2026-03-01T10:00:00Z',
+          'updatedAt': '2026-03-01T10:00:00Z',
+        },
+        {
+          'id': 'evt-p004',
+          'academicYearId': 'ay-001',
+          'title': 'Grade 9 Math Exam',
+          'date': '2026-04-05',
+          'time': '09:00',
+          'type': 'exam',
+          'description': 'Mathematics midterm examination for Grade 9.',
+          'classOfferingId': 'co-001',
+          'createdById': 'teacher-001',
+          'createdAt': '2026-03-15T10:00:00Z',
+          'updatedAt': '2026-03-15T10:00:00Z',
+        },
+        {
+          'id': 'evt-p005',
+          'academicYearId': 'ay-001',
+          'title': 'Sports Day',
+          'date': '2026-04-20',
+          'time': '08:00',
+          'type': 'event',
+          'description': 'Annual sports day event. Parents are invited to attend.',
+          'classOfferingId': null,
+          'createdById': 'admin-001',
+          'createdAt': '2026-03-25T10:00:00Z',
+          'updatedAt': '2026-03-25T10:00:00Z',
+        },
+      ];
+
+  // ─── Exam Results for Parent ───────────────────────────
+  static List<dynamic> childExamResults(String studentId) => [
+        {
+          'attemptId': 'att-001',
+          'examId': 'exam-001',
+          'examTitle': 'Mathematics Midterm',
+          'subject': 'Mathematics',
+          'maxPoints': 100,
+          'score': 92,
+          'percentage': 92.0,
+          'grade': 'A',
+          'autoScore': 92,
+          'needsManualGrading': false,
+          'submittedAt': '2026-04-05T11:00:00Z',
+          'releasedAt': '2026-04-05T15:00:00Z',
+          'teacher': 'Ms. Sara Ahmed',
+        },
+        {
+          'attemptId': 'att-002',
+          'examId': 'exam-003',
+          'examTitle': 'Chemistry Final',
+          'subject': 'Chemistry',
+          'maxPoints': 100,
+          'score': 87,
+          'percentage': 87.0,
+          'grade': 'B+',
+          'autoScore': 85,
+          'needsManualGrading': false,
+          'submittedAt': '2026-03-20T11:45:00Z',
+          'releasedAt': '2026-03-22T10:00:00Z',
+          'teacher': 'Ms. Helen Tadesse',
+        },
+        {
+          'attemptId': 'att-003',
+          'examId': 'exam-002',
+          'examTitle': 'Physics Quiz - Chapter 5',
+          'subject': 'Physics',
+          'maxPoints': 50,
+          'score': 43,
+          'percentage': 86.0,
+          'grade': 'B+',
+          'autoScore': 43,
+          'needsManualGrading': false,
+          'submittedAt': '2026-03-15T10:30:00Z',
+          'releasedAt': '2026-03-15T14:00:00Z',
+          'teacher': 'Mr. Dawit Lemma',
+        },
+      ];
 }

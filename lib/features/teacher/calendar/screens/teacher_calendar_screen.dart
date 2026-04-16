@@ -142,8 +142,9 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide:
-                              const BorderSide(color: AppColors.primary),
+                          borderSide: const BorderSide(
+                            color: AppColors.primary,
+                          ),
                         ),
                       ),
                     ),
@@ -165,8 +166,9 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide:
-                              const BorderSide(color: AppColors.primary),
+                          borderSide: const BorderSide(
+                            color: AppColors.primary,
+                          ),
                         ),
                       ),
                     ),
@@ -177,31 +179,46 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Type',
-                                  style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600)),
+                              const Text(
+                                'Type',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                               const SizedBox(height: 6),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 12),
+                                  horizontal: 12,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.grey.shade50,
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
-                                      color: Colors.grey.shade300),
+                                    color: Colors.grey.shade300,
+                                  ),
                                 ),
                                 child: DropdownButtonHideUnderline(
                                   child: DropdownButton<String>(
                                     value: selectedType,
                                     isExpanded: true,
-                                    items: ['Lecture', 'Meeting', 'Availability', 'Exam', 'Other']
-                                        .map((e) => DropdownMenuItem(
-                                            value: e, child: Text(e)))
-                                        .toList(),
+                                    items:
+                                        [
+                                              'Lecture',
+                                              'Meeting',
+                                              'Availability',
+                                              'Exam',
+                                              'Other',
+                                            ]
+                                            .map(
+                                              (e) => DropdownMenuItem(
+                                                value: e,
+                                                child: Text(e),
+                                              ),
+                                            )
+                                            .toList(),
                                     onChanged: (v) {
-                                      setSheetState(
-                                          () => selectedType = v!);
+                                      setSheetState(() => selectedType = v!);
                                     },
                                   ),
                                 ),
@@ -214,10 +231,13 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Start Time',
-                                  style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600)),
+                              const Text(
+                                'Start Time',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                               const SizedBox(height: 6),
                               GestureDetector(
                                 onTap: () async {
@@ -226,19 +246,20 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                                     initialTime: startTime,
                                   );
                                   if (picked != null) {
-                                    setSheetState(
-                                        () => startTime = picked);
+                                    setSheetState(() => startTime = picked);
                                   }
                                 },
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 14),
+                                    horizontal: 12,
+                                    vertical: 14,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.grey.shade50,
-                                    borderRadius:
-                                        BorderRadius.circular(10),
+                                    borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
-                                        color: Colors.grey.shade300),
+                                      color: Colors.grey.shade300,
+                                    ),
                                   ),
                                   child: Text(
                                     startTime.format(ctx),
@@ -273,29 +294,24 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                                   await ApiService().createCalendarEvent({
                                     'title': titleController.text.trim(),
                                     'type': selectedType,
-                                    'location':
-                                        locationController.text.trim(),
-                                    'startDate':
-                                        eventDate.toIso8601String(),
+                                    'location': locationController.text.trim(),
+                                    'startDate': eventDate.toIso8601String(),
                                   });
                                   if (!ctx.mounted) return;
                                   Navigator.pop(ctx);
                                   _loadData();
                                 } catch (e) {
-                                  setSheetState(
-                                      () => submitting = false);
+                                  setSheetState(() => submitting = false);
                                   if (!ctx.mounted) return;
                                   ScaffoldMessenger.of(ctx).showSnackBar(
-                                    SnackBar(
-                                        content: Text('Error: $e')),
+                                    SnackBar(content: Text('Error: $e')),
                                   );
                                 }
                               },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
-                          padding:
-                              const EdgeInsets.symmetric(vertical: 14),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -330,41 +346,47 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: _loading
             ? const Center(child: CircularProgressIndicator())
             : _error != null
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.error_outline,
-                            size: 48, color: Colors.grey.shade400),
-                        const SizedBox(height: 12),
-                        Text(_error!,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey.shade600)),
-                        const SizedBox(height: 16),
-                        OutlinedButton(
-                          onPressed: _loadData,
-                          child: const Text('Retry'),
-                        ),
-                      ],
+            ? Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.grey.shade400,
                     ),
-                  )
-                : Column(
-                    children: [
-                      _buildHeader(),
-                      const SizedBox(height: 16),
-                      _buildMonthNavigation(),
-                      const SizedBox(height: 12),
-                      _buildCalendarGrid(),
-                      const Divider(height: 32),
-                      Expanded(child: _buildEventsList()),
-                    ],
-                  ),
+                    const SizedBox(height: 12),
+                    Text(
+                      _error!,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey.shade600),
+                    ),
+                    const SizedBox(height: 16),
+                    OutlinedButton(
+                      onPressed: _loadData,
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              )
+            : Column(
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 16),
+                  _buildMonthNavigation(),
+                  const SizedBox(height: 12),
+                  _buildCalendarGrid(),
+                  const Divider(height: 32),
+                  Expanded(child: _buildEventsList()),
+                ],
+              ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddEventDialog,
@@ -375,30 +397,31 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
   }
 
   Widget _buildHeader() {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
       child: Row(
         children: [
           GestureDetector(
             onTap: () {},
-            child: const Icon(Icons.menu, color: AppColors.textPrimary),
+            child: Icon(Icons.menu, color: theme.colorScheme.onSurface),
           ),
-          const Expanded(
+          Expanded(
             child: Center(
               child: Text(
                 'Schedule',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
             ),
           ),
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.notifications_outlined,
-              color: AppColors.textPrimary,
+              color: theme.colorScheme.onSurface,
             ),
             onPressed: () {},
           ),
@@ -412,9 +435,20 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
   }
 
   Widget _buildMonthNavigation() {
+    final theme = Theme.of(context);
     final months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December',
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -423,26 +457,23 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
         children: [
           GestureDetector(
             onTap: _previousMonth,
-            child: const Icon(
-              Icons.chevron_left,
-              color: AppColors.textPrimary,
-            ),
+            child: Icon(Icons.chevron_left, color: theme.colorScheme.onSurface),
           ),
           const SizedBox(width: 16),
           Text(
             '${months[_currentMonth.month - 1]} ${_currentMonth.year}',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           const SizedBox(width: 16),
           GestureDetector(
             onTap: _nextMonth,
-            child: const Icon(
+            child: Icon(
               Icons.chevron_right,
-              color: AppColors.textPrimary,
+              color: theme.colorScheme.onSurface,
             ),
           ),
         ],
@@ -451,6 +482,7 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
   }
 
   Widget _buildCalendarGrid() {
+    final theme = Theme.of(context);
     final daysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
     final firstDay = DateTime(_currentMonth.year, _currentMonth.month, 1);
     final daysInMonth = DateTime(
@@ -482,7 +514,7 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
-                          color: Colors.grey.shade500,
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ),
@@ -491,36 +523,33 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                 .toList(),
           ),
           const SizedBox(height: 8),
-          ...List.generate(
-            ((startWeekday + daysInMonth) / 7).ceil(),
-            (week) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  children: List.generate(7, (day) {
-                    final cellIndex = week * 7 + day;
-                    final dayNum = cellIndex - startWeekday + 1;
+          ...List.generate(((startWeekday + daysInMonth) / 7).ceil(), (week) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: List.generate(7, (day) {
+                  final cellIndex = week * 7 + day;
+                  final dayNum = cellIndex - startWeekday + 1;
 
-                    if (dayNum < 1) {
-                      final prevDay = previousMonthDays + dayNum;
-                      return _buildDayCell(prevDay, isOtherMonth: true);
-                    }
-                    if (dayNum > daysInMonth) {
-                      return _buildDayCell(
-                        dayNum - daysInMonth,
-                        isOtherMonth: true,
-                      );
-                    }
+                  if (dayNum < 1) {
+                    final prevDay = previousMonthDays + dayNum;
+                    return _buildDayCell(prevDay, isOtherMonth: true);
+                  }
+                  if (dayNum > daysInMonth) {
                     return _buildDayCell(
-                      dayNum,
-                      isSelected: dayNum == _selectedDay,
-                      hasEvent: eventDays.contains(dayNum),
+                      dayNum - daysInMonth,
+                      isOtherMonth: true,
                     );
-                  }),
-                ),
-              );
-            },
-          ),
+                  }
+                  return _buildDayCell(
+                    dayNum,
+                    isSelected: dayNum == _selectedDay,
+                    hasEvent: eventDays.contains(dayNum),
+                  );
+                }),
+              ),
+            );
+          }),
         ],
       ),
     );
@@ -532,6 +561,7 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
     bool isOtherMonth = false,
     bool hasEvent = false,
   }) {
+    final theme = Theme.of(context);
     return Expanded(
       child: GestureDetector(
         onTap: isOtherMonth ? null : () => setState(() => _selectedDay = day),
@@ -549,13 +579,12 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                 '$day',
                 style: TextStyle(
                   fontSize: 14,
-                  fontWeight:
-                      isSelected ? FontWeight.bold : FontWeight.w400,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w400,
                   color: isSelected
                       ? Colors.white
                       : isOtherMonth
-                          ? Colors.grey.shade300
-                          : AppColors.textPrimary,
+                      ? theme.colorScheme.outline
+                      : theme.colorScheme.onSurface,
                 ),
               ),
               if (hasEvent && !isSelected)
@@ -576,13 +605,29 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
   }
 
   Widget _buildEventsList() {
+    final theme = Theme.of(context);
     final dayNames = [
-      'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
-      'Saturday', 'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
     ];
     final monthNames = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     final selectedDate = DateTime(
       _currentMonth.year,
@@ -604,15 +649,18 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
             children: [
               Text(
                 '$dayName, $monthName $_selectedDay',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               Text(
                 '${events.length} Events',
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -623,13 +671,18 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                 padding: const EdgeInsets.only(top: 40),
                 child: Column(
                   children: [
-                    Icon(Icons.event_available,
-                        size: 48, color: Colors.grey.shade300),
+                    Icon(
+                      Icons.event_available,
+                      size: 48,
+                      color: Colors.grey.shade300,
+                    ),
                     const SizedBox(height: 12),
                     Text(
                       'No events for this day',
                       style: TextStyle(
-                          fontSize: 15, color: Colors.grey.shade500),
+                        fontSize: 15,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -695,7 +748,8 @@ class _CalendarEvent {
       final m = parsedDate.minute;
       final period = h >= 12 ? 'PM' : 'AM';
       final h12 = h == 0 ? 12 : (h > 12 ? h - 12 : h);
-      timeStr = '${h12.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')} $period';
+      timeStr =
+          '${h12.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')} $period';
     }
 
     final durationMin = json['durationMinutes'] ?? json['duration'];
@@ -703,7 +757,8 @@ class _CalendarEvent {
     if (durationMin is num) {
       if (durationMin >= 60) {
         final hrs = durationMin / 60;
-        durationStr = '${hrs.toStringAsFixed(hrs.truncateToDouble() == hrs ? 0 : 1)} hrs';
+        durationStr =
+            '${hrs.toStringAsFixed(hrs.truncateToDouble() == hrs ? 0 : 1)} hrs';
       } else {
         durationStr = '${durationMin.toInt()} min';
       }
@@ -727,6 +782,7 @@ class _EventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -739,7 +795,7 @@ class _EventCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: Colors.grey.shade600,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -756,8 +812,9 @@ class _EventCard extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: theme.colorScheme.outlineVariant),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -783,10 +840,10 @@ class _EventCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     event.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -796,14 +853,14 @@ class _EventCard extends StatelessWidget {
                         Icon(
                           Icons.access_time,
                           size: 14,
-                          color: Colors.grey.shade500,
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           event.duration,
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade500,
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -812,14 +869,14 @@ class _EventCard extends StatelessWidget {
                         Icon(
                           Icons.location_on_outlined,
                           size: 14,
-                          color: Colors.grey.shade500,
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           event.location,
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade500,
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],

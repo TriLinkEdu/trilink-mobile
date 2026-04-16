@@ -129,21 +129,22 @@ class _LiveExamMonitoringScreenState extends State<LiveExamMonitoringScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
           children: [
             Text(
               widget.examTitle,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
                 fontSize: 17,
               ),
@@ -157,7 +158,7 @@ class _LiveExamMonitoringScreenState extends State<LiveExamMonitoringScreen> {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.more_vert, color: AppColors.textPrimary),
+            icon: Icon(Icons.more_vert, color: theme.colorScheme.onSurface),
             onPressed: () {},
           ),
         ],
@@ -310,8 +311,9 @@ class _LiveExamMonitoringScreenState extends State<LiveExamMonitoringScreen> {
                       '${_filters[index]} ${_filterCounts[index]}',
                       style: TextStyle(
                         fontSize: 13,
-                        fontWeight:
-                            isSelected ? FontWeight.w600 : FontWeight.w400,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w400,
                         color: isSelected ? chipColor : Colors.grey.shade600,
                       ),
                     ),
@@ -370,10 +372,7 @@ class _StudentExamCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-          ),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
         ],
       ),
       child: Column(
@@ -404,8 +403,8 @@ class _StudentExamCard extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: student.badgeColor
-                                      ?.withValues(alpha: 0.12) ??
+                              color:
+                                  student.badgeColor?.withValues(alpha: 0.12) ??
                                   Colors.grey.shade100,
                               borderRadius: BorderRadius.circular(4),
                               border: Border.all(
@@ -416,8 +415,7 @@ class _StudentExamCard extends StatelessWidget {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                if (student.status ==
-                                    StudentExamStatus.flagged)
+                                if (student.status == StudentExamStatus.flagged)
                                   Icon(
                                     Icons.warning_amber,
                                     size: 10,
@@ -464,17 +462,9 @@ class _StudentExamCard extends StatelessWidget {
                 ),
               ),
               if (isSubmitted)
-                Icon(
-                  Icons.check_circle,
-                  color: AppColors.secondary,
-                  size: 22,
-                )
+                Icon(Icons.check_circle, color: AppColors.secondary, size: 22)
               else
-                Icon(
-                  Icons.access_time,
-                  color: Colors.grey.shade400,
-                  size: 22,
-                ),
+                Icon(Icons.access_time, color: Colors.grey.shade400, size: 22),
             ],
           ),
           const SizedBox(height: 12),
@@ -513,8 +503,9 @@ class _StudentExamCard extends StatelessWidget {
                   child: OutlinedButton(
                     onPressed: () {},
                     style: OutlinedButton.styleFrom(
-                      foregroundColor:
-                          isForceSubmit ? AppColors.error : AppColors.primary,
+                      foregroundColor: isForceSubmit
+                          ? AppColors.error
+                          : AppColors.primary,
                       side: BorderSide(
                         color: isForceSubmit
                             ? AppColors.error.withValues(alpha: 0.5)
@@ -547,10 +538,7 @@ class _StudentExamCard extends StatelessWidget {
               children: [
                 Text(
                   'Completed',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade500,
-                  ),
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
                 ),
                 const Text(
                   'Submitted',

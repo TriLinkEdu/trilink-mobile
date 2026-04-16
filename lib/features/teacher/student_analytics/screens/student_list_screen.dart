@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/role_page_background.dart';
 import 'student_analytics_screen.dart';
 
 /// Student list is currently populated with static data.
@@ -70,9 +71,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
   List<_StudentInfo> get _filteredStudents {
     if (_searchQuery.isEmpty) return _students;
     return _students
-        .where(
-          (s) => s.name.toLowerCase().contains(_searchQuery.toLowerCase()),
-        )
+        .where((s) => s.name.toLowerCase().contains(_searchQuery.toLowerCase()))
         .toList();
   }
 
@@ -84,89 +83,94 @@ class _StudentListScreenState extends State<StudentListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Students',
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
         centerTitle: true,
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Container(
-              height: 44,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (val) => setState(() => _searchQuery = val),
-                decoration: InputDecoration(
-                  hintText: 'Search students...',
-                  hintStyle: TextStyle(
-                    color: Colors.grey.shade500,
-                    fontSize: 14,
+      body: RolePageBackground(
+        flavor: RoleThemeFlavor.teacher,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Container(
+                height: 44,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (val) => setState(() => _searchQuery = val),
+                  decoration: InputDecoration(
+                    hintText: 'Search students...',
+                    hintStyle: TextStyle(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontSize: 14,
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: theme.colorScheme.onSurfaceVariant,
+                      size: 20,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  prefixIcon: Icon(
-                    Icons.search,
-                    color: Colors.grey.shade500,
-                    size: 20,
-                  ),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Text(
-              'Student list loaded from classes roster',
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: ListView.separated(
+            const SizedBox(height: 4),
+            Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              itemCount: _filteredStudents.length,
-              separatorBuilder: (context, index) => Divider(
-                color: Colors.grey.shade200,
-                height: 1,
+              child: Text(
+                'Student list loaded from classes roster',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
-              itemBuilder: (context, index) {
-                final student = _filteredStudents[index];
-                return _StudentListTile(
-                  student: student,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => StudentAnalyticsScreen(
-                          studentId: student.id,
-                          studentName: student.name,
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                itemCount: _filteredStudents.length,
+                separatorBuilder: (context, index) =>
+                    Divider(color: theme.colorScheme.outlineVariant, height: 1),
+                itemBuilder: (context, index) {
+                  final student = _filteredStudents[index];
+                  return _StudentListTile(
+                    student: student,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => StudentAnalyticsScreen(
+                            studentId: student.id,
+                            studentName: student.name,
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -198,6 +202,7 @@ class _StudentListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     Color statusColor;
     switch (student.status) {
       case 'Honor Roll':
@@ -224,10 +229,10 @@ class _StudentListTile extends StatelessWidget {
                 children: [
                   Text(
                     student.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
-                      color: AppColors.textPrimary,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -235,7 +240,7 @@ class _StudentListTile extends StatelessWidget {
                     '${student.grade} • GPA: ${student.gpa}',
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.grey.shade500,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -257,7 +262,11 @@ class _StudentListTile extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 4),
-            Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 20),
+            Icon(
+              Icons.chevron_right,
+              color: theme.colorScheme.onSurfaceVariant,
+              size: 20,
+            ),
           ],
         ),
       ),

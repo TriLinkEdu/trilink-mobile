@@ -92,4 +92,7 @@ class RouteNames {
   static const String parentFeedback = '/parent/feedback';
   static const String parentWeeklyReport = '/parent/weekly-report';
   static const String parentReportComparison = '/parent/report-comparison';
+
+  // Shared
+  static const String themeCustomization = '/settings/theme-customization';
 }

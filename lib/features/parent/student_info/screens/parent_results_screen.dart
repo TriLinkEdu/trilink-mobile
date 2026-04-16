@@ -40,9 +40,20 @@ class _ParentResultsScreenState extends State<ParentResultsScreen> {
   Future<void> _loadData() async {
     try {
       setState(() { _loading = true; _error = null; });
-      final dashboard = await ApiService().getParentDashboard();
-      _children = ((dashboard['linkedChildren'] as List<dynamic>?) ?? [])
-          .cast<Map<String, dynamic>>();
+      
+      // Use new API to get children
+      final children = await ApiService().getMyChildren();
+      _children = children.map<Map<String, dynamic>>((child) {
+        final student = child['student'] as Map<String, dynamic>?;
+        return {
+          'id': child['id'],
+          'studentId': student?['id'] ?? child['studentId'],
+          'firstName': student?['firstName'] ?? child['firstName'],
+          'lastName': student?['lastName'] ?? child['lastName'],
+          'fullName': '${student?['firstName'] ?? ''} ${student?['lastName'] ?? ''}'.trim(),
+        };
+      }).toList();
+      
       if (_children.isNotEmpty) {
         await _loadPerformance();
       } else {
@@ -57,7 +68,8 @@ class _ParentResultsScreenState extends State<ParentResultsScreen> {
 
   Future<void> _loadPerformance() async {
     try {
-      final perf = await ApiService().getStudentPerformance(studentId);
+      // Use child performance report API
+      final perf = await ApiService().getChildPerformanceReport(studentId);
       if (!mounted) return;
       setState(() { _performance = perf; _loading = false; });
     } catch (e) {
@@ -83,56 +95,6 @@ class _ParentResultsScreenState extends State<ParentResultsScreen> {
           ),
         ),
         centerTitle: true,
-        actions: [
-          if (_children.length > 1)
-            GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedChildIndex =
-                      (_selectedChildIndex + 1) % _children.length;
-                });
-                _loadPerformance();
-              },
-              child: Container(
-                margin: const EdgeInsets.only(right: 12),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircleAvatar(
-                      radius: 10,
-                      backgroundColor: AppColors.primary,
-                      child: Text(
-                        studentName
-                            .split(' ')
-                            .map((w) => w[0])
-                            .take(2)
-                            .join(),
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 8,
-                            fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      studentName.split(' ').first,
-                      style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary),
-                    ),
-                    const Icon(Icons.keyboard_arrow_down, size: 16),
-                  ],
-                ),
-              ),
-            ),
-        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())

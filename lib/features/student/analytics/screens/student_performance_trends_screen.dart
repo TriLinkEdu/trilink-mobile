@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/branded_refresh.dart';
 import '../../../../core/widgets/error_widget.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../../shared/widgets/student_page_background.dart';
@@ -11,6 +12,7 @@ import '../cubit/performance_trends_cubit.dart';
 import '../cubit/performance_trends_state.dart';
 import '../repositories/student_analytics_repository.dart';
 import '../widgets/student_insight_cards.dart';
+import '../widgets/student_semantic_colors.dart';
 
 class StudentPerformanceTrendsScreen extends StatelessWidget {
   const StudentPerformanceTrendsScreen({super.key});
@@ -51,55 +53,58 @@ class _StudentPerformanceTrendsView extends StatelessWidget {
               return AppErrorWidget(
                 message:
                     state.errorMessage ?? 'Unable to load performance trends.',
-                onRetry: () =>
-                    context.read<PerformanceTrendsCubit>().loadTrends(),
+                onRetry: () => context.read<PerformanceTrendsCubit>().loadTrends(),
               );
             }
 
             final trends = state.trends!;
 
-            return ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                InsightMetricCard(
-                  title: 'Exam Readiness',
-                  value: '${trends.examReadinessScore} / 100',
-                  subtitle: 'Estimated from recent trends',
-                  icon: Icons.analytics_rounded,
-                  accent: theme.colorScheme.primary,
-                ),
-                AppSpacing.gapMd,
-                ...trends.subjects.map(
-                  (subject) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surface,
-                        borderRadius: AppRadius.borderLg,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            subject.subjectName,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
+            return BrandedRefreshIndicator(
+              onRefresh: () => context.read<PerformanceTrendsCubit>().loadTrends(),
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  InsightMetricCard(
+                    title: 'Exam Readiness',
+                    value: '${trends.examReadinessScore} / 100',
+                    subtitle: 'Estimated from recent trends',
+                    icon: Icons.analytics_rounded,
+                    accent: StudentSemanticColors.info,
+                  ),
+                  AppSpacing.gapMd,
+                  ...trends.subjects.map(
+                    (subject) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          borderRadius: AppRadius.borderLg,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              subject.subjectName,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
-                          ),
-                          AppSpacing.gapXs,
-                          Text(
-                            subject.recommendation,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                            AppSpacing.gapXs,
+                            Text(
+                              subject.recommendation,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             );
           },
         ),

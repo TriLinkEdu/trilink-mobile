@@ -22,7 +22,7 @@ class AuthCubit extends Cubit<AuthState> {
   }) async {
     emit(state.copyWith(status: AuthStatus.loading));
     try {
-      final user = await _repository.login(email: email, password: password);
+      final user = await _repository.login(email: email, password: password, role: role);
       emit(AuthState(
         status: AuthStatus.authenticated,
         user: user,
@@ -33,6 +33,7 @@ class AuthCubit extends Cubit<AuthState> {
         status: AuthStatus.failure,
         errorMessage: e.toString(),
       ));
+      rethrow;
     }
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/role_page_background.dart';
 
 class TeacherAiAssistantScreen extends StatefulWidget {
   const TeacherAiAssistantScreen({super.key});
@@ -21,7 +22,8 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
     _AtRiskStudent(
       name: 'Nadia Saleh',
       riskLevel: 'Medium',
-      reason: 'Declining test scores over last 3 exams. Low class participation.',
+      reason:
+          'Declining test scores over last 3 exams. Low class participation.',
     ),
     _AtRiskStudent(
       name: 'Tariq Zain',
@@ -69,69 +71,65 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'AI Teaching Assistant',
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.w600,
           ),
         ),
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: Icon(
               Icons.auto_awesome,
-              color: AppColors.accent,
+              color: theme.colorScheme.primary,
               size: 26,
             ),
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildClassInsightsCard(),
-                const SizedBox(height: 24),
-                _buildSectionTitle('At-Risk Students'),
-                const SizedBox(height: 12),
-                ..._atRiskStudents.map(_buildAtRiskCard),
-                const SizedBox(height: 24),
-                _buildSectionTitle('Suggested Actions'),
-                const SizedBox(height: 12),
-                ..._suggestions.map(_buildSuggestionCard),
-                const SizedBox(height: 24),
-                _buildPerformancePredictions(),
-              ],
+      body: RolePageBackground(
+        flavor: RoleThemeFlavor.teacher,
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildClassInsightsCard(),
+                  const SizedBox(height: 24),
+                  _buildSectionTitle('At-Risk Students'),
+                  const SizedBox(height: 12),
+                  ..._atRiskStudents.map(_buildAtRiskCard),
+                  const SizedBox(height: 24),
+                  _buildSectionTitle('Suggested Actions'),
+                  const SizedBox(height: 12),
+                  ..._suggestions.map(_buildSuggestionCard),
+                  const SizedBox(height: 24),
+                  _buildPerformancePredictions(),
+                ],
+              ),
             ),
-          ),
-          Positioned(
-            left: 16,
-            right: 16,
-            bottom: 24,
-            child: _buildAskBar(),
-          ),
-        ],
+            Positioned(left: 16, right: 16, bottom: 24, child: _buildAskBar()),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildSectionTitle(String title) {
+    final theme = Theme.of(context);
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: AppColors.textPrimary,
+        color: theme.colorScheme.onSurface,
       ),
     );
   }
@@ -194,7 +192,11 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
               const SizedBox(width: 12),
               _buildStatBubble('Attendance', '92%', Icons.check_circle_outline),
               const SizedBox(width: 12),
-              _buildStatBubble('Submissions', '87%', Icons.assignment_turned_in),
+              _buildStatBubble(
+                'Submissions',
+                '87%',
+                Icons.assignment_turned_in,
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -262,6 +264,7 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
   }
 
   Widget _buildAtRiskCard(_AtRiskStudent student) {
+    final theme = Theme.of(context);
     final isHigh = student.riskLevel == 'High';
     final riskColor = isHigh ? AppColors.error : AppColors.accent;
 
@@ -269,11 +272,9 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: riskColor.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: riskColor.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -306,18 +307,18 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
                   children: [
                     Text(
                       student.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
-                        color: AppColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       student.reason,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.textSecondary,
+                        color: theme.colorScheme.onSurfaceVariant,
                         height: 1.3,
                       ),
                     ),
@@ -351,8 +352,8 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
                 child: OutlinedButton(
                   onPressed: () {},
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.textSecondary,
-                    side: const BorderSide(color: AppColors.divider),
+                    foregroundColor: theme.colorScheme.onSurfaceVariant,
+                    side: BorderSide(color: theme.colorScheme.outlineVariant),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -391,11 +392,12 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
   }
 
   Widget _buildSuggestionCard(_SuggestionItem suggestion) {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -424,18 +426,18 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
               children: [
                 Text(
                   suggestion.title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 15,
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   suggestion.description,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: AppColors.textSecondary,
+                    color: theme.colorScheme.onSurfaceVariant,
                     height: 1.4,
                   ),
                 ),
@@ -443,10 +445,10 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          const Icon(
+          Icon(
             Icons.arrow_forward_ios,
             size: 14,
-            color: AppColors.textSecondary,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ],
       ),
@@ -501,10 +503,7 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
               children: [
                 Text(
                   'Predicted class average for the next exam:',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.white70,
-                  ),
+                  style: TextStyle(fontSize: 13, color: Colors.white70),
                 ),
                 SizedBox(height: 6),
                 Text(
@@ -518,7 +517,7 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
                 SizedBox(height: 8),
                 Text(
                   'Based on current trends, assignment completion rates, and historical exam data. '
-                  '3 students may score below passing threshold — early intervention recommended.',
+                  '3 students may score below passing threshold   early intervention recommended.',
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.white70,
@@ -534,10 +533,11 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
   }
 
   Widget _buildAskBar() {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
@@ -550,7 +550,7 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
       child: Row(
         children: [
           const SizedBox(width: 8),
-          const Icon(Icons.auto_awesome, color: AppColors.accent, size: 22),
+          Icon(Icons.auto_awesome, color: theme.colorScheme.primary, size: 22),
           const SizedBox(width: 8),
           Expanded(
             child: TextField(
@@ -558,7 +558,7 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
               decoration: InputDecoration(
                 hintText: 'Ask AI anything about your class...',
                 hintStyle: TextStyle(
-                  color: Colors.grey.shade500,
+                  color: theme.colorScheme.onSurfaceVariant,
                   fontSize: 14,
                 ),
                 border: InputBorder.none,

@@ -2,6 +2,14 @@ enum LeaderboardScope { classScope, school, national }
 
 enum LeaderboardPeriod { weekly, monthly, term }
 
+enum AchievementCategory {
+  consistency,
+  mastery,
+  social,
+  exploration,
+  milestone,
+}
+
 class LeaderboardEntry {
   final String studentId;
   final String studentName;
@@ -45,15 +53,15 @@ class LeaderboardEntry {
   }
 
   Map<String, dynamic> toJson() => {
-        'studentId': studentId,
-        'studentName': studentName,
-        'rank': rank,
-        'points': points,
-        'avatarUrl': avatarUrl,
-        'scope': scope.name,
-        'period': period.name,
-        'calculatedAt': calculatedAt?.toIso8601String(),
-      };
+    'studentId': studentId,
+    'studentName': studentName,
+    'rank': rank,
+    'points': points,
+    'avatarUrl': avatarUrl,
+    'scope': scope.name,
+    'period': period.name,
+    'calculatedAt': calculatedAt?.toIso8601String(),
+  };
 }
 
 class BadgeModel {
@@ -82,12 +90,12 @@ class BadgeModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'description': description,
-        'iconUrl': iconUrl,
-        'xpValue': xpValue,
-      };
+    'id': id,
+    'name': name,
+    'description': description,
+    'iconUrl': iconUrl,
+    'xpValue': xpValue,
+  };
 }
 
 class StudentBadgeModel {
@@ -110,10 +118,10 @@ class StudentBadgeModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'studentId': studentId,
-        'badge': badge.toJson(),
-        'awardedAt': awardedAt.toIso8601String(),
-      };
+    'studentId': studentId,
+    'badge': badge.toJson(),
+    'awardedAt': awardedAt.toIso8601String(),
+  };
 }
 
 class AchievementModel {
@@ -124,6 +132,9 @@ class AchievementModel {
   final int xpValue;
   final bool isUnlocked;
   final DateTime? unlockedAt;
+  final AchievementCategory category;
+  final int progressCurrent;
+  final int progressTarget;
 
   const AchievementModel({
     required this.id,
@@ -133,7 +144,42 @@ class AchievementModel {
     this.xpValue = 0,
     required this.isUnlocked,
     this.unlockedAt,
+    this.category = AchievementCategory.milestone,
+    this.progressCurrent = 0,
+    this.progressTarget = 1,
   });
+
+  AchievementModel copyWith({
+    String? id,
+    String? title,
+    String? description,
+    String? iconUrl,
+    int? xpValue,
+    bool? isUnlocked,
+    DateTime? unlockedAt,
+    AchievementCategory? category,
+    int? progressCurrent,
+    int? progressTarget,
+  }) {
+    return AchievementModel(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      iconUrl: iconUrl ?? this.iconUrl,
+      xpValue: xpValue ?? this.xpValue,
+      isUnlocked: isUnlocked ?? this.isUnlocked,
+      unlockedAt: unlockedAt ?? this.unlockedAt,
+      category: category ?? this.category,
+      progressCurrent: progressCurrent ?? this.progressCurrent,
+      progressTarget: progressTarget ?? this.progressTarget,
+    );
+  }
+
+  double get completionRatio {
+    if (isUnlocked) return 1;
+    if (progressTarget <= 0) return 0;
+    return (progressCurrent / progressTarget).clamp(0, 1).toDouble();
+  }
 
   factory AchievementModel.fromJson(Map<String, dynamic> json) {
     return AchievementModel(
@@ -146,18 +192,176 @@ class AchievementModel {
       unlockedAt: json['unlockedAt'] != null
           ? DateTime.parse(json['unlockedAt'] as String)
           : null,
+      category: AchievementCategory.values.firstWhere(
+        (c) => c.name == json['category'],
+        orElse: () => AchievementCategory.milestone,
+      ),
+      progressCurrent: json['progressCurrent'] as int? ?? 0,
+      progressTarget: json['progressTarget'] as int? ?? 1,
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'description': description,
-        'iconUrl': iconUrl,
-        'xpValue': xpValue,
-        'isUnlocked': isUnlocked,
-        'unlockedAt': unlockedAt?.toIso8601String(),
-      };
+    'id': id,
+    'title': title,
+    'description': description,
+    'iconUrl': iconUrl,
+    'xpValue': xpValue,
+    'isUnlocked': isUnlocked,
+    'unlockedAt': unlockedAt?.toIso8601String(),
+    'category': category.name,
+    'progressCurrent': progressCurrent,
+    'progressTarget': progressTarget,
+  };
+}
+
+class DailyMissionModel {
+  final String id;
+  final String title;
+  final String description;
+  final int xpReward;
+  final bool isCompleted;
+  final int progressCurrent;
+  final int progressTarget;
+
+  const DailyMissionModel({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.xpReward,
+    required this.isCompleted,
+    required this.progressCurrent,
+    required this.progressTarget,
+  });
+
+  DailyMissionModel copyWith({
+    String? id,
+    String? title,
+    String? description,
+    int? xpReward,
+    bool? isCompleted,
+    int? progressCurrent,
+    int? progressTarget,
+  }) {
+    return DailyMissionModel(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      xpReward: xpReward ?? this.xpReward,
+      isCompleted: isCompleted ?? this.isCompleted,
+      progressCurrent: progressCurrent ?? this.progressCurrent,
+      progressTarget: progressTarget ?? this.progressTarget,
+    );
+  }
+
+  double get completionRatio {
+    if (isCompleted) return 1;
+    if (progressTarget <= 0) return 0;
+    return (progressCurrent / progressTarget).clamp(0, 1).toDouble();
+  }
+}
+
+class TeamChallengeModel {
+  final String id;
+  final String title;
+  final String objective;
+  final int progressCurrent;
+  final int progressTarget;
+  final int contributorCount;
+  final DateTime endsAt;
+
+  const TeamChallengeModel({
+    required this.id,
+    required this.title,
+    required this.objective,
+    required this.progressCurrent,
+    required this.progressTarget,
+    required this.contributorCount,
+    required this.endsAt,
+  });
+
+  double get completionRatio {
+    if (progressTarget <= 0) return 0;
+    return (progressCurrent / progressTarget).clamp(0, 1).toDouble();
+  }
+}
+
+class XpProgressModel {
+  final int level;
+  final int totalXp;
+  final int xpIntoCurrentLevel;
+  final int xpNeededForNextLevel;
+  final int weeklyXpTarget;
+  final int weeklyXpEarned;
+
+  const XpProgressModel({
+    required this.level,
+    required this.totalXp,
+    required this.xpIntoCurrentLevel,
+    required this.xpNeededForNextLevel,
+    required this.weeklyXpTarget,
+    required this.weeklyXpEarned,
+  });
+
+  double get levelProgressRatio {
+    if (xpNeededForNextLevel <= 0) return 0;
+    return (xpIntoCurrentLevel / xpNeededForNextLevel).clamp(0, 1).toDouble();
+  }
+
+  double get weeklyProgressRatio {
+    if (weeklyXpTarget <= 0) return 0;
+    return (weeklyXpEarned / weeklyXpTarget).clamp(0, 1).toDouble();
+  }
+}
+
+class NextBadgeProgressModel {
+  final String badgeName;
+  final String description;
+  final int progressCurrent;
+  final int progressTarget;
+  final int xpReward;
+
+  const NextBadgeProgressModel({
+    required this.badgeName,
+    required this.description,
+    required this.progressCurrent,
+    required this.progressTarget,
+    required this.xpReward,
+  });
+
+  double get completionRatio {
+    if (progressTarget <= 0) return 0;
+    return (progressCurrent / progressTarget).clamp(0, 1).toDouble();
+  }
+}
+
+class GamificationMutationResult {
+  final int xpDelta;
+  final int newTotalXp;
+  final bool leveledUp;
+  final int newLevel;
+  final List<String> newAchievementIds;
+  final List<String> newBadgeIds;
+  final int? leaderboardBeforeRank;
+  final int? leaderboardAfterRank;
+
+  const GamificationMutationResult({
+    required this.xpDelta,
+    required this.newTotalXp,
+    required this.leveledUp,
+    required this.newLevel,
+    this.newAchievementIds = const [],
+    this.newBadgeIds = const [],
+    this.leaderboardBeforeRank,
+    this.leaderboardAfterRank,
+  });
+
+  static const empty = GamificationMutationResult(
+    xpDelta: 0,
+    newTotalXp: 0,
+    leveledUp: false,
+    newLevel: 0,
+  );
 }
 
 class StreakModel {
@@ -182,10 +386,10 @@ class StreakModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'currentStreak': currentStreak,
-        'longestStreak': longestStreak,
-        'recentDays': recentDays.map((d) => d.toIso8601String()).toList(),
-      };
+    'currentStreak': currentStreak,
+    'longestStreak': longestStreak,
+    'recentDays': recentDays.map((d) => d.toIso8601String()).toList(),
+  };
 }
 
 class QuizModel {
@@ -223,13 +427,13 @@ class QuizModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'subjectId': subjectId,
-        'subjectName': subjectName,
-        'chapterId': chapterId,
-        'questionCount': questionCount,
-        'xpReward': xpReward,
-        'difficulty': difficulty,
-      };
+    'id': id,
+    'title': title,
+    'subjectId': subjectId,
+    'subjectName': subjectName,
+    'chapterId': chapterId,
+    'questionCount': questionCount,
+    'xpReward': xpReward,
+    'difficulty': difficulty,
+  };
 }

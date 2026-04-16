@@ -48,38 +48,46 @@ class AuthService {
       _currentUser = UserModel.fromJson(userJson);
       _currentRole = role;
 
-      return _currentUser!;
-    } catch (_) {
-      // Fallback to dummy user so UI can be tested without backend
-      final dummyUser = role == 'parent'
-          ? DummyData.parentUser
-          : DummyData.teacherUser;
-      // Override role to match selection for student/teacher/parent
-      dummyUser['role'] = role;
-
-      await _storage.saveUser(dummyUser);
-      await _storage.saveRole(role);
-
-      _currentUser = UserModel.fromJson(dummyUser);
-      _currentRole = role;
+      // Fetch complete user profile after login
+      print('DEBUG AUTH: Login successful, fetching complete profile...');
+      try {
+        await fetchMe();
+        print('DEBUG AUTH: Complete profile fetched after login');
+      } catch (e) {
+        print('DEBUG AUTH: Failed to fetch complete profile after login: $e');
+        // Continue with login data if fetchMe fails
+      }
 
       return _currentUser!;
+    } catch (e) {
+      rethrow;
     }
   }
 
   Future<UserModel> fetchMe() async {
     try {
+      print('DEBUG AUTH: Fetching user data from API...');
       final data = await _api.get(ApiConstants.me);
+      print('DEBUG AUTH: Raw API response: $data');
+      print('DEBUG AUTH: Phone from API: "${data['phone']}"');
       _currentUser = UserModel.fromJson(data);
+      print('DEBUG AUTH: Parsed user model phone: "${_currentUser?.phone}"');
       await _storage.saveUser(data);
+      print('DEBUG AUTH: User data updated and saved');
       return _currentUser!;
-    } catch (_) {
-      if (_currentUser != null) return _currentUser!;
+    } catch (e) {
+      print('DEBUG AUTH: Error fetching user data: $e');
+      if (_currentUser != null) {
+        print('DEBUG AUTH: Returning cached user data - phone: "${_currentUser?.phone}"');
+        return _currentUser!;
+      }
       final saved = await _storage.getUser();
       if (saved != null) {
+        print('DEBUG AUTH: Returning saved user data - phone: "${saved['phone']}"');
         _currentUser = UserModel.fromJson(saved);
         return _currentUser!;
       }
+      print('DEBUG AUTH: Returning dummy user data');
       _currentUser = UserModel.fromJson(DummyData.teacherUser);
       return _currentUser!;
     }
@@ -135,6 +143,19 @@ class AuthService {
     if (savedUser != null) {
       _currentUser = UserModel.fromJson(savedUser);
       _currentRole = await _storage.getRole();
+      
+      // Fetch fresh user data if we have tokens
+      if (hasTokens) {
+        print('DEBUG AUTH: Session restored, fetching fresh profile data...');
+        try {
+          await fetchMe();
+          print('DEBUG AUTH: Fresh profile data fetched after session restore');
+        } catch (e) {
+          print('DEBUG AUTH: Failed to fetch fresh profile after session restore: $e');
+          // Continue with cached data if fetchMe fails
+        }
+      }
+      
       return true;
     }
     if (!hasTokens) return false;

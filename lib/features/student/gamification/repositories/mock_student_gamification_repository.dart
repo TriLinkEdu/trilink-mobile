@@ -143,6 +143,9 @@ class MockStudentGamificationRepository
       title: 'First Steps',
       description: 'Complete your first quiz.',
       iconUrl: 'assets/achievements/first_steps.png',
+      category: AchievementCategory.milestone,
+      progressCurrent: 1,
+      progressTarget: 1,
       isUnlocked: true,
       unlockedAt: DateTime(2024, 1, 15),
     ),
@@ -151,6 +154,9 @@ class MockStudentGamificationRepository
       title: 'Perfect Score',
       description: 'Score 100% on any quiz.',
       iconUrl: 'assets/achievements/perfect_score.png',
+      category: AchievementCategory.mastery,
+      progressCurrent: 1,
+      progressTarget: 1,
       isUnlocked: true,
       unlockedAt: DateTime(2024, 2, 3),
     ),
@@ -159,6 +165,9 @@ class MockStudentGamificationRepository
       title: 'Week Warrior',
       description: 'Maintain a 7-day streak.',
       iconUrl: 'assets/achievements/week_warrior.png',
+      category: AchievementCategory.consistency,
+      progressCurrent: 7,
+      progressTarget: 7,
       isUnlocked: true,
       unlockedAt: DateTime(2024, 2, 20),
     ),
@@ -167,6 +176,9 @@ class MockStudentGamificationRepository
       title: 'Quiz Master',
       description: 'Complete 25 quizzes.',
       iconUrl: 'assets/achievements/quiz_master.png',
+      category: AchievementCategory.mastery,
+      progressCurrent: 25,
+      progressTarget: 25,
       isUnlocked: true,
       unlockedAt: DateTime(2024, 3, 5),
     ),
@@ -175,6 +187,9 @@ class MockStudentGamificationRepository
       title: 'Top of the Class',
       description: 'Reach rank 1 on the weekly leaderboard.',
       iconUrl: 'assets/achievements/top_class.png',
+      category: AchievementCategory.social,
+      progressCurrent: 1,
+      progressTarget: 1,
       isUnlocked: true,
       unlockedAt: DateTime(2024, 3, 12),
     ),
@@ -183,6 +198,9 @@ class MockStudentGamificationRepository
       title: 'Month Marathon',
       description: 'Maintain a 30-day streak.',
       iconUrl: 'assets/achievements/month_marathon.png',
+      category: AchievementCategory.consistency,
+      progressCurrent: 21,
+      progressTarget: 30,
       isUnlocked: false,
     ),
     const AchievementModel(
@@ -190,6 +208,9 @@ class MockStudentGamificationRepository
       title: 'Subject Specialist',
       description: 'Score above 90% in 10 quizzes of the same subject.',
       iconUrl: 'assets/achievements/specialist.png',
+      category: AchievementCategory.mastery,
+      progressCurrent: 6,
+      progressTarget: 10,
       isUnlocked: false,
     ),
     const AchievementModel(
@@ -197,6 +218,9 @@ class MockStudentGamificationRepository
       title: 'Social Learner',
       description: 'Help 5 classmates through the chat feature.',
       iconUrl: 'assets/achievements/social_learner.png',
+      category: AchievementCategory.social,
+      progressCurrent: 2,
+      progressTarget: 5,
       isUnlocked: false,
     ),
     const AchievementModel(
@@ -204,6 +228,9 @@ class MockStudentGamificationRepository
       title: 'Knowledge Explorer',
       description: 'Complete quizzes in all available subjects.',
       iconUrl: 'assets/achievements/explorer.png',
+      category: AchievementCategory.exploration,
+      progressCurrent: 4,
+      progressTarget: 5,
       isUnlocked: false,
     ),
     const AchievementModel(
@@ -211,9 +238,68 @@ class MockStudentGamificationRepository
       title: 'Legend',
       description: 'Earn 5000 total XP.',
       iconUrl: 'assets/achievements/legend.png',
+      category: AchievementCategory.milestone,
+      progressCurrent: 3510,
+      progressTarget: 5000,
       isUnlocked: false,
     ),
   ];
+
+  static final List<DailyMissionModel> _dailyMissions = [
+    const DailyMissionModel(
+      id: 'mission-1',
+      title: 'Solve 2 quick quizzes',
+      description: 'Finish two quick quizzes in any subject.',
+      xpReward: 80,
+      isCompleted: false,
+      progressCurrent: 1,
+      progressTarget: 2,
+    ),
+    const DailyMissionModel(
+      id: 'mission-2',
+      title: 'Keep your streak alive',
+      description: 'Study today to maintain your streak.',
+      xpReward: 40,
+      isCompleted: true,
+      progressCurrent: 1,
+      progressTarget: 1,
+    ),
+    const DailyMissionModel(
+      id: 'mission-3',
+      title: 'Practice weak topic',
+      description: 'Complete one recommended practice quiz.',
+      xpReward: 60,
+      isCompleted: false,
+      progressCurrent: 0,
+      progressTarget: 1,
+    ),
+  ];
+
+  static XpProgressModel _xpProgress = const XpProgressModel(
+    level: 6,
+    totalXp: 3510,
+    xpIntoCurrentLevel: 510,
+    xpNeededForNextLevel: 600,
+    weeklyXpTarget: 500,
+    weeklyXpEarned: 320,
+  );
+
+  static final Set<String> _completedSubjects = {
+    'mathematics',
+    'physics',
+    'literature',
+    'history',
+  };
+
+  static TeamChallengeModel get _teamChallenge => TeamChallengeModel(
+    id: 'team-1',
+    title: 'Class Sprint: 2,000 XP',
+    objective: 'Earn XP together before Friday.',
+    progressCurrent: 1360,
+    progressTarget: 2000,
+    contributorCount: 17,
+    endsAt: DateTime.now().add(const Duration(days: 2)),
+  );
 
   static final Map<String, ExamModel> _quizzes = {
     'mathematics': const ExamModel(
@@ -572,9 +658,44 @@ class MockStudentGamificationRepository
       iconUrl: 'assets/badges/science_fair.png',
       xpValue: 200,
     ),
+    const BadgeModel(
+      id: 'badge-midnight-disciplined',
+      name: 'Midnight Discipline',
+      description: 'Completed study sessions for 5 nights in a row.',
+      iconUrl: 'assets/badges/midnight_discipline.png',
+      xpValue: 130,
+    ),
+    const BadgeModel(
+      id: 'badge-speed-runner',
+      name: 'Speed Runner',
+      description: 'Completed 5 quick quizzes in one day.',
+      iconUrl: 'assets/badges/speed_runner.png',
+      xpValue: 110,
+    ),
+    const BadgeModel(
+      id: 'badge-polymath-explorer',
+      name: 'Polymath Explorer',
+      description: 'Completed quizzes across all tracked subjects.',
+      iconUrl: 'assets/badges/polymath_explorer.png',
+      xpValue: 170,
+    ),
+    const BadgeModel(
+      id: 'badge-class-catalyst',
+      name: 'Class Catalyst',
+      description: 'Helped the class sprint exceed its weekly target.',
+      iconUrl: 'assets/badges/class_catalyst.png',
+      xpValue: 140,
+    ),
   ];
 
   static final Map<String, List<StudentBadgeModel>> _studentBadgesById = {
+    's1': [
+      StudentBadgeModel(
+        studentId: 's1',
+        badge: _badges[0],
+        awardedAt: DateTime(2026, 2, 3),
+      ),
+    ],
     'student1': [
       StudentBadgeModel(
         studentId: 'student1',
@@ -606,6 +727,39 @@ class MockStudentGamificationRepository
   Future<List<AchievementModel>> fetchAchievements() async {
     await Future<void>.delayed(_latency);
     return List<AchievementModel>.from(_achievements);
+  }
+
+  @override
+  Future<List<DailyMissionModel>> fetchDailyMissions() async {
+    await Future<void>.delayed(_latency);
+    return List<DailyMissionModel>.from(_dailyMissions);
+  }
+
+  @override
+  Future<TeamChallengeModel?> fetchTeamChallenge() async {
+    await Future<void>.delayed(_latency);
+    return _teamChallenge;
+  }
+
+  @override
+  Future<XpProgressModel> fetchXpProgress() async {
+    await Future<void>.delayed(_latency);
+    return _xpProgress;
+  }
+
+  @override
+  Future<NextBadgeProgressModel?> fetchNextBadgeProgress() async {
+    await Future<void>.delayed(_latency);
+    final pending = _achievements.where((a) => !a.isUnlocked).toList();
+    if (pending.isEmpty) return null;
+    final next = pending.first;
+    return NextBadgeProgressModel(
+      badgeName: next.title,
+      description: next.description,
+      progressCurrent: next.progressCurrent,
+      progressTarget: next.progressTarget,
+      xpReward: next.xpValue,
+    );
   }
 
   @override
@@ -654,6 +808,51 @@ class MockStudentGamificationRepository
   }
 
   @override
+  Future<GamificationMutationResult> markMissionCompleted(
+    String missionId,
+  ) async {
+    await Future<void>.delayed(_latency);
+    final index = _dailyMissions.indexWhere((m) => m.id == missionId);
+    if (index < 0) {
+      return GamificationMutationResult(
+        xpDelta: 0,
+        newTotalXp: _xpProgress.totalXp,
+        leveledUp: false,
+        newLevel: _xpProgress.level,
+      );
+    }
+    final mission = _dailyMissions[index];
+    if (mission.isCompleted) {
+      return GamificationMutationResult(
+        xpDelta: 0,
+        newTotalXp: _xpProgress.totalXp,
+        leveledUp: false,
+        newLevel: _xpProgress.level,
+      );
+    }
+
+    _dailyMissions[index] = mission.copyWith(
+      isCompleted: true,
+      progressCurrent: mission.progressTarget,
+    );
+    return _applyProgressionEvent(xpDelta: mission.xpReward);
+  }
+
+  @override
+  Future<GamificationMutationResult> applyQuizOutcome({
+    required String quizId,
+    required String subjectId,
+    required ExamResultModel result,
+  }) async {
+    await Future<void>.delayed(_latency);
+    return _applyProgressionEvent(
+      xpDelta: result.xpEarned,
+      quizSubjectId: subjectId,
+      quizScore: result.score,
+    );
+  }
+
+  @override
   Future<StreakModel> fetchStreak() async {
     await Future<void>.delayed(_latency);
     final progress = await _progressRepository.fetchProgress();
@@ -666,6 +865,286 @@ class MockStudentGamificationRepository
         (i) => DateTime(now.year, now.month, now.day - (6 - i)),
       ),
     );
+  }
+
+  int _advanceMission(String missionId, {required int step}) {
+    final index = _dailyMissions.indexWhere((m) => m.id == missionId);
+    if (index < 0) return 0;
+    final mission = _dailyMissions[index];
+    if (mission.isCompleted) return 0;
+    final nextProgress = (mission.progressCurrent + step).clamp(
+      0,
+      mission.progressTarget,
+    );
+    final completed = nextProgress >= mission.progressTarget;
+    _dailyMissions[index] = mission.copyWith(
+      progressCurrent: nextProgress,
+      isCompleted: completed,
+    );
+    if (completed) {
+      return mission.xpReward;
+    }
+    return 0;
+  }
+
+  bool _incrementAchievementProgress(
+    String achievementId, {
+    int amount = 1,
+    int? forceProgressCurrent,
+    bool unlockWhenTargetReached = true,
+  }) {
+    final index = _achievements.indexWhere((a) => a.id == achievementId);
+    if (index < 0) return false;
+    final achievement = _achievements[index];
+    if (achievement.isUnlocked && forceProgressCurrent == null) return false;
+
+    final nextProgress =
+        forceProgressCurrent ??
+        (achievement.progressCurrent + amount).clamp(
+          0,
+          achievement.progressTarget,
+        );
+    final shouldUnlock =
+        unlockWhenTargetReached && nextProgress >= achievement.progressTarget;
+
+    _achievements[index] = achievement.copyWith(
+      progressCurrent: nextProgress,
+      isUnlocked: achievement.isUnlocked || shouldUnlock,
+      unlockedAt: (achievement.isUnlocked || !shouldUnlock)
+          ? achievement.unlockedAt
+          : DateTime.now(),
+    );
+    return !achievement.isUnlocked && shouldUnlock;
+  }
+
+  void _awardXp(int xp) {
+    if (xp <= 0) return;
+    final totalXp = _xpProgress.totalXp + xp;
+    final weeklyXp = _xpProgress.weeklyXpEarned + xp;
+    final xpPerLevel = _xpProgress.xpNeededForNextLevel;
+    var nextLevel = _xpProgress.level;
+    var intoLevel = _xpProgress.xpIntoCurrentLevel + xp;
+    while (intoLevel >= xpPerLevel) {
+      intoLevel -= xpPerLevel;
+      nextLevel += 1;
+    }
+
+    _xpProgress = XpProgressModel(
+      level: nextLevel,
+      totalXp: totalXp,
+      xpIntoCurrentLevel: intoLevel,
+      xpNeededForNextLevel: xpPerLevel,
+      weeklyXpTarget: _xpProgress.weeklyXpTarget,
+      weeklyXpEarned: weeklyXp,
+    );
+
+    _incrementAchievementProgress(
+      'ach-10',
+      forceProgressCurrent: totalXp,
+      unlockWhenTargetReached: true,
+    );
+  }
+
+  GamificationMutationResult _applyProgressionEvent({
+    required int xpDelta,
+    String? quizSubjectId,
+    double? quizScore,
+  }) {
+    var totalXpDelta = xpDelta;
+    final beforeLevel = _xpProgress.level;
+    final beforeRank = _rankOf('weekly', 's1');
+    final newAchievements = <String>[];
+
+    if (totalXpDelta > 0) {
+      _awardXp(totalXpDelta);
+    }
+
+    if (quizSubjectId != null) {
+      _completedSubjects.add(quizSubjectId);
+      if (_incrementAchievementProgress(
+        'ach-1',
+        amount: 1,
+        unlockWhenTargetReached: true,
+      )) {
+        newAchievements.add('ach-1');
+      }
+      if (_incrementAchievementProgress(
+        'ach-7',
+        amount: (quizScore ?? 0) >= 90 ? 1 : 0,
+      )) {
+        newAchievements.add('ach-7');
+      }
+      if (_incrementAchievementProgress(
+        'ach-9',
+        forceProgressCurrent: _completedSubjects.length,
+        unlockWhenTargetReached: true,
+      )) {
+        newAchievements.add('ach-9');
+      }
+      if ((quizScore ?? 0) == 100 &&
+          _incrementAchievementProgress(
+            'ach-2',
+            amount: 1,
+            unlockWhenTargetReached: true,
+          )) {
+        newAchievements.add('ach-2');
+      }
+
+      final missionBonusXp =
+          _advanceMission('mission-1', step: 1) +
+          _advanceMission('mission-3', step: 1);
+      if (missionBonusXp > 0) {
+        _awardXp(missionBonusXp);
+        totalXpDelta += missionBonusXp;
+      }
+    }
+
+    final newBadgeIds = _applyBadgeRules(newAchievements);
+
+    _recalculateLeaderboardsForCurrentStudent();
+    final afterRank = _rankOf('weekly', 's1');
+
+    return GamificationMutationResult(
+      xpDelta: totalXpDelta,
+      newTotalXp: _xpProgress.totalXp,
+      leveledUp: _xpProgress.level > beforeLevel,
+      newLevel: _xpProgress.level,
+      newAchievementIds: newAchievements,
+      newBadgeIds: newBadgeIds,
+      leaderboardBeforeRank: beforeRank,
+      leaderboardAfterRank: afterRank,
+    );
+  }
+
+  List<String> _applyBadgeRules(List<String> newAchievementIds) {
+    final unlocked = <String>[];
+    if (newAchievementIds.contains('ach-3')) {
+      if (_awardBadgeIfAbsent('s1', 'badge-addis-attendance')) {
+        unlocked.add('badge-addis-attendance');
+      }
+    }
+    if (newAchievementIds.contains('ach-7')) {
+      if (_awardBadgeIfAbsent('s1', 'badge-ethiopian-studies')) {
+        unlocked.add('badge-ethiopian-studies');
+      }
+    }
+    if (_xpProgress.weeklyXpEarned >= 420) {
+      if (_awardBadgeIfAbsent('s1', 'badge-national-exam-prep')) {
+        unlocked.add('badge-national-exam-prep');
+      }
+    }
+    if (_xpProgress.weeklyXpEarned >= 650) {
+      if (_awardBadgeIfAbsent('s1', 'badge-speed-runner')) {
+        unlocked.add('badge-speed-runner');
+      }
+    }
+    if (_xpProgress.weeklyXpEarned >= 720) {
+      if (_awardBadgeIfAbsent('s1', 'badge-midnight-disciplined')) {
+        unlocked.add('badge-midnight-disciplined');
+      }
+    }
+    if (_completedSubjects.contains('computer-science') &&
+        _completedSubjects.contains('literature')) {
+      if (_awardBadgeIfAbsent('s1', 'badge-amharic-english')) {
+        unlocked.add('badge-amharic-english');
+      }
+    }
+    if (_completedSubjects.length >= 5) {
+      if (_awardBadgeIfAbsent('s1', 'badge-polymath-explorer')) {
+        unlocked.add('badge-polymath-explorer');
+      }
+    }
+    if ((_teamChallenge.progressCurrent + _xpProgress.weeklyXpEarned) >=
+        _teamChallenge.progressTarget) {
+      if (_awardBadgeIfAbsent('s1', 'badge-class-catalyst')) {
+        unlocked.add('badge-class-catalyst');
+      }
+    }
+    return unlocked;
+  }
+
+  bool _awardBadgeIfAbsent(String studentId, String badgeId) {
+    BadgeModel? badge;
+    for (final item in _badges) {
+      if (item.id == badgeId) {
+        badge = item;
+        break;
+      }
+    }
+    if (badge == null) return false;
+    final list = _studentBadgesById.putIfAbsent(studentId, () => []);
+    final exists = list.any((b) => b.badge.id == badgeId);
+    if (exists) return false;
+    list.add(
+      StudentBadgeModel(
+        studentId: studentId,
+        badge: badge,
+        awardedAt: DateTime.now(),
+      ),
+    );
+    return true;
+  }
+
+  int? _rankOf(String period, String studentId) {
+    final entries = _leaderboards[period] ?? const <LeaderboardEntry>[];
+    for (final entry in entries) {
+      if (entry.studentId == studentId) return entry.rank;
+    }
+    return null;
+  }
+
+  void _recalculateLeaderboardsForCurrentStudent() {
+    _upsertCurrentStudentScore(
+      period: 'weekly',
+      points: 240 + _xpProgress.weeklyXpEarned,
+    );
+    _upsertCurrentStudentScore(
+      period: 'monthly',
+      points: 1200 + (_xpProgress.totalXp ~/ 2),
+    );
+  }
+
+  void _upsertCurrentStudentScore({
+    required String period,
+    required int points,
+  }) {
+    final entries = List<LeaderboardEntry>.from(
+      _leaderboards[period] ?? const <LeaderboardEntry>[],
+    );
+    final index = entries.indexWhere((e) => e.studentId == 's1');
+    final updated = LeaderboardEntry(
+      studentId: 's1',
+      studentName: 'Sara Ahmed',
+      rank: 0,
+      points: points,
+      period: period == 'weekly'
+          ? LeaderboardPeriod.weekly
+          : LeaderboardPeriod.monthly,
+      calculatedAt: DateTime.now(),
+    );
+
+    if (index >= 0) {
+      entries[index] = updated;
+    } else {
+      entries.add(updated);
+    }
+
+    entries.sort((a, b) => b.points.compareTo(a.points));
+    _leaderboards[period] = List<LeaderboardEntry>.generate(entries.length, (
+      i,
+    ) {
+      final e = entries[i];
+      return LeaderboardEntry(
+        studentId: e.studentId,
+        studentName: e.studentName,
+        rank: i + 1,
+        points: e.points,
+        avatarUrl: e.avatarUrl,
+        scope: e.scope,
+        period: e.period,
+        calculatedAt: DateTime.now(),
+      );
+    });
   }
 
   @override

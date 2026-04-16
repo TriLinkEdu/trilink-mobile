@@ -22,8 +22,14 @@ class App extends StatelessWidget {
           return MaterialApp(
             title: 'TriLink',
             debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightThemeWith(fontFamily: font),
-            darkTheme: AppTheme.darkThemeWith(fontFamily: font),
+            theme: AppTheme.lightThemeWith(
+              fontFamily: font,
+              moodTheme: tn.effectiveMoodTheme,
+            ),
+            darkTheme: AppTheme.darkThemeWith(
+              fontFamily: font,
+              moodTheme: tn.effectiveMoodTheme,
+            ),
             themeMode: tn.themeMode,
             initialRoute: RouteNames.login,
             onGenerateRoute: AppRouter.onGenerateRoute,
@@ -31,9 +37,7 @@ class App extends StatelessWidget {
               final scale = tn.textScaleFactor;
               final mq = MediaQuery.of(context);
               return MediaQuery(
-                data: mq.copyWith(
-                  textScaler: TextScaler.linear(scale),
-                ),
+                data: mq.copyWith(textScaler: TextScaler.linear(scale)),
                 child: child!,
               );
             },

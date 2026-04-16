@@ -1,13 +1,56 @@
 class ApiConstants {
   ApiConstants._();
 
-  static const String baseUrl = 'http://localhost:4000/api';
+  static const String localBaseUrl = 'http://localhost:4000/api';
+  static const String productionBaseUrl =
+      'https://trilink-backend-ms68.onrender.com/api';
+  static const String productionDocsUrl =
+      'https://trilink-backend-ms68.onrender.com/api-docs';
+
+  // Usage:
+  // --dart-define=API_ENV=local      -> localBaseUrl
+  // --dart-define=API_ENV=production -> productionBaseUrl
+  // --dart-define=API_BASE_URL=...   -> explicit override
+  static String get baseUrl {
+    const overrideUrl = String.fromEnvironment(
+      'API_BASE_URL',
+      defaultValue: '',
+    );
+    if (overrideUrl.isNotEmpty) return overrideUrl;
+
+    const apiEnv = String.fromEnvironment('API_ENV', defaultValue: 'local');
+    return apiEnv.toLowerCase() == 'production'
+        ? productionBaseUrl
+        : localBaseUrl;
+  }
+
+  // Base URL without /api suffix for file downloads
+  static String get fileBaseUrl {
+    const overrideUrl = String.fromEnvironment(
+      'API_BASE_URL',
+      defaultValue: '',
+    );
+    if (overrideUrl.isNotEmpty) {
+      // Remove /api suffix if present
+      return overrideUrl.endsWith('/api') 
+          ? overrideUrl.substring(0, overrideUrl.length - 4)
+          : overrideUrl;
+    }
+
+    const apiEnv = String.fromEnvironment('API_ENV', defaultValue: 'local');
+    return apiEnv.toLowerCase() == 'production'
+        ? 'https://trilink-backend-ms68.onrender.com'
+        : 'http://localhost:4000';
+  }
 
   // Auth
   static const String login = '/auth/login';
   static const String refresh = '/auth/refresh';
   static const String me = '/auth/me';
   static const String changePassword = '/auth/change-password';
+  
+  // Users
+  static const String updateProfile = '/users/me';
 
   // Dashboard
   static const String dashboardTeacher = '/dashboard/teacher';
@@ -98,8 +141,7 @@ class ApiConstants {
 
   // Student profiles
   static const String myProfile = '/student-profiles/me';
-  static String studentProfile(String userId) =>
-      '/student-profiles/$userId';
+  static String studentProfile(String userId) => '/student-profiles/$userId';
 
   // AI
   static String aiRecommendations(String studentId) =>
@@ -107,4 +149,16 @@ class ApiConstants {
   static String aiLearningPath(String studentId) =>
       '/ai/students/$studentId/learning-path';
   static const String aiFeedbackAssistant = '/ai/feedback-assistant';
+
+  // ═══════════════════════════════════════════════════════
+  // ─── PARENT-SPECIFIC ENDPOINTS ─────────────────────────
+  // ═══════════════════════════════════════════════════════
+
+  // Parent-Children Links
+  static const String myChildren = '/parent-students/mychildren';
+
+  // Child Academic Data
+  static String childEnrollments(String studentId) =>
+      '/enrollments/children/$studentId';
+  static String childGoals(String studentId) => '/goals/students/$studentId';
 }

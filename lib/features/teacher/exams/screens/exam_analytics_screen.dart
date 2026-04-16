@@ -63,18 +63,22 @@ class _ExamAnalyticsScreenState extends State<ExamAnalyticsScreen> {
     for (final a in attempts) {
       final attempt = a as Map<String, dynamic>;
       final score = (attempt['score'] ?? attempt['totalScore'] ?? 0) as num;
-      final maxScore = (attempt['maxScore'] ?? attempt['totalMarks'] ?? 100) as num;
+      final maxScore =
+          (attempt['maxScore'] ?? attempt['totalMarks'] ?? 100) as num;
       final pct = maxScore > 0 ? (score / maxScore * 100).round() : 0;
       scores.add(pct);
 
       final student = attempt['student'] as Map<String, dynamic>?;
-      final name = student?['name'] ??
+      final name =
+          student?['name'] ??
           '${student?['firstName'] ?? ''} ${student?['lastName'] ?? ''}'.trim();
-      performers.add(_TopPerformer(
-        rank: 0,
-        name: name.isEmpty ? 'Student' : name,
-        score: pct,
-      ));
+      performers.add(
+        _TopPerformer(
+          rank: 0,
+          name: name.isEmpty ? 'Student' : name,
+          score: pct,
+        ),
+      );
     }
 
     scores.sort((a, b) => b.compareTo(a));
@@ -82,11 +86,13 @@ class _ExamAnalyticsScreenState extends State<ExamAnalyticsScreen> {
 
     final rankedPerformers = <_TopPerformer>[];
     for (int i = 0; i < math.min(5, performers.length); i++) {
-      rankedPerformers.add(_TopPerformer(
-        rank: i + 1,
-        name: performers[i].name,
-        score: performers[i].score,
-      ));
+      rankedPerformers.add(
+        _TopPerformer(
+          rank: i + 1,
+          name: performers[i].name,
+          score: performers[i].score,
+        ),
+      );
     }
 
     final avg = scores.isEmpty
@@ -94,15 +100,36 @@ class _ExamAnalyticsScreenState extends State<ExamAnalyticsScreen> {
         : scores.reduce((a, b) => a + b) / scores.length;
     final highest = scores.isEmpty ? 0 : scores.first;
     final passing = scores.where((s) => s >= 50).length;
-    final passRatePct =
-        scores.isEmpty ? 0 : (passing / scores.length * 100).round();
+    final passRatePct = scores.isEmpty
+        ? 0
+        : (passing / scores.length * 100).round();
 
     final ranges = [
-      _ScoreRange(label: '80-100', count: scores.where((s) => s >= 80).length, color: AppColors.secondary),
-      _ScoreRange(label: '60-80', count: scores.where((s) => s >= 60 && s < 80).length, color: AppColors.primary),
-      _ScoreRange(label: '40-60', count: scores.where((s) => s >= 40 && s < 60).length, color: AppColors.accent),
-      _ScoreRange(label: '20-40', count: scores.where((s) => s >= 20 && s < 40).length, color: Colors.orange),
-      _ScoreRange(label: '0-20', count: scores.where((s) => s < 20).length, color: AppColors.error),
+      _ScoreRange(
+        label: '80-100',
+        count: scores.where((s) => s >= 80).length,
+        color: AppColors.secondary,
+      ),
+      _ScoreRange(
+        label: '60-80',
+        count: scores.where((s) => s >= 60 && s < 80).length,
+        color: AppColors.primary,
+      ),
+      _ScoreRange(
+        label: '40-60',
+        count: scores.where((s) => s >= 40 && s < 60).length,
+        color: AppColors.accent,
+      ),
+      _ScoreRange(
+        label: '20-40',
+        count: scores.where((s) => s >= 20 && s < 40).length,
+        color: Colors.orange,
+      ),
+      _ScoreRange(
+        label: '0-20',
+        count: scores.where((s) => s < 20).length,
+        color: AppColors.error,
+      ),
     ];
 
     setState(() {
@@ -120,19 +147,20 @@ class _ExamAnalyticsScreenState extends State<ExamAnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Exam Analytics',
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.bold,
             fontSize: 17,
           ),
@@ -142,67 +170,74 @@ class _ExamAnalyticsScreenState extends State<ExamAnalyticsScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.error_outline,
-                          size: 48, color: Colors.grey.shade400),
-                      const SizedBox(height: 12),
-                      Text(_error!,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.grey.shade600)),
-                      const SizedBox(height: 16),
-                      OutlinedButton(
-                        onPressed: _loadData,
-                        child: const Text('Retry'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Colors.grey.shade400,
                   ),
-                )
-              : _totalSubmissions == 0
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.analytics_outlined,
-                              size: 48, color: Colors.grey.shade300),
-                          const SizedBox(height: 12),
-                          Text(
-                            'No submissions yet',
-                            style: TextStyle(
-                                fontSize: 16, color: Colors.grey.shade500),
-                          ),
-                        ],
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadData,
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildOverviewCards(),
-                            const SizedBox(height: 20),
-                            _buildScoreDistribution(),
-                            if (_questionAnalyses.isNotEmpty) ...[
-                              const SizedBox(height: 20),
-                              _buildPerQuestionAnalysis(),
-                            ],
-                            if (_topPerformers.isNotEmpty) ...[
-                              const SizedBox(height: 20),
-                              _buildTopPerformers(),
-                            ],
-                            if (_trendData.length > 1) ...[
-                              const SizedBox(height: 20),
-                              _buildPerformanceTrend(),
-                            ],
-                            const SizedBox(height: 24),
-                          ],
-                        ),
-                      ),
-                    ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _error!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 16),
+                  OutlinedButton(
+                    onPressed: _loadData,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          : _totalSubmissions == 0
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.analytics_outlined,
+                    size: 48,
+                    color: Colors.grey.shade300,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No submissions yet',
+                    style: TextStyle(fontSize: 16, color: Colors.grey.shade500),
+                  ),
+                ],
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _loadData,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildOverviewCards(),
+                    const SizedBox(height: 20),
+                    _buildScoreDistribution(),
+                    if (_questionAnalyses.isNotEmpty) ...[
+                      const SizedBox(height: 20),
+                      _buildPerQuestionAnalysis(),
+                    ],
+                    if (_topPerformers.isNotEmpty) ...[
+                      const SizedBox(height: 20),
+                      _buildTopPerformers(),
+                    ],
+                    if (_trendData.length > 1) ...[
+                      const SizedBox(height: 20),
+                      _buildPerformanceTrend(),
+                    ],
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            ),
     );
   }
 
@@ -254,10 +289,7 @@ class _ExamAnalyticsScreenState extends State<ExamAnalyticsScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-          ),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
         ],
       ),
       child: Column(
@@ -344,10 +376,7 @@ class _ExamAnalyticsScreenState extends State<ExamAnalyticsScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-          ),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
         ],
       ),
       child: Column(
@@ -417,8 +446,9 @@ class _ExamAnalyticsScreenState extends State<ExamAnalyticsScreen> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: q.difficultyColor
-                                    .withValues(alpha: 0.12),
+                                color: q.difficultyColor.withValues(
+                                  alpha: 0.12,
+                                ),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
@@ -446,8 +476,8 @@ class _ExamAnalyticsScreenState extends State<ExamAnalyticsScreen> {
                         color: q.avgScore >= 70
                             ? AppColors.secondary
                             : q.avgScore >= 50
-                                ? AppColors.accent
-                                : AppColors.error,
+                            ? AppColors.accent
+                            : AppColors.error,
                       ),
                     ),
                   ),
@@ -467,10 +497,7 @@ class _ExamAnalyticsScreenState extends State<ExamAnalyticsScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-          ),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
         ],
       ),
       child: Column(
@@ -563,10 +590,7 @@ class _ExamAnalyticsScreenState extends State<ExamAnalyticsScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-          ),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
         ],
       ),
       child: Column(
@@ -599,13 +623,12 @@ class _ExamAnalyticsScreenState extends State<ExamAnalyticsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: _trendData
-                .map((d) => Text(
-                      d.label,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey.shade500,
-                      ),
-                    ))
+                .map(
+                  (d) => Text(
+                    d.label,
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                  ),
+                )
                 .toList(),
           ),
         ],
@@ -619,11 +642,7 @@ class _ScoreRange {
   final int count;
   final Color color;
 
-  _ScoreRange({
-    required this.label,
-    required this.count,
-    required this.color,
-  });
+  _ScoreRange({required this.label, required this.count, required this.color});
 }
 
 class _QuestionAnalysis {
@@ -658,11 +677,7 @@ class _TopPerformer {
   final String name;
   final int score;
 
-  _TopPerformer({
-    required this.rank,
-    required this.name,
-    required this.score,
-  });
+  _TopPerformer({required this.rank, required this.name, required this.score});
 }
 
 class _TrendPoint {
@@ -693,10 +708,7 @@ class _OverviewCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-          ),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
         ],
       ),
       child: Column(
@@ -728,10 +740,7 @@ class _OverviewCard extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             title,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
           ),
         ],
       ),
@@ -824,11 +833,7 @@ class _TrendChartPainter extends CustomPainter {
     canvas.drawPath(linePath, linePaint);
 
     for (final p in points) {
-      canvas.drawCircle(
-        p,
-        4,
-        Paint()..color = Colors.white,
-      );
+      canvas.drawCircle(p, 4, Paint()..color = Colors.white);
       canvas.drawCircle(
         p,
         4,

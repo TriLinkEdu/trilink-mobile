@@ -179,7 +179,7 @@ class _NotificationsViewState extends State<_NotificationsView> {
                                         ? 'No unread notifications'
                                         : 'No notifications',
                                     subtitle: _filterIndex == 1
-                                        ? 'All caught up — nothing new!'
+                                        ? 'All caught up   nothing new!'
                                         : 'You are all caught up!',
                                   ),
                                 ),

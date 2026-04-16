@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'app_colors.dart';
+import 'theme_personalization.dart';
 import 'app_radius.dart';
 import 'app_text_styles.dart';
 
@@ -116,17 +117,34 @@ class AppTheme {
   static ThemeData get lightTheme => _build(Brightness.light);
   static ThemeData get darkTheme => _build(Brightness.dark);
 
-  static ThemeData lightThemeWith({String? fontFamily}) =>
-      _build(Brightness.light, fontFamily: fontFamily);
-  static ThemeData darkThemeWith({String? fontFamily}) =>
-      _build(Brightness.dark, fontFamily: fontFamily);
+  static ThemeData lightThemeWith({
+    String? fontFamily,
+    StudentMoodTheme moodTheme = StudentMoodTheme.focusBlue,
+  }) => _build(Brightness.light, fontFamily: fontFamily, moodTheme: moodTheme);
+  static ThemeData darkThemeWith({
+    String? fontFamily,
+    StudentMoodTheme moodTheme = StudentMoodTheme.focusBlue,
+  }) => _build(Brightness.dark, fontFamily: fontFamily, moodTheme: moodTheme);
 
-  static ThemeData _build(Brightness brightness, {String? fontFamily}) {
+  static ThemeData _build(
+    Brightness brightness, {
+    String? fontFamily,
+    StudentMoodTheme moodTheme = StudentMoodTheme.focusBlue,
+  }) {
     final isDark = brightness == Brightness.dark;
+    final seedColor = _seedForMood(moodTheme);
+    final hero = _heroGradientForMood(moodTheme, isDark);
+    final surfaceBase = isDark ? AppColors.darkSurface : AppColors.lightSurface;
+    final primaryContainer = Color.alphaBlend(
+      seedColor.withAlpha(isDark ? 92 : 46),
+      surfaceBase,
+    );
+    final onPrimary = _adaptiveOnColor(seedColor);
+    final onPrimaryContainer = _adaptiveOnColor(primaryContainer);
 
-    final colorScheme = isDark
+    final baseScheme = isDark
         ? ColorScheme.fromSeed(
-            seedColor: AppColors.primary,
+            seedColor: seedColor,
             brightness: Brightness.dark,
             surface: AppColors.darkSurface,
             onSurface: const Color(0xFFE2E8F0),
@@ -136,22 +154,24 @@ class AppTheme {
             outlineVariant: const Color(0xFF334155),
           )
         : ColorScheme.fromSeed(
-            seedColor: AppColors.primary,
+            seedColor: seedColor,
             brightness: Brightness.light,
             surface: AppColors.lightSurface,
             surfaceContainerLow: AppColors.lightSurfaceDim,
-          ).copyWith(
-            primary: const Color(0xFF2F8FFF),
-            primaryContainer: const Color(0xFFDDEEFF),
           );
+
+    final scaffoldBg = _scaffoldBackgroundForMood(seedColor, isDark);
+
+    final colorScheme = baseScheme.copyWith(
+      primary: seedColor,
+      onPrimary: onPrimary,
+      primaryContainer: primaryContainer,
+      onPrimaryContainer: onPrimaryContainer,
+    );
 
     final ext = isDark
         ? AppThemeExtension(
-            heroGradient: const LinearGradient(
-              colors: [Color(0xFF0E4DA4), Color(0xFF007A74)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            heroGradient: hero,
             streakGradient: AppGradients.streak,
             xpGradient: AppGradients.xp,
             levelGradient: AppGradients.level,
@@ -164,11 +184,7 @@ class AppTheme {
             glassBarrier: Colors.black54,
           )
         : AppThemeExtension(
-            heroGradient: const LinearGradient(
-              colors: [Color(0xFF2B8CFF), Color(0xFF3CB7FF)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            heroGradient: hero,
             streakGradient: AppGradients.streak,
             xpGradient: AppGradients.xp,
             levelGradient: AppGradients.level,
@@ -188,9 +204,7 @@ class AppTheme {
       textTheme: AppTextStyles.buildTextTheme(
         fontFamily ?? AppTextStyles.defaultFontFamily,
       ),
-      scaffoldBackgroundColor: isDark
-          ? AppColors.darkBackground
-          : AppColors.lightBackground,
+      scaffoldBackgroundColor: scaffoldBg,
       extensions: [ext],
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
@@ -240,15 +254,15 @@ class AppTheme {
       ),
       chipTheme: ChipThemeData(
         backgroundColor: colorScheme.surfaceContainerLow,
-        selectedColor: colorScheme.primaryContainer.withAlpha(150),
-        checkmarkColor: colorScheme.primary,
+        selectedColor: colorScheme.primaryContainer,
+        checkmarkColor: colorScheme.onPrimaryContainer,
         side: BorderSide(color: colorScheme.outlineVariant.withAlpha(130)),
         labelStyle: TextStyle(
           color: colorScheme.onSurfaceVariant,
           fontWeight: FontWeight.w600,
         ),
         secondaryLabelStyle: TextStyle(
-          color: colorScheme.primary,
+          color: colorScheme.onPrimaryContainer,
           fontWeight: FontWeight.w700,
         ),
         shape: RoundedRectangleBorder(borderRadius: AppRadius.borderFull),
@@ -346,5 +360,80 @@ class AppTheme {
         }),
       ),
     );
+  }
+
+  static Color _adaptiveOnColor(Color background) {
+    return ThemeData.estimateBrightnessForColor(background) == Brightness.dark
+        ? Colors.white
+        : const Color(0xFF0F172A);
+  }
+
+  static Color _scaffoldBackgroundForMood(Color seedColor, bool isDark) {
+    final base = isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final alpha = isDark ? 36 : 24;
+    return Color.alphaBlend(seedColor.withAlpha(alpha), base);
+  }
+
+  static Color _seedForMood(StudentMoodTheme moodTheme) {
+    switch (moodTheme) {
+      case StudentMoodTheme.focusBlue:
+        return const Color(0xFF2F8FFF);
+      case StudentMoodTheme.energyOrange:
+        return const Color(0xFFF97316);
+      case StudentMoodTheme.calmMint:
+        return const Color(0xFF14B8A6);
+      case StudentMoodTheme.sunsetCoral:
+        return const Color(0xFFFF6F61);
+      case StudentMoodTheme.midnightPurple:
+        return const Color(0xFF7C3AED);
+    }
+  }
+
+  static LinearGradient _heroGradientForMood(
+    StudentMoodTheme moodTheme,
+    bool isDark,
+  ) {
+    switch (moodTheme) {
+      case StudentMoodTheme.focusBlue:
+        return isDark
+            ? const LinearGradient(
+                colors: [Color(0xFF1E3A8A), Color(0xFF1D4ED8)],
+              )
+            : const LinearGradient(
+                colors: [Color(0xFF2B8CFF), Color(0xFF3CB7FF)],
+              );
+      case StudentMoodTheme.energyOrange:
+        return isDark
+            ? const LinearGradient(
+                colors: [Color(0xFF7C2D12), Color(0xFFB45309)],
+              )
+            : const LinearGradient(
+                colors: [Color(0xFFFF8A00), Color(0xFFF97316)],
+              );
+      case StudentMoodTheme.calmMint:
+        return isDark
+            ? const LinearGradient(
+                colors: [Color(0xFF0F766E), Color(0xFF0D9488)],
+              )
+            : const LinearGradient(
+                colors: [Color(0xFF2DD4BF), Color(0xFF14B8A6)],
+              );
+      case StudentMoodTheme.sunsetCoral:
+        return isDark
+            ? const LinearGradient(
+                colors: [Color(0xFF9A3412), Color(0xFFBE123C)],
+              )
+            : const LinearGradient(
+                colors: [Color(0xFFFF7E67), Color(0xFFFF5E78)],
+              );
+      case StudentMoodTheme.midnightPurple:
+        return isDark
+            ? const LinearGradient(
+                colors: [Color(0xFF4C1D95), Color(0xFF6D28D9)],
+              )
+            : const LinearGradient(
+                colors: [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
+              );
+    }
   }
 }

@@ -14,6 +14,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/pressable.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../../../../core/widgets/staggered_animation.dart';
+import '../../shared/widgets/student_page_background.dart';
 import '../../../auth/cubit/auth_cubit.dart';
 import '../widgets/student_shell_scope.dart';
 import '../cubit/dashboard_cubit.dart';
@@ -136,20 +137,9 @@ class _DashboardContent extends StatelessWidget {
         : 'Good evening';
     final userName = context.read<AuthCubit>().currentUser?.name ?? 'Student';
     final firstName = userName.split(' ').first;
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: isDark
-                ? const [Color(0xFF0A1628), Color(0xFF10243A)]
-                : const [Color(0xFFF0F8FF), Color(0xFFE6F4FF)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
+      body: StudentPageBackground(
         child: SafeArea(
           bottom: false,
           child: BrandedRefreshIndicator(
@@ -412,18 +402,18 @@ class _ActionPlanPreviewCard extends StatelessWidget {
 String _buildContextualGreeting(DashboardDataModel data) {
   final streak = data.stats.streakDays;
   if (streak >= 7) {
-    return "You're on a $streak-day streak — keep going!";
+    return "You're on a $streak-day streak   keep going!";
   }
 
   final next = data.nextUp;
   if (next != null && _isDueWithinDays(next.dueAt, DateTime.now(), 3)) {
     final typeLabel = _formatNextUpTypeLabel(next.type);
-    return 'You have an upcoming $typeLabel — stay prepared!';
+    return 'You have an upcoming $typeLabel   stay prepared!';
   }
 
   final highlight = data.recentGradeHighlight;
   if (highlight != null && highlight.scorePercent >= 85) {
-    return 'Great work on ${highlight.subjectName} — ${highlight.scorePercent}%!';
+    return 'Great work on ${highlight.subjectName}   ${highlight.scorePercent}%!';
   }
 
   return 'Ready to learn something new today?';

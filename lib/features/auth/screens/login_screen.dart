@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/network/api_exceptions.dart';
+
 import '../../../core/routes/route_names.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_shadows.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/theme_notifier.dart';
+
 import '../cubit/auth_cubit.dart';
 
 enum _Role { student, teacher, parent }
@@ -60,10 +62,10 @@ class _LoginScreenState extends State<LoginScreen>
     HapticFeedback.mediumImpact();
     try {
       await context.read<AuthCubit>().login(
-            email: _emailController.text.trim(),
-            password: _passwordController.text,
-            role: _selectedRole.name,
-          );
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        role: _selectedRole.name,
+      );
 
       if (!mounted) return;
       final route = switch (_selectedRole) {
@@ -74,34 +76,58 @@ class _LoginScreenState extends State<LoginScreen>
       Navigator.of(context).pushReplacementNamed(route);
     } catch (e) {
       if (!mounted) return;
+      final message = _friendlyError(e);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login failed: $e')),
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _handleOffline() async {
-    setState(() => _isLoading = true);
-    try {
-      await context.read<AuthCubit>().loginOffline();
-      if (!mounted) return;
-      Navigator.of(context).pushReplacementNamed(RouteNames.studentDashboard);
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Offline login failed: $e')),
-      );
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+  String _friendlyError(Object e) {
+    if (e is NetworkException) {
+      return 'No internet connection. Please check your network.';
     }
+    if (e is UnauthorizedException) {
+      return 'Invalid email or password.';
+    }
+    if (e is ApiException) {
+      return e.message;
+    }
+    return 'Something went wrong. Please try again.';
+  }
+
+  ({String email, String password}) _testCredentialsForRole(_Role role) {
+    return switch (role) {
+      _Role.student => (
+        email: 'nebiyumusbah378@gmail.com',
+        password: 'Student@123',
+      ),
+      _Role.parent => (email: 'musbahyesuf@gmail.com', password: 'Parent@123'),
+      _Role.teacher => (email: 'abduisa@gmail.com', password: 'Teacher@1234'),
+    };
+  }
+
+  void _useTestAccount({
+    required String email,
+    required String password,
+    required _Role role,
+  }) {
+    setState(() {
+      _selectedRole = role;
+      _emailController.text = email;
+      _passwordController.text = password;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       body: SafeArea(
@@ -112,15 +138,6 @@ class _LoginScreenState extends State<LoginScreen>
               key: _formKey,
               child: Column(
                 children: [
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: IconButton(
-                      onPressed: () => ThemeNotifier.instance.toggle(),
-                      icon: Icon(
-                        isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                      ),
-                    ),
-                  ),
                   ScaleTransition(
                     scale: _logoScale,
                     child: Container(
@@ -131,11 +148,18 @@ class _LoginScreenState extends State<LoginScreen>
                         borderRadius: BorderRadius.circular(AppRadius.xl),
                         boxShadow: AppShadows.glow(AppColors.primary),
                       ),
-                      child: const Icon(Icons.school_rounded, color: Colors.white, size: 44),
+                      child: const Icon(
+                        Icons.school_rounded,
+                        color: Colors.white,
+                        size: 44,
+                      ),
                     ),
                   ),
                   AppSpacing.gapXl,
-                  Text('Welcome to TriLink', style: theme.textTheme.headlineSmall),
+                  Text(
+                    'Welcome to TriLink',
+                    style: theme.textTheme.headlineSmall,
+                  ),
                   AppSpacing.gapXs,
                   Text(
                     'Learn smarter, grow faster',
@@ -149,13 +173,7 @@ class _LoginScreenState extends State<LoginScreen>
                   _buildEmail(theme),
                   AppSpacing.gapMd,
                   _buildPassword(theme),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () => Navigator.of(context).pushNamed(RouteNames.forgotPassword),
-                      child: const Text('Forgot password?'),
-                    ),
-                  ),
+                  AppSpacing.gapMd,
                   SizedBox(
                     width: double.infinity,
                     height: 52,
@@ -170,24 +188,8 @@ class _LoginScreenState extends State<LoginScreen>
                           : const Text('LOG IN'),
                     ),
                   ),
-                  AppSpacing.gapSm,
-                  TextButton(
-                    onPressed: _isLoading ? null : _handleOffline,
-                    child: const Text('Continue offline'),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        "Don't have an account?",
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pushNamed(RouteNames.register),
-                        child: const Text('Sign Up'),
-                      ),
-                    ],
-                  ),
+                  AppSpacing.gapLg,
+                  _buildTestAccounts(theme),
                 ],
               ),
             ),
@@ -216,7 +218,9 @@ class _LoginScreenState extends State<LoginScreen>
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: isSelected ? theme.colorScheme.primary : Colors.transparent,
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Center(
@@ -226,7 +230,9 @@ class _LoginScreenState extends State<LoginScreen>
                       color: isSelected
                           ? theme.colorScheme.onPrimary
                           : theme.colorScheme.onSurfaceVariant,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                     ),
                   ),
                 ),
@@ -247,7 +253,8 @@ class _LoginScreenState extends State<LoginScreen>
         prefixIcon: Icon(Icons.email_outlined),
       ),
       validator: (value) {
-        if (value == null || value.trim().isEmpty) return 'Please enter your email';
+        if (value == null || value.trim().isEmpty)
+          return 'Please enter your email';
         return null;
       },
     );
@@ -263,7 +270,9 @@ class _LoginScreenState extends State<LoginScreen>
         suffixIcon: IconButton(
           onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
           icon: Icon(
-            _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+            _obscurePassword
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
           ),
         ),
       ),
@@ -271,6 +280,74 @@ class _LoginScreenState extends State<LoginScreen>
         if (value == null || value.isEmpty) return 'Please enter your password';
         return null;
       },
+    );
+  }
+
+  Widget _buildTestAccounts(ThemeData theme) {
+    final creds = _testCredentialsForRole(_selectedRole);
+    final roleLabel =
+        _selectedRole.name[0].toUpperCase() + _selectedRole.name.substring(1);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: AppRadius.borderMd,
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Test Accounts',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          AppSpacing.gapXs,
+          Text(
+            'Selected role: $roleLabel. Tap to auto-fill this role credentials.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          AppSpacing.gapSm,
+          InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: () => _useTestAccount(
+              email: creds.email,
+              password: creds.password,
+              role: _selectedRole,
+            ),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: theme.colorScheme.outlineVariant),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.bug_report_outlined,
+                    size: 18,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '$roleLabel  •  ${creds.email}  •  ${creds.password}',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

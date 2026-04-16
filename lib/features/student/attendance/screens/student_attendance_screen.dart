@@ -13,6 +13,7 @@ import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_shadows.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/student_page_background.dart';
 import '../cubit/attendance_cubit.dart';
 import '../models/attendance_model.dart' as am;
 import '../repositories/student_attendance_repository.dart';
@@ -159,16 +160,7 @@ class _AttendanceViewState extends State<_AttendanceView> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: theme.brightness == Brightness.dark
-                ? const [Color(0xFF0A1526), Color(0xFF10273D)]
-                : const [Color(0xFFF0F8FF), Color(0xFFE6F4FF)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
+      body: StudentPageBackground(
         child: SafeArea(
           child: Column(
             children: [
