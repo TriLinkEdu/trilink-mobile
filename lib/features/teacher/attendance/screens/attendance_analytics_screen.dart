@@ -39,7 +39,10 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
       });
 
       final yearData = await ApiService().getActiveAcademicYear();
-      final yearId = yearData['id'] as String;
+      final yearId = (yearData['id'] ?? yearData['data']?['id']) as String?;
+      if (yearId == null) {
+        throw Exception('No active academic year found');
+      }
       final offerings = await ApiService().getMyClassOfferings(yearId);
 
       if (!mounted) return;
