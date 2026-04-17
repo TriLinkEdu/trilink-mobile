@@ -23,12 +23,15 @@ import '../../features/student/assignments/repositories/student_assignments_repo
 import '../../features/student/assignments/repositories/mock_student_assignments_repository.dart';
 import '../../features/student/chat/repositories/student_chat_repository.dart';
 import '../../features/student/chat/repositories/mock_student_chat_repository.dart';
+import '../../features/student/chat/repositories/real_student_chat_repository.dart';
 import '../../features/student/calendar/repositories/student_calendar_repository.dart';
 import '../../features/student/calendar/repositories/mock_student_calendar_repository.dart';
 import '../../features/student/notifications/repositories/student_notifications_repository.dart';
 import '../../features/student/notifications/repositories/mock_student_notifications_repository.dart';
+import '../../features/student/notifications/repositories/real_student_notifications_repository.dart';
 import '../../features/student/announcements/repositories/student_announcements_repository.dart';
 import '../../features/student/announcements/repositories/mock_student_announcements_repository.dart';
+import '../../features/student/announcements/repositories/real_student_announcements_repository.dart';
 import '../../features/student/feedback/repositories/student_feedback_repository.dart';
 import '../../features/student/feedback/repositories/mock_student_feedback_repository.dart';
 import '../../features/student/gamification/repositories/student_gamification_repository.dart';
@@ -99,16 +102,22 @@ Future<void> initDependencies() async {
     () => MockStudentAssignmentsRepository(),
   );
   sl.registerLazySingleton<StudentChatRepository>(
-    () => MockStudentChatRepository(),
+    () => useRealStudentData
+        ? RealStudentChatRepository(storageService: sl<StorageService>())
+        : MockStudentChatRepository(),
   );
   sl.registerLazySingleton<StudentCalendarRepository>(
     () => MockStudentCalendarRepository(),
   );
   sl.registerLazySingleton<StudentNotificationsRepository>(
-    () => MockStudentNotificationsRepository(),
+    () => useRealStudentData
+        ? RealStudentNotificationsRepository()
+        : MockStudentNotificationsRepository(),
   );
   sl.registerLazySingleton<StudentAnnouncementsRepository>(
-    () => MockStudentAnnouncementsRepository(),
+    () => useRealStudentData
+        ? RealStudentAnnouncementsRepository()
+        : MockStudentAnnouncementsRepository(),
   );
   sl.registerLazySingleton<StudentFeedbackRepository>(
     () => MockStudentFeedbackRepository(),

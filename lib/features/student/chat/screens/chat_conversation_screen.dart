@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/services/storage_service.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/error_widget.dart';
@@ -51,12 +52,25 @@ class _ChatConversationView extends StatefulWidget {
 }
 
 class _ChatConversationViewState extends State<_ChatConversationView> {
-  static const String _currentUserId = 'student1';
-
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isSending = false;
   Timer? _autoReplyTimer;
+  String _currentUserId = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentUserId();
+  }
+
+  Future<void> _loadCurrentUserId() async {
+    final user = await sl<StorageService>().getUser();
+    if (!mounted) return;
+    setState(() {
+      _currentUserId = (user?['id'] ?? '').toString();
+    });
+  }
 
   @override
   void dispose() {

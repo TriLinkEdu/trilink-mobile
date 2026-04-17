@@ -6,6 +6,7 @@ import 'package:trilink_mobile/core/widgets/empty_state_widget.dart';
 import 'package:trilink_mobile/core/widgets/illustrations.dart';
 import 'package:trilink_mobile/core/widgets/error_widget.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/services/storage_service.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../../gamification/screens/quiz_result_screen.dart';
@@ -87,7 +88,7 @@ class _ExamAttemptQuestions extends StatefulWidget {
 }
 
 class _ExamAttemptQuestionsState extends State<_ExamAttemptQuestions> {
-  static const String _currentUserId = 'student1';
+  String _currentUserId = '';
   int _currentQuestionIndex = 0;
   final Map<String, int> _answers = {};
 
@@ -103,13 +104,23 @@ class _ExamAttemptQuestionsState extends State<_ExamAttemptQuestions> {
     if (widget.exam.isTimeLimited) {
       _timer = Timer.periodic(const Duration(seconds: 1), _onTick);
     }
-    _startAttempt();
+    _initAttempt();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _initAttempt() async {
+    final user = await sl<StorageService>().getUser();
+    final userId = (user?['id'] ?? '').toString();
+    if (!mounted) return;
+    setState(() => _currentUserId = userId);
+    if (_currentUserId.isNotEmpty) {
+      await _startAttempt();
+    }
   }
 
   Future<void> _startAttempt() async {
