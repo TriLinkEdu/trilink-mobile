@@ -7,7 +7,7 @@ import '../services/feature_flags.dart';
 import '../theme/theme_notifier.dart';
 import '../../features/auth/cubit/auth_cubit.dart';
 import '../../features/auth/repositories/auth_repository.dart';
-import '../../features/auth/repositories/mock_auth_repository.dart';
+import '../../features/auth/repositories/real_auth_repository.dart';
 import '../../features/student/dashboard/repositories/student_dashboard_repository.dart';
 import '../../features/student/dashboard/repositories/mock_student_dashboard_repository.dart';
 import '../../features/student/dashboard/repositories/real_student_dashboard_repository.dart';
@@ -66,7 +66,7 @@ Future<void> initDependencies() async {
   );
 
   // ── Auth ──
-  sl.registerLazySingleton<AuthRepository>(() => MockAuthRepository());
+  sl.registerLazySingleton<AuthRepository>(() => RealAuthRepository());
   sl.registerLazySingleton<AuthCubit>(
     () => AuthCubit(repository: sl<AuthRepository>()),
   );

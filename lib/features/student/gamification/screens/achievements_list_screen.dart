@@ -19,9 +19,8 @@ class AchievementsListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-          AchievementsListCubit(sl<StudentGamificationRepository>())
-            ..loadAchievements(),
+      create: (_) => AchievementsListCubit(sl<StudentGamificationRepository>())
+        ..loadAchievements(),
       child: const _AchievementsListView(),
     );
   }
@@ -48,6 +47,7 @@ class _AchievementsListView extends StatelessWidget {
                 child: ShimmerList(itemCount: 6, itemHeight: 72),
               );
             }
+
             final unlocked = state.achievements
                 .where((a) => a.isUnlocked)
                 .toList();
@@ -117,8 +117,7 @@ class _AchievementsListView extends StatelessWidget {
                 ),
                 AppSpacing.gapSm,
                 for (final category in AchievementCategory.values)
-                  if ((grouped[category] ?? const <AchievementModel>[])
-                      .isNotEmpty)
+                  if ((grouped[category] ?? const <AchievementModel>[]).isNotEmpty)
                     _CategoryProgressCard(
                       category: category,
                       achievements: grouped[category]!,

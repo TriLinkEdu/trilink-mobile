@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart' as intl;
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/routes/student_shell_routes.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/celebration_overlay.dart';
 import '../../../student/chat/screens/student_chat_screen.dart';
@@ -118,6 +120,9 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
         child: CelebrationOverlay(
           child: Scaffold(
             key: _scaffoldKey,
+            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.darkBackground
+                : const Color(0xFFF2FAFF),
             drawer: StudentDrawer(homeNavigatorKey: _navigatorKeys[0]),
             drawerEnableOpenDragGesture: _showShellChrome,
             body: Column(
@@ -256,6 +261,8 @@ class _ShellTopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final top = MediaQuery.of(context).padding.top;
+    final now = DateTime.now();
+    final dateStr = intl.DateFormat('EEEE, MMM d').format(now);
     final bg = Color.alphaBlend(
       theme.colorScheme.primary.withAlpha(
         theme.brightness == Brightness.dark ? 12 : 6,
@@ -275,7 +282,7 @@ class _ShellTopBar extends StatelessWidget {
         ),
       ),
       child: SizedBox(
-        height: 52,
+        height: 66,
         child: Row(
           children: [
             GestureDetector(
@@ -302,22 +309,49 @@ class _ShellTopBar extends StatelessWidget {
                 builder: (_, title, _) {
                   return AnimatedSwitcher(
                     duration: const Duration(milliseconds: 200),
-                    child: Text(
-                      title,
+                    child: Column(
                       key: ValueKey(title),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: theme.colorScheme.onSurface,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          dateStr,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        Text(
+                          title,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.colorScheme.onSurface,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 },
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.notifications_outlined, size: 22),
-              onPressed: onNotificationsTap,
-              tooltip: 'Notifications',
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: Color.alphaBlend(
+                  theme.colorScheme.primary.withAlpha(
+                    theme.brightness == Brightness.dark ? 14 : 4,
+                  ),
+                  theme.colorScheme.surface,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: theme.colorScheme.outlineVariant.withAlpha(110),
+                ),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.notifications_outlined, size: 22),
+                onPressed: onNotificationsTap,
+                tooltip: 'Notifications',
+              ),
             ),
             IconButton(
               icon: const Icon(Icons.settings_outlined, size: 22),

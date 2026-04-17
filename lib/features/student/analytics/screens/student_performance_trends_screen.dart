@@ -53,16 +53,14 @@ class _StudentPerformanceTrendsView extends StatelessWidget {
               return AppErrorWidget(
                 message:
                     state.errorMessage ?? 'Unable to load performance trends.',
-                onRetry: () =>
-                    context.read<PerformanceTrendsCubit>().loadTrends(),
+                onRetry: () => context.read<PerformanceTrendsCubit>().loadTrends(),
               );
             }
 
             final trends = state.trends!;
 
             return BrandedRefreshIndicator(
-              onRefresh: () =>
-                  context.read<PerformanceTrendsCubit>().loadTrends(),
+              onRefresh: () => context.read<PerformanceTrendsCubit>().loadTrends(),
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 physics: const AlwaysScrollableScrollPhysics(),

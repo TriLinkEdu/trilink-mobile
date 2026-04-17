@@ -47,3 +47,4 @@ app.*.map.json
 # Local planning docs
 page_implementation_checklist.md
 TriLink_Senior_project_FInaL.md
+/docs 

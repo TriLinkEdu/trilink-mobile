@@ -63,13 +63,22 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
     try {
       setState(() { _loading = true; _error = null; });
 
-      final dashboard = await ApiService().getParentDashboard();
-      _linkedChildren = ((dashboard['linkedChildren'] as List<dynamic>?) ?? [])
-          .cast<Map<String, dynamic>>();
+      // Use new API to get children
+      final children = await ApiService().getMyChildren();
+      _linkedChildren = children.map<Map<String, dynamic>>((child) {
+        final student = child['student'] as Map<String, dynamic>?;
+        return {
+          'id': child['id'],
+          'studentId': student?['id'] ?? child['studentId'],
+          'firstName': student?['firstName'] ?? child['firstName'],
+          'lastName': student?['lastName'] ?? child['lastName'],
+          'fullName': '${student?['firstName'] ?? ''} ${student?['lastName'] ?? ''}'.trim(),
+        };
+      }).toList();
 
       if (widget.studentId != null && _linkedChildren.isNotEmpty) {
         final idx = _linkedChildren.indexWhere(
-            (c) => (c['studentId'] ?? c['id']) == widget.studentId);
+            (c) => c['studentId'] == widget.studentId);
         if (idx >= 0) _selectedChildIndex = idx;
       }
 
@@ -150,69 +159,13 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Attendance Record',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.bold,
-                fontSize: 17,
-              ),
-            ),
-            if (_linkedChildren.length > 1) ...[
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedChildIndex =
-                        (_selectedChildIndex + 1) % _linkedChildren.length;
-                  });
-                  _loadAttendance();
-                },
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CircleAvatar(
-                        radius: 10,
-                        backgroundColor: AppColors.primary,
-                        child: Text(
-                          _displayedChildName
-                              .split(' ')
-                              .map((w) => w[0])
-                              .take(2)
-                              .join(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 8,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        _displayedChildName,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const Icon(Icons.keyboard_arrow_down, size: 16),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ],
+        title: const Text(
+          'Attendance Record',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.bold,
+            fontSize: 17,
+          ),
         ),
         centerTitle: false,
       ),

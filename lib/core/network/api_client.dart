@@ -156,7 +156,12 @@ class ApiClient {
     final data = e.response?.data;
     String message = 'Something went wrong';
     if (data is Map<String, dynamic>) {
-      message = (data['message'] as String?) ?? message;
+      final raw = data['message'];
+      if (raw is String) {
+        message = raw;
+      } else if (raw is List) {
+        message = raw.join(', ');
+      }
     }
     if (statusCode == 401) return UnauthorizedException(message: message);
     return ApiException(message: message, statusCode: statusCode);
