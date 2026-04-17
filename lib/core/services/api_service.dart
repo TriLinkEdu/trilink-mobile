@@ -357,7 +357,11 @@ class ApiService {
 
   /// Upload profile image and return uploaded file id.
   Future<String> uploadProfileImage(File file) async {
-    return await _tryOr(() async {
+    if (!FeatureFlags.useRealApi) {
+      return 'mock-profile-image-file-id';
+    }
+
+    try {
       final formData = FormData.fromMap({
         'file': await MultipartFile.fromFile(
           file.path,
@@ -390,7 +394,9 @@ class ApiService {
       }
 
       throw Exception('Upload succeeded but file id was not returned.');
-    }, 'mock-profile-image-file-id'); // Return mock file ID as fallback
+    } catch (e) {
+      rethrow;
+    }
   }
 
   // ─── Feedback ───────────────────────────────────────────

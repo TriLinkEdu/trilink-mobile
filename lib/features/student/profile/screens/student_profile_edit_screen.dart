@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/pressable.dart';
+import '../../../../core/widgets/error_widget.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../../../core/services/api_service.dart';
 import '../../shared/widgets/student_page_background.dart';
 import '../../../auth/cubit/auth_cubit.dart';
 import '../repositories/student_profile_repository.dart';
@@ -24,6 +28,9 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
   late final TextEditingController _phoneController;
   bool _isLoading = false;
   bool _isSaving = false;
+  String? _loadError;
+  File? _selectedImage;
+  final ImagePicker _imagePicker = ImagePicker();
 
   @override
   void initState() {
@@ -43,10 +50,18 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
         _nameController.text = user.name;
         _emailController.text = user.email;
         _phoneController.text = user.phone ?? '';
-        setState(() => _isLoading = false);
+        setState(() {
+          _isLoading = false;
+          _loadError = null;
+        });
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _loadError = 'Unable to load profile.';
+        });
+      }
     }
   }
 
@@ -56,18 +71,29 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
     final authCubit = context.read<AuthCubit>();
     setState(() => _isSaving = true);
     try {
+      String? profileImageFileId;
+      if (_selectedImage != null) {
+        profileImageFileId = await ApiService().uploadProfileImage(
+          _selectedImage!,
+        );
+      }
+
       final updated = await _repo.updateProfile(
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
         phone: _phoneController.text.trim(),
+        avatarUrl: profileImageFileId,
       );
       authCubit.updateUser(updated);
       if (mounted) {
-        setState(() => _isSaving = false);
+        setState(() {
+          _isSaving = false;
+          _selectedImage = null;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Profile updated successfully')),
         );
-        Navigator.pop(context, true);
+        Navigator.pop(context, updated);
       }
     } catch (e) {
       if (mounted) {
@@ -85,6 +111,26 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
     _emailController.dispose();
     _phoneController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final picked = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 80,
+      );
+      if (picked == null || !mounted) return;
+      setState(() {
+        _selectedImage = File(picked.path);
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to pick image: $e')));
+    }
   }
 
   @override
@@ -112,6 +158,8 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
       body: StudentPageBackground(
         child: _isLoading
             ? const Padding(padding: EdgeInsets.all(24), child: ShimmerList())
+            : _loadError != null
+            ? AppErrorWidget(message: _loadError!, onRetry: _loadProfile)
             : SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: Form(
@@ -119,26 +167,23 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
                   child: Column(
                     children: [
                       Pressable(
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Photo picker will use device camera/gallery when integrated',
-                              ),
-                            ),
-                          );
-                        },
+                        onTap: _pickImage,
                         child: Stack(
                           children: [
                             CircleAvatar(
                               radius: 50,
                               backgroundColor:
                                   theme.colorScheme.primaryContainer,
-                              child: Icon(
-                                Icons.person,
-                                size: 50,
-                                color: theme.colorScheme.primary,
-                              ),
+                              backgroundImage: _selectedImage != null
+                                  ? FileImage(_selectedImage!)
+                                  : null,
+                              child: _selectedImage == null
+                                  ? Icon(
+                                      Icons.person,
+                                      size: 50,
+                                      color: theme.colorScheme.primary,
+                                    )
+                                  : null,
                             ),
                             Positioned(
                               bottom: 0,

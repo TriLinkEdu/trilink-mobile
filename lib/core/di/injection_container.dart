@@ -19,6 +19,7 @@ import '../../features/student/attendance/repositories/mock_student_attendance_r
 import '../../features/student/attendance/repositories/real_student_attendance_repository.dart';
 import '../../features/student/profile/repositories/student_profile_repository.dart';
 import '../../features/student/profile/repositories/mock_student_profile_repository.dart';
+import '../../features/student/profile/repositories/real_student_profile_repository.dart';
 import '../../features/student/assignments/repositories/student_assignments_repository.dart';
 import '../../features/student/assignments/repositories/mock_student_assignments_repository.dart';
 import '../../features/student/chat/repositories/student_chat_repository.dart';
@@ -96,7 +97,9 @@ Future<void> initDependencies() async {
         : MockStudentAttendanceRepository(),
   );
   sl.registerLazySingleton<StudentProfileRepository>(
-    () => MockStudentProfileRepository(),
+    () => useRealStudentData
+        ? RealStudentProfileRepository(storageService: sl<StorageService>())
+        : MockStudentProfileRepository(),
   );
   sl.registerLazySingleton<StudentAssignmentsRepository>(
     () => MockStudentAssignmentsRepository(),
