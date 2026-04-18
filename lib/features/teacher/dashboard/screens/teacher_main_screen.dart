@@ -209,41 +209,6 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                     );
                   },
                 ),
-                _DrawerItem(
-                  icon: Icons.quiz_outlined,
-                  label: 'Exams',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushNamed(context, RouteNames.teacherExams);
-                  },
-                ),
-                _DrawerItem(
-                  icon: Icons.add_circle_outline,
-                  label: 'Create Exam',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushNamed(context, RouteNames.teacherCreateExam);
-                  },
-                ),
-                _DrawerItem(
-                  icon: Icons.library_books_outlined,
-                  label: 'Question Bank',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushNamed(context, RouteNames.teacherExamBank);
-                  },
-                ),
-                _DrawerItem(
-                  icon: Icons.grading_outlined,
-                  label: 'Evaluate Submissions',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushNamed(
-                      context,
-                      RouteNames.teacherEvaluateSubmissions,
-                    );
-                  },
-                ),
                 const Divider(height: 1),
                 _DrawerSection(title: 'COMMUNICATION'),
                 _DrawerItem(
