@@ -5,8 +5,8 @@ import '../../../../core/widgets/offline_banner.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../auth/services/auth_service.dart';
 import '../../attendance/screens/teacher_attendance_screen.dart';
-import '../../exams/screens/create_exam_screen.dart';
 import '../../announcements/screens/create_announcement_screen.dart';
+import '../../classes/screens/class_list_screen.dart';
 
 class TeacherDashboardScreen extends StatefulWidget {
   const TeacherDashboardScreen({super.key});
@@ -358,13 +358,13 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               },
             ),
             _QuickActionButton(
-              icon: Icons.quiz_outlined,
-              label: 'Create\nExam',
+              icon: Icons.class_outlined,
+              label: 'My\nClasses',
               color: AppColors.secondary,
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const CreateExamScreen()),
+                  MaterialPageRoute(builder: (_) => const ClassListScreen()),
                 );
               },
             ),
