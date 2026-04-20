@@ -127,6 +127,7 @@ class ApiConstants {
 
   // Feedback
   static const String feedback = '/feedback';
+  static const String feedbackMe = '/feedback/me';
 
   // Reports
   static String studentPerformance(String studentId) =>
