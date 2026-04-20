@@ -39,6 +39,7 @@ import '../../features/student/gamification/repositories/student_gamification_re
 import '../../features/student/gamification/repositories/mock_student_gamification_repository.dart';
 import '../../features/student/exams/repositories/student_exams_repository.dart';
 import '../../features/student/exams/repositories/mock_student_exams_repository.dart';
+import '../../features/student/exams/repositories/real_student_exams_repository.dart';
 import '../../features/student/courses/repositories/student_courses_repository.dart';
 import '../../features/student/courses/repositories/mock_student_courses_repository.dart';
 import '../../features/student/courses/repositories/student_curriculum_repository.dart';
@@ -129,7 +130,9 @@ Future<void> initDependencies() async {
     () => MockStudentGamificationRepository(sl<StudentProgressRepository>()),
   );
   sl.registerLazySingleton<StudentExamsRepository>(
-    () => MockStudentExamsRepository(),
+    () => useRealStudentData
+        ? RealStudentExamsRepository()
+        : MockStudentExamsRepository(),
   );
   sl.registerLazySingleton<StudentCoursesRepository>(
     () => MockStudentCoursesRepository(),

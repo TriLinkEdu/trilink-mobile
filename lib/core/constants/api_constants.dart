@@ -106,6 +106,8 @@ class ApiConstants {
   static String attemptRelease(String id) => '/attempts/$id/release';
   static String attemptForGrader(String id) => '/attempts/$id/for-grader';
   static String attemptResult(String id) => '/attempts/$id/result';
+  static String attemptAnswers(String id) => '/attempts/$id/answers';
+  static String attemptSubmit(String id) => '/attempts/$id/submit';
 
   // Notifications
   static const String notifications = '/notifications';

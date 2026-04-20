@@ -64,10 +64,27 @@ class ExamAttemptCubit extends Cubit<ExamAttemptState> {
 
     try {
       final attemptId = state.attemptId;
-      if (attemptId != null) {
-        await _repository.submitAttempt(attemptId, answers);
+      if (attemptId == null || attemptId.isEmpty) {
+        throw StateError('Exam attempt is not initialized.');
       }
-      final result = await _repository.submitExam(exam.id, answers);
+
+      final attempt = await _repository.submitAttempt(attemptId, answers);
+      final score = attempt.score ?? 0;
+      final totalQuestions = exam.questions.length;
+      final scorePercent = score.clamp(0, 100).toDouble();
+      final correct = ((scorePercent / 100) * totalQuestions).round();
+      final xp = (scorePercent * 0.5).round();
+
+      final result = ExamResultModel(
+        examId: exam.id,
+        examTitle: exam.title,
+        totalQuestions: totalQuestions,
+        correctAnswers: correct,
+        score: scorePercent,
+        xpEarned: xp,
+        answerMap: answers,
+      );
+
       emit(state.copyWith(submissionStatus: ExamSubmissionStatus.success));
       return result;
     } catch (e) {
