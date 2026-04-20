@@ -45,18 +45,26 @@ class RealStudentNotificationsRepository
   @override
   Future<void> markAsRead(String id) async {
     await _api.patch(ApiConstants.notificationRead(id));
+    _cache = _cache
+        ?.map((item) => item.id == id ? item.copyWith(isRead: true) : item)
+        .toList();
+    _fetchedAt = DateTime.now();
   }
 
   @override
   Future<void> markAsUnread(String id) async {
-    // Backend currently supports read + read-all only.
-    // Keep this as a no-op to avoid breaking UI toggle flows.
-    return;
+    await _api.patch(ApiConstants.notificationUnread(id));
+    _cache = _cache
+        ?.map((item) => item.id == id ? item.copyWith(isRead: false) : item)
+        .toList();
+    _fetchedAt = DateTime.now();
   }
 
   @override
   Future<void> markAllAsRead() async {
     await _api.post(ApiConstants.notificationsReadAll);
+    _cache = _cache?.map((item) => item.copyWith(isRead: true)).toList();
+    _fetchedAt = DateTime.now();
   }
 
   NotificationModel _toNotification(Map<String, dynamic> raw) {

@@ -34,23 +34,31 @@ class RealStudentCalendarRepository implements StudentCalendarRepository {
     final cached = _cache.where((e) => e.id == id);
     if (cached.isNotEmpty) return cached.first;
 
-    final now = DateTime.now();
-    final rows = await _api.getList(
-      ApiConstants.calendarEvents,
-      queryParameters: {
-        'from': _dateOnly(DateTime(now.year - 1, now.month, now.day)),
-        'to': _dateOnly(DateTime(now.year + 1, now.month, now.day)),
-      },
-    );
-    final events = rows
-        .whereType<Map<String, dynamic>>()
-        .map(_mapEvent)
-        .toList();
-    _cache = events;
+    try {
+      final raw = await _api.get('${ApiConstants.calendarEvents}/$id');
+      final event = _mapEvent(raw);
+      _cache = [..._cache.where((e) => e.id != event.id), event];
+      return event;
+    } catch (_) {
+      // Fallback for older backend deployments without /calendar-events/:id
+      final now = DateTime.now();
+      final rows = await _api.getList(
+        ApiConstants.calendarEvents,
+        queryParameters: {
+          'from': _dateOnly(DateTime(now.year - 1, now.month, now.day)),
+          'to': _dateOnly(DateTime(now.year + 1, now.month, now.day)),
+        },
+      );
+      final events = rows
+          .whereType<Map<String, dynamic>>()
+          .map(_mapEvent)
+          .toList();
+      _cache = events;
 
-    final match = events.where((e) => e.id == id);
-    if (match.isNotEmpty) return match.first;
-    throw StateError('Event not found');
+      final match = events.where((e) => e.id == id);
+      if (match.isNotEmpty) return match.first;
+      throw StateError('Event not found');
+    }
   }
 
   CalendarEventModel _mapEvent(Map<String, dynamic> raw) {

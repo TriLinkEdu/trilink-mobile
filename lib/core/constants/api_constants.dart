@@ -112,6 +112,7 @@ class ApiConstants {
   // Notifications
   static const String notifications = '/notifications';
   static String notificationRead(String id) => '/notifications/$id/read';
+  static String notificationUnread(String id) => '/notifications/$id/unread';
   static const String notificationsReadAll = '/notifications/read-all';
 
   // Chat
