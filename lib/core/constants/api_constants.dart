@@ -170,4 +170,10 @@ class ApiConstants {
   static String childEnrollments(String studentId) =>
       '/enrollments/children/$studentId';
   static String childGoals(String studentId) => '/goals/students/$studentId';
+  static const String myGoals = '/goals/me';
+  static String goalById(String goalId) => '/goals/$goalId';
+
+  // Student reports
+  static String studentReport(String studentId) =>
+      '/reports/students/$studentId/report';
 }

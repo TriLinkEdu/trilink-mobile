@@ -115,6 +115,12 @@ class StudentDrawer extends StatelessWidget {
                   color: theme.colorScheme.primary,
                   onTap: () => _navigate(context, RouteNames.studentExams),
                 ),
+                _DrawerItem(
+                  icon: Icons.flag_rounded,
+                  label: 'Goals & Progress',
+                  color: AppColors.achievementEmerald,
+                  onTap: () => _navigate(context, RouteNames.studentGoals),
+                ),
 
                 AppSpacing.gapSm,
                 _SectionLabel('ENGAGEMENT'),

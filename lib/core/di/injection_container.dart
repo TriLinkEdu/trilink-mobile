@@ -48,6 +48,7 @@ import '../../features/student/courses/repositories/student_curriculum_repositor
 import '../../features/student/courses/repositories/mock_student_curriculum_repository.dart';
 import '../../features/student/grades/repositories/student_performance_repository.dart';
 import '../../features/student/grades/repositories/mock_student_performance_repository.dart';
+import '../../features/student/grades/repositories/real_student_performance_repository.dart';
 import '../../features/student/sync/repositories/student_sync_repository.dart';
 import '../../features/student/sync/repositories/mock_student_sync_repository.dart';
 import '../../features/student/ai_assistant/repositories/student_ai_assistant_repository.dart';
@@ -147,7 +148,9 @@ Future<void> initDependencies() async {
     () => MockStudentCurriculumRepository(),
   );
   sl.registerLazySingleton<StudentPerformanceRepository>(
-    () => MockStudentPerformanceRepository(),
+    () => useRealStudentData
+        ? RealStudentPerformanceRepository()
+        : MockStudentPerformanceRepository(),
   );
   sl.registerLazySingleton<StudentSyncRepository>(
     () => MockStudentSyncRepository(),

@@ -823,10 +823,10 @@ class _QuickActionsRow extends StatelessWidget {
       RouteNames.studentGamification,
     ),
     _ActionData(
-      Icons.calendar_month_rounded,
-      'Calendar',
+      Icons.flag_rounded,
+      'Goals',
       AppColors.physics,
-      RouteNames.studentCalendar,
+      RouteNames.studentGoals,
     ),
   ];
 
