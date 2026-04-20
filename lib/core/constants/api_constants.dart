@@ -125,6 +125,9 @@ class ApiConstants {
   // Settings
   static const String userSettings = '/me/settings';
   static const String schoolSettings = '/school/settings';
+  static const String studentSyncStatus = '/sync/student/status';
+  static const String studentSyncTrigger = '/sync/student/trigger';
+  static const String integrationsSyncHints = '/integrations/sync-hints';
 
   // Feedback
   static const String feedback = '/feedback';
