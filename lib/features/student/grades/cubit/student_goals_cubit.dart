@@ -35,24 +35,42 @@ class StudentGoalsCubit extends Cubit<StudentGoalsState> {
     }
   }
 
-  Future<bool> createGoal({
+  Future<void> createGoal({
     required String studentId,
     required String text,
     DateTime? targetDate,
   }) async {
-    if (text.trim().isEmpty) return false;
+    if (state.isSaving) return;
+    if (text.trim().isEmpty) return;
     if (text.trim().length > 200) {
       emit(
         state.copyWith(
           errorMessage: 'Goal text must be 200 characters or fewer.',
         ),
       );
-      return false;
+      return;
     }
 
-    emit(state.copyWith(isSaving: true, clearError: true));
+    final now = DateTime.now();
+    final optimistic = StudentGoalModel(
+      id: 'local-${now.microsecondsSinceEpoch}',
+      studentId: studentId,
+      goalText: text.trim(),
+      targetDate: targetDate,
+      createdAt: now,
+      isAchieved: false,
+    );
+
+    emit(
+      state.copyWith(
+        goals: [optimistic, ...state.goals],
+        isSaving: true,
+        clearError: true,
+      ),
+    );
+
     try {
-      await _repository.createGoal(
+      final created = await _repository.createGoal(
         StudentGoalModel(
           id: '',
           studentId: studentId,
@@ -62,17 +80,19 @@ class StudentGoalsCubit extends Cubit<StudentGoalsState> {
         ),
       );
 
-      emit(state.copyWith(isSaving: false));
-      await load(studentId);
-      return true;
+      final updated = state.goals
+          .map((g) => g.id == optimistic.id ? created : g)
+          .toList();
+      emit(state.copyWith(goals: updated, isSaving: false));
     } catch (e) {
+      final reverted = state.goals.where((g) => g.id != optimistic.id).toList();
       emit(
         state.copyWith(
+          goals: reverted,
           isSaving: false,
           errorMessage: 'Failed to create goal: $e',
         ),
       );
-      return false;
     }
   }
 

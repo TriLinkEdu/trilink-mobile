@@ -49,10 +49,12 @@ class _StudentGoalsViewState extends State<_StudentGoalsView> {
   }
 
   Future<void> _showCreateGoalDialog() async {
+    final goalsCubit = context.read<StudentGoalsCubit>();
     DateTime? selectedDate;
 
     await showDialog<void>(
       context: context,
+      useRootNavigator: false,
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
@@ -107,20 +109,32 @@ class _StudentGoalsViewState extends State<_StudentGoalsView> {
                   child: const Text('Cancel'),
                 ),
                 FilledButton(
-                  onPressed: () async {
-                    final ok = await context
-                        .read<StudentGoalsCubit>()
-                        .createGoal(
-                          studentId: widget.studentId,
-                          text: _goalController.text,
-                          targetDate: selectedDate,
-                        );
-                    if (!context.mounted) return;
-                    if (ok) {
-                      _goalController.clear();
-                      Navigator.of(dialogContext).pop();
-                    }
-                  },
+                  onPressed: goalsCubit.state.isSaving
+                      ? null
+                      : () async {
+                          FocusScope.of(dialogContext).unfocus();
+                          final text = _goalController.text.trim();
+                          if (text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Please enter a goal before saving.',
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+
+                          final navigator = Navigator.of(dialogContext);
+                          navigator.pop();
+                          _goalController.clear();
+
+                          await goalsCubit.createGoal(
+                            studentId: widget.studentId,
+                            text: text,
+                            targetDate: selectedDate,
+                          );
+                        },
                   child: const Text('Save'),
                 ),
               ],
