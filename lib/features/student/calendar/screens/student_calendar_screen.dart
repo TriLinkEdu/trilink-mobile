@@ -26,7 +26,7 @@ class StudentCalendarScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) =>
-          CalendarCubit(sl<StudentCalendarRepository>())..loadEvents(),
+          CalendarCubit(sl<StudentCalendarRepository>())..loadIfNeeded(),
       child: const _CalendarView(),
     );
   }

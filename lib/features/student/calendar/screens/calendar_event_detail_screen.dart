@@ -16,18 +16,14 @@ import '../repositories/student_calendar_repository.dart';
 class CalendarEventDetailScreen extends StatelessWidget {
   final String eventId;
 
-  const CalendarEventDetailScreen({
-    super.key,
-    required this.eventId,
-  });
+  const CalendarEventDetailScreen({super.key, required this.eventId});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => CalendarEventDetailCubit(
-        sl<StudentCalendarRepository>(),
-        eventId,
-      )..loadEvent(),
+      create: (_) =>
+          CalendarEventDetailCubit(sl<StudentCalendarRepository>(), eventId)
+            ..loadIfNeeded(),
       child: const _CalendarEventDetailView(),
     );
   }
@@ -119,10 +115,20 @@ class _CalendarEventDetailView extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(e.title, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                    Text(
+                      e.title,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     AppSpacing.gapXs,
                     Chip(
-                      label: Text(e.type.toUpperCase(), style: theme.textTheme.labelSmall?.copyWith(color: color)),
+                      label: Text(
+                        e.type.toUpperCase(),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: color,
+                        ),
+                      ),
                       backgroundColor: color.withValues(alpha: 0.08),
                       visualDensity: VisualDensity.compact,
                       side: BorderSide.none,
@@ -142,7 +148,8 @@ class _CalendarEventDetailView extends StatelessWidget {
           _DetailRow(
             icon: Icons.access_time_rounded,
             label: 'Time',
-            value: '${timeFormat.format(e.startTime)} - ${timeFormat.format(e.endTime)}',
+            value:
+                '${timeFormat.format(e.startTime)} - ${timeFormat.format(e.endTime)}',
           ),
           if (e.location != null) ...[
             AppSpacing.gapLg,
@@ -154,9 +161,17 @@ class _CalendarEventDetailView extends StatelessWidget {
           ],
           if (e.description != null) ...[
             const Divider(height: 32),
-            Text('Description', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+            Text(
+              'Description',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             AppSpacing.gapSm,
-            Text(e.description!, style: theme.textTheme.bodyLarge?.copyWith(height: 1.5)),
+            Text(
+              e.description!,
+              style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
+            ),
           ],
         ],
       ),
@@ -169,7 +184,11 @@ class _DetailRow extends StatelessWidget {
   final String label;
   final String value;
 
-  const _DetailRow({required this.icon, required this.label, required this.value});
+  const _DetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -181,8 +200,18 @@ class _DetailRow extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            Text(value, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
+            Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            Text(
+              value,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
       ],

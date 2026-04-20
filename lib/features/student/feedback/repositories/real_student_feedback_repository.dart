@@ -5,13 +5,21 @@ import 'student_feedback_repository.dart';
 
 class RealStudentFeedbackRepository implements StudentFeedbackRepository {
   final ApiClient _api;
-  List<FeedbackModel> _localHistory = const [];
+
+  static List<FeedbackModel> _localHistory = const [];
+  static DateTime? _historyFetchedAt;
+  static const Duration _ttl = Duration(seconds: 20);
 
   RealStudentFeedbackRepository({ApiClient? apiClient})
     : _api = apiClient ?? ApiClient();
 
   @override
   Future<List<FeedbackModel>> fetchFeedbackHistory() async {
+    final fetchedAt = _historyFetchedAt;
+    if (fetchedAt != null && DateTime.now().difference(fetchedAt) < _ttl) {
+      return _localHistory;
+    }
+    _historyFetchedAt = DateTime.now();
     return _localHistory;
   }
 
@@ -46,6 +54,7 @@ class RealStudentFeedbackRepository implements StudentFeedbackRepository {
     );
 
     _localHistory = [..._localHistory, model];
+    _historyFetchedAt = DateTime.now();
     return model;
   }
 
