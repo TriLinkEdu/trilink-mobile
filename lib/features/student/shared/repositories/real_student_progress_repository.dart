@@ -1,3 +1,4 @@
+import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/api_client.dart';
 import '../models/student_progress_model.dart';
 import 'student_progress_repository.dart';
@@ -33,23 +34,23 @@ class RealStudentProgressRepository implements StudentProgressRepository {
   }
 
   Future<StudentProgressModel> _fetchFresh() async {
-    final streakData = await _safeGet('/gamification/me/streak');
-    final pointsData = await _safeGet('/gamification/me/badge-points');
+    final progress = await _safeGet(ApiConstants.gamificationMyProgress);
 
-    final currentStreak = _asInt(streakData['currentStreak'], fallback: 0);
+    final currentStreak = _asInt(progress['currentStreak'], fallback: 0);
     final longestStreak = _asInt(
-      streakData['longestStreak'],
+      progress['longestStreak'],
       fallback: currentStreak,
     );
-    final totalXp = _asInt(pointsData['totalPoints'], fallback: 0);
+    final totalXp = _asInt(progress['totalXp'], fallback: 0);
     final level = (totalXp ~/ 100).clamp(1, 999);
+    final levelTitle = (progress['levelTitle'] ?? '').toString().trim();
 
     return StudentProgressModel(
       currentStreak: currentStreak,
       longestStreak: longestStreak,
       totalXp: totalXp,
       level: level,
-      levelTitle: _levelTitle(level),
+      levelTitle: levelTitle.isNotEmpty ? levelTitle : _levelTitle(level),
     );
   }
 
