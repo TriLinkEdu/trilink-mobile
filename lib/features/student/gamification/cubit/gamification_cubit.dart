@@ -9,8 +9,20 @@ export 'gamification_state.dart';
 
 class GamificationCubit extends Cubit<GamificationState> {
   final StudentGamificationRepository _repository;
+  DateTime? _lastLoadedAt;
+
+  static const Duration _ttl = Duration(seconds: 30);
 
   GamificationCubit(this._repository) : super(const GamificationState());
+
+  Future<void> loadIfNeeded() async {
+    if (state.status == GamificationStatus.loaded &&
+        _lastLoadedAt != null &&
+        DateTime.now().difference(_lastLoadedAt!) < _ttl) {
+      return;
+    }
+    await loadAll();
+  }
 
   Future<void> loadAll() async {
     emit(state.copyWith(status: GamificationStatus.loading));
@@ -45,6 +57,7 @@ class GamificationCubit extends Cubit<GamificationState> {
           isWeeklyRanking: state.isWeeklyRanking,
         ),
       );
+      _lastLoadedAt = DateTime.now();
     } catch (e) {
       emit(
         state.copyWith(
