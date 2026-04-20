@@ -158,7 +158,18 @@ class RealStudentChatRepository implements StudentChatRepository {
 
   @override
   Future<List<MessageReadReceipt>> fetchReadReceipts(String messageId) async {
-    return const [];
+    final rows = await _api.getList(
+      ApiConstants.messageReadReceipts(messageId),
+    );
+    return rows.whereType<Map<String, dynamic>>().map((raw) {
+      final readAt =
+          DateTime.tryParse((raw['readAt'] ?? '').toString()) ?? DateTime.now();
+      return MessageReadReceipt(
+        messageId: (raw['messageId'] ?? messageId).toString(),
+        userId: (raw['userId'] ?? '').toString(),
+        readAt: readAt,
+      );
+    }).toList();
   }
 
   Future<ChatMessageModel?> _latestMessage(
