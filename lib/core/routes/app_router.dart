@@ -10,12 +10,6 @@ import '../../features/student/dashboard/screens/student_main_screen.dart';
 import '../../features/teacher/dashboard/screens/teacher_main_screen.dart';
 import '../../features/teacher/attendance/screens/teacher_attendance_screen.dart';
 import '../../features/teacher/attendance/screens/attendance_analytics_screen.dart';
-import '../../features/teacher/exams/screens/create_exam_screen.dart';
-import '../../features/teacher/exams/screens/live_exam_monitoring_screen.dart';
-import '../../features/teacher/exams/screens/teacher_exams_screen.dart';
-import '../../features/teacher/exams/screens/exam_bank_screen.dart';
-import '../../features/teacher/exams/screens/exam_analytics_screen.dart';
-import '../../features/teacher/exams/screens/evaluate_submissions_screen.dart';
 import '../../features/teacher/announcements/screens/create_announcement_screen.dart';
 import '../../features/teacher/announcements/screens/teacher_announcements_screen.dart';
 import '../../features/teacher/student_analytics/screens/student_list_screen.dart';
@@ -65,12 +59,6 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => const TeacherAttendanceScreen(),
         );
-      case RouteNames.teacherCreateExam:
-        return MaterialPageRoute(builder: (_) => const CreateExamScreen());
-      case RouteNames.teacherLiveExam:
-        return MaterialPageRoute(
-          builder: (_) => const LiveExamMonitoringScreen(),
-        );
       case RouteNames.teacherCreateAnnouncement:
         return MaterialPageRoute(
           builder: (_) => const CreateAnnouncementScreen(),
@@ -89,21 +77,6 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const TeacherMessagesScreen());
       case RouteNames.teacherCalendar:
         return MaterialPageRoute(builder: (_) => const TeacherCalendarScreen());
-      case RouteNames.teacherExams:
-        return MaterialPageRoute(builder: (_) => const TeacherExamsScreen());
-      case RouteNames.teacherExamBank:
-        return MaterialPageRoute(builder: (_) => const ExamBankScreen());
-      case RouteNames.teacherExamAnalytics:
-        final args = settings.arguments as Map<String, String>?;
-        return MaterialPageRoute(
-          builder: (_) => ExamAnalyticsScreen(examId: args?['examId'] ?? ''),
-        );
-      case RouteNames.teacherEvaluateSubmissions:
-        final args = settings.arguments as Map<String, String>?;
-        return MaterialPageRoute(
-          builder: (_) =>
-              EvaluateSubmissionsScreen(examId: args?['examId'] ?? ''),
-        );
       case RouteNames.teacherAnnouncements:
         return MaterialPageRoute(
           builder: (_) => const TeacherAnnouncementsScreen(),
