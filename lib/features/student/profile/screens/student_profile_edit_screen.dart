@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import 'dart:typed_data';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/pressable.dart';
@@ -29,7 +29,8 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
   bool _isLoading = false;
   bool _isSaving = false;
   String? _loadError;
-  File? _selectedImage;
+  XFile? _selectedImage;
+  Uint8List? _selectedImageBytes;
   final ImagePicker _imagePicker = ImagePicker();
 
   @override
@@ -89,6 +90,7 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
         setState(() {
           _isSaving = false;
           _selectedImage = null;
+          _selectedImageBytes = null;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Profile updated successfully')),
@@ -122,8 +124,10 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
         imageQuality: 80,
       );
       if (picked == null || !mounted) return;
+      final bytes = await picked.readAsBytes();
       setState(() {
-        _selectedImage = File(picked.path);
+        _selectedImage = picked;
+        _selectedImageBytes = bytes;
       });
     } catch (e) {
       if (!mounted) return;
@@ -174,10 +178,10 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
                               radius: 50,
                               backgroundColor:
                                   theme.colorScheme.primaryContainer,
-                              backgroundImage: _selectedImage != null
-                                  ? FileImage(_selectedImage!)
+                              backgroundImage: _selectedImageBytes != null
+                                  ? MemoryImage(_selectedImageBytes!)
                                   : null,
-                              child: _selectedImage == null
+                              child: _selectedImageBytes == null
                                   ? Icon(
                                       Icons.person,
                                       size: 50,

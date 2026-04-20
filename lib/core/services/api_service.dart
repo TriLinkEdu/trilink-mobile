@@ -3,7 +3,7 @@ import '../constants/api_constants.dart';
 import 'dummy_data.dart';
 import 'feature_flags.dart';
 import 'package:dio/dio.dart';
-import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 /// Centralized service wrapping all backend API calls.
 /// Falls back to dummy data when the API is unreachable or returns errors.
@@ -356,19 +356,38 @@ class ApiService {
   }
 
   /// Upload profile image and return uploaded file id.
-  Future<String> uploadProfileImage(File file) async {
+  Future<String> uploadProfileImage(dynamic file) async {
     if (!FeatureFlags.useRealApi) {
       return 'mock-profile-image-file-id';
     }
 
     try {
+      List<int> bytes;
+      String filename = 'profile.jpg';
+
+      if (file is XFile) {
+        bytes = await file.readAsBytes();
+        if (file.name.isNotEmpty) {
+          filename = file.name;
+        }
+      } else {
+        final dynamic readAsBytes = file.readAsBytes;
+        if (readAsBytes is! Function) {
+          throw Exception('Selected image cannot be read.');
+        }
+        bytes = await readAsBytes();
+        final dynamic rawPath = file.path;
+        if (rawPath is String && rawPath.trim().isNotEmpty) {
+          final segments = rawPath.split(RegExp(r'[\\/]'));
+          final last = segments.isNotEmpty ? segments.last : '';
+          if (last.isNotEmpty) {
+            filename = last;
+          }
+        }
+      }
+
       final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(
-          file.path,
-          filename: file.uri.pathSegments.isNotEmpty
-              ? file.uri.pathSegments.last
-              : 'profile.jpg',
-        ),
+        'file': MultipartFile.fromBytes(bytes, filename: filename),
       });
 
       final response = await _api.post(
