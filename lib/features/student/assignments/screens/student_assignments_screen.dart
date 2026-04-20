@@ -24,8 +24,7 @@ class StudentAssignmentsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) =>
-          AssignmentsCubit(sl<StudentAssignmentsRepository>())
-            ..loadAssignments(),
+          AssignmentsCubit(sl<StudentAssignmentsRepository>())..loadIfNeeded(),
       child: const _StudentAssignmentsView(),
     );
   }
