@@ -51,6 +51,7 @@ import '../../features/student/grades/repositories/mock_student_performance_repo
 import '../../features/student/grades/repositories/real_student_performance_repository.dart';
 import '../../features/student/sync/repositories/student_sync_repository.dart';
 import '../../features/student/sync/repositories/mock_student_sync_repository.dart';
+import '../../features/student/sync/repositories/real_student_sync_repository.dart';
 import '../../features/student/ai_assistant/repositories/student_ai_assistant_repository.dart';
 import '../../features/student/ai_assistant/repositories/mock_student_ai_assistant_repository.dart';
 import '../../features/student/analytics/repositories/student_analytics_repository.dart';
@@ -58,6 +59,7 @@ import '../../features/student/analytics/repositories/mock_student_analytics_rep
 import '../../features/student/analytics/repositories/real_student_analytics_repository.dart';
 import '../../features/student/shared/repositories/student_progress_repository.dart';
 import '../../features/student/shared/repositories/mock_student_progress_repository.dart';
+import '../../features/student/shared/repositories/real_student_progress_repository.dart';
 
 final sl = GetIt.instance;
 
@@ -154,7 +156,9 @@ Future<void> initDependencies() async {
         : MockStudentPerformanceRepository(),
   );
   sl.registerLazySingleton<StudentSyncRepository>(
-    () => MockStudentSyncRepository(),
+    () => useRealStudentData
+        ? RealStudentSyncRepository()
+        : MockStudentSyncRepository(),
   );
   sl.registerLazySingleton<StudentAiAssistantRepository>(
     () => MockStudentAiAssistantRepository(),
@@ -165,6 +169,8 @@ Future<void> initDependencies() async {
         : MockStudentAnalyticsRepository(),
   );
   sl.registerLazySingleton<StudentProgressRepository>(
-    () => MockStudentProgressRepository(),
+    () => useRealStudentData
+        ? RealStudentProgressRepository()
+        : MockStudentProgressRepository(),
   );
 }

@@ -89,9 +89,13 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
   }
 
   Future<void> _loadProgress() async {
-    final progress = await _progressRepo.fetchProgress();
-    if (!mounted) return;
-    setState(() => _progress = progress);
+    try {
+      final progress = await _progressRepo.fetchProgress();
+      if (!mounted) return;
+      setState(() => _progress = progress);
+    } catch (_) {
+      if (!mounted) return;
+    }
   }
 
   @override
