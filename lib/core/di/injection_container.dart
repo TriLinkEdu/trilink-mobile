@@ -46,8 +46,10 @@ import '../../features/student/exams/repositories/mock_student_exams_repository.
 import '../../features/student/exams/repositories/real_student_exams_repository.dart';
 import '../../features/student/courses/repositories/student_courses_repository.dart';
 import '../../features/student/courses/repositories/mock_student_courses_repository.dart';
+import '../../features/student/courses/repositories/real_student_courses_repository.dart';
 import '../../features/student/courses/repositories/student_curriculum_repository.dart';
 import '../../features/student/courses/repositories/mock_student_curriculum_repository.dart';
+import '../../features/student/courses/repositories/real_student_curriculum_repository.dart';
 import '../../features/student/grades/repositories/student_performance_repository.dart';
 import '../../features/student/grades/repositories/mock_student_performance_repository.dart';
 import '../../features/student/grades/repositories/real_student_performance_repository.dart';
@@ -161,10 +163,16 @@ Future<void> initDependencies() async {
         : MockStudentExamsRepository(),
   );
   sl.registerLazySingleton<StudentCoursesRepository>(
-    () => MockStudentCoursesRepository(),
+    () => useRealStudentData
+        ? RealStudentCoursesRepository(fallback: MockStudentCoursesRepository())
+        : MockStudentCoursesRepository(),
   );
   sl.registerLazySingleton<StudentCurriculumRepository>(
-    () => MockStudentCurriculumRepository(),
+    () => useRealStudentData
+        ? RealStudentCurriculumRepository(
+            fallback: MockStudentCurriculumRepository(),
+          )
+        : MockStudentCurriculumRepository(),
   );
   sl.registerLazySingleton<StudentPerformanceRepository>(
     () => useRealStudentData

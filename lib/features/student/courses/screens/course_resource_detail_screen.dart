@@ -21,7 +21,7 @@ class CourseResourceDetailScreen extends StatelessWidget {
     return BlocProvider(
       create: (_) =>
           CourseResourceDetailCubit(sl<StudentCoursesRepository>(), resourceId)
-            ..loadResource(),
+            ..loadIfNeeded(),
       child: const _CourseResourceDetailView(),
     );
   }
