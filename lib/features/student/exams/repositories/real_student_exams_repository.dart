@@ -8,11 +8,41 @@ import 'student_exams_repository.dart';
 class RealStudentExamsRepository implements StudentExamsRepository {
   final ApiClient _api;
 
+  static const Duration _listTtl = Duration(seconds: 20);
+  static const Duration _examTtl = Duration(seconds: 30);
+
+  static List<ExamModel>? _listCache;
+  static DateTime? _listFetchedAt;
+  static Future<List<ExamModel>>? _listInFlight;
+
+  static final Map<String, ExamModel> _examCache = <String, ExamModel>{};
+  static final Map<String, DateTime> _examFetchedAt = <String, DateTime>{};
+  static final Map<String, Future<ExamModel>> _examInFlight =
+      <String, Future<ExamModel>>{};
+
   RealStudentExamsRepository({ApiClient? apiClient})
     : _api = apiClient ?? ApiClient();
 
   @override
   Future<List<ExamModel>> fetchAvailableExams() async {
+    if (_listCache != null && _listFetchedAt != null) {
+      final age = DateTime.now().difference(_listFetchedAt!);
+      if (age < _listTtl) return _listCache!;
+    }
+
+    final inFlight = _listInFlight;
+    if (inFlight != null) return inFlight;
+
+    final future = _fetchAvailableExamsFresh();
+    _listInFlight = future;
+    final data = await future;
+    _listInFlight = null;
+    _listCache = data;
+    _listFetchedAt = DateTime.now();
+    return data;
+  }
+
+  Future<List<ExamModel>> _fetchAvailableExamsFresh() async {
     final rows = await _api.getList(ApiConstants.exams);
     final out = <ExamModel>[];
     for (final raw in rows.whereType<Map<String, dynamic>>()) {
@@ -23,6 +53,26 @@ class RealStudentExamsRepository implements StudentExamsRepository {
 
   @override
   Future<ExamModel> fetchExamQuestions(String examId) async {
+    final cached = _examCache[examId];
+    final fetchedAt = _examFetchedAt[examId];
+    if (cached != null && fetchedAt != null) {
+      final age = DateTime.now().difference(fetchedAt);
+      if (age < _examTtl) return cached;
+    }
+
+    final inFlight = _examInFlight[examId];
+    if (inFlight != null) return inFlight;
+
+    final future = _fetchExamQuestionsFresh(examId);
+    _examInFlight[examId] = future;
+    final data = await future;
+    _examInFlight.remove(examId);
+    _examCache[examId] = data;
+    _examFetchedAt[examId] = DateTime.now();
+    return data;
+  }
+
+  Future<ExamModel> _fetchExamQuestionsFresh(String examId) async {
     final examRows = await _api.getList(ApiConstants.exams);
     Map<String, dynamic>? examRaw;
     for (final item in examRows.whereType<Map<String, dynamic>>()) {
@@ -79,6 +129,7 @@ class RealStudentExamsRepository implements StudentExamsRepository {
     );
     final submitted = await _api.post(ApiConstants.attemptSubmit(attemptId));
     final merged = <String, dynamic>{...saved, ...submitted};
+    _listFetchedAt = null;
     return _mapAttempt(merged);
   }
 

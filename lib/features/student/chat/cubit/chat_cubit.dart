@@ -7,14 +7,27 @@ export 'chat_state.dart';
 
 class ChatCubit extends Cubit<ChatState> {
   final StudentChatRepository _repository;
+  DateTime? _lastLoadedAt;
+
+  static const Duration _ttl = Duration(seconds: 20);
 
   ChatCubit(this._repository) : super(const ChatState());
+
+  Future<void> loadIfNeeded() async {
+    if (state.status == ChatStatus.loaded &&
+        _lastLoadedAt != null &&
+        DateTime.now().difference(_lastLoadedAt!) < _ttl) {
+      return;
+    }
+    await loadConversations();
+  }
 
   Future<void> loadConversations() async {
     emit(state.copyWith(status: ChatStatus.loading));
     try {
       final conversations = await _repository.fetchConversations();
       emit(ChatState(status: ChatStatus.loaded, conversations: conversations));
+      _lastLoadedAt = DateTime.now();
     } catch (e) {
       emit(
         state.copyWith(

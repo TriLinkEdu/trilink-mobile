@@ -7,8 +7,20 @@ export 'notifications_state.dart';
 
 class NotificationsCubit extends Cubit<NotificationsState> {
   final StudentNotificationsRepository _repository;
+  DateTime? _lastLoadedAt;
+
+  static const Duration _ttl = Duration(seconds: 20);
 
   NotificationsCubit(this._repository) : super(const NotificationsState());
+
+  Future<void> loadIfNeeded() async {
+    if (state.status == NotificationsStatus.loaded &&
+        _lastLoadedAt != null &&
+        DateTime.now().difference(_lastLoadedAt!) < _ttl) {
+      return;
+    }
+    await loadNotifications();
+  }
 
   Future<void> loadNotifications() async {
     emit(state.copyWith(status: NotificationsStatus.loading));
@@ -17,6 +29,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
       emit(
         NotificationsState(status: NotificationsStatus.loaded, items: items),
       );
+      _lastLoadedAt = DateTime.now();
     } catch (e) {
       emit(
         state.copyWith(

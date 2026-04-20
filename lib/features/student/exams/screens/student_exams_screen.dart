@@ -23,7 +23,8 @@ class StudentExamsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => ExamListCubit(sl<StudentExamsRepository>())..loadExams(),
+      create: (_) =>
+          ExamListCubit(sl<StudentExamsRepository>())..loadIfNeeded(),
       child: const _StudentExamsView(),
     );
   }

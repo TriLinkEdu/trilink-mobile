@@ -8,8 +8,21 @@ export 'exam_attempt_state.dart';
 class ExamAttemptCubit extends Cubit<ExamAttemptState> {
   final StudentExamsRepository _repository;
   String? _lastRequestedExamId;
+  DateTime? _lastExamLoadedAt;
+
+  static const Duration _ttl = Duration(seconds: 30);
 
   ExamAttemptCubit(this._repository) : super(const ExamAttemptState());
+
+  Future<void> loadExamIfNeeded(String? examId) async {
+    if (state.status == ExamAttemptStatus.loaded &&
+        state.exam?.id == examId &&
+        _lastExamLoadedAt != null &&
+        DateTime.now().difference(_lastExamLoadedAt!) < _ttl) {
+      return;
+    }
+    await loadExam(examId);
+  }
 
   Future<void> loadExam(String? examId) async {
     _lastRequestedExamId = examId;
@@ -30,6 +43,7 @@ class ExamAttemptCubit extends Cubit<ExamAttemptState> {
           errorMessage: null,
         ),
       );
+      _lastExamLoadedAt = DateTime.now();
     } catch (e) {
       emit(
         state.copyWith(

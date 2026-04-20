@@ -10,11 +10,33 @@ class RealStudentNotificationsRepository
     implements StudentNotificationsRepository {
   final ApiClient _api;
 
+  static List<NotificationModel>? _cache;
+  static DateTime? _fetchedAt;
+  static Future<List<NotificationModel>>? _inFlight;
+  static const Duration _ttl = Duration(seconds: 20);
+
   RealStudentNotificationsRepository({ApiClient? apiClient})
     : _api = apiClient ?? ApiClient();
 
   @override
   Future<List<NotificationModel>> fetchNotifications() async {
+    if (_cache != null && _fetchedAt != null) {
+      final age = DateTime.now().difference(_fetchedAt!);
+      if (age < _ttl) return _cache!;
+    }
+
+    if (_inFlight != null) return _inFlight!;
+
+    final future = _fetchFresh();
+    _inFlight = future;
+    final data = await future;
+    _inFlight = null;
+    _cache = data;
+    _fetchedAt = DateTime.now();
+    return data;
+  }
+
+  Future<List<NotificationModel>> _fetchFresh() async {
     final list = await _api.getList(ApiConstants.notifications);
 
     return list.whereType<Map<String, dynamic>>().map(_toNotification).toList();

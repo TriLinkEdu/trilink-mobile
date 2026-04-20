@@ -25,7 +25,7 @@ class StudentAttendanceScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) =>
-          AttendanceCubit(sl<StudentAttendanceRepository>())..loadAttendance(),
+          AttendanceCubit(sl<StudentAttendanceRepository>())..loadIfNeeded(),
       child: const _AttendanceView(),
     );
   }

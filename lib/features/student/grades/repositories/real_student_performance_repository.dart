@@ -8,6 +8,19 @@ import 'student_performance_repository.dart';
 class RealStudentPerformanceRepository implements StudentPerformanceRepository {
   final ApiClient _api;
 
+  static const Duration _goalsTtl = Duration(seconds: 20);
+  static const Duration _reportTtl = Duration(seconds: 30);
+
+  static List<StudentGoalModel>? _goalsCache;
+  static DateTime? _goalsFetchedAt;
+  static Future<List<StudentGoalModel>>? _goalsInFlight;
+
+  static final Map<String, PerformanceReportModel> _reportCache =
+      <String, PerformanceReportModel>{};
+  static final Map<String, DateTime> _reportFetchedAt = <String, DateTime>{};
+  static final Map<String, Future<PerformanceReportModel>> _reportInFlight =
+      <String, Future<PerformanceReportModel>>{};
+
   RealStudentPerformanceRepository({ApiClient? apiClient})
     : _api = apiClient ?? ApiClient();
 
@@ -19,6 +32,24 @@ class RealStudentPerformanceRepository implements StudentPerformanceRepository {
 
   @override
   Future<List<StudentGoalModel>> fetchGoals(String studentId) async {
+    if (_goalsCache != null && _goalsFetchedAt != null) {
+      final age = DateTime.now().difference(_goalsFetchedAt!);
+      if (age < _goalsTtl) return _goalsCache!;
+    }
+
+    final inFlight = _goalsInFlight;
+    if (inFlight != null) return inFlight;
+
+    final future = _fetchGoalsFresh();
+    _goalsInFlight = future;
+    final data = await future;
+    _goalsInFlight = null;
+    _goalsCache = data;
+    _goalsFetchedAt = DateTime.now();
+    return data;
+  }
+
+  Future<List<StudentGoalModel>> _fetchGoalsFresh() async {
     final rows = await _api.getList(ApiConstants.myGoals);
     return rows.whereType<Map<String, dynamic>>().map(_mapGoal).toList();
   }
@@ -35,6 +66,7 @@ class RealStudentPerformanceRepository implements StudentPerformanceRepository {
           'targetDate': goal.targetDate!.toIso8601String().split('T').first,
       },
     );
+    _goalsFetchedAt = null;
     return _mapGoal(raw, fallbackStudentId: goal.studentId);
   }
 
@@ -51,11 +83,34 @@ class RealStudentPerformanceRepository implements StudentPerformanceRepository {
           'targetDate': goal.targetDate!.toIso8601String().split('T').first,
       },
     );
+    _goalsFetchedAt = null;
     return _mapGoal(raw, fallbackStudentId: goal.studentId);
   }
 
   @override
   Future<PerformanceReportModel> fetchLatestReport(String studentId) async {
+    final fetchedAt = _reportFetchedAt[studentId];
+    final cached = _reportCache[studentId];
+    if (cached != null && fetchedAt != null) {
+      final age = DateTime.now().difference(fetchedAt);
+      if (age < _reportTtl) return cached;
+    }
+
+    final inFlight = _reportInFlight[studentId];
+    if (inFlight != null) return inFlight;
+
+    final future = _fetchLatestReportFresh(studentId);
+    _reportInFlight[studentId] = future;
+    final data = await future;
+    _reportInFlight.remove(studentId);
+    _reportCache[studentId] = data;
+    _reportFetchedAt[studentId] = DateTime.now();
+    return data;
+  }
+
+  Future<PerformanceReportModel> _fetchLatestReportFresh(
+    String studentId,
+  ) async {
     final raw = await _api.get(
       ApiConstants.studentReport(studentId),
       queryParameters: {'periodType': 'weekly'},

@@ -22,7 +22,7 @@ class StudentAttendanceInsightsScreen extends StatelessWidget {
     return BlocProvider(
       create: (_) =>
           AttendanceInsightsCubit(sl<StudentAnalyticsRepository>())
-            ..loadInsights(),
+            ..loadIfNeeded(),
       child: const _StudentAttendanceInsightsView(),
     );
   }

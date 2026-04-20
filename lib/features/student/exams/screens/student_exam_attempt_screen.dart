@@ -23,7 +23,8 @@ class StudentExamAttemptScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) =>
-          ExamAttemptCubit(sl<StudentExamsRepository>())..loadExam(examId),
+          ExamAttemptCubit(sl<StudentExamsRepository>())
+            ..loadExamIfNeeded(examId),
       child: const _ExamAttemptView(),
     );
   }

@@ -10,6 +10,11 @@ class RealStudentDashboardRepository implements StudentDashboardRepository {
   final StudentProgressRepository _progressRepository;
   final StorageService _storage;
 
+  static DashboardDataModel? _cache;
+  static DateTime? _fetchedAt;
+  static Future<DashboardDataModel>? _inFlight;
+  static const Duration _ttl = Duration(seconds: 30);
+
   RealStudentDashboardRepository({
     ApiClient? apiClient,
     required StudentProgressRepository progressRepository,
@@ -20,6 +25,23 @@ class RealStudentDashboardRepository implements StudentDashboardRepository {
 
   @override
   Future<DashboardDataModel> fetchDashboardData() async {
+    if (_cache != null && _fetchedAt != null) {
+      final age = DateTime.now().difference(_fetchedAt!);
+      if (age < _ttl) return _cache!;
+    }
+
+    if (_inFlight != null) return _inFlight!;
+
+    final future = _fetchFresh();
+    _inFlight = future;
+    final data = await future;
+    _inFlight = null;
+    _cache = data;
+    _fetchedAt = DateTime.now();
+    return data;
+  }
+
+  Future<DashboardDataModel> _fetchFresh() async {
     final json = await _api.get(ApiConstants.dashboardStudent);
     final progress = await _progressRepository.fetchProgress();
 

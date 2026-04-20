@@ -29,7 +29,7 @@ class ChatConversationScreen extends StatelessWidget {
     return BlocProvider(
       create: (_) =>
           ChatConversationCubit(sl<StudentChatRepository>(), conversationId)
-            ..loadMessages(),
+            ..loadIfNeeded(),
       child: _ChatConversationView(
         conversationId: conversationId,
         title: title,

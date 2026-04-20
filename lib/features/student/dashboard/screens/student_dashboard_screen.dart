@@ -28,7 +28,7 @@ class StudentDashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) =>
-          DashboardCubit(sl<StudentDashboardRepository>())..loadDashboard(),
+          DashboardCubit(sl<StudentDashboardRepository>())..loadIfNeeded(),
       child: const _DashboardView(),
     );
   }

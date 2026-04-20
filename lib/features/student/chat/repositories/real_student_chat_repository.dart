@@ -8,6 +8,19 @@ class RealStudentChatRepository implements StudentChatRepository {
   final ApiClient _api;
   final StorageService _storage;
 
+  static const Duration _conversationsTtl = Duration(seconds: 20);
+  static const Duration _messagesTtl = Duration(seconds: 10);
+
+  static List<ChatConversationModel>? _conversationsCache;
+  static DateTime? _conversationsFetchedAt;
+  static Future<List<ChatConversationModel>>? _conversationsInFlight;
+
+  static final Map<String, List<ChatMessageModel>> _messagesCache =
+      <String, List<ChatMessageModel>>{};
+  static final Map<String, DateTime> _messagesFetchedAt = <String, DateTime>{};
+  static final Map<String, Future<List<ChatMessageModel>>> _messagesInFlight =
+      <String, Future<List<ChatMessageModel>>>{};
+
   RealStudentChatRepository({
     ApiClient? apiClient,
     required StorageService storageService,
@@ -16,6 +29,24 @@ class RealStudentChatRepository implements StudentChatRepository {
 
   @override
   Future<List<ChatConversationModel>> fetchConversations() async {
+    if (_conversationsCache != null && _conversationsFetchedAt != null) {
+      final age = DateTime.now().difference(_conversationsFetchedAt!);
+      if (age < _conversationsTtl) return _conversationsCache!;
+    }
+
+    final inFlight = _conversationsInFlight;
+    if (inFlight != null) return inFlight;
+
+    final future = _fetchConversationsFresh();
+    _conversationsInFlight = future;
+    final data = await future;
+    _conversationsInFlight = null;
+    _conversationsCache = data;
+    _conversationsFetchedAt = DateTime.now();
+    return data;
+  }
+
+  Future<List<ChatConversationModel>> _fetchConversationsFresh() async {
     final me = await _currentUserId();
     final rows = await _api.getList(ApiConstants.conversations);
     final conversations = <ChatConversationModel>[];
@@ -41,6 +72,28 @@ class RealStudentChatRepository implements StudentChatRepository {
 
   @override
   Future<List<ChatMessageModel>> fetchMessages(String conversationId) async {
+    final fetchedAt = _messagesFetchedAt[conversationId];
+    final cached = _messagesCache[conversationId];
+    if (cached != null && fetchedAt != null) {
+      final age = DateTime.now().difference(fetchedAt);
+      if (age < _messagesTtl) return cached;
+    }
+
+    final inFlight = _messagesInFlight[conversationId];
+    if (inFlight != null) return inFlight;
+
+    final future = _fetchMessagesFresh(conversationId);
+    _messagesInFlight[conversationId] = future;
+    final data = await future;
+    _messagesInFlight.remove(conversationId);
+    _messagesCache[conversationId] = data;
+    _messagesFetchedAt[conversationId] = DateTime.now();
+    return data;
+  }
+
+  Future<List<ChatMessageModel>> _fetchMessagesFresh(
+    String conversationId,
+  ) async {
     final me = await _currentUserId();
     final rows = await _api.getList(
       ApiConstants.conversationMessages(conversationId),
@@ -66,7 +119,14 @@ class RealStudentChatRepository implements StudentChatRepository {
       ApiConstants.conversationMessages(conversationId),
       data: {'text': content},
     );
-    return _mapMessage(raw, me);
+    final sent = _mapMessage(raw, me);
+
+    final existing = _messagesCache[conversationId] ?? const [];
+    _messagesCache[conversationId] = [...existing, sent];
+    _messagesFetchedAt[conversationId] = DateTime.now();
+    _conversationsFetchedAt = null;
+
+    return sent;
   }
 
   @override

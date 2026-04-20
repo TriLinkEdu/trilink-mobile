@@ -24,7 +24,7 @@ class StudentGoalsScreen extends StatelessWidget {
     return BlocProvider(
       create: (_) =>
           StudentGoalsCubit(sl<StudentPerformanceRepository>())
-            ..load(studentId),
+            ..loadIfNeeded(studentId),
       child: _StudentGoalsView(studentId: studentId),
     );
   }

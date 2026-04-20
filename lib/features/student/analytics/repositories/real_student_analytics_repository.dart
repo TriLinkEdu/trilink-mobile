@@ -9,6 +9,27 @@ class RealStudentAnalyticsRepository implements StudentAnalyticsRepository {
   final ApiClient _api;
   final StorageService _storage;
 
+  static const Duration _dashboardTtl = Duration(seconds: 30);
+  static const Duration _gradesTtl = Duration(seconds: 30);
+  static const Duration _goalsTtl = Duration(seconds: 30);
+  static const Duration _attendanceTtl = Duration(seconds: 20);
+
+  static Map<String, dynamic>? _dashboardCache;
+  static DateTime? _dashboardFetchedAt;
+  static Future<Map<String, dynamic>>? _dashboardInFlight;
+
+  static Map<String, dynamic>? _gradesCache;
+  static DateTime? _gradesFetchedAt;
+  static Future<Map<String, dynamic>>? _gradesInFlight;
+
+  static List<dynamic>? _goalsCache;
+  static DateTime? _goalsFetchedAt;
+  static Future<List<dynamic>>? _goalsInFlight;
+
+  static Map<String, dynamic>? _attendanceCache;
+  static DateTime? _attendanceFetchedAt;
+  static Future<Map<String, dynamic>>? _attendanceInFlight;
+
   RealStudentAnalyticsRepository({
     ApiClient? apiClient,
     required StorageService storageService,
@@ -17,8 +38,8 @@ class RealStudentAnalyticsRepository implements StudentAnalyticsRepository {
 
   @override
   Future<StudentWeeklySnapshot> fetchWeeklySnapshot() async {
-    final dashboard = await _api.get(ApiConstants.dashboardStudent);
-    final grades = await _api.get('/reports/my-grades');
+    final dashboard = await _getDashboardData();
+    final grades = await _getGradesData();
 
     final attendanceRaw = _asDouble(
       (dashboard['attendanceSummaryLast30Days']
@@ -54,7 +75,7 @@ class RealStudentAnalyticsRepository implements StudentAnalyticsRepository {
 
   @override
   Future<StudentPerformanceTrends> fetchPerformanceTrends() async {
-    final grades = await _api.get('/reports/my-grades');
+    final grades = await _getGradesData();
     final subjectsRaw = _readList(grades['subjects']);
     final subjects = <StudentSubjectTrend>[];
 
@@ -112,10 +133,7 @@ class RealStudentAnalyticsRepository implements StudentAnalyticsRepository {
 
   @override
   Future<StudentAttendanceInsight> fetchAttendanceInsight() async {
-    final studentId = await _resolveStudentId();
-    final report = await _api.get(
-      ApiConstants.attendanceStudentReport(studentId),
-    );
+    final report = await _getAttendanceData();
     final marks = _readList(report['marks']);
 
     if (marks.isEmpty) {
@@ -178,9 +196,9 @@ class RealStudentAnalyticsRepository implements StudentAnalyticsRepository {
 
   @override
   Future<List<StudentActionItem>> fetchActionPlan() async {
-    final goalsRows = await _api.getList(ApiConstants.myGoals);
-    final dashboard = await _api.get(ApiConstants.dashboardStudent);
-    final grades = await _api.get('/reports/my-grades');
+    final goalsRows = await _getGoalsData();
+    final dashboard = await _getDashboardData();
+    final grades = await _getGradesData();
 
     final actions = <StudentActionItem>[];
 
@@ -259,6 +277,116 @@ class RealStudentAnalyticsRepository implements StudentAnalyticsRepository {
     }
 
     return actions;
+  }
+
+  Future<Map<String, dynamic>> _getDashboardData() async {
+    if (_isFresh(_dashboardFetchedAt, _dashboardTtl) &&
+        _dashboardCache != null) {
+      return _dashboardCache!;
+    }
+
+    final inFlight = _dashboardInFlight;
+    if (inFlight != null) return inFlight;
+
+    final future = _safeGetMap(ApiConstants.dashboardStudent);
+    _dashboardInFlight = future;
+    final data = await future;
+    _dashboardInFlight = null;
+    if (data.isNotEmpty) {
+      _dashboardCache = data;
+      _dashboardFetchedAt = DateTime.now();
+      return data;
+    }
+    return _dashboardCache ?? const <String, dynamic>{};
+  }
+
+  Future<Map<String, dynamic>> _getGradesData() async {
+    if (_isFresh(_gradesFetchedAt, _gradesTtl) && _gradesCache != null) {
+      return _gradesCache!;
+    }
+
+    final inFlight = _gradesInFlight;
+    if (inFlight != null) return inFlight;
+
+    final future = _safeGetMap('/reports/my-grades');
+    _gradesInFlight = future;
+    final data = await future;
+    _gradesInFlight = null;
+    if (data.isNotEmpty) {
+      _gradesCache = data;
+      _gradesFetchedAt = DateTime.now();
+      return data;
+    }
+    return _gradesCache ?? const <String, dynamic>{};
+  }
+
+  Future<List<dynamic>> _getGoalsData() async {
+    if (_isFresh(_goalsFetchedAt, _goalsTtl) && _goalsCache != null) {
+      return _goalsCache!;
+    }
+
+    final inFlight = _goalsInFlight;
+    if (inFlight != null) return inFlight;
+
+    final future = _safeGetList(ApiConstants.myGoals);
+    _goalsInFlight = future;
+    final data = await future;
+    _goalsInFlight = null;
+    if (data.isNotEmpty) {
+      _goalsCache = data;
+      _goalsFetchedAt = DateTime.now();
+      return data;
+    }
+    return _goalsCache ?? const [];
+  }
+
+  Future<Map<String, dynamic>> _getAttendanceData() async {
+    if (_isFresh(_attendanceFetchedAt, _attendanceTtl) &&
+        _attendanceCache != null) {
+      return _attendanceCache!;
+    }
+
+    final inFlight = _attendanceInFlight;
+    if (inFlight != null) return inFlight;
+
+    final studentId = await _resolveStudentId();
+    final future = _safeGetMap(ApiConstants.attendanceStudentReport(studentId));
+    _attendanceInFlight = future;
+    final data = await future;
+    _attendanceInFlight = null;
+    if (data.isNotEmpty) {
+      _attendanceCache = data;
+      _attendanceFetchedAt = DateTime.now();
+      return data;
+    }
+    return _attendanceCache ?? const <String, dynamic>{};
+  }
+
+  Future<List<dynamic>> _safeGetList(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    try {
+      return await _api.getList(path, queryParameters: queryParameters);
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<Map<String, dynamic>> _safeGetMap(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    try {
+      return await _api.get(path, queryParameters: queryParameters);
+    } catch (_) {
+      return const <String, dynamic>{};
+    }
+  }
+
+  bool _isFresh(DateTime? fetchedAt, Duration ttl) {
+    if (fetchedAt == null) return false;
+    return DateTime.now().difference(fetchedAt) < ttl;
   }
 
   Map<String, double> _subjectAverages(Map<String, dynamic> gradesResponse) {

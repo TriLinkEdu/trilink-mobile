@@ -25,8 +25,7 @@ class StudentChatScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-          ChatCubit(sl<StudentChatRepository>())..loadConversations(),
+      create: (_) => ChatCubit(sl<StudentChatRepository>())..loadIfNeeded(),
       child: const _ChatView(),
     );
   }

@@ -5,11 +5,40 @@ import 'student_grades_repository.dart';
 class RealStudentGradesRepository implements StudentGradesRepository {
   final ApiClient _api;
 
+  static List<GradeModel>? _allGradesCache;
+  static DateTime? _fetchedAt;
+  static Future<List<GradeModel>>? _inFlight;
+  static const Duration _ttl = Duration(seconds: 30);
+
   RealStudentGradesRepository({ApiClient? apiClient})
     : _api = apiClient ?? ApiClient();
 
   @override
   Future<List<GradeModel>> fetchGrades({String? term}) async {
+    final all = await _getAllGrades();
+    if (term == null) return all;
+    return all.where((g) => g.term == term).toList();
+  }
+
+  Future<List<GradeModel>> _getAllGrades() async {
+    if (_allGradesCache != null && _fetchedAt != null) {
+      final age = DateTime.now().difference(_fetchedAt!);
+      if (age < _ttl) return _allGradesCache!;
+    }
+
+    final inFlight = _inFlight;
+    if (inFlight != null) return inFlight;
+
+    final future = _fetchFreshAllGrades();
+    _inFlight = future;
+    final data = await future;
+    _inFlight = null;
+    _allGradesCache = data;
+    _fetchedAt = DateTime.now();
+    return data;
+  }
+
+  Future<List<GradeModel>> _fetchFreshAllGrades() async {
     final data = await _api.get('/reports/my-grades');
     final subjects = data['subjects'];
     if (subjects is! List) return const [];
@@ -27,9 +56,7 @@ class RealStudentGradesRepository implements StudentGradesRepository {
           subjectName: subjectName,
           raw: exam,
         );
-        if (term == null || model.term == term) {
-          grades.add(model);
-        }
+        grades.add(model);
       }
     }
 
@@ -39,7 +66,7 @@ class RealStudentGradesRepository implements StudentGradesRepository {
 
   @override
   Future<List<GradeModel>> fetchGradesBySubject(String subjectId) async {
-    final all = await fetchGrades();
+    final all = await _getAllGrades();
     return all.where((grade) => grade.subjectId == subjectId).toList();
   }
 

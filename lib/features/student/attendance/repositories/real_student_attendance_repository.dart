@@ -8,6 +8,11 @@ class RealStudentAttendanceRepository implements StudentAttendanceRepository {
   final ApiClient _api;
   final StorageService _storage;
 
+  static List<AttendanceModel>? _cache;
+  static DateTime? _fetchedAt;
+  static Future<List<AttendanceModel>>? _inFlight;
+  static const Duration _ttl = Duration(seconds: 20);
+
   RealStudentAttendanceRepository({
     ApiClient? apiClient,
     required StorageService storageService,
@@ -16,6 +21,24 @@ class RealStudentAttendanceRepository implements StudentAttendanceRepository {
 
   @override
   Future<List<AttendanceModel>> fetchAttendanceRecords() async {
+    if (_cache != null && _fetchedAt != null) {
+      final age = DateTime.now().difference(_fetchedAt!);
+      if (age < _ttl) return _cache!;
+    }
+
+    final inFlight = _inFlight;
+    if (inFlight != null) return inFlight;
+
+    final future = _fetchFresh();
+    _inFlight = future;
+    final data = await future;
+    _inFlight = null;
+    _cache = data;
+    _fetchedAt = DateTime.now();
+    return data;
+  }
+
+  Future<List<AttendanceModel>> _fetchFresh() async {
     final studentId = await _resolveStudentId();
     final data = await _api.get(
       ApiConstants.attendanceStudentReport(studentId),

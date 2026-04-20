@@ -6,8 +6,20 @@ import 'student_goals_state.dart';
 
 class StudentGoalsCubit extends Cubit<StudentGoalsState> {
   final StudentPerformanceRepository _repository;
+  DateTime? _lastLoadedAt;
+
+  static const Duration _ttl = Duration(seconds: 20);
 
   StudentGoalsCubit(this._repository) : super(const StudentGoalsState());
+
+  Future<void> loadIfNeeded(String studentId) async {
+    if (state.status == StudentGoalsStatus.loaded &&
+        _lastLoadedAt != null &&
+        DateTime.now().difference(_lastLoadedAt!) < _ttl) {
+      return;
+    }
+    await load(studentId);
+  }
 
   Future<void> load(String studentId) async {
     emit(state.copyWith(status: StudentGoalsStatus.loading, clearError: true));
@@ -25,6 +37,7 @@ class StudentGoalsCubit extends Cubit<StudentGoalsState> {
           clearError: true,
         ),
       );
+      _lastLoadedAt = DateTime.now();
     } catch (e) {
       emit(
         state.copyWith(
