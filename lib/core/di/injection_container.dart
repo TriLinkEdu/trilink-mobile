@@ -67,6 +67,10 @@ import '../../features/student/analytics/repositories/real_student_analytics_rep
 import '../../features/student/shared/repositories/student_progress_repository.dart';
 import '../../features/student/shared/repositories/mock_student_progress_repository.dart';
 import '../../features/student/shared/repositories/real_student_progress_repository.dart';
+import '../../features/student/textbooks/repositories/textbook_repository.dart';
+import '../../features/student/textbooks/repositories/mock_textbook_repository.dart';
+import '../../features/student/textbooks/repositories/real_textbook_repository.dart';
+import '../../features/student/textbooks/repositories/textbook_file_cache_service.dart';
 
 final sl = GetIt.instance;
 
@@ -201,5 +205,13 @@ Future<void> initDependencies() async {
     () => useRealStudentData
         ? RealStudentProgressRepository()
         : MockStudentProgressRepository(),
+  );
+  sl.registerLazySingleton<TextbookRepository>(
+    () => useRealStudentData
+        ? RealTextbookRepository()
+        : MockTextbookRepository(),
+  );
+  sl.registerLazySingleton<TextbookFileCacheService>(
+    () => TextbookFileCacheService(storageService: sl<StorageService>()),
   );
 }

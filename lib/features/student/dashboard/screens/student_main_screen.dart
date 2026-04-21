@@ -201,6 +201,7 @@ const _routeTitleMap = <String, String>{
   RouteNames.studentGoals: 'Goals & Progress',
   RouteNames.studentPerformanceTrends: 'Performance Trends',
   RouteNames.studentAttendanceInsights: 'Attendance Insights',
+  RouteNames.studentTextbooks: 'Textbooks',
 };
 
 // ── Navigator Observer for Title Tracking ──

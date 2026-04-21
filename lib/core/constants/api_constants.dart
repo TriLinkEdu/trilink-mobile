@@ -152,6 +152,7 @@ class ApiConstants {
   // Files
   static const String filesUpload = '/files/upload';
   static String file(String id) => '/files/$id';
+  static String fileAccess(String id) => '/files/$id/access';
 
   // Gamification
   static const String gamificationBadges = '/gamification/badges';
@@ -173,6 +174,10 @@ class ApiConstants {
   static String aiLearningPath(String studentId) =>
       '/ai/students/$studentId/learning-path';
   static const String aiFeedbackAssistant = '/ai/feedback-assistant';
+
+  // Textbooks
+  static const String textbooks = '/textbooks';
+  static String textbook(String id) => '/textbooks/$id';
 
   // ═══════════════════════════════════════════════════════
   // ─── PARENT-SPECIFIC ENDPOINTS ─────────────────────────
