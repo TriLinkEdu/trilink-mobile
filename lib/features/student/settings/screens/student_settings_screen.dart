@@ -9,6 +9,9 @@ import '../../../../core/theme/theme_notifier.dart';
 import '../../../../core/theme/theme_personalization.dart';
 import '../../shared/widgets/student_page_background.dart';
 import '../../../auth/cubit/auth_cubit.dart';
+import '../cubit/student_settings_cubit.dart';
+import '../cubit/student_settings_state.dart';
+import '../repositories/student_settings_repository.dart';
 
 class StudentSettingsScreen extends StatefulWidget {
   const StudentSettingsScreen({super.key});
@@ -19,6 +22,10 @@ class StudentSettingsScreen extends StatefulWidget {
 
 class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
   final StorageService _storage = sl<StorageService>();
+  late final StudentSettingsCubit _settingsCubit = StudentSettingsCubit(
+    sl<StudentSettingsRepository>(),
+    _storage,
+  );
 
   bool _notificationsEnabled = true;
   bool _biometricLock = false;
@@ -34,6 +41,13 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
   void initState() {
     super.initState();
     _loadPreferences();
+    _settingsCubit.loadSettings();
+  }
+
+  @override
+  void dispose() {
+    _settingsCubit.close();
+    super.dispose();
   }
 
   void _loadPreferences() {
@@ -85,6 +99,7 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
 
     setState(() => _language = language);
     await _storage.setString('language', language);
+    await _settingsCubit.setLanguage(language);
   }
 
   Future<void> _confirmLogout() async {
@@ -127,244 +142,284 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
       isDark ? 120 : 160,
     );
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
-      body: StudentPageBackground(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _SectionCard(
-              title: 'Display',
-              isDark: isDark,
+    return BlocProvider.value(
+      value: _settingsCubit,
+      child: BlocListener<StudentSettingsCubit, StudentSettingsState>(
+        listenWhen: (previous, current) => previous != current,
+        listener: (context, state) {
+          if (state.status == StudentSettingsStatus.loaded) {
+            setState(() {
+              _language = state.language;
+              _notificationsEnabled = state.notificationsEnabled;
+              _biometricLock = state.biometricLock;
+            });
+          }
+
+          final msg = state.errorMessage;
+          if (msg == null || msg.isEmpty) return;
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(msg)));
+        },
+        child: Scaffold(
+          appBar: AppBar(title: const Text('Settings')),
+          body: StudentPageBackground(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
               children: [
-                ListenableBuilder(
-                  listenable: ThemeNotifier.instance,
-                  builder: (context, _) {
-                    final tn = ThemeNotifier.instance;
-                    return Column(
-                      children: [
-                        _AdaptiveToggleTile(
-                          title: 'Dark Mode',
-                          subtitle: 'Use a darker theme for low-light viewing.',
-                          value: tn.isDark,
-                          onChanged: (value) {
-                            if (value) {
-                              tn.setDark();
-                            } else {
-                              tn.setLight();
-                            }
-                            setState(() {});
-                          },
-                        ),
-                        Divider(height: 1, color: dividerColor),
-                        _AdaptiveToggleTile(
-                          title: 'Auto Apply Themes',
-                          subtitle:
-                              'Automatically switch theme by time of day.',
-                          value: tn.autoApplyThemes,
-                          onChanged: (value) {
-                            tn.setAutoApplyThemes(value);
-                            setState(() {});
-                          },
-                        ),
-                        Divider(height: 1, color: dividerColor),
-                        _AdaptiveToggleTile(
-                          title: 'Theme Preview',
-                          subtitle: 'See live changes before applying.',
-                          value: tn.previewEnabled,
-                          onChanged: (value) => tn.setPreviewEnabled(value),
-                        ),
-                        Divider(height: 1, color: dividerColor),
-                        ListTile(
-                          title: const Text('Schedule Type'),
-                          subtitle: Text(
-                            tn.scheduleMode == ThemeScheduleMode.timeOfDay
-                                ? 'Time of day'
-                                : 'Time of day',
-                          ),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () {
-                            tn.setScheduleMode(ThemeScheduleMode.timeOfDay);
-                          },
-                        ),
-                        Divider(height: 1, color: dividerColor),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              'Mood Themes',
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                fontWeight: FontWeight.w700,
+                _SectionCard(
+                  title: 'Display',
+                  isDark: isDark,
+                  children: [
+                    ListenableBuilder(
+                      listenable: ThemeNotifier.instance,
+                      builder: (context, _) {
+                        final tn = ThemeNotifier.instance;
+                        return Column(
+                          children: [
+                            _AdaptiveToggleTile(
+                              title: 'Dark Mode',
+                              subtitle:
+                                  'Use a darker theme for low-light viewing.',
+                              value: tn.isDark,
+                              onChanged: (value) {
+                                if (value) {
+                                  tn.setDark();
+                                } else {
+                                  tn.setLight();
+                                }
+                                setState(() {});
+                              },
+                            ),
+                            Divider(height: 1, color: dividerColor),
+                            _AdaptiveToggleTile(
+                              title: 'Auto Apply Themes',
+                              subtitle:
+                                  'Automatically switch theme by time of day.',
+                              value: tn.autoApplyThemes,
+                              onChanged: (value) {
+                                tn.setAutoApplyThemes(value);
+                                setState(() {});
+                              },
+                            ),
+                            Divider(height: 1, color: dividerColor),
+                            _AdaptiveToggleTile(
+                              title: 'Theme Preview',
+                              subtitle: 'See live changes before applying.',
+                              value: tn.previewEnabled,
+                              onChanged: (value) => tn.setPreviewEnabled(value),
+                            ),
+                            Divider(height: 1, color: dividerColor),
+                            ListTile(
+                              title: const Text('Schedule Type'),
+                              subtitle: Text(
+                                tn.scheduleMode == ThemeScheduleMode.timeOfDay
+                                    ? 'Time of day'
+                                    : 'Time of day',
+                              ),
+                              trailing: const Icon(Icons.chevron_right),
+                              onTap: () {
+                                tn.setScheduleMode(ThemeScheduleMode.timeOfDay);
+                              },
+                            ),
+                            Divider(height: 1, color: dividerColor),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  'Mood Themes',
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                          child: Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: StudentMoodTheme.values.map((mood) {
-                              final unlocked = _isRareThemeUnlocked(mood);
-                              final selected = tn.effectiveMoodTheme == mood;
-                              final label = moodThemeLabels[mood] ?? mood.name;
-                              return _MoodThemeChip(
-                                label: label,
-                                selected: selected,
-                                locked: !unlocked,
-                                color: _moodChipColor(mood),
-                                onTap: unlocked
-                                    ? () {
-                                        if (tn.previewEnabled) {
-                                          tn.setPreviewMoodTheme(mood);
-                                        } else {
-                                          tn.setSelectedMoodTheme(mood);
-                                        }
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: StudentMoodTheme.values.map((mood) {
+                                  final unlocked = _isRareThemeUnlocked(mood);
+                                  final selected =
+                                      tn.effectiveMoodTheme == mood;
+                                  final label =
+                                      moodThemeLabels[mood] ?? mood.name;
+                                  return _MoodThemeChip(
+                                    label: label,
+                                    selected: selected,
+                                    locked: !unlocked,
+                                    color: _moodChipColor(mood),
+                                    onTap: unlocked
+                                        ? () {
+                                            if (tn.previewEnabled) {
+                                              tn.setPreviewMoodTheme(mood);
+                                            } else {
+                                              tn.setSelectedMoodTheme(mood);
+                                            }
+                                          }
+                                        : null,
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                            if (!_isRareThemeUnlocked(
+                              StudentMoodTheme.midnightPurple,
+                            ))
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  0,
+                                  16,
+                                  8,
+                                ),
+                                child: Text(
+                                  'Unlock Midnight Purple with a 14-day study streak.',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            Divider(height: 1, color: dividerColor),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  'Background Texture',
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: ThemeTextureStyle.values.map((
+                                  texture,
+                                ) {
+                                  final selected =
+                                      tn.effectiveTextureStyle == texture;
+                                  final label =
+                                      textureStyleLabels[texture] ??
+                                      texture.name;
+                                  return _TextureChip(
+                                    label: label,
+                                    selected: selected,
+                                    texture: texture,
+                                    onTap: () {
+                                      if (tn.previewEnabled) {
+                                        tn.setPreviewTextureStyle(texture);
+                                      } else {
+                                        tn.setTextureStyle(texture);
                                       }
-                                    : null,
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                        if (!_isRareThemeUnlocked(
-                          StudentMoodTheme.midnightPurple,
-                        ))
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                            child: Text(
-                              'Unlock Midnight Purple with a 14-day study streak.',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
+                                    },
+                                  );
+                                }).toList(),
                               ),
                             ),
-                          ),
-                        Divider(height: 1, color: dividerColor),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              'Background Texture',
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                fontWeight: FontWeight.w700,
+                            if (tn.previewEnabled)
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  12,
+                                  0,
+                                  12,
+                                  12,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: OutlinedButton(
+                                        onPressed: tn.cancelPreview,
+                                        child: const Text('Cancel Preview'),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: FilledButton(
+                                        onPressed: tn.applyPreview,
+                                        child: const Text('Apply Preview'),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                AppSpacing.gapMd,
+                _SectionCard(
+                  title: 'Notifications',
+                  isDark: isDark,
+                  children: [
+                    _AdaptiveToggleTile(
+                      title: 'Push Notifications',
+                      subtitle:
+                          'Receive updates about classes and announcements.',
+                      value: _notificationsEnabled,
+                      onChanged: (value) {
+                        setState(() => _notificationsEnabled = value);
+                        _storage.setBool('pushNotifications', value);
+                        _settingsCubit.setNotificationsEnabled(value);
+                      },
+                    ),
+                  ],
+                ),
+                AppSpacing.gapMd,
+                _SectionCard(
+                  title: 'Privacy',
+                  isDark: isDark,
+                  children: [
+                    _AdaptiveToggleTile(
+                      title: 'Biometric Lock',
+                      subtitle: 'Require biometric verification on app open.',
+                      value: _biometricLock,
+                      onChanged: (value) {
+                        setState(() => _biometricLock = value);
+                        _storage.setBool('biometricLock', value);
+                        _settingsCubit.setBiometricLock(value);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              value
+                                  ? 'Biometric lock enabled for next sign-in.'
+                                  : 'Biometric lock disabled.',
                             ),
                           ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                          child: Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: ThemeTextureStyle.values.map((texture) {
-                              final selected =
-                                  tn.effectiveTextureStyle == texture;
-                              final label =
-                                  textureStyleLabels[texture] ?? texture.name;
-                              return _TextureChip(
-                                label: label,
-                                selected: selected,
-                                texture: texture,
-                                onTap: () {
-                                  if (tn.previewEnabled) {
-                                    tn.setPreviewTextureStyle(texture);
-                                  } else {
-                                    tn.setTextureStyle(texture);
-                                  }
-                                },
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                        if (tn.previewEnabled)
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton(
-                                    onPressed: tn.cancelPreview,
-                                    child: const Text('Cancel Preview'),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: FilledButton(
-                                    onPressed: tn.applyPreview,
-                                    child: const Text('Apply Preview'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    );
-                  },
+                        );
+                      },
+                    ),
+                    Divider(height: 1, color: dividerColor),
+                    _AdaptiveActionTile(
+                      title: 'Language',
+                      valueText: _language,
+                      onTap: _showLanguagePicker,
+                    ),
+                  ],
+                ),
+                AppSpacing.gapXl,
+                OutlinedButton.icon(
+                  onPressed: _confirmLogout,
+                  icon: Icon(Icons.logout, color: theme.colorScheme.error),
+                  label: Text(
+                    'Log Out',
+                    style: TextStyle(color: theme.colorScheme.error),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: theme.colorScheme.error),
+                    minimumSize: const Size.fromHeight(46),
+                  ),
                 ),
               ],
             ),
-            AppSpacing.gapMd,
-            _SectionCard(
-              title: 'Notifications',
-              isDark: isDark,
-              children: [
-                _AdaptiveToggleTile(
-                  title: 'Push Notifications',
-                  subtitle: 'Receive updates about classes and announcements.',
-                  value: _notificationsEnabled,
-                  onChanged: (value) {
-                    setState(() => _notificationsEnabled = value);
-                    _storage.setBool('pushNotifications', value);
-                  },
-                ),
-              ],
-            ),
-            AppSpacing.gapMd,
-            _SectionCard(
-              title: 'Privacy',
-              isDark: isDark,
-              children: [
-                _AdaptiveToggleTile(
-                  title: 'Biometric Lock',
-                  subtitle: 'Require biometric verification on app open.',
-                  value: _biometricLock,
-                  onChanged: (value) {
-                    setState(() => _biometricLock = value);
-                    _storage.setBool('biometricLock', value);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          value
-                              ? 'Biometric lock enabled for next sign-in.'
-                              : 'Biometric lock disabled.',
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                Divider(height: 1, color: dividerColor),
-                _AdaptiveActionTile(
-                  title: 'Language',
-                  valueText: _language,
-                  onTap: _showLanguagePicker,
-                ),
-              ],
-            ),
-            AppSpacing.gapXl,
-            OutlinedButton.icon(
-              onPressed: _confirmLogout,
-              icon: Icon(Icons.logout, color: theme.colorScheme.error),
-              label: Text(
-                'Log Out',
-                style: TextStyle(color: theme.colorScheme.error),
-              ),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: theme.colorScheme.error),
-                minimumSize: const Size.fromHeight(46),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

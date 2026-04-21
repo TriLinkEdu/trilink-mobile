@@ -22,8 +22,7 @@ class LeaderboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) =>
-          LeaderboardCubit(sl<StudentGamificationRepository>())
-            ..loadLeaderboard(),
+          LeaderboardCubit(sl<StudentGamificationRepository>())..loadIfNeeded(),
       child: const _LeaderboardView(),
     );
   }

@@ -6,19 +6,34 @@ export 'dashboard_state.dart';
 
 class DashboardCubit extends Cubit<DashboardState> {
   final StudentDashboardRepository _repository;
+  DateTime? _lastLoadedAt;
+
+  static const Duration _ttl = Duration(seconds: 30);
 
   DashboardCubit(this._repository) : super(const DashboardState());
+
+  Future<void> loadIfNeeded() async {
+    if (state.status == DashboardStatus.loaded &&
+        _lastLoadedAt != null &&
+        DateTime.now().difference(_lastLoadedAt!) < _ttl) {
+      return;
+    }
+    await loadDashboard();
+  }
 
   Future<void> loadDashboard() async {
     emit(state.copyWith(status: DashboardStatus.loading));
     try {
       final data = await _repository.fetchDashboardData();
       emit(DashboardState(status: DashboardStatus.loaded, data: data));
+      _lastLoadedAt = DateTime.now();
     } catch (e) {
-      emit(state.copyWith(
-        status: DashboardStatus.error,
-        errorMessage: e.toString(),
-      ));
+      emit(
+        state.copyWith(
+          status: DashboardStatus.error,
+          errorMessage: e.toString(),
+        ),
+      );
     }
   }
 }

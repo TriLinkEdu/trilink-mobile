@@ -24,7 +24,7 @@ class StudentFeedbackScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) =>
-          FeedbackCubit(sl<StudentFeedbackRepository>())..loadFeedbackHistory(),
+          FeedbackCubit(sl<StudentFeedbackRepository>())..loadIfNeeded(),
       child: const _StudentFeedbackView(),
     );
   }

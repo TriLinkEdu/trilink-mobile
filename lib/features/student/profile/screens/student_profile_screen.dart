@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:trilink_mobile/core/di/injection_container.dart';
 import 'package:trilink_mobile/core/services/sound_service.dart';
+import '../../../../core/constants/api_constants.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/theme/app_radius.dart';
@@ -88,16 +89,20 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
   }
 
   Future<void> _loadProgress() async {
-    final progress = await _progressRepo.fetchProgress();
-    if (!mounted) return;
-    setState(() => _progress = progress);
+    try {
+      final progress = await _progressRepo.fetchProgress();
+      if (!mounted) return;
+      setState(() => _progress = progress);
+    } catch (_) {
+      if (!mounted) return;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final inShell = StudentShellScope.maybeOf(context) != null;
-    final user = context.read<AuthCubit>().currentUser;
+    final user = context.select((AuthCubit cubit) => cubit.currentUser);
     final displayName = user?.name ?? 'Student';
     final gradeSection = [
       if (user?.grade != null) user!.grade!,
@@ -177,18 +182,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                                                   pi,
                                               child: child,
                                             ),
-                                        child: Container(
-                                          color: theme
-                                              .colorScheme
-                                              .surfaceContainerHigh,
-                                          child: Icon(
-                                            Icons.person_rounded,
-                                            size: 62,
-                                            color: theme
-                                                .colorScheme
-                                                .onSurfaceVariant,
-                                          ),
-                                        ),
+                                        child: _StudentAvatarImage(user: user),
                                       ),
                                     ),
                                   ),
@@ -967,6 +961,38 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
           ],
         ),
       ),
+    );
+  }
+}
+
+class _StudentAvatarImage extends StatelessWidget {
+  final dynamic user;
+
+  const _StudentAvatarImage({required this.user});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final profilePath = (user?.profileImagePath ?? '').toString();
+    final hasImage = profilePath.isNotEmpty;
+
+    return Container(
+      color: theme.colorScheme.surfaceContainerHigh,
+      child: hasImage
+          ? Image.network(
+              '${ApiConstants.fileBaseUrl}$profilePath',
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Icon(
+                Icons.person_rounded,
+                size: 62,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            )
+          : Icon(
+              Icons.person_rounded,
+              size: 62,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
     );
   }
 }

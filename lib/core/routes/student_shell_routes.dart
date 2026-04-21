@@ -3,6 +3,7 @@ import 'route_names.dart';
 
 import '../../features/student/grades/screens/student_grades_screen.dart';
 import '../../features/student/grades/screens/subject_grades_screen.dart';
+import '../../features/student/grades/screens/student_goals_screen.dart';
 import '../../features/student/announcements/screens/student_announcements_screen.dart';
 import '../../features/student/announcements/screens/announcement_detail_screen.dart';
 import '../../features/student/attendance/screens/student_attendance_screen.dart';
@@ -169,6 +170,8 @@ class StudentShellRoutes {
         return _page(const StudentWeeklySnapshotScreen(), settings);
       case RouteNames.studentActionPlan:
         return _page(const StudentActionPlanScreen(), settings);
+      case RouteNames.studentGoals:
+        return _page(const StudentGoalsScreen(), settings);
       case RouteNames.studentPerformanceTrends:
         return _page(const StudentPerformanceTrendsScreen(), settings);
       case RouteNames.studentAttendanceInsights:

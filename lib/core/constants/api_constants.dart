@@ -1,5 +1,16 @@
+enum ApiEnvironment { local, production }
+
 class ApiConstants {
   ApiConstants._();
+
+  // Single switch point for API mode.
+  // Change this to ApiEnvironment.production when needed.
+  static const ApiEnvironment environment = ApiEnvironment.local;
+
+  // Single switch point for data source mode.
+  // Keep true to use real backend APIs.
+  // Set false to force mock repositories.
+  static const bool useRealApi = true;
 
   static const String localBaseUrl = 'http://localhost:4000/api';
   static const String productionBaseUrl =
@@ -7,10 +18,8 @@ class ApiConstants {
   static const String productionDocsUrl =
       'https://trilink-backend-ms68.onrender.com/api-docs';
 
-  // Usage:
-  // --dart-define=API_ENV=local      -> localBaseUrl
-  // --dart-define=API_ENV=production -> productionBaseUrl
-  // --dart-define=API_BASE_URL=...   -> explicit override
+  // Optional override for special cases:
+  // --dart-define=API_BASE_URL=...
   static String get baseUrl {
     const overrideUrl = String.fromEnvironment(
       'API_BASE_URL',
@@ -18,8 +27,7 @@ class ApiConstants {
     );
     if (overrideUrl.isNotEmpty) return overrideUrl;
 
-    const apiEnv = String.fromEnvironment('API_ENV', defaultValue: 'local');
-    return apiEnv.toLowerCase() == 'production'
+    return environment == ApiEnvironment.production
         ? productionBaseUrl
         : localBaseUrl;
   }
@@ -32,13 +40,12 @@ class ApiConstants {
     );
     if (overrideUrl.isNotEmpty) {
       // Remove /api suffix if present
-      return overrideUrl.endsWith('/api') 
+      return overrideUrl.endsWith('/api')
           ? overrideUrl.substring(0, overrideUrl.length - 4)
           : overrideUrl;
     }
 
-    const apiEnv = String.fromEnvironment('API_ENV', defaultValue: 'local');
-    return apiEnv.toLowerCase() == 'production'
+    return environment == ApiEnvironment.production
         ? 'https://trilink-backend-ms68.onrender.com'
         : 'http://localhost:4000';
   }
@@ -48,7 +55,7 @@ class ApiConstants {
   static const String refresh = '/auth/refresh';
   static const String me = '/auth/me';
   static const String changePassword = '/auth/change-password';
-  
+
   // Users
   static const String updateProfile = '/users/me';
 
@@ -99,10 +106,13 @@ class ApiConstants {
   static String attemptRelease(String id) => '/attempts/$id/release';
   static String attemptForGrader(String id) => '/attempts/$id/for-grader';
   static String attemptResult(String id) => '/attempts/$id/result';
+  static String attemptAnswers(String id) => '/attempts/$id/answers';
+  static String attemptSubmit(String id) => '/attempts/$id/submit';
 
   // Notifications
   static const String notifications = '/notifications';
   static String notificationRead(String id) => '/notifications/$id/read';
+  static String notificationUnread(String id) => '/notifications/$id/unread';
   static const String notificationsReadAll = '/notifications/read-all';
 
   // Chat
@@ -111,13 +121,18 @@ class ApiConstants {
   static String conversation(String id) => '/conversations/$id';
   static String conversationMessages(String id) =>
       '/conversations/$id/messages';
+  static String messageReadReceipts(String id) => '/messages/$id/read-receipts';
 
   // Settings
   static const String userSettings = '/me/settings';
   static const String schoolSettings = '/school/settings';
+  static const String studentSyncStatus = '/sync/student/status';
+  static const String studentSyncTrigger = '/sync/student/trigger';
+  static const String integrationsSyncHints = '/integrations/sync-hints';
 
   // Feedback
   static const String feedback = '/feedback';
+  static const String feedbackMe = '/feedback/me';
 
   // Reports
   static String studentPerformance(String studentId) =>
@@ -134,6 +149,7 @@ class ApiConstants {
   static const String gamificationBadges = '/gamification/badges';
   static const String gamificationMyBadges = '/gamification/me/badges';
   static const String gamificationMyPoints = '/gamification/me/badge-points';
+  static const String gamificationMyProgress = '/gamification/me/progress';
   static const String gamificationLeaderboard =
       '/gamification/leaderboard/exam-average';
   static String studentBadges(String studentId) =>
@@ -161,4 +177,10 @@ class ApiConstants {
   static String childEnrollments(String studentId) =>
       '/enrollments/children/$studentId';
   static String childGoals(String studentId) => '/goals/students/$studentId';
+  static const String myGoals = '/goals/me';
+  static String goalById(String goalId) => '/goals/$goalId';
+
+  // Student reports
+  static String studentReport(String studentId) =>
+      '/reports/students/$studentId/report';
 }

@@ -5,9 +5,21 @@ import 'performance_trends_state.dart';
 
 class PerformanceTrendsCubit extends Cubit<PerformanceTrendsState> {
   final StudentAnalyticsRepository _repository;
+  DateTime? _lastLoadedAt;
+
+  static const Duration _ttl = Duration(seconds: 30);
 
   PerformanceTrendsCubit(this._repository)
     : super(const PerformanceTrendsState());
+
+  Future<void> loadIfNeeded() async {
+    if (state.status == PerformanceTrendsStatus.loaded &&
+        _lastLoadedAt != null &&
+        DateTime.now().difference(_lastLoadedAt!) < _ttl) {
+      return;
+    }
+    await loadTrends();
+  }
 
   Future<void> loadTrends() async {
     emit(state.copyWith(status: PerformanceTrendsStatus.loading));
@@ -20,6 +32,7 @@ class PerformanceTrendsCubit extends Cubit<PerformanceTrendsState> {
           errorMessage: null,
         ),
       );
+      _lastLoadedAt = DateTime.now();
     } catch (_) {
       emit(
         state.copyWith(

@@ -1,3 +1,5 @@
+import '../constants/api_constants.dart';
+
 /// Feature flags for controlling app behavior
 ///
 /// Use these flags to toggle between mock data and real API calls
@@ -5,9 +7,8 @@
 class FeatureFlags {
   FeatureFlags._();
 
-  /// Set to true to use real backend API
-  /// Set to false to use dummy/mock data only
-  static const bool useRealApi = true;
+  /// Source of truth lives in [ApiConstants.useRealApi]
+  static const bool useRealApi = ApiConstants.useRealApi;
 
   /// Set to true to show debug info in UI (like data source indicator)
   static const bool showDebugInfo = true;

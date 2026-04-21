@@ -198,6 +198,7 @@ const _routeTitleMap = <String, String>{
   RouteNames.studentSyncStatus: 'Sync Status',
   RouteNames.studentWeeklySnapshot: 'Weekly Snapshot',
   RouteNames.studentActionPlan: 'Action Plan',
+  RouteNames.studentGoals: 'Goals & Progress',
   RouteNames.studentPerformanceTrends: 'Performance Trends',
   RouteNames.studentAttendanceInsights: 'Attendance Insights',
 };

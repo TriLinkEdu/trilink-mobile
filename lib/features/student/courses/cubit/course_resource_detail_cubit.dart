@@ -7,9 +7,22 @@ export 'course_resource_detail_state.dart';
 class CourseResourceDetailCubit extends Cubit<CourseResourceDetailState> {
   final StudentCoursesRepository _repository;
   final String resourceId;
+  DateTime? _lastLoadedAt;
+
+  static const Duration _ttl = Duration(seconds: 30);
 
   CourseResourceDetailCubit(this._repository, this.resourceId)
     : super(const CourseResourceDetailState());
+
+  Future<void> loadIfNeeded() async {
+    if (state.status == CourseResourceDetailStatus.loaded &&
+        state.resource?.id == resourceId &&
+        _lastLoadedAt != null &&
+        DateTime.now().difference(_lastLoadedAt!) < _ttl) {
+      return;
+    }
+    await loadResource();
+  }
 
   Future<void> loadResource() async {
     emit(state.copyWith(status: CourseResourceDetailStatus.loading));
@@ -22,6 +35,7 @@ class CourseResourceDetailCubit extends Cubit<CourseResourceDetailState> {
             resource: resource,
           ),
         );
+        _lastLoadedAt = DateTime.now();
       } else {
         emit(
           state.copyWith(

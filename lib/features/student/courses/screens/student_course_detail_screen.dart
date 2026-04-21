@@ -32,7 +32,7 @@ class StudentCourseDetailScreen extends StatelessWidget {
     return BlocProvider(
       create: (_) =>
           CourseListCubit(sl<StudentCurriculumRepository>())
-            ..loadTopics(subjectId),
+            ..loadTopicsIfNeeded(subjectId),
       child: _CourseDetailView(subjectId: subjectId, subjectName: subjectName),
     );
   }

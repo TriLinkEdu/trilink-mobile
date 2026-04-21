@@ -6,14 +6,27 @@ export 'sync_state.dart';
 
 class SyncCubit extends Cubit<SyncState> {
   final StudentSyncRepository _repository;
+  DateTime? _lastLoadedAt;
+
+  static const Duration _ttl = Duration(seconds: 20);
 
   SyncCubit(this._repository) : super(const SyncState());
+
+  Future<void> loadIfNeeded() async {
+    if (state.status == SyncStatus.loaded &&
+        _lastLoadedAt != null &&
+        DateTime.now().difference(_lastLoadedAt!) < _ttl) {
+      return;
+    }
+    await loadSyncStatus();
+  }
 
   Future<void> loadSyncStatus() async {
     emit(state.copyWith(status: SyncStatus.loading));
     try {
       final items = await _repository.fetchSyncStatus();
       emit(SyncState(status: SyncStatus.loaded, items: items));
+      _lastLoadedAt = DateTime.now();
     } catch (e) {
       emit(
         state.copyWith(
@@ -27,5 +40,6 @@ class SyncCubit extends Cubit<SyncState> {
   Future<void> triggerSync() async {
     final items = await _repository.triggerSync();
     emit(SyncState(status: SyncStatus.loaded, items: items));
+    _lastLoadedAt = DateTime.now();
   }
 }

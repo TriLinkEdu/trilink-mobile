@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/services/storage_service.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -24,8 +25,7 @@ class StudentChatScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-          ChatCubit(sl<StudentChatRepository>())..loadConversations(),
+      create: (_) => ChatCubit(sl<StudentChatRepository>())..loadIfNeeded(),
       child: const _ChatView(),
     );
   }
@@ -39,6 +39,22 @@ class _ChatView extends StatefulWidget {
 }
 
 class _ChatViewState extends State<_ChatView> {
+  String _currentUserId = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentUserId();
+  }
+
+  Future<void> _loadCurrentUserId() async {
+    final user = await sl<StorageService>().getUser();
+    if (!mounted) return;
+    setState(() {
+      _currentUserId = (user?['id'] ?? '').toString();
+    });
+  }
+
   void _openConversation(ChatConversationModel conversation) {
     final cubit = context.read<ChatCubit>();
     Navigator.of(context)
@@ -155,7 +171,10 @@ class _ChatViewState extends State<_ChatView> {
                     .read<ChatCubit>()
                     .createConversation(
                       title: name,
-                      participantIds: ['student1', ...selected],
+                      participantIds: [
+                        if (_currentUserId.isNotEmpty) _currentUserId,
+                        ...selected,
+                      ],
                       isGroup: true,
                     );
                 if (!mounted || conversation == null) return;
@@ -192,7 +211,10 @@ class _ChatViewState extends State<_ChatView> {
                   .read<ChatCubit>()
                   .createConversation(
                     title: entry.value,
-                    participantIds: ['student1', entry.key],
+                    participantIds: [
+                      if (_currentUserId.isNotEmpty) _currentUserId,
+                      entry.key,
+                    ],
                     isGroup: false,
                   );
               if (!mounted || conversation == null) return;

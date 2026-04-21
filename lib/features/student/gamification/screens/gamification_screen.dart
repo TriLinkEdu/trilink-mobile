@@ -28,7 +28,8 @@ class GamificationScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) =>
-          GamificationCubit(sl<StudentGamificationRepository>())..loadAll(),
+          GamificationCubit(sl<StudentGamificationRepository>())
+            ..loadIfNeeded(),
       child: const _GamificationView(),
     );
   }

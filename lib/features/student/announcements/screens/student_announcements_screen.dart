@@ -27,7 +27,7 @@ class StudentAnnouncementsScreen extends StatelessWidget {
     return BlocProvider(
       create: (_) =>
           AnnouncementsCubit(sl<StudentAnnouncementsRepository>())
-            ..loadAnnouncements(),
+            ..loadIfNeeded(),
       child: const _StudentAnnouncementsView(),
     );
   }

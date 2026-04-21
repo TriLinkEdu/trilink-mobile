@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:trilink_mobile/core/widgets/pressable.dart';
 import '../../../../core/constants/asset_constants.dart';
+import '../../../../core/constants/api_constants.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -36,7 +37,7 @@ class StudentDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final user = context.read<AuthCubit>().currentUser;
+    final user = context.select((AuthCubit cubit) => cubit.currentUser);
     final displayName = user?.name ?? 'Student';
     final displayEmail = user?.email ?? '';
     final gradeSection = [
@@ -55,6 +56,7 @@ class StudentDrawer extends StatelessWidget {
             name: displayName,
             email: displayEmail,
             subtitle: gradeSection,
+            avatarPath: user?.profileImagePath,
             onProfileTap: () {
               Navigator.of(context).pop();
               StudentShellScope.of(context).switchTab(3);
@@ -112,6 +114,12 @@ class StudentDrawer extends StatelessWidget {
                   label: 'Exams',
                   color: theme.colorScheme.primary,
                   onTap: () => _navigate(context, RouteNames.studentExams),
+                ),
+                _DrawerItem(
+                  icon: Icons.flag_rounded,
+                  label: 'Goals & Progress',
+                  color: AppColors.achievementEmerald,
+                  onTap: () => _navigate(context, RouteNames.studentGoals),
                 ),
 
                 AppSpacing.gapSm,
@@ -218,6 +226,7 @@ class _DrawerHeader extends StatelessWidget {
   final String name;
   final String email;
   final String subtitle;
+  final String? avatarPath;
   final VoidCallback onProfileTap;
   final VoidCallback onSettingsTap;
 
@@ -225,6 +234,7 @@ class _DrawerHeader extends StatelessWidget {
     required this.name,
     required this.email,
     required this.subtitle,
+    this.avatarPath,
     required this.onProfileTap,
     required this.onSettingsTap,
   });
@@ -253,11 +263,17 @@ class _DrawerHeader extends StatelessWidget {
                 child: CircleAvatar(
                   radius: 28,
                   backgroundColor: headerForeground.withAlpha(40),
-                  child: Icon(
-                    Icons.person_rounded,
-                    size: 30,
-                    color: headerForeground,
-                  ),
+                  backgroundImage:
+                      (avatarPath != null && avatarPath!.isNotEmpty)
+                      ? NetworkImage('${ApiConstants.fileBaseUrl}$avatarPath')
+                      : null,
+                  child: (avatarPath == null || avatarPath!.isEmpty)
+                      ? Icon(
+                          Icons.person_rounded,
+                          size: 30,
+                          color: headerForeground,
+                        )
+                      : null,
                 ),
               ),
               const Spacer(),

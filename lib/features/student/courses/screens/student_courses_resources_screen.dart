@@ -22,7 +22,7 @@ class StudentCoursesResourcesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) =>
-          CourseResourcesCubit(sl<StudentCoursesRepository>())..loadResources(),
+          CourseResourcesCubit(sl<StudentCoursesRepository>())..loadIfNeeded(),
       child: const _StudentCoursesResourcesView(),
     );
   }

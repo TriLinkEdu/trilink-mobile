@@ -21,7 +21,8 @@ class StudentActionPlanScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) =>
-          ActionPlanCubit(sl<StudentAnalyticsRepository>(), sl())..loadPlan(),
+          ActionPlanCubit(sl<StudentAnalyticsRepository>(), sl())
+            ..loadIfNeeded(),
       child: const _StudentActionPlanView(),
     );
   }

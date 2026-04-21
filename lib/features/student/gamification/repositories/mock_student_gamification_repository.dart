@@ -1,5 +1,6 @@
 import '../models/gamification_models.dart';
 import '../../exams/models/exam_model.dart';
+import '../../shared/models/student_progress_model.dart';
 import '../../shared/repositories/student_progress_repository.dart';
 import 'student_gamification_repository.dart';
 
@@ -855,7 +856,7 @@ class MockStudentGamificationRepository
   @override
   Future<StreakModel> fetchStreak() async {
     await Future<void>.delayed(_latency);
-    final progress = await _progressRepository.fetchProgress();
+    final progress = await _safeProgress();
     final now = DateTime.now();
     return StreakModel(
       currentStreak: progress.currentStreak,
@@ -865,6 +866,20 @@ class MockStudentGamificationRepository
         (i) => DateTime(now.year, now.month, now.day - (6 - i)),
       ),
     );
+  }
+
+  Future<StudentProgressModel> _safeProgress() async {
+    try {
+      return await _progressRepository.fetchProgress();
+    } catch (_) {
+      return const StudentProgressModel(
+        currentStreak: 0,
+        longestStreak: 0,
+        totalXp: 0,
+        level: 1,
+        levelTitle: 'Starter',
+      );
+    }
   }
 
   int _advanceMission(String missionId, {required int step}) {

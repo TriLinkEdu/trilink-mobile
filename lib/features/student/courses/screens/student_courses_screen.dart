@@ -24,7 +24,8 @@ class StudentCoursesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) =>
-          CourseListCubit(sl<StudentCurriculumRepository>())..loadCourses(),
+          CourseListCubit(sl<StudentCurriculumRepository>())
+            ..loadCoursesIfNeeded(),
       child: const _StudentCoursesView(),
     );
   }

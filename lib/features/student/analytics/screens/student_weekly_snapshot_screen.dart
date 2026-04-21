@@ -21,7 +21,7 @@ class StudentWeeklySnapshotScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) =>
-          WeeklySnapshotCubit(sl<StudentAnalyticsRepository>())..loadSnapshot(),
+          WeeklySnapshotCubit(sl<StudentAnalyticsRepository>())..loadIfNeeded(),
       child: const _StudentWeeklySnapshotView(),
     );
   }
@@ -50,15 +50,18 @@ class _StudentWeeklySnapshotView extends StatelessWidget {
             if (state.status == WeeklySnapshotStatus.error ||
                 state.snapshot == null) {
               return AppErrorWidget(
-                message: state.errorMessage ?? 'Unable to load weekly snapshot.',
-                onRetry: () => context.read<WeeklySnapshotCubit>().loadSnapshot(),
+                message:
+                    state.errorMessage ?? 'Unable to load weekly snapshot.',
+                onRetry: () =>
+                    context.read<WeeklySnapshotCubit>().loadSnapshot(),
               );
             }
 
             final snapshot = state.snapshot!;
 
             return BrandedRefreshIndicator(
-              onRefresh: () => context.read<WeeklySnapshotCubit>().loadSnapshot(),
+              onRefresh: () =>
+                  context.read<WeeklySnapshotCubit>().loadSnapshot(),
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 physics: const AlwaysScrollableScrollPhysics(),
