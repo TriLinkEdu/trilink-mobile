@@ -184,9 +184,13 @@ class _CourseDetailView extends StatelessWidget {
             child: _ResourcesButton(
               color: _color,
               onTap: () {
-                Navigator.of(
-                  context,
-                ).pushNamed(RouteNames.studentCourseResources);
+                Navigator.of(context).pushNamed(
+                  RouteNames.studentCourseResources,
+                  arguments: {
+                    'subjectId': subjectId,
+                    'subjectName': subjectName,
+                  },
+                );
               },
             ),
           ),

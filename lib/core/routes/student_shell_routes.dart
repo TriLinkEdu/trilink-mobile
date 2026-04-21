@@ -149,7 +149,13 @@ class StudentShellRoutes {
           settings,
         );
       case RouteNames.studentCourseResources:
-        return _page(const StudentCoursesResourcesScreen(), settings);
+        return _page(
+          StudentCoursesResourcesScreen(
+            subjectId: safeArgs['subjectId']?.toString(),
+            subjectName: safeArgs['subjectName']?.toString(),
+          ),
+          settings,
+        );
       case RouteNames.studentCourseResourceDetail:
         return _page(
           CourseResourceDetailScreen(

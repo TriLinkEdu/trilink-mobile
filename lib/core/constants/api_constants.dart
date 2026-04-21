@@ -101,6 +101,12 @@ class ApiConstants {
   // Questions bank
   static const String questions = '/questions';
 
+  // Assignments
+  static const String assignmentsMe = '/assignments/me';
+  static String assignmentById(String id) => '/assignments/$id';
+  static String assignmentSubmission(String id) =>
+      '/assignments/$id/submissions';
+
   // Attempts
   static String attemptGrade(String id) => '/attempts/$id/grade';
   static String attemptRelease(String id) => '/attempts/$id/release';
@@ -139,6 +145,8 @@ class ApiConstants {
       '/reports/students/$studentId/performance';
   static String studentCompare(String studentId) =>
       '/reports/students/$studentId/compare';
+  static String studentMastery(String studentId) =>
+      '/reports/students/$studentId/mastery';
   static const String parentWeeklySummary = '/reports/parent/weekly-summary';
 
   // Files

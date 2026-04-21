@@ -466,10 +466,9 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                                       label: 'Courses & Resources',
                                       compact: isCompact,
                                       showChevron: true,
-                                      onTap: () =>
-                                          Navigator.of(context).pushNamed(
-                                            RouteNames.studentCourseResources,
-                                          ),
+                                      onTap: () => Navigator.of(
+                                        context,
+                                      ).pushNamed(RouteNames.studentCourses),
                                     ),
                                     _divider(),
                                     _SettingsRow(

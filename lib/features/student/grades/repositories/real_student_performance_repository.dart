@@ -26,8 +26,19 @@ class RealStudentPerformanceRepository implements StudentPerformanceRepository {
 
   @override
   Future<List<TopicMasteryModel>> fetchMasteryLevels(String studentId) async {
-    // No dedicated mastery endpoint in backend yet.
-    return const [];
+    final rows = await _api.getList(ApiConstants.studentMastery(studentId));
+    return rows.whereType<Map<String, dynamic>>().map((raw) {
+      return TopicMasteryModel(
+        studentId: (raw['studentId'] ?? studentId).toString(),
+        topicId: (raw['topicId'] ?? '').toString(),
+        topicName: (raw['topicName'] ?? 'Topic').toString(),
+        subjectId: (raw['subjectId'] ?? '').toString(),
+        masteryLevel: _asDouble(raw['masteryLevel'], fallback: 0),
+        lastAssessed:
+            DateTime.tryParse((raw['lastAssessed'] ?? '').toString()) ??
+            DateTime.now(),
+      );
+    }).toList();
   }
 
   @override

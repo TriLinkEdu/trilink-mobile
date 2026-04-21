@@ -103,13 +103,6 @@ class StudentDrawer extends StatelessWidget {
                   onTap: () => _navigate(context, RouteNames.studentCourses),
                 ),
                 _DrawerItem(
-                  icon: Icons.menu_book_rounded,
-                  label: 'Resources',
-                  color: theme.colorScheme.secondary,
-                  onTap: () =>
-                      _navigate(context, RouteNames.studentCourseResources),
-                ),
-                _DrawerItem(
                   icon: Icons.quiz_rounded,
                   label: 'Exams',
                   color: theme.colorScheme.primary,
