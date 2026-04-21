@@ -154,7 +154,9 @@ class _StudentCoursesResourcesView extends StatelessWidget {
                                   borderRadius: AppRadius.borderSm,
                                 ),
                                 child: Text(
-                                  resource.typeLabel,
+                                  resource.textbookId != null
+                                      ? 'Textbook'
+                                      : resource.typeLabel,
                                   style: Theme.of(context).textTheme.labelSmall
                                       ?.copyWith(
                                         fontWeight: FontWeight.w600,

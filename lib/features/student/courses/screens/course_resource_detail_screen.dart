@@ -7,6 +7,10 @@ import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import 'package:trilink_mobile/core/widgets/error_widget.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../textbooks/models/textbook_model.dart';
+import '../../textbooks/repositories/textbook_file_cache_service.dart';
+import '../../textbooks/repositories/textbook_repository.dart';
+import '../../textbooks/screens/textbook_viewer_screen.dart';
 import '../cubit/course_resource_detail_cubit.dart';
 import '../models/course_resource_model.dart';
 import '../repositories/student_courses_repository.dart';
@@ -39,6 +43,12 @@ class _CourseResourceDetailViewState extends State<_CourseResourceDetailView> {
   bool _isOpening = false;
 
   Future<void> _openResource(CourseResourceModel resource) async {
+    if (resource.textbookFileRecordId != null &&
+        resource.textbookFileRecordId!.isNotEmpty) {
+      await _openTextbookResource(resource);
+      return;
+    }
+
     final urlValue = resource.url;
     if (urlValue == null || urlValue.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -67,6 +77,56 @@ class _CourseResourceDetailViewState extends State<_CourseResourceDetailView> {
             content: Text('Could not open this resource right now.'),
           ),
         );
+      }
+    }
+  }
+
+  Future<void> _openTextbookResource(CourseResourceModel resource) async {
+    final fileRecordId = resource.textbookFileRecordId;
+    if (fileRecordId == null || fileRecordId.isEmpty) return;
+
+    setState(() => _isOpening = true);
+    try {
+      final textbook = await sl<TextbookRepository>().fetchTextbookById(
+        resource.textbookId ?? '',
+      );
+      final textbookModel =
+          textbook ??
+          TextbookModel(
+            id: resource.textbookId ?? resource.id,
+            title: resource.title,
+            subject: resource.subjectName,
+            grade: 0,
+            isActive: true,
+            fileRecordId: fileRecordId,
+            cacheKey: resource.textbookCacheKey ?? '$fileRecordId:v1',
+            accessUrl: resource.url ?? '',
+            createdAt: resource.uploadedAt,
+          );
+
+      final openResult = await sl<TextbookFileCacheService>().prepareLocalPdf(
+        textbookModel,
+      );
+      if (!mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => TextbookViewerScreen(
+            localPath: openResult.localPath,
+            title: resource.title,
+            fromCache: openResult.fromCache,
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not open this textbook right now.'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isOpening = false);
       }
     }
   }
