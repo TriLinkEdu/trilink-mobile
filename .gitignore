@@ -46,3 +46,4 @@ app.*.map.json
 
 # Local planning docs
 page_implementation_checklist.md
+docs/
