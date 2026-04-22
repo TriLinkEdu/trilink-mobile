@@ -1,18 +1,42 @@
+import 'package:flutter/foundation.dart';
+
 enum ApiEnvironment { local, production }
 
 class ApiConstants {
   ApiConstants._();
 
-  // Single switch point for API mode.
-  // Change this to ApiEnvironment.production when needed.
-  static const ApiEnvironment environment = ApiEnvironment.local;
+  static ApiEnvironment get environment {
+    const fromDefine = String.fromEnvironment('API_ENV', defaultValue: '');
+    if (fromDefine.toLowerCase() == 'production') {
+      return ApiEnvironment.production;
+    }
+    if (fromDefine.toLowerCase() == 'local') {
+      return ApiEnvironment.local;
+    }
+    return ApiEnvironment.local;
+  }
 
   // Single switch point for data source mode.
   // Keep true to use real backend APIs.
   // Set false to force mock repositories.
   static const bool useRealApi = true;
 
-  static const String localBaseUrl = 'http://localhost:4000/api';
+  static String get localBaseUrl {
+    const explicitLocalHost = String.fromEnvironment(
+      'API_LOCAL_HOST',
+      defaultValue: '',
+    );
+    if (explicitLocalHost.isNotEmpty) {
+      return 'http://$explicitLocalHost:4000/api';
+    }
+
+    if (kIsWeb) return 'http://localhost:4000/api';
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.0.2.2:4000/api';
+    }
+    return 'http://localhost:4000/api';
+  }
+
   static const String productionBaseUrl =
       'https://trilink-backend-ms68.onrender.com/api';
   static const String productionDocsUrl =
@@ -45,9 +69,12 @@ class ApiConstants {
           : overrideUrl;
     }
 
-    return environment == ApiEnvironment.production
-        ? 'https://trilink-backend-ms68.onrender.com'
-        : 'http://localhost:4000';
+    if (environment == ApiEnvironment.production) {
+      return 'https://trilink-backend-ms68.onrender.com';
+    }
+    return localBaseUrl.endsWith('/api')
+        ? localBaseUrl.substring(0, localBaseUrl.length - 4)
+        : localBaseUrl;
   }
 
   // Auth
