@@ -16,10 +16,34 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
   bool _isAnonymous = true;
   bool _sending = false;
 
+  bool _loadingHistory = false;
+  List<Map<String, dynamic>> _feedbackHistory = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
   @override
   void dispose() {
     _messageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadHistory() async {
+    setState(() => _loadingHistory = true);
+    try {
+      final history = await ApiService().getMyFeedback();
+      if (!mounted) return;
+      setState(() {
+        _feedbackHistory = history.cast<Map<String, dynamic>>();
+        _loadingHistory = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loadingHistory = false);
+    }
   }
 
   Future<void> _sendFeedback() async {
@@ -43,6 +67,7 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
       });
       if (!mounted) return;
       _messageController.clear();
+      _loadHistory(); // Reload history after successful submission
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Feedback sent successfully'),
@@ -251,10 +276,181 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 32),
+
+            // Feedback History
+            _buildFeedbackHistory(),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildFeedbackHistory() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'My Feedback History',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            if (_loadingHistory)
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (_feedbackHistory.isEmpty && !_loadingHistory)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 32),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Column(
+              children: [
+                Icon(Icons.feedback_outlined,
+                    size: 36, color: Colors.grey.shade300),
+                const SizedBox(height: 8),
+                Text(
+                  'No feedback submitted yet',
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                ),
+              ],
+            ),
+          )
+        else
+          ...(_feedbackHistory.map((feedback) => _buildFeedbackCard(feedback))),
+      ],
+    );
+  }
+
+  Widget _buildFeedbackCard(Map<String, dynamic> feedback) {
+    final category = feedback['category'] as String? ?? 'general';
+    final message = feedback['message'] as String? ?? '';
+    final status = feedback['status'] as String? ?? 'open';
+    final createdAt = feedback['createdAt'] as String? ?? '';
+
+    Color statusColor;
+    IconData statusIcon;
+    switch (status.toLowerCase()) {
+      case 'resolved':
+        statusColor = AppColors.success;
+        statusIcon = Icons.check_circle_outline;
+        break;
+      case 'in_progress':
+        statusColor = AppColors.warning;
+        statusIcon = Icons.pending_outlined;
+        break;
+      default:
+        statusColor = Colors.grey;
+        statusIcon = Icons.circle_outlined;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 4,
+              offset: const Offset(0, 2)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  category[0].toUpperCase() + category.substring(1),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Icon(statusIcon, color: statusColor, size: 16),
+              const SizedBox(width: 4),
+              Text(
+                status[0].toUpperCase() + status.substring(1).replaceAll('_', ' '),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: statusColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            message,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textPrimary,
+              height: 1.4,
+            ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (createdAt.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              _formatDate(createdAt),
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey.shade500,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(String iso) {
+    try {
+      final d = DateTime.parse(iso);
+      const months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
+      ];
+      return '${months[d.month - 1]} ${d.day}, ${d.year}';
+    } catch (_) {
+      return iso;
+    }
   }
 
   Widget _buildLabel(String text) {

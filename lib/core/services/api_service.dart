@@ -126,6 +126,21 @@ class ApiService {
         DummyData.studentAttendanceReport(studentId),
       );
 
+  /// Real API only: Get student attendance report without mock fallback.
+  Future<Map<String, dynamic>> getStudentAttendanceReportReal(
+    String studentId,
+  ) =>
+      _api.get(ApiConstants.attendanceStudentReport(studentId));
+
+  Future<Map<String, dynamic>> getStudentAttendanceByDay(
+    String studentId,
+    String date,
+  ) =>
+      _tryOr(
+        () => _api.get(ApiConstants.attendanceStudentByDay(studentId, date)),
+        DummyData.studentAttendanceByDay,
+      );
+
   Future<Map<String, dynamic>> getClassAttendanceReport(
     String classOfferingId,
   ) => _tryOr(
@@ -433,6 +448,11 @@ class ApiService {
         DummyData.feedbackResponse,
       );
 
+  Future<List<dynamic>> getMyFeedback() => _tryOr(
+        () => _api.getList(ApiConstants.feedbackMine),
+        DummyData.myFeedbackList,
+      );
+
   // ─── Reports ────────────────────────────────────────────
   Future<Map<String, dynamic>> getStudentPerformance(String studentId) =>
       _tryOr(
@@ -492,6 +512,10 @@ class ApiService {
   /// Get list of children linked to current parent
   Future<List<dynamic>> getMyChildren() =>
       _tryOr(() => _api.getList(ApiConstants.myChildren), DummyData.myChildren);
+
+    /// Real API only: Get children linked to current parent without mock fallback.
+    Future<List<dynamic>> getMyChildrenReal() =>
+      _api.getList(ApiConstants.myChildren);
 
   /// Get child enrollments (classes)
   Future<List<dynamic>> getChildEnrollments(String studentId) => _tryOr(
