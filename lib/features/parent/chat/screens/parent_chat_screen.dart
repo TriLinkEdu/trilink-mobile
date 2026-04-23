@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/constants/api_constants.dart';
+import '../../../../core/services/storage_service.dart';
 import 'parent_message_view_screen.dart';
 
 class ParentChatScreen extends StatefulWidget {
@@ -10,45 +12,109 @@ class ParentChatScreen extends StatefulWidget {
   State<ParentChatScreen> createState() => _ParentChatScreenState();
 }
 
-class _ParentChatScreenState extends State<ParentChatScreen> {
+class _ParentChatScreenState extends State<ParentChatScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
   bool _loading = true;
   String? _error;
-  List<_MessageThread> _threads = [];
+  
+  List<_ContactUser> _adminUsers = [];
+  List<_ContactUser> _teacherUsers = [];
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
     try {
-      setState(() { _loading = true; _error = null; });
-      final conversations = await ApiService().getConversations();
-      if (!mounted) return;
       setState(() {
-        _threads = conversations.map<_MessageThread>((c) {
-          return _MessageThread(
-            id: c['id'] as String? ?? '',
-            name: c['participantName'] as String? ??
-                c['name'] as String? ?? 'Unknown',
-            role: c['participantRole'] as String? ??
-                c['subject'] as String? ?? '',
-            avatarUrl: c['avatar'] as String? ?? '',
-            avatarIcon: null,
-            avatarColor: null,
-            preview: c['lastMessage'] as String? ?? '',
-            time: c['lastMessageTime'] as String? ??
-                c['updatedAt'] as String? ?? '',
-            hasCheckmark: c['read'] as bool? ?? false,
-            isUnread: !(c['read'] as bool? ?? true),
-          );
-        }).toList();
+        _loading = true;
+        _error = null;
+      });
+
+      // Search for admin and teacher users
+      final users = await ApiService().searchUsers();
+      
+      if (!mounted) return;
+      
+      final List<_ContactUser> admins = [];
+      final List<_ContactUser> teachers = [];
+      
+      for (final user in users) {
+        final role = user['role'] as String?;
+        if (role == 'admin') {
+          admins.add(_ContactUser.fromJson(user));
+        } else if (role == 'teacher') {
+          teachers.add(_ContactUser.fromJson(user));
+        }
+      }
+      
+      setState(() {
+        _adminUsers = admins;
+        _teacherUsers = teachers;
         _loading = false;
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _startConversation(_ContactUser user) async {
+    try {
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // Initiate conversation
+      final response = await ApiService().initiateConversation(user.id);
+      final conversation = response['conversation'] as Map<String, dynamic>;
+      final conversationId = conversation['id'] as String;
+
+      if (!mounted) return;
+      
+      // Close loading dialog
+      Navigator.pop(context);
+
+      // Navigate to message view
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ParentMessageViewScreen(
+            conversationId: conversationId,
+            teacherName: user.fullName,
+            subject: user.role == 'admin' ? 'Administrator' : user.subject ?? 'Teacher',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      
+      // Close loading dialog
+      Navigator.pop(context);
+      
+      // Show error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to start conversation: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -60,10 +126,7 @@ class _ParentChatScreenState extends State<ParentChatScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(),
-            const SizedBox(height: 16),
-            _buildSearchBar(),
-            const SizedBox(height: 20),
-            _buildSectionLabel(),
+            _buildTabBar(),
             Expanded(
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
@@ -73,8 +136,7 @@ class _ParentChatScreenState extends State<ParentChatScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(_error!,
-                                  style: const TextStyle(
-                                      color: AppColors.error)),
+                                  style: const TextStyle(color: AppColors.error)),
                               const SizedBox(height: 12),
                               ElevatedButton(
                                   onPressed: _loadData,
@@ -82,13 +144,7 @@ class _ParentChatScreenState extends State<ParentChatScreen> {
                             ],
                           ),
                         )
-                      : _threads.isEmpty
-                          ? Center(
-                              child: Text('No conversations yet',
-                                  style: TextStyle(
-                                      color: Colors.grey.shade500)),
-                            )
-                          : _buildThreadList(context),
+                      : _buildTabView(),
             ),
           ],
         ),
@@ -102,7 +158,8 @@ class _ParentChatScreenState extends State<ParentChatScreen> {
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
+            icon: const Icon(Icons.arrow_back_ios_new,
+                color: AppColors.textPrimary, size: 20),
             onPressed: () => Navigator.pop(context),
           ),
           const Expanded(
@@ -120,214 +177,345 @@ class _ParentChatScreenState extends State<ParentChatScreen> {
     );
   }
 
-  Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        height: 44,
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(10),
+  Widget _buildTabBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+      ),
+      child: TabBar(
+        controller: _tabController,
+        indicator: const UnderlineTabIndicator(
+          borderSide: BorderSide(width: 2.5, color: AppColors.primary),
+          insets: EdgeInsets.symmetric(horizontal: 24),
         ),
-        child: TextField(
-          decoration: InputDecoration(
-            hintText: 'Search staff or subjects...',
-            hintStyle:
-                TextStyle(color: Colors.grey.shade500, fontSize: 14),
-            prefixIcon: Icon(Icons.search,
-                color: Colors.grey.shade500, size: 20),
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+        labelColor: AppColors.primary,
+        unselectedLabelColor: AppColors.textSecondary,
+        labelStyle: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w500,
+          fontSize: 14,
+        ),
+        tabs: [
+          Tab(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.admin_panel_settings_outlined, size: 16),
+                const SizedBox(width: 6),
+                const Text('Admin'),
+                if (_adminUsers.isNotEmpty) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 6, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '${_adminUsers.length}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Tab(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.school_outlined, size: 16),
+                const SizedBox(width: 6),
+                const Text('Teachers'),
+                if (_teacherUsers.isNotEmpty) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 6, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '${_teacherUsers.length}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabView() {
+    return TabBarView(
+      controller: _tabController,
+      children: [
+        _buildAdminTab(),
+        _buildTeachersTab(),
+      ],
+    );
+  }
+
+  Widget _buildAdminTab() {
+    if (_adminUsers.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.admin_panel_settings_outlined,
+                size: 48, color: Colors.grey.shade300),
+            const SizedBox(height: 12),
+            Text('No administrators available',
+                style: TextStyle(color: Colors.grey.shade500)),
+          ],
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: _adminUsers.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (context, index) => _ContactTile(
+        user: _adminUsers[index],
+        onTap: () => _startConversation(_adminUsers[index]),
+      ),
+    );
+  }
+
+  Widget _buildTeachersTab() {
+    if (_teacherUsers.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.school_outlined,
+                size: 48, color: Colors.grey.shade300),
+            const SizedBox(height: 12),
+            Text('No teachers available',
+                style: TextStyle(color: Colors.grey.shade500)),
+          ],
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: _teacherUsers.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (context, index) => _ContactTile(
+        user: _teacherUsers[index],
+        onTap: () => _startConversation(_teacherUsers[index]),
+      ),
+    );
+  }
+}
+
+class _ContactUser {
+  final String id;
+  final String firstName;
+  final String lastName;
+  final String email;
+  final String role;
+  final String? subject;
+  final String? department;
+  final String? profileImageFileId;
+  final String? profileImagePath;
+
+  _ContactUser({
+    required this.id,
+    required this.firstName,
+    required this.lastName,
+    required this.email,
+    required this.role,
+    this.subject,
+    this.department,
+    this.profileImageFileId,
+    this.profileImagePath,
+  });
+
+  String get fullName => '$firstName $lastName'.trim();
+  
+  String get displaySubject {
+    if (role == 'admin') return 'Administrator';
+    return subject ?? 'Teacher';
+  }
+
+  factory _ContactUser.fromJson(Map<String, dynamic> json) {
+    // Helper function to handle "null" strings from API
+    String? parseNullableString(dynamic value) {
+      if (value == null || value == 'null') return null;
+      final str = value as String?;
+      return str?.trim().isEmpty == true ? null : str?.trim();
+    }
+
+    return _ContactUser(
+      id: json['id'] as String? ?? '',
+      firstName: json['firstName'] as String? ?? '',
+      lastName: json['lastName'] as String? ?? '',
+      email: json['email'] as String? ?? '',
+      role: json['role'] as String? ?? '',
+      subject: parseNullableString(json['subject']),
+      department: parseNullableString(json['department']),
+      profileImageFileId: parseNullableString(json['profileImageFileId']),
+      profileImagePath: parseNullableString(json['profileImagePath']),
+    );
+  }
+}
+
+class _ContactTile extends StatelessWidget {
+  final _ContactUser user;
+  final VoidCallback onTap;
+
+  const _ContactTile({required this.user, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              _buildAvatar(),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user.fullName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            user.displaySubject,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        if (user.department != null) ...[
+                          const SizedBox(width: 6),
+                          Text(
+                            user.department!,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.send_rounded,
+                  color: AppColors.primary,
+                  size: 16,
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildSectionLabel() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Text(
-        'RECENT',
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: Colors.grey.shade500,
-          letterSpacing: 0.8,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildThreadList(BuildContext context) {
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      itemCount: _threads.length,
-      separatorBuilder: (context, index) => Divider(
-        color: Colors.grey.shade200,
-        height: 1,
-      ),
-      itemBuilder: (context, index) {
-        return _ThreadTile(
-          thread: _threads[index],
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ParentMessageViewScreen(
-                  conversationId: _threads[index].id,
-                  teacherName: _threads[index].name,
-                  subject: _threads[index].role,
-                ),
-              ),
-            );
-          },
+  Widget _buildAvatar() {
+    return FutureBuilder<Map<String, String>?>(
+      future: _getAuthHeaders(),
+      builder: (context, snapshot) {
+        return CircleAvatar(
+          radius: 24,
+          backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+          backgroundImage: (user.profileImagePath != null && 
+                           user.profileImagePath!.isNotEmpty && 
+                           snapshot.hasData)
+              ? NetworkImage(
+                  '${ApiConstants.fileBaseUrl}${user.profileImagePath}',
+                  headers: snapshot.data,
+                )
+              : null,
+          child: (user.profileImagePath == null || user.profileImagePath!.isEmpty)
+              ? Text(
+                  _getInitials(),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                )
+              : null,
         );
       },
     );
   }
-}
 
-class _MessageThread {
-  final String id;
-  final String name;
-  final String role;
-  final String avatarUrl;
-  final IconData? avatarIcon;
-  final Color? avatarColor;
-  final String preview;
-  final String time;
-  final bool hasCheckmark;
-  final bool isUnread;
-
-  _MessageThread({
-    required this.id,
-    required this.name,
-    required this.role,
-    required this.avatarUrl,
-    this.avatarIcon,
-    this.avatarColor,
-    required this.preview,
-    required this.time,
-    required this.hasCheckmark,
-    required this.isUnread,
-  });
-}
-
-class _ThreadTile extends StatelessWidget {
-  final _MessageThread thread;
-  final VoidCallback onTap;
-
-  const _ThreadTile({required this.thread, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildAvatar(),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          thread.name,
-                          style: TextStyle(
-                            fontWeight: thread.isUnread
-                                ? FontWeight.bold
-                                : FontWeight.w600,
-                            fontSize: 15,
-                            color: AppColors.textPrimary,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Text(
-                        thread.time,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: thread.isUnread
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                          color: thread.isUnread
-                              ? AppColors.primary
-                              : Colors.grey.shade500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    thread.role,
-                    style: TextStyle(
-                        fontSize: 12, color: Colors.grey.shade500),
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          thread.preview,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      if (thread.hasCheckmark)
-                        Icon(
-                          Icons.done_all,
-                          size: 16,
-                          color: Colors.grey.shade400,
-                        ),
-                      if (thread.isUnread)
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: AppColors.primary,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  String _getInitials() {
+    final f = user.firstName.isNotEmpty ? user.firstName[0] : '';
+    final l = user.lastName.isNotEmpty ? user.lastName[0] : '';
+    return '$f$l'.toUpperCase();
   }
 
-  Widget _buildAvatar() {
-    if (thread.avatarUrl.isNotEmpty) {
-      return CircleAvatar(
-        radius: 24,
-        backgroundImage: NetworkImage(thread.avatarUrl),
-      );
+  Future<Map<String, String>?> _getAuthHeaders() async {
+    final token = await StorageService().accessToken;
+    if (token != null) {
+      return {'Authorization': 'Bearer $token'};
     }
-    return CircleAvatar(
-      radius: 24,
-      backgroundColor:
-          (thread.avatarColor ?? AppColors.primary).withValues(alpha: 0.15),
-      child: Icon(
-        thread.avatarIcon ?? Icons.person,
-        color: thread.avatarColor ?? AppColors.primary,
-        size: 22,
-      ),
-    );
+    return null;
   }
 }

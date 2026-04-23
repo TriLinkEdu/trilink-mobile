@@ -27,6 +27,7 @@ class _TeacherNotificationsScreenState
 
   Future<void> _loadData() async {
     try {
+      final unreadOnly = _selectedFilter == 1; // index 1 = "Unread"
       final data = await ApiService().getNotifications();
       if (!mounted) return;
       setState(() {

@@ -3,9 +3,14 @@ enum ApiEnvironment { local, production }
 class ApiConstants {
   ApiConstants._();
 
-  // Single switch point for API mode.
-  // Change this to ApiEnvironment.production when needed.
-  static const ApiEnvironment environment = ApiEnvironment.local;
+  // API environment is selected at build time using:
+  // --dart-define=API_ENV=production
+  static ApiEnvironment get environment {
+    const env = String.fromEnvironment('API_ENV', defaultValue: 'local');
+    return env.toLowerCase() == 'production'
+        ? ApiEnvironment.production
+        : ApiEnvironment.local;
+  }
 
   // Single switch point for data source mode.
   // Keep true to use real backend APIs.
@@ -79,6 +84,8 @@ class ApiConstants {
       '/attendance-sessions/$sessionId/marks';
   static String attendanceStudentReport(String studentId) =>
       '/reports/attendance/student/$studentId';
+  static String attendanceStudentByDay(String studentId, String date) =>
+      '/reports/attendance/student/$studentId/by-day?date=$date';
   static String attendanceClassReport(String classOfferingId) =>
       '/reports/attendance/class/$classOfferingId';
 
@@ -118,6 +125,7 @@ class ApiConstants {
   // Chat
   static const String chatWsInfo = '/chat/ws-info';
   static const String conversations = '/conversations';
+  static const String conversationsInitiate = '/conversations/initiate';
   static String conversation(String id) => '/conversations/$id';
   static String conversationMessages(String id) =>
       '/conversations/$id/messages';
@@ -133,12 +141,17 @@ class ApiConstants {
   // Feedback
   static const String feedback = '/feedback';
   static const String feedbackMe = '/feedback/me';
+  static const String feedbackMine = '/feedback/mine';
 
   // Reports
   static String studentPerformance(String studentId) =>
       '/reports/students/$studentId/performance';
   static String studentCompare(String studentId) =>
       '/reports/students/$studentId/compare';
+  static String studentReport(String studentId) =>
+      '/reports/students/$studentId/report';
+  static String studentTeachers(String studentId) =>
+      '/reports/students/$studentId/teachers';
   static const String parentWeeklySummary = '/reports/parent/weekly-summary';
 
   // Files
@@ -158,6 +171,8 @@ class ApiConstants {
   // Student profiles
   static const String myProfile = '/student-profiles/me';
   static String studentProfile(String userId) => '/student-profiles/$userId';
+  static String studentDetail(String userId) =>
+      '/student-profiles/$userId/detail';
 
   // AI
   static String aiRecommendations(String studentId) =>
@@ -180,7 +195,9 @@ class ApiConstants {
   static const String myGoals = '/goals/me';
   static String goalById(String goalId) => '/goals/$goalId';
 
-  // Student reports
-  static String studentReport(String studentId) =>
-      '/reports/students/$studentId/report';
+  // Enrollments (teacher)
+  static const String enrollments = '/enrollments';
+
+  // User Search
+  static const String usersSearch = '/users/search';
 }

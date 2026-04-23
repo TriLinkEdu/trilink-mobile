@@ -40,48 +40,52 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
     final message = _messageController.text.trim();
 
     if (title.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please enter a title')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter a title')));
       return;
     }
     if (message.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please enter a message')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter a message')));
       return;
     }
 
-    final selectedAudiences = _audiences
-        .where((a) => a.selected)
-        .map((a) => a.label)
-        .toList();
-
     setState(() => _submitting = true);
     try {
+      // Get active academic year first
+      final yearData = await ApiService().getActiveAcademicYear();
+      final yearId = (yearData['id'] ?? yearData['data']?['id']) as String?;
+      if (yearId == null || yearId.isEmpty) {
+        throw Exception('No active academic year found');
+      }
+
       await ApiService().createAnnouncement({
+        'academicYearId': yearId,
         'title': title,
-        'message': message,
-        'targetAudience': selectedAudiences,
-        'status': _scheduleForLater ? 'scheduled' : 'sent',
+        'body': message,          // backend uses 'body' not 'message'
+        'audience': 'all',        // valid values: all, students, parents, class, grade
+        if (_scheduleForLater) 'publishAt': DateTime.now()
+            .add(const Duration(hours: 1))
+            .toIso8601String(),
       });
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            _scheduleForLater
-                ? 'Announcement scheduled!'
-                : 'Announcement sent!',
-          ),
+          content: Text(_scheduleForLater
+              ? 'Announcement scheduled!'
+              : 'Announcement sent!'),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
         ),
       );
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/routes/route_names.dart';
 
 class ClassListScreen extends StatefulWidget {
   const ClassListScreen({super.key});
@@ -47,8 +48,9 @@ class _ClassListScreenState extends State<ClassListScreen> {
 
   String _className(Map<String, dynamic> offering) {
     final subject = offering['subject'];
-    final subjectName =
-        subject is Map ? (subject['name'] ?? 'Unknown') : 'Unknown';
+    final subjectName = subject is Map
+        ? (subject['name'] ?? 'Unknown')
+        : 'Unknown';
     return subjectName.toString();
   }
 
@@ -74,15 +76,35 @@ class _ClassListScreenState extends State<ClassListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Classes'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        _handleBack(context);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('My Classes'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => _handleBack(context),
+          ),
         ),
+        body: _buildBody(),
       ),
-      body: _buildBody(),
+    );
+  }
+
+  void _handleBack(BuildContext context) {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+
+    navigator.pushNamedAndRemoveUntil(
+      RouteNames.teacherDashboard,
+      (_) => false,
     );
   }
 
@@ -171,7 +193,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
           final teacher = c['teacher'];
           final teacherName = teacher is Map
               ? '${teacher['firstName'] ?? ''} ${teacher['lastName'] ?? ''}'
-                  .trim()
+                    .trim()
               : '';
 
           return Card(
@@ -181,8 +203,10 @@ class _ClassListScreenState extends State<ClassListScreen> {
               side: BorderSide(color: Colors.grey.shade200),
             ),
             child: ListTile(
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
               leading: CircleAvatar(
                 backgroundColor: color.withValues(alpha: 0.15),
                 child: Icon(Icons.class_outlined, color: color),
@@ -194,8 +218,10 @@ class _ClassListScreenState extends State<ClassListScreen> {
               subtitle: Text(_classPeriod(c)),
               trailing: teacherName.isNotEmpty
                   ? Chip(
-                      label: Text(teacherName,
-                          style: const TextStyle(fontSize: 12)),
+                      label: Text(
+                        teacherName,
+                        style: const TextStyle(fontSize: 12),
+                      ),
                       backgroundColor: Colors.grey.shade100,
                     )
                   : null,

@@ -490,14 +490,16 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
   Widget _buildAvatarSection() {
     final theme = Theme.of(context);
     final user = AuthService().currentUser;
-    
+
     print('DEBUG AVATAR: Building avatar with:');
     print('  profileImagePath: "${user?.profileImagePath}"');
     print('  profileImageFileId: "${user?.profileImageFileId}"');
     print('  selectedImage: $_selectedImage');
     print('  fileBaseUrl: "${ApiConstants.fileBaseUrl}"');
     if (user?.profileImagePath != null) {
-      print('  Full image URL: "${ApiConstants.fileBaseUrl}${user!.profileImagePath}"');
+      print(
+        '  Full image URL: "${ApiConstants.fileBaseUrl}${user!.profileImagePath}"',
+      );
     }
 
     return Center(
@@ -508,21 +510,33 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
               FutureBuilder<Map<String, String>?>(
                 future: _getAuthHeaders(),
                 builder: (context, snapshot) {
+                  final ImageProvider<Object>? avatarImage =
+                      _selectedImage != null
+                      ? FileImage(_selectedImage!)
+                      : (user?.profileImagePath != null &&
+                            user!.profileImagePath!.isNotEmpty &&
+                            snapshot.hasData)
+                      ? NetworkImage(
+                          '${ApiConstants.fileBaseUrl}${user.profileImagePath}',
+                          headers: snapshot.data,
+                        )
+                      : null;
+
                   return CircleAvatar(
                     radius: 48,
                     backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                    backgroundImage: _selectedImage != null
-                        ? FileImage(_selectedImage!)
-                        : (user?.profileImagePath != null && user!.profileImagePath!.isNotEmpty && snapshot.hasData)
-                            ? NetworkImage(
-                                '${ApiConstants.fileBaseUrl}${user.profileImagePath}',
-                                headers: snapshot.data,
-                              )
-                            : null,
-                    onBackgroundImageError: (exception, stackTrace) {
-                      print('DEBUG AVATAR: Failed to load profile image: $exception');
-                    },
-                    child: (_selectedImage == null && (user?.profileImagePath == null || user!.profileImagePath!.isEmpty))
+                    backgroundImage: avatarImage,
+                    onBackgroundImageError: avatarImage != null
+                        ? (exception, stackTrace) {
+                            print(
+                              'DEBUG AVATAR: Failed to load profile image: $exception',
+                            );
+                          }
+                        : null,
+                    child:
+                        (_selectedImage == null &&
+                            (user?.profileImagePath == null ||
+                                user!.profileImagePath!.isEmpty))
                         ? Text(
                             _initials,
                             style: const TextStyle(

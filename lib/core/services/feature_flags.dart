@@ -10,14 +10,14 @@ class FeatureFlags {
   /// Source of truth lives in [ApiConstants.useRealApi]
   static const bool useRealApi = ApiConstants.useRealApi;
 
-  /// Set to true to show debug info in UI (like data source indicator)
+  /// Set to true to show debug  info in UI (like data source indicator)
   static const bool showDebugInfo = true;
 
   /// Set to true to enable verbose logging
   static const bool verboseLogging = false;
 
   /// Set to true to simulate slow network (adds delay to API calls)
-  static const bool simulateSlowNetwork = false;
+  static const bool simulateSlowNetwork = true;
 
   /// Network delay in milliseconds (only if simulateSlowNetwork is true)
   static const int networkDelayMs = 1000;

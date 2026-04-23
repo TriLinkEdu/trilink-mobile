@@ -61,12 +61,6 @@ class RouteNames {
   static const String teacherAnnouncements = '/teacher/announcements';
   static const String teacherCreateAnnouncement =
       '/teacher/announcements/create';
-  static const String teacherExams = '/teacher/exams';
-  static const String teacherCreateExam = '/teacher/exams/create';
-  static const String teacherExamBank = '/teacher/exams/bank';
-  static const String teacherExamAnalytics = '/teacher/exams/analytics';
-  static const String teacherEvaluateSubmissions = '/teacher/exams/evaluate';
-  static const String teacherLiveExam = '/teacher/exams/live';
   static const String teacherNotifications = '/teacher/notifications';
   static const String teacherStudentList = '/teacher/students';
   static const String teacherStudentAnalytics = '/teacher/student/analytics';
