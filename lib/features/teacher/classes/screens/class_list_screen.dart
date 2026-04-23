@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/routes/route_names.dart';
 
 class ClassListScreen extends StatefulWidget {
   const ClassListScreen({super.key});
@@ -13,32 +14,6 @@ class _ClassListScreenState extends State<ClassListScreen> {
   bool _loading = true;
   String? _error;
   List<Map<String, dynamic>> _classes = [];
-
-  String? _stringValue(dynamic value) {
-    if (value == null) return null;
-    final v = value.toString().trim();
-    return v.isEmpty ? null : v;
-  }
-
-  String? _extractAcademicYearId(Map<String, dynamic> data) {
-    // Check direct id
-    final direct = _stringValue(data['id']);
-    if (direct != null) return direct;
-
-    // Check data.id (backend response format)
-    final dataField = data['data'];
-    if (dataField is Map<String, dynamic>) {
-      final dataId = _stringValue(dataField['id']);
-      if (dataId != null) return dataId;
-    }
-
-    // Check nested academicYear.id
-    final nestedYear = data['academicYear'];
-    if (nestedYear is Map<String, dynamic>) {
-      return _stringValue(nestedYear['id']);
-    }
-    return null;
-  }
 
   @override
   void initState() {
@@ -54,18 +29,12 @@ class _ClassListScreenState extends State<ClassListScreen> {
       });
 
       final yearData = await ApiService().getActiveAcademicYear();
-      final yearId = _extractAcademicYearId(yearData);
-      if (yearId == null) {
-        throw Exception('Active academic year is missing id');
-      }
+      final yearId = yearData['id'] as String;
       final offerings = await ApiService().getMyClassOfferings(yearId);
 
       if (!mounted) return;
       setState(() {
-        _classes = offerings
-            .whereType<Map<String, dynamic>>()
-            .where((o) => _stringValue(o['id']) != null)
-            .toList();
+        _classes = offerings.cast<Map<String, dynamic>>();
         _loading = false;
       });
     } catch (e) {
@@ -79,8 +48,9 @@ class _ClassListScreenState extends State<ClassListScreen> {
 
   String _className(Map<String, dynamic> offering) {
     final subject = offering['subject'];
-    final subjectName =
-        subject is Map ? (subject['name'] ?? 'Unknown') : 'Unknown';
+    final subjectName = subject is Map
+        ? (subject['name'] ?? 'Unknown')
+        : 'Unknown';
     return subjectName.toString();
   }
 
@@ -106,19 +76,35 @@ class _ClassListScreenState extends State<ClassListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final canPop = Navigator.of(context).canPop();
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Classes'),
-        automaticallyImplyLeading: canPop,
-        leading: canPop
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => Navigator.pop(context),
-              )
-            : null,
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        _handleBack(context);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('My Classes'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => _handleBack(context),
+          ),
+        ),
+        body: _buildBody(),
       ),
-      body: _buildBody(),
+    );
+  }
+
+  void _handleBack(BuildContext context) {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+
+    navigator.pushNamedAndRemoveUntil(
+      RouteNames.teacherDashboard,
+      (_) => false,
     );
   }
 
@@ -207,7 +193,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
           final teacher = c['teacher'];
           final teacherName = teacher is Map
               ? '${teacher['firstName'] ?? ''} ${teacher['lastName'] ?? ''}'
-                  .trim()
+                    .trim()
               : '';
 
           return Card(
@@ -217,8 +203,10 @@ class _ClassListScreenState extends State<ClassListScreen> {
               side: BorderSide(color: Colors.grey.shade200),
             ),
             child: ListTile(
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
               leading: CircleAvatar(
                 backgroundColor: color.withValues(alpha: 0.15),
                 child: Icon(Icons.class_outlined, color: color),
@@ -230,8 +218,10 @@ class _ClassListScreenState extends State<ClassListScreen> {
               subtitle: Text(_classPeriod(c)),
               trailing: teacherName.isNotEmpty
                   ? Chip(
-                      label: Text(teacherName,
-                          style: const TextStyle(fontSize: 12)),
+                      label: Text(
+                        teacherName,
+                        style: const TextStyle(fontSize: 12),
+                      ),
                       backgroundColor: Colors.grey.shade100,
                     )
                   : null,

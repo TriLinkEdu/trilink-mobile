@@ -53,15 +53,18 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
     return null;
   }
 
-  int get _presentCount =>
-      _students.where((s) => s.status == AttendanceStatus.present || s.status == AttendanceStatus.excused).length;
+  int get _presentCount => _students
+      .where(
+        (s) =>
+            s.status == AttendanceStatus.present ||
+            s.status == AttendanceStatus.excused,
+      )
+      .length;
 
   List<_StudentAttendance> get _filteredStudents {
     if (_searchQuery.isEmpty) return _students;
     return _students
-        .where(
-          (s) => s.name.toLowerCase().contains(_searchQuery.toLowerCase()),
-        )
+        .where((s) => s.name.toLowerCase().contains(_searchQuery.toLowerCase()))
         .toList();
   }
 
@@ -111,8 +114,7 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
     final subject = offering['subject'];
     final grade = offering['grade'];
     final section = offering['section'];
-    final subjectName =
-        subject is Map ? (subject['name'] ?? '') : '';
+    final subjectName = subject is Map ? (subject['name'] ?? '') : '';
     final gradeName = grade is Map ? (grade['name'] ?? '') : '';
     final sectionName = section is Map ? (section['name'] ?? '') : '';
     return '$subjectName $gradeName - $sectionName'.trim();
@@ -129,10 +131,14 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
       final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
       // 1. Load enrolled students for this class
-      final enrollments = await ApiService().getClassEnrollments(_selectedClassId!);
+      final enrollments = await ApiService().getClassEnrollments(
+        _selectedClassId!,
+      );
 
       // 2. Check if a session already exists for today
-      final sessions = await ApiService().getAttendanceSessions(classOfferingId: _selectedClassId!);
+      final sessions = await ApiService().getAttendanceSessions(
+        classOfferingId: _selectedClassId!,
+      );
       final todaySession = (sessions.cast<Map<String, dynamic>>()).firstWhere(
         (s) => s['date'] == today,
         orElse: () => <String, dynamic>{},
@@ -171,22 +177,31 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
         final markData = existingMarks[studentId];
         final statusStr = markData?['status'] ?? 'present';
         final note = markData?['note'];
-        
+
         AttendanceStatus status;
         switch (statusStr.toLowerCase()) {
-          case 'late': status = AttendanceStatus.late; break;
-          case 'absent': status = AttendanceStatus.absent; break;
-          case 'excused': status = AttendanceStatus.excused; break;
-          default: status = AttendanceStatus.present;
+          case 'late':
+            status = AttendanceStatus.late;
+            break;
+          case 'absent':
+            status = AttendanceStatus.absent;
+            break;
+          case 'excused':
+            status = AttendanceStatus.excused;
+            break;
+          default:
+            status = AttendanceStatus.present;
         }
 
-        students.add(_StudentAttendance(
-          name: name.isNotEmpty ? name : 'Student',
-          id: studentId,
-          avatarUrl: '',
-          status: status,
-          note: note,
-        ));
+        students.add(
+          _StudentAttendance(
+            name: name.isNotEmpty ? name : 'Student',
+            id: studentId,
+            avatarUrl: '',
+            status: status,
+            note: note,
+          ),
+        );
       }
 
       setState(() {
@@ -212,14 +227,16 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
 
   Future<void> _submitAttendance() async {
     if (_selectedClassId == null || _students.isEmpty) return;
-    
+
     setState(() => _submitting = true);
-    
+
     try {
       final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
       // Check if session already exists for today
-      final sessions = await ApiService().getAttendanceSessions(classOfferingId: _selectedClassId!);
+      final sessions = await ApiService().getAttendanceSessions(
+        classOfferingId: _selectedClassId!,
+      );
       final existing = (sessions.cast<Map<String, dynamic>>()).firstWhere(
         (s) => s['date'] == today,
         orElse: () => <String, dynamic>{},
@@ -246,10 +263,7 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
 
       // PUT marks — backend expects { marks: [{studentId, status, note?}] }
       final marks = _students.map((s) {
-        final mark = {
-          'studentId': s.id,
-          'status': s.status.name,
-        };
+        final mark = {'studentId': s.id, 'status': s.status.name};
         if (s.note != null && s.note!.isNotEmpty) {
           mark['note'] = s.note!;
         }
@@ -260,7 +274,7 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
 
       if (!mounted) return;
       setState(() => _submitting = false);
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Attendance submitted successfully!'),
@@ -271,7 +285,7 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _submitting = false);
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to submit: $e'),
@@ -326,7 +340,11 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.error_outline, size: 48, color: Colors.grey.shade400),
+                Icon(
+                  Icons.error_outline,
+                  size: 48,
+                  color: Colors.grey.shade400,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'Failed to load classes',
@@ -402,30 +420,30 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
               child: _loadingSession
                   ? const Center(child: CircularProgressIndicator())
                   : _students.isEmpty
-                      ? Center(
-                          child: Text(
-                            'No student records found for this class.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade500,
-                            ),
-                          ),
-                        )
-                      : ListView.separated(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          itemCount: _filteredStudents.length,
-                          separatorBuilder: (context, index) =>
-                              const SizedBox(height: 4),
-                          itemBuilder: (context, index) {
-                            final student = _filteredStudents[index];
-                            return _StudentAttendanceTile(
-                              student: student,
-                              onStatusChanged: (status) {
-                                setState(() => student.status = status);
-                              },
-                            );
-                          },
+                  ? Center(
+                      child: Text(
+                        'No student records found for this class.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade500,
                         ),
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: _filteredStudents.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 4),
+                      itemBuilder: (context, index) {
+                        final student = _filteredStudents[index];
+                        return _StudentAttendanceTile(
+                          student: student,
+                          onStatusChanged: (status) {
+                            setState(() => student.status = status);
+                          },
+                        );
+                      },
+                    ),
             ),
             _buildSubmitButton(),
           ],
@@ -451,16 +469,16 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),
-          items: _classOfferings.map((c) {
-            final id = _stringValue(c['id']);
-            if (id == null) {
-              return null;
-            }
-            return DropdownMenuItem(
-              value: id,
-              child: Text(_labelFor(c)),
-            );
-          }).whereType<DropdownMenuItem<String>>().toList(),
+          items: _classOfferings
+              .map((c) {
+                final id = _stringValue(c['id']);
+                if (id == null) {
+                  return null;
+                }
+                return DropdownMenuItem(value: id, child: Text(_labelFor(c)));
+              })
+              .whereType<DropdownMenuItem<String>>()
+              .toList(),
           onChanged: (val) {
             if (val != null && val != _selectedClassId) {
               setState(() {
@@ -571,8 +589,11 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
           onTap: _markAllPresent,
           child: const Row(
             children: [
-              Icon(Icons.check_circle_outline,
-                  size: 16, color: AppColors.secondary),
+              Icon(
+                Icons.check_circle_outline,
+                size: 16,
+                color: AppColors.secondary,
+              ),
               SizedBox(width: 4),
               Text(
                 'Mark All Present',
@@ -594,8 +615,10 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       child: ElevatedButton.icon(
-        onPressed: (_students.isEmpty || _submitting) ? null : _submitAttendance,
-        icon: _submitting 
+        onPressed: (_students.isEmpty || _submitting)
+            ? null
+            : _submitAttendance,
+        icon: _submitting
             ? const SizedBox(
                 width: 18,
                 height: 18,
@@ -735,7 +758,9 @@ class _StudentAttendanceTile extends StatelessWidget {
                         color: Colors.grey.shade500,
                       ),
                     ),
-                    if (student.status == AttendanceStatus.excused && student.note != null && student.note!.isNotEmpty) ...[
+                    if (student.status == AttendanceStatus.excused &&
+                        student.note != null &&
+                        student.note!.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
                         'Reason: ${student.note}',

@@ -59,14 +59,18 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
   }
 
   Future<void> _loadAll() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       String userId = _studentId;
       if (userId.isEmpty) {
         final children = await ApiService().getMyChildren();
         if (children.isNotEmpty) {
           final s = children[0]['student'] as Map<String, dynamic>?;
-          userId = s?['id'] as String? ?? children[0]['studentId'] as String? ?? '';
+          userId =
+              s?['id'] as String? ?? children[0]['studentId'] as String? ?? '';
         }
       }
       if (userId.isEmpty) {
@@ -93,7 +97,10 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
     }
   }
 
@@ -105,8 +112,11 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              color: AppColors.textPrimary, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: AppColors.textPrimary,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -122,31 +132,31 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? _buildError()
-              : RefreshIndicator(
-                  onRefresh: _loadAll,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildProfileCard(),
-                        const SizedBox(height: 16),
-                        _buildSummaryRow(),
-                        const SizedBox(height: 20),
-                        _buildSectionLabel('Subjects & Results'),
-                        const SizedBox(height: 10),
-                        _buildSubjectsList(),
-                        const SizedBox(height: 20),
-                        _buildSectionLabel('Teachers'),
-                        const SizedBox(height: 10),
-                        _buildTeachersList(),
-                        const SizedBox(height: 20),
-                      ],
-                    ),
-                  ),
+          ? _buildError()
+          : RefreshIndicator(
+              onRefresh: _loadAll,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildProfileCard(),
+                    const SizedBox(height: 16),
+                    _buildSummaryRow(),
+                    const SizedBox(height: 20),
+                    _buildSectionLabel('Subjects & Results'),
+                    const SizedBox(height: 10),
+                    _buildSubjectsList(),
+                    const SizedBox(height: 20),
+                    _buildSectionLabel('Teachers'),
+                    const SizedBox(height: 10),
+                    _buildTeachersList(),
+                    const SizedBox(height: 20),
+                  ],
                 ),
+              ),
+            ),
     );
   }
 
@@ -159,9 +169,11 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
           children: [
             Icon(Icons.wifi_off_rounded, size: 48, color: Colors.grey.shade300),
             const SizedBox(height: 16),
-            Text(_error!,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+            Text(
+              _error!,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: _loadAll,
@@ -171,7 +183,8 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
             ),
           ],
@@ -189,9 +202,10 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 3)),
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
         ],
       ),
       child: Row(
@@ -225,7 +239,9 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                 if (_gradeSection.isNotEmpty)
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(6),
@@ -244,8 +260,7 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                   (_detail['student'] as Map<String, dynamic>?)?['email']
                           as String? ??
                       '',
-                  style: TextStyle(
-                      fontSize: 12, color: Colors.grey.shade500),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                 ),
               ],
             ),
@@ -256,14 +271,10 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
   }
 
   Widget _buildSummaryRow() {
-    final summary =
-        _report['summary'] as Map<String, dynamic>? ?? {};
-    final attendancePct =
-        summary['overallAttendancePercent'] as num?;
-    final avgPct =
-        summary['overallSubjectsAveragePercent'] as num?;
-    final courses =
-        (_report['courses'] as List<dynamic>?)?.length ?? 0;
+    final summary = _report['summary'] as Map<String, dynamic>? ?? {};
+    final attendancePct = summary['overallAttendancePercent'] as num?;
+    final avgPct = summary['overallSubjectsAveragePercent'] as num?;
+    final courses = (_report['courses'] as List<dynamic>?)?.length ?? 0;
 
     return Row(
       children: [
@@ -280,9 +291,7 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
           icon: Icons.grade_outlined,
           color: AppColors.primary,
           label: 'Avg Score',
-          value: avgPct != null
-              ? '${avgPct.toStringAsFixed(0)}%'
-              : '--',
+          value: avgPct != null ? '${avgPct.toStringAsFixed(0)}%' : '--',
         ),
         const SizedBox(width: 10),
         _buildStatCard(
@@ -309,9 +318,10 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 6,
-                offset: const Offset(0, 2)),
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
           ],
         ),
         child: Column(
@@ -360,7 +370,9 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
 
     if (courses.isEmpty) {
       return _buildEmptyState(
-          Icons.menu_book_outlined, 'No subject data available');
+        Icons.menu_book_outlined,
+        'No subject data available',
+      );
     }
 
     final subjectColors = [
@@ -381,20 +393,15 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
         final teacher = co['teacher'] as Map<String, dynamic>? ?? {};
         final assessments =
             course['assessments'] as Map<String, dynamic>? ?? {};
-        final attendance =
-            course['attendance'] as Map<String, dynamic>? ?? {};
-        final totals =
-            attendance['totals'] as Map<String, dynamic>? ?? {};
+        final attendance = course['attendance'] as Map<String, dynamic>? ?? {};
+        final totals = attendance['totals'] as Map<String, dynamic>? ?? {};
 
         final subjectName = subject['name'] as String? ?? 'Unknown';
         final teacherName =
-            '${teacher['firstName'] ?? ''} ${teacher['lastName'] ?? ''}'
-                .trim();
+            '${teacher['firstName'] ?? ''} ${teacher['lastName'] ?? ''}'.trim();
         final avgPct = assessments['averagePercent'] as num?;
-        final releasedCount =
-            assessments['releasedCount'] as int? ?? 0;
-        final attendancePct =
-            totals['attendancePercent'] as num?;
+        final releasedCount = assessments['releasedCount'] as int? ?? 0;
+        final attendancePct = totals['attendancePercent'] as num?;
         final color = subjectColors[i % subjectColors.length];
         final teacherId = teacher['id'] as String?;
 
@@ -410,10 +417,10 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
               .cast<Map<String, dynamic>>(),
           onMessageTeacher: teacherId != null
               ? () => _openTeacherChat(
-                    teacherId: teacherId,
-                    teacherName: teacherName,
-                    subject: subjectName,
-                  )
+                  teacherId: teacherId,
+                  teacherName: teacherName,
+                  subject: subjectName,
+                )
               : null,
         );
       }).toList(),
@@ -458,9 +465,10 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2)),
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
             ],
           ),
           child: Row(
@@ -496,22 +504,26 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                         spacing: 4,
                         runSpacing: 4,
                         children: subjects
-                            .map((s) => Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 7, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: color.withValues(alpha: 0.08),
-                                    borderRadius: BorderRadius.circular(6),
+                            .map(
+                              (s) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: color.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  s,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: color,
+                                    fontWeight: FontWeight.w500,
                                   ),
-                                  child: Text(
-                                    s,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: color,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ))
+                                ),
+                              ),
+                            )
                             .toList(),
                       ),
                     if (department.isNotEmpty) ...[
@@ -519,7 +531,9 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                       Text(
                         department,
                         style: TextStyle(
-                            fontSize: 11, color: Colors.grey.shade500),
+                          fontSize: 11,
+                          color: Colors.grey.shade500,
+                        ),
                       ),
                     ],
                   ],
@@ -534,7 +548,9 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                 ),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 8),
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.primary,
                     borderRadius: BorderRadius.circular(10),
@@ -542,8 +558,7 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.send_rounded,
-                          color: Colors.white, size: 14),
+                      Icon(Icons.send_rounded, color: Colors.white, size: 14),
                       SizedBox(width: 4),
                       Text(
                         'Message',
@@ -576,8 +591,10 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
         children: [
           Icon(icon, size: 36, color: Colors.grey.shade300),
           const SizedBox(height: 10),
-          Text(message,
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+          Text(
+            message,
+            style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+          ),
         ],
       ),
     );
@@ -596,10 +613,8 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
     );
 
     try {
-      final response =
-          await ApiService().initiateConversation(teacherId);
-      final conversation =
-          response['conversation'] as Map<String, dynamic>;
+      final response = await ApiService().initiateConversation(teacherId);
+      final conversation = response['conversation'] as Map<String, dynamic>;
       final conversationId = conversation['id'] as String;
 
       if (!mounted) return;
@@ -678,9 +693,10 @@ class _SubjectCardState extends State<_SubjectCard> {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 6,
-              offset: const Offset(0, 2)),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -730,7 +746,9 @@ class _SubjectCardState extends State<_SubjectCard> {
                         Text(
                           widget.teacherName,
                           style: TextStyle(
-                              fontSize: 12, color: Colors.grey.shade500),
+                            fontSize: 12,
+                            color: Colors.grey.shade500,
+                          ),
                         ),
                       ],
                     ),
@@ -741,7 +759,9 @@ class _SubjectCardState extends State<_SubjectCard> {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: _scoreColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
@@ -761,7 +781,9 @@ class _SubjectCardState extends State<_SubjectCard> {
                       Text(
                         '${widget.releasedCount} exam${widget.releasedCount == 1 ? '' : 's'}',
                         style: TextStyle(
-                            fontSize: 10, color: Colors.grey.shade400),
+                          fontSize: 10,
+                          color: Colors.grey.shade400,
+                        ),
                       ),
                     ],
                   ),
@@ -808,21 +830,19 @@ class _SubjectCardState extends State<_SubjectCard> {
                     ),
                     const SizedBox(height: 8),
                     ...widget.exams.take(5).map((exam) {
-                      final title =
-                          exam['examTitle'] as String? ?? 'Exam';
+                      final title = exam['examTitle'] as String? ?? 'Exam';
                       final score = exam['score'] as num?;
-                      final maxPoints =
-                          exam['maxPoints'] as num? ?? 100;
+                      final maxPoints = exam['maxPoints'] as num? ?? 100;
                       final pct = score != null
                           ? (score / maxPoints * 100)
                           : null;
                       final scoreColor = pct == null
                           ? Colors.grey
                           : pct >= 80
-                              ? AppColors.success
-                              : pct >= 60
-                                  ? AppColors.warning
-                                  : AppColors.error;
+                          ? AppColors.success
+                          : pct >= 60
+                          ? AppColors.warning
+                          : AppColors.error;
 
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 6),
@@ -832,8 +852,9 @@ class _SubjectCardState extends State<_SubjectCard> {
                               child: Text(
                                 title,
                                 style: const TextStyle(
-                                    fontSize: 13,
-                                    color: AppColors.textPrimary),
+                                  fontSize: 13,
+                                  color: AppColors.textPrimary,
+                                ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -855,7 +876,9 @@ class _SubjectCardState extends State<_SubjectCard> {
                     Text(
                       'No exams released yet',
                       style: TextStyle(
-                          fontSize: 12, color: Colors.grey.shade400),
+                        fontSize: 12,
+                        color: Colors.grey.shade400,
+                      ),
                     ),
 
                   // Message teacher button
@@ -870,12 +893,17 @@ class _SubjectCardState extends State<_SubjectCard> {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.primary,
                           side: const BorderSide(
-                              color: AppColors.primary, width: 1.5),
+                            color: AppColors.primary,
+                            width: 1.5,
+                          ),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           textStyle: const TextStyle(
-                              fontSize: 13, fontWeight: FontWeight.w600),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
@@ -889,19 +917,23 @@ class _SubjectCardState extends State<_SubjectCard> {
     );
   }
 
-  Widget _buildInfoRow(
-      IconData icon, String label, String value, Color color) {
+  Widget _buildInfoRow(IconData icon, String label, String value, Color color) {
     return Row(
       children: [
         Icon(icon, size: 14, color: color),
         const SizedBox(width: 6),
-        Text(label,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+        Text(
+          label,
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+        ),
         const Spacer(),
         Text(
           value,
           style: TextStyle(
-              fontSize: 13, fontWeight: FontWeight.w600, color: color),
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
         ),
       ],
     );

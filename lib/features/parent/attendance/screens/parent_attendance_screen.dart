@@ -50,7 +50,8 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
         final children = await ApiService().getMyChildren();
         if (children.isNotEmpty) {
           final s = children[0]['student'] as Map<String, dynamic>?;
-          sid = s?['id'] as String? ?? children[0]['studentId'] as String? ?? '';
+          sid =
+              s?['id'] as String? ?? children[0]['studentId'] as String? ?? '';
         }
       }
       if (sid.isEmpty) {
@@ -102,8 +103,11 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              color: AppColors.textPrimary, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: AppColors.textPrimary,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -149,9 +153,10 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2)),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Row(
@@ -162,8 +167,11 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
               color: AppColors.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.person_outline,
-                color: AppColors.primary, size: 24),
+            child: const Icon(
+              Icons.person_outline,
+              color: AppColors.primary,
+              size: 24,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -180,11 +188,9 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
                 ),
                 if (_grade.isNotEmpty || _section.isNotEmpty)
                   Text(
-                    '$_grade ${_section.isNotEmpty ? '- $_section' : ''}'.trim(),
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey.shade600,
-                    ),
+                    '$_grade ${_section.isNotEmpty ? '- $_section' : ''}'
+                        .trim(),
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                   ),
               ],
             ),
@@ -211,8 +217,11 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
     ];
     final daysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
     final firstDay = DateTime(_currentMonth.year, _currentMonth.month, 1);
-    final daysInMonth =
-        DateTime(_currentMonth.year, _currentMonth.month + 1, 0).day;
+    final daysInMonth = DateTime(
+      _currentMonth.year,
+      _currentMonth.month + 1,
+      0,
+    ).day;
     final startWeekday = firstDay.weekday % 7;
 
     return Container(
@@ -222,9 +231,10 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2)),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -236,8 +246,10 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
               IconButton(
                 icon: const Icon(Icons.chevron_left, size: 22),
                 onPressed: () => setState(() {
-                  _currentMonth =
-                      DateTime(_currentMonth.year, _currentMonth.month - 1);
+                  _currentMonth = DateTime(
+                    _currentMonth.year,
+                    _currentMonth.month - 1,
+                  );
                 }),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
@@ -245,15 +257,19 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
               const SizedBox(width: 12),
               Text(
                 '${months[_currentMonth.month - 1]} ${_currentMonth.year}',
-                style:
-                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(width: 12),
               IconButton(
                 icon: const Icon(Icons.chevron_right, size: 22),
                 onPressed: () => setState(() {
-                  _currentMonth =
-                      DateTime(_currentMonth.year, _currentMonth.month + 1);
+                  _currentMonth = DateTime(
+                    _currentMonth.year,
+                    _currentMonth.month + 1,
+                  );
                 }),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
@@ -264,15 +280,20 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
           // Day headers
           Row(
             children: daysOfWeek
-                .map((d) => Expanded(
-                      child: Center(
-                        child: Text(d,
-                            style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey.shade500)),
+                .map(
+                  (d) => Expanded(
+                    child: Center(
+                      child: Text(
+                        d,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade500,
+                        ),
                       ),
-                    ))
+                    ),
+                  ),
+                )
                 .toList(),
           ),
           const SizedBox(height: 8),
@@ -287,8 +308,11 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
                   if (dayNum < 1 || dayNum > daysInMonth) {
                     return const Expanded(child: SizedBox(height: 36));
                   }
-                  final date =
-                      DateTime(_currentMonth.year, _currentMonth.month, dayNum);
+                  final date = DateTime(
+                    _currentMonth.year,
+                    _currentMonth.month,
+                    dayNum,
+                  );
                   return _buildDayCell(dayNum, date);
                 }),
               ),
@@ -310,11 +334,13 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
   }
 
   Widget _buildDayCell(int day, DateTime date) {
-    final isSelected = _selectedDate.year == date.year &&
+    final isSelected =
+        _selectedDate.year == date.year &&
         _selectedDate.month == date.month &&
         _selectedDate.day == date.day;
 
-    final isToday = DateTime.now().year == date.year &&
+    final isToday =
+        DateTime.now().year == date.year &&
         DateTime.now().month == date.month &&
         DateTime.now().day == date.day;
 
@@ -328,8 +354,8 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
             color: isSelected
                 ? AppColors.primary
                 : isToday
-                    ? AppColors.primary.withValues(alpha: 0.1)
-                    : null,
+                ? AppColors.primary.withValues(alpha: 0.1)
+                : null,
             borderRadius: BorderRadius.circular(8),
             border: isToday && !isSelected
                 ? Border.all(color: AppColors.primary, width: 1.5)
@@ -346,8 +372,8 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
                 color: isSelected
                     ? Colors.white
                     : isToday
-                        ? AppColors.primary
-                        : AppColors.textPrimary,
+                    ? AppColors.primary
+                    : AppColors.textPrimary,
               ),
             ),
           ),
@@ -419,7 +445,8 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
             ),
           ],
@@ -437,8 +464,11 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
         ),
         child: Column(
           children: [
-            Icon(Icons.event_note_outlined,
-                size: 48, color: Colors.grey.shade300),
+            Icon(
+              Icons.event_note_outlined,
+              size: 48,
+              color: Colors.grey.shade300,
+            ),
             const SizedBox(height: 12),
             Text(
               'No classes on this date',
@@ -531,9 +561,10 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
         border: Border.all(color: statusColor.withValues(alpha: 0.2)),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 6,
-              offset: const Offset(0, 2)),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -565,8 +596,10 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: statusColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
@@ -593,15 +626,15 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
             const SizedBox(height: 10),
             Row(
               children: [
-                Icon(Icons.person_outline,
-                    size: 16, color: Colors.grey.shade500),
+                Icon(
+                  Icons.person_outline,
+                  size: 16,
+                  color: Colors.grey.shade500,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   teacherName,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                 ),
               ],
             ),
@@ -618,8 +651,11 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.note_outlined,
-                      size: 16, color: Colors.grey.shade600),
+                  Icon(
+                    Icons.note_outlined,
+                    size: 16,
+                    color: Colors.grey.shade600,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(

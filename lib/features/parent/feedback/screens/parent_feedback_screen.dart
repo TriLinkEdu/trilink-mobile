@@ -73,7 +73,9 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
           content: const Text('Feedback sent successfully'),
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
     } catch (e) {
@@ -83,7 +85,9 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
           content: Text('Failed to send: $e'),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
     } finally {
@@ -99,8 +103,11 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              color: AppColors.textPrimary, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: AppColors.textPrimary,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -125,19 +132,26 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
                 color: AppColors.primary.withValues(alpha: 0.07),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.15)),
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline,
-                      color: AppColors.primary, size: 18),
+                  const Icon(
+                    Icons.info_outline,
+                    color: AppColors.primary,
+                    size: 18,
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       'Your feedback helps us improve the school experience. '
                       'Anonymous submissions hide your identity.',
                       style: TextStyle(
-                          fontSize: 12, color: Colors.grey.shade700, height: 1.4),
+                        fontSize: 12,
+                        color: Colors.grey.shade700,
+                        height: 1.4,
+                      ),
                     ),
                   ),
                 ],
@@ -150,7 +164,11 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
             const SizedBox(height: 8),
             Row(
               children: [
-                _buildCategoryChip('general', 'General', Icons.feedback_outlined),
+                _buildCategoryChip(
+                  'general',
+                  'General',
+                  Icons.feedback_outlined,
+                ),
                 const SizedBox(width: 10),
                 _buildCategoryChip('teacher', 'Teacher', Icons.school_outlined),
               ],
@@ -166,20 +184,25 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2)),
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
                 ],
               ),
               child: TextField(
                 controller: _messageController,
                 maxLines: 6,
                 style: const TextStyle(
-                    fontSize: 14, color: AppColors.textPrimary),
+                  fontSize: 14,
+                  color: AppColors.textPrimary,
+                ),
                 decoration: InputDecoration(
                   hintText: 'Write your feedback or question here...',
-                  hintStyle:
-                      TextStyle(fontSize: 13, color: Colors.grey.shade400),
+                  hintStyle: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade400,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -200,9 +223,10 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2)),
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
                 ],
               ),
               child: Row(
@@ -213,8 +237,11 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
                       color: AppColors.primary.withValues(alpha: 0.08),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.shield_outlined,
-                        color: AppColors.primary, size: 18),
+                    child: const Icon(
+                      Icons.shield_outlined,
+                      color: AppColors.primary,
+                      size: 18,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -232,7 +259,9 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
                         Text(
                           'Your name will not be attached to this feedback',
                           style: TextStyle(
-                              fontSize: 11, color: Colors.grey.shade500),
+                            fontSize: 11,
+                            color: Colors.grey.shade500,
+                          ),
                         ),
                       ],
                     ),
@@ -257,13 +286,17 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : const Icon(Icons.send_rounded, size: 18),
                 label: Text(
                   _sending ? 'Sending...' : 'Send Feedback',
                   style: const TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.w600),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -271,7 +304,8 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
                   disabledBackgroundColor: Colors.grey.shade300,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   elevation: 0,
                 ),
               ),
@@ -320,8 +354,11 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
             ),
             child: Column(
               children: [
-                Icon(Icons.feedback_outlined,
-                    size: 36, color: Colors.grey.shade300),
+                Icon(
+                  Icons.feedback_outlined,
+                  size: 36,
+                  color: Colors.grey.shade300,
+                ),
                 const SizedBox(height: 8),
                 Text(
                   'No feedback submitted yet',
@@ -366,9 +403,10 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 4,
-              offset: const Offset(0, 2)),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -395,7 +433,8 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
               Icon(statusIcon, color: statusColor, size: 16),
               const SizedBox(width: 4),
               Text(
-                status[0].toUpperCase() + status.substring(1).replaceAll('_', ' '),
+                status[0].toUpperCase() +
+                    status.substring(1).replaceAll('_', ' '),
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
@@ -419,10 +458,7 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
             const SizedBox(height: 8),
             Text(
               _formatDate(createdAt),
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey.shade500,
-              ),
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
             ),
           ],
         ],
@@ -445,7 +481,7 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
         'Sep',
         'Oct',
         'Nov',
-        'Dec'
+        'Dec',
       ];
       return '${months[d.month - 1]} ${d.day}, ${d.year}';
     } catch (_) {
@@ -473,34 +509,34 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: selected
-                ? AppColors.primary
-                : Colors.white,
+            color: selected ? AppColors.primary : Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: selected
-                  ? AppColors.primary
-                  : Colors.grey.shade200,
+              color: selected ? AppColors.primary : Colors.grey.shade200,
             ),
             boxShadow: selected
                 ? [
                     BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.25),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3))
+                      color: AppColors.primary.withValues(alpha: 0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
                   ]
                 : [
                     BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2))
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
                   ],
           ),
           child: Column(
             children: [
-              Icon(icon,
-                  color: selected ? Colors.white : Colors.grey.shade500,
-                  size: 20),
+              Icon(
+                icon,
+                color: selected ? Colors.white : Colors.grey.shade500,
+                size: 20,
+              ),
               const SizedBox(height: 4),
               Text(
                 label,
