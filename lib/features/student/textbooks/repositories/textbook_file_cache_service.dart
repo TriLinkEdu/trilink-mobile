@@ -4,8 +4,6 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 
-import '../../../../core/constants/api_constants.dart';
-import '../../../../core/network/api_client.dart';
 import '../../../../core/services/storage_service.dart';
 import '../models/textbook_model.dart';
 
@@ -17,7 +15,6 @@ class TextbookOpenResult {
 }
 
 class TextbookFileCacheService {
-  final ApiClient _api;
   final StorageService _storage;
 
   static final Map<String, Future<TextbookOpenResult>> _inFlight =
@@ -27,10 +24,8 @@ class TextbookFileCacheService {
   static const int _maxCacheBytes = 450 * 1024 * 1024;
 
   TextbookFileCacheService({
-    ApiClient? apiClient,
     StorageService? storageService,
-  }) : _api = apiClient ?? ApiClient(),
-       _storage = storageService ?? StorageService();
+  }) : _storage = storageService ?? StorageService();
 
   Future<TextbookOpenResult> prepareLocalPdf(TextbookModel textbook) {
     final key = textbook.cacheKey;
@@ -66,8 +61,10 @@ class TextbookFileCacheService {
       }
     }
 
-    final accessMeta = await _api.get(ApiConstants.fileAccess(safeId));
-    final accessUrl = (accessMeta['accessUrl'] ?? '').toString();
+    // The textbook model already carries the Cloudinary CDN URL — no extra
+    // round-trip to /files/{id}/access needed. Cloudinary raw URLs are
+    // permanent and don't require signing, so we can use them directly.
+    final accessUrl = textbook.accessUrl;
     if (accessUrl.isEmpty) {
       throw StateError('Missing file access URL for textbook');
     }
@@ -75,7 +72,7 @@ class TextbookFileCacheService {
     await Dio().download(accessUrl, file.path);
     final size = await file.length();
     index[safeId] = <String, dynamic>{
-      'cacheKey': (accessMeta['cacheKey'] ?? textbook.cacheKey).toString(),
+      'cacheKey': textbook.cacheKey,
       'sizeBytes': size,
       'lastAccessedAt': DateTime.now().toIso8601String(),
       'path': file.path,

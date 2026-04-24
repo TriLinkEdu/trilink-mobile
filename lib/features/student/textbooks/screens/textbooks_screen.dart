@@ -88,11 +88,14 @@ class _TextbooksView extends StatelessWidget {
           ),
         ),
       );
-    } catch (_) {
+    } catch (e, stackTrace) {
+      debugPrint('Error opening textbook: $e');
+      debugPrint('StackTrace: $stackTrace');
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Unable to open textbook. Please try again.'),
+        SnackBar(
+          content: Text('Unable to open textbook: ${e.toString().split("\n").first}'),
+          duration: const Duration(seconds: 4),
         ),
       );
     }
