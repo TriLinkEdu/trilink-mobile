@@ -14,6 +14,7 @@ import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
 import 'package:trilink_mobile/core/widgets/pressable.dart';
 
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/profile_avatar.dart';
 import '../../shared/widgets/student_page_background.dart';
 import '../cubit/chat_cubit.dart';
 import '../models/chat_models.dart';
@@ -104,7 +105,7 @@ class _ChatViewState extends State<_ChatView> {
     // Fetch real contacts from API
     List<ChatContactModel> contacts = [];
     try {
-      contacts = await _repository.searchUsers('');
+      contacts = await sl<StudentChatRepository>().searchUsers('');
     } catch (e) {
       // Fallback to empty list if API fails
       contacts = [];
@@ -176,10 +177,6 @@ class _ChatViewState extends State<_ChatView> {
               ],
             ),
           ),
-                }),
-              ],
-            ),
-          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
@@ -245,9 +242,9 @@ class _ChatViewState extends State<_ChatView> {
             },
             child: Row(
               children: [
-                CircleAvatar(
+                ProfileAvatar(
                   radius: 16,
-                  child: Text(entry.value.characters.first.toUpperCase()),
+                  fallbackText: entry.value,
                 ),
                 AppSpacing.hGapMd,
                 Text(entry.value),
@@ -397,8 +394,8 @@ class _ChatList extends StatelessWidget {
                 tag: 'chat-avatar-${item.id}',
                 child: Material(
                   type: MaterialType.transparency,
-                  child: CircleAvatar(
-                    child: Text(item.title.characters.first.toUpperCase()),
+                  child: ProfileAvatar(
+                    fallbackText: item.title,
                   ),
                 ),
               ),

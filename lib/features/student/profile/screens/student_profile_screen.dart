@@ -979,7 +979,7 @@ class _StudentAvatarImage extends StatelessWidget {
       color: theme.colorScheme.surfaceContainerHigh,
       child: hasImage
           ? Image.network(
-              '${ApiConstants.fileBaseUrl}$profilePath',
+              profilePath.startsWith('http') ? profilePath : '${ApiConstants.fileBaseUrl}$profilePath',
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) => Icon(
                 Icons.person_rounded,

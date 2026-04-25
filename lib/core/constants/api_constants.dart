@@ -203,6 +203,14 @@ class ApiConstants {
       '/ai/students/$studentId/learning-path';
   static const String aiFeedbackAssistant = '/ai/feedback-assistant';
 
+  // Curriculum
+  static const String curriculumSubjects = '/curriculum/me/subjects';
+  static String curriculumTopics(String subjectId) => '/curriculum/me/subjects/$subjectId/topics';
+
+  // Course Resources
+  static const String courseResources = '/resources/me';
+  static String courseResource(String id) => '/resources/$id';
+
   // Textbooks
   static const String textbooks = '/textbooks';
   static String textbook(String id) => '/textbooks/$id';
@@ -214,8 +222,6 @@ class ApiConstants {
   // AI/ML Endpoints
   static const String aiChat = '/ai/chat';
   static String aiChatHistory(String studentId) => '/ai/chat/history/$studentId';
-  static String aiRecommendations(String studentId) => '/ai/students/$studentId/recommendations';
-  static String aiLearningPath(String studentId) => '/ai/students/$studentId/learning-path';
   static const String aiMasteryUpdate = '/ai/mastery/update';
   static String aiMastery(String studentId, String topicId) => '/ai/mastery/$studentId/$topicId';
   static String aiWeakTopics(String studentId, String subjectId) => '/ai/mastery/$studentId/weak/$subjectId';

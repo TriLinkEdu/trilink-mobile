@@ -170,7 +170,6 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<StudentCoursesRepository>(
     () => useRealStudentData
         ? RealStudentCoursesRepository(
-            textbooksRepository: sl<TextbookRepository>(),
             fallback: MockStudentCoursesRepository(),
           )
         : MockStudentCoursesRepository(),

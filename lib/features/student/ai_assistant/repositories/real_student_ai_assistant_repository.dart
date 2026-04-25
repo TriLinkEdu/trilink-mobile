@@ -43,7 +43,7 @@ class RealStudentAiAssistantRepository implements StudentAiAssistantRepository {
     try {
       final response = await _api.post(
         ApiConstants.aiChat,
-        body: {
+        data: {
           'student_id': _studentId,
           'message': message,
           'grade_level': 9,
@@ -176,7 +176,7 @@ class RealStudentAiAssistantRepository implements StudentAiAssistantRepository {
   }) async {
     await _api.post(
       ApiConstants.aiMasteryUpdate,
-      body: {
+      data: {
         'student_id': _studentId,
         'topic_id': topicId,
         'is_correct': isCorrect,

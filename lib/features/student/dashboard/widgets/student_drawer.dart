@@ -264,7 +264,7 @@ class _DrawerHeader extends StatelessWidget {
                   backgroundColor: headerForeground.withAlpha(40),
                   backgroundImage:
                       (avatarPath != null && avatarPath!.isNotEmpty)
-                      ? NetworkImage('${ApiConstants.fileBaseUrl}$avatarPath')
+                      ? NetworkImage(avatarPath!.startsWith('http') ? avatarPath! : '${ApiConstants.fileBaseUrl}$avatarPath')
                       : null,
                   child: (avatarPath == null || avatarPath!.isEmpty)
                       ? Icon(

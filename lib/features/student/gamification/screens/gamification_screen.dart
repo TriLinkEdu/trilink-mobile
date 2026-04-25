@@ -14,6 +14,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/pressable.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/profile_avatar.dart';
 import '../../shared/widgets/student_page_background.dart';
 import '../cubit/gamification_cubit.dart';
 import '../models/gamification_models.dart';
@@ -1543,14 +1544,9 @@ class _LeaderboardRow extends StatelessWidget {
             ),
           ),
           AppSpacing.hGapMd,
-          CircleAvatar(
+          ProfileAvatar(
             radius: 17,
-            backgroundColor: avatarColor.withAlpha(24),
-            child: Icon(
-              rank == 1 ? Icons.star_rounded : Icons.person_rounded,
-              color: avatarColor,
-              size: 19,
-            ),
+            fallbackText: name,
           ),
           AppSpacing.hGapMd,
           Expanded(

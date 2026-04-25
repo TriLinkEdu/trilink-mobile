@@ -8,6 +8,7 @@ import 'package:trilink_mobile/core/widgets/error_widget.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../cubit/announcement_detail_cubit.dart';
 import '../models/announcement_model.dart';
+import '../../shared/widgets/profile_avatar.dart';
 import '../repositories/student_announcements_repository.dart';
 
 class AnnouncementDetailScreen extends StatelessWidget {
@@ -82,10 +83,9 @@ class _AnnouncementDetailView extends StatelessWidget {
           AppSpacing.gapMd,
           Row(
             children: [
-              CircleAvatar(
+              ProfileAvatar(
                 radius: 16,
-                backgroundColor: theme.colorScheme.primaryContainer,
-                child: Text(a.authorName[0], style: TextStyle(color: theme.colorScheme.primary)),
+                fallbackText: a.authorName,
               ),
               AppSpacing.hGapSm,
               Column(

@@ -15,6 +15,7 @@ import '../../../../core/widgets/pressable.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../../../../core/widgets/staggered_animation.dart';
 import '../../shared/widgets/student_page_background.dart';
+import '../../shared/widgets/profile_avatar.dart';
 import '../../../auth/cubit/auth_cubit.dart';
 import '../widgets/student_shell_scope.dart';
 import '../cubit/dashboard_cubit.dart';
@@ -952,16 +953,9 @@ class _AnnouncementCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
+            ProfileAvatar(
               radius: 18,
-              backgroundColor: color.withAlpha(25),
-              child: Text(
-                authorName.isNotEmpty ? authorName[0].toUpperCase() : '?',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              fallbackText: authorName,
             ),
             AppSpacing.hGapMd,
             Expanded(

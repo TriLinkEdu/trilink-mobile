@@ -15,6 +15,7 @@ import 'package:trilink_mobile/core/widgets/pressable.dart';
 
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../../shared/widgets/student_page_background.dart';
+import '../../shared/widgets/profile_avatar.dart';
 import '../cubit/calendar_cubit.dart';
 import '../models/calendar_event_model.dart';
 import '../repositories/student_calendar_repository.dart';
