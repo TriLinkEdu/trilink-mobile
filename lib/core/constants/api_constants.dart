@@ -206,6 +206,22 @@ class ApiConstants {
   static const String textbooks = '/textbooks';
   static String textbook(String id) => '/textbooks/$id';
 
+  // Learning Materials (teacher resources)
+  static const String learningMaterialsMe = '/learning-materials/student/me';
+  static String learningMaterial(String id) => '/learning-materials/$id';
+
+  // AI/ML Endpoints
+  static const String aiChat = '/ai/chat';
+  static String aiChatHistory(String studentId) => '/ai/chat/history/$studentId';
+  static String aiRecommendations(String studentId) => '/ai/students/$studentId/recommendations';
+  static String aiLearningPath(String studentId) => '/ai/students/$studentId/learning-path';
+  static const String aiMasteryUpdate = '/ai/mastery/update';
+  static String aiMastery(String studentId, String topicId) => '/ai/mastery/$studentId/$topicId';
+  static String aiWeakTopics(String studentId, String subjectId) => '/ai/mastery/$studentId/weak/$subjectId';
+  static String aiNextQuestion(String studentId, String topicId) => '/ai/content/next-question/$studentId/$topicId';
+  static String aiWeeklySummary(String studentId) => '/ai/analytics/student/$studentId/weekly-summary';
+  static String aiEvaluate(String studentId) => '/ai/students/$studentId/evaluate';
+
   // ═══════════════════════════════════════════════════════
   // ─── PARENT-SPECIFIC ENDPOINTS ─────────────────────────
   // ═══════════════════════════════════════════════════════

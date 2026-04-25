@@ -58,6 +58,7 @@ import '../../features/student/sync/repositories/mock_student_sync_repository.da
 import '../../features/student/sync/repositories/real_student_sync_repository.dart';
 import '../../features/student/ai_assistant/repositories/student_ai_assistant_repository.dart';
 import '../../features/student/ai_assistant/repositories/mock_student_ai_assistant_repository.dart';
+import '../../features/student/ai_assistant/repositories/real_student_ai_assistant_repository.dart';
 import '../../features/student/settings/repositories/student_settings_repository.dart';
 import '../../features/student/settings/repositories/mock_student_settings_repository.dart';
 import '../../features/student/settings/repositories/real_student_settings_repository.dart';
@@ -192,7 +193,15 @@ Future<void> initDependencies() async {
         : MockStudentSyncRepository(),
   );
   sl.registerLazySingleton<StudentAiAssistantRepository>(
-    () => MockStudentAiAssistantRepository(),
+    () {
+      if (!useRealStudentData) return MockStudentAiAssistantRepository();
+      
+      // Get current user ID from AuthCubit
+      final authCubit = sl<AuthCubit>();
+      final userId = authCubit.state.user?.id ?? '';
+      
+      return RealStudentAiAssistantRepository(studentId: userId);
+    },
   );
   sl.registerLazySingleton<StudentSettingsRepository>(
     () => useRealStudentData

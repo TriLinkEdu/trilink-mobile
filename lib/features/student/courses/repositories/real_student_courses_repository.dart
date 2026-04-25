@@ -1,4 +1,5 @@
 import '../../../../core/network/api_client.dart';
+import '../../../../core/constants/api_constants.dart';
 import '../../textbooks/models/textbook_model.dart';
 import '../../textbooks/repositories/textbook_repository.dart';
 import '../models/course_resource_model.dart';
@@ -67,7 +68,7 @@ class RealStudentCoursesRepository implements StudentCoursesRepository {
     List<CourseResourceModel> textbookResources = const [];
 
     try {
-      final teacherRows = await _api.getList('/course-resources/me');
+      final teacherRows = await _api.getList(ApiConstants.learningMaterialsMe);
       teacherResources = teacherRows
           .whereType<Map<String, dynamic>>()
           .map(_mapTeacherResource)
