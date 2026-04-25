@@ -60,22 +60,6 @@ class _CourseDetailView extends StatelessWidget {
     'computer_science': Icons.computer_rounded,
   };
 
-  static const _subjectCodes = <String, String>{
-    'mathematics': 'MATH-301',
-    'physics': 'PHY-201',
-    'literature': 'LIT-101',
-    'history': 'HIST-202',
-    'computer_science': 'CS-401',
-  };
-
-  static const _mockTeachers = <String, String>{
-    'mathematics': 'Dr. Abebe Tadesse',
-    'physics': 'Prof. Mekdes Alemu',
-    'literature': 'Mrs. Hana Bekele',
-    'history': 'Mr. Dawit Girma',
-    'computer_science': 'Dr. Yonas Kebede',
-  };
-
   Color get _color => _subjectColors[subjectId] ?? AppColors.primary;
   IconData get _icon => _subjectIcons[subjectId] ?? Icons.school_rounded;
 
@@ -149,8 +133,8 @@ class _CourseDetailView extends StatelessWidget {
             index: 0,
             child: _SubjectHeader(
               subjectName: subjectName,
-              code: _subjectCodes[subjectId] ?? '',
-              teacher: _mockTeachers[subjectId] ?? 'TBA',
+              code: '', // TODO: Get from enrollment/class offering API
+              teacher: '', // TODO: Get from enrollment/class offering API
               color: _color,
               icon: _icon,
             ),

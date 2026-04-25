@@ -155,6 +155,7 @@ class ApiConstants {
   static String conversationMessages(String id) =>
       '/conversations/$id/messages';
   static String messageReadReceipts(String id) => '/messages/$id/read-receipts';
+  static const String usersSearch = '/users/search';
 
   // Settings
   static const String userSettings = '/me/settings';

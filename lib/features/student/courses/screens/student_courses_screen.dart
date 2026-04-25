@@ -50,30 +50,6 @@ class _StudentCoursesView extends StatelessWidget {
     'computer_science': Icons.computer_rounded,
   };
 
-  static const _mockTeachers = <String, String>{
-    'mathematics': 'Dr. Abebe Tadesse',
-    'physics': 'Prof. Mekdes Alemu',
-    'literature': 'Mrs. Hana Bekele',
-    'history': 'Mr. Dawit Girma',
-    'computer_science': 'Dr. Yonas Kebede',
-  };
-
-  static const _mockTopicCounts = <String, int>{
-    'mathematics': 4,
-    'physics': 3,
-    'literature': 3,
-    'history': 4,
-    'computer_science': 3,
-  };
-
-  static const _mockProgress = <String, double>{
-    'mathematics': 0.65,
-    'physics': 0.42,
-    'literature': 0.78,
-    'history': 0.31,
-    'computer_science': 0.55,
-  };
-
   Color _colorFor(String subjectId) =>
       _subjectColors[subjectId] ?? AppColors.primary;
 
@@ -130,9 +106,9 @@ class _StudentCoursesView extends StatelessWidget {
               subject: subject,
               color: _colorFor(subject.id),
               icon: _iconFor(subject.id),
-              teacher: _mockTeachers[subject.id] ?? 'TBA',
-              topicCount: _mockTopicCounts[subject.id] ?? 0,
-              progress: _mockProgress[subject.id] ?? 0.0,
+              teacher: '', // TODO: Get from enrollment API
+              topicCount: 0, // TODO: Get from curriculum API
+              progress: 0.0, // TODO: Get from progress API
             ),
           );
         },
