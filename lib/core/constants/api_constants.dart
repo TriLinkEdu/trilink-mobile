@@ -189,6 +189,8 @@ class ApiConstants {
   static const String gamificationMyProgress = '/gamification/me/progress';
   static const String gamificationLeaderboard =
       '/gamification/leaderboard/exam-average';
+  static const String gamificationStreakLeaderboard =
+      '/gamification/leaderboard/streaks';
   static String studentBadges(String studentId) =>
       '/gamification/students/$studentId/badges';
 

@@ -48,18 +48,22 @@ class _ProfileAvatarState extends State<ProfileAvatar> {
       return;
     }
 
-    // Load from storage if not provided
-    try {
-      final user = await _storage.getUser();
-      final path = user?['profileImagePath'] as String?;
-      if (mounted && path != null && path.isNotEmpty) {
-        setState(() {
-          _imagePath = path;
-        });
+    // Load from storage if not provided AND no userId specified (current user only)
+    if (widget.userId == null) {
+      try {
+        final user = await _storage.getUser();
+        final path = user?['profileImagePath'] as String?;
+        if (mounted && path != null && path.isNotEmpty) {
+          setState(() {
+            _imagePath = path;
+          });
+        }
+      } catch (e) {
+        // Ignore errors, will show fallback
       }
-    } catch (e) {
-      // Ignore errors, will show fallback
     }
+    // For other users (when userId is provided), don't load current user's image
+    // Just show initials fallback
   }
 
   @override

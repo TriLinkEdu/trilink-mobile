@@ -111,6 +111,7 @@ class _CourseResourceDetailViewState extends State<_CourseResourceDetailView> {
       await Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => TextbookViewerScreen(
+            textbookId: resource.id,
             localPath: openResult.localPath,
             title: resource.title,
             fromCache: openResult.fromCache,

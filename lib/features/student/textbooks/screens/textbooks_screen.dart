@@ -82,6 +82,7 @@ class _TextbooksView extends StatelessWidget {
       await Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => TextbookViewerScreen(
+            textbookId: textbook.id,
             localPath: result.localPath,
             title: textbook.title,
             fromCache: result.fromCache,

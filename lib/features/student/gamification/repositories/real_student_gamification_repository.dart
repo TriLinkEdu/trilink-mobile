@@ -2,12 +2,16 @@ import '../../exams/models/exam_model.dart';
 import '../models/gamification_models.dart';
 import '../../shared/models/student_progress_model.dart';
 import '../../shared/repositories/student_progress_repository.dart';
+import '../../../../core/network/api_client.dart';
+import '../../../../core/constants/api_constants.dart';
+import '../../../../core/di/injection_container.dart';
 import 'student_gamification_repository.dart';
 
 class RealStudentGamificationRepository
     implements StudentGamificationRepository {
   final StudentProgressRepository _progressRepository;
   final StudentGamificationRepository _fallback;
+  final ApiClient _apiClient = sl<ApiClient>();
 
   static const Duration _ttl = Duration(seconds: 30);
 
@@ -30,11 +34,32 @@ class RealStudentGamificationRepository
 
   @override
   Future<List<LeaderboardEntry>> fetchLeaderboard(String period) async {
-    await _loadCore();
-    if (period == 'monthly') {
-      return _leaderboardMonthly ?? const [];
+    try {
+      final response = await _apiClient.get(
+        '${ApiConstants.gamificationLeaderboard}?academicYearId=2024&limit=20'
+      );
+      
+      if (response is List && response.isNotEmpty) {
+        final responseList = response as List;
+        return responseList.asMap().entries.map((entry) {
+          final index = entry.key;
+          final data = entry.value as Map<String, dynamic>;
+          return LeaderboardEntry(
+            studentId: data['userId']?.toString() ?? 'api_user_$index',
+            studentName: data['name']?.toString() ?? 'API Student ${index + 1}',
+            rank: index + 1,
+            points: (data['averageScore'] ?? data['points'] ?? 0).round(),
+            scope: LeaderboardScope.school,
+            period: LeaderboardPeriod.weekly,
+          );
+        }).toList();
+      }
+    } catch (e) {
+      print('Leaderboard API error: $e');
     }
-    return _leaderboardWeekly ?? const [];
+    
+    // Fallback to mock data
+    return await _fallback.fetchLeaderboard(period);
   }
 
   @override

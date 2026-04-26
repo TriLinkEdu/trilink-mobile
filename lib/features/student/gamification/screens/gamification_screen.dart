@@ -1048,6 +1048,7 @@ class _GamificationViewState extends State<_GamificationView> {
                 child: _LeaderboardRow(
                   rank: entry.rank,
                   name: entry.studentName,
+                  userId: entry.studentId,
                   classLabel: '',
                   xp: '${entry.points} XP',
                   avatarColor: avatarColors[i % avatarColors.length],
@@ -1468,6 +1469,7 @@ class _LeaderboardMomentumCard extends StatelessWidget {
 class _LeaderboardRow extends StatelessWidget {
   final int rank;
   final String name;
+  final String userId;
   final String classLabel;
   final String xp;
   final Color avatarColor;
@@ -1477,6 +1479,7 @@ class _LeaderboardRow extends StatelessWidget {
   const _LeaderboardRow({
     required this.rank,
     required this.name,
+    required this.userId,
     required this.classLabel,
     required this.xp,
     required this.avatarColor,
@@ -1546,6 +1549,7 @@ class _LeaderboardRow extends StatelessWidget {
           AppSpacing.hGapMd,
           ProfileAvatar(
             radius: 17,
+            userId: userId,
             fallbackText: name,
           ),
           AppSpacing.hGapMd,
