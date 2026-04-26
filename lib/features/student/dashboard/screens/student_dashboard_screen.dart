@@ -14,6 +14,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/pressable.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../../../../core/widgets/staggered_animation.dart';
+import '../../../../core/constants/api_constants.dart';
 import '../../shared/widgets/student_page_background.dart';
 import '../../shared/widgets/profile_avatar.dart';
 import '../../../auth/cubit/auth_cubit.dart';
@@ -136,7 +137,8 @@ class _DashboardContent extends StatelessWidget {
         : hour < 17
         ? 'Good afternoon'
         : 'Good evening';
-    final userName = context.read<AuthCubit>().currentUser?.name ?? 'Student';
+    final user = context.read<AuthCubit>().currentUser;
+    final userName = user?.name ?? 'Student';
     final firstName = userName.split(' ').first;
 
     return Scaffold(
@@ -155,16 +157,6 @@ class _DashboardContent extends StatelessWidget {
                     greeting: greeting,
                     name: firstName,
                     subtitle: _buildContextualGreeting(data),
-                    onProfileTap: () {
-                      final shell = StudentShellScope.maybeOf(context);
-                      if (shell != null) {
-                        shell.switchTab(3);
-                      } else {
-                        Navigator.of(
-                          context,
-                        ).pushNamed(RouteNames.studentProfile);
-                      }
-                    },
                   ),
                   AppSpacing.gapXl,
 
@@ -438,14 +430,12 @@ class _HeroGreeting extends StatelessWidget {
   final String greeting;
   final String name;
   final String subtitle;
-  final VoidCallback onProfileTap;
 
   const _HeroGreeting({
     required this.date,
     required this.greeting,
     required this.name,
     required this.subtitle,
-    required this.onProfileTap,
   });
 
   @override
@@ -489,23 +479,6 @@ class _HeroGreeting extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-        ),
-        Pressable(
-          onTap: onProfileTap,
-          child: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              gradient: theme.ext.heroGradient,
-              borderRadius: AppRadius.borderMd,
-              boxShadow: AppShadows.glow(AppColors.primary),
-            ),
-            child: Icon(
-              Icons.person_rounded,
-              color: theme.colorScheme.onPrimary,
-              size: 26,
-            ),
           ),
         ),
       ],

@@ -9,6 +9,9 @@ import '../../../../core/widgets/celebration_overlay.dart';
 import '../../../student/chat/screens/student_chat_screen.dart';
 import '../../../student/grades/screens/student_grades_screen.dart';
 import '../../../student/profile/screens/student_profile_screen.dart';
+import '../../../auth/cubit/auth_cubit.dart';
+import '../../../../core/constants/api_constants.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../widgets/student_drawer.dart';
 import '../widgets/student_shell_scope.dart';
 import 'student_dashboard_screen.dart';
@@ -133,8 +136,7 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
                     onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
                     onNotificationsTap: () =>
                         _openInCurrentTab(RouteNames.studentNotifications),
-                    onSettingsTap: () =>
-                        _openInCurrentTab(RouteNames.studentSettings),
+                    onProfileTap: () => _onTap(3),
                   ),
                 Expanded(
                   child: IndexedStack(
@@ -250,13 +252,13 @@ class _ShellTopBar extends StatelessWidget {
   final ValueNotifier<String> titleNotifier;
   final VoidCallback onMenuTap;
   final VoidCallback onNotificationsTap;
-  final VoidCallback onSettingsTap;
+  final VoidCallback onProfileTap;
 
   const _ShellTopBar({
     required this.titleNotifier,
     required this.onMenuTap,
     required this.onNotificationsTap,
-    required this.onSettingsTap,
+    required this.onProfileTap,
   });
 
   @override
@@ -355,10 +357,45 @@ class _ShellTopBar extends StatelessWidget {
                 tooltip: 'Notifications',
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.settings_outlined, size: 22),
-              onPressed: onSettingsTap,
-              tooltip: 'Settings',
+            Container(
+              margin: const EdgeInsets.only(right: 16),
+              child: GestureDetector(
+                onTap: onProfileTap,
+                child: BlocBuilder<AuthCubit, AuthState>(
+                  builder: (context, state) {
+                    final avatarPath = state.user?.profileImagePath;
+                    return Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: theme.colorScheme.primary.withAlpha(20),
+                        border: Border.all(
+                          color: theme.colorScheme.primary.withAlpha(50),
+                          width: 1,
+                        ),
+                        image: (avatarPath != null && avatarPath.isNotEmpty)
+                            ? DecorationImage(
+                                image: NetworkImage(
+                                  avatarPath.startsWith('http')
+                                      ? avatarPath
+                                      : '${ApiConstants.fileBaseUrl}$avatarPath',
+                                ),
+                                fit: BoxFit.cover,
+                              )
+                            : null,
+                      ),
+                      child: (avatarPath == null || avatarPath.isEmpty)
+                          ? Icon(
+                              Icons.person_rounded,
+                              size: 18,
+                              color: theme.colorScheme.primary,
+                            )
+                          : null,
+                    );
+                  },
+                ),
+              ),
             ),
           ],
         ),
