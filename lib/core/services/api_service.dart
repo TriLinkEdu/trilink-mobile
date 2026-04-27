@@ -62,6 +62,11 @@ class ApiService {
     DummyData.childSummary(studentId),
   );
 
+  Future<Map<String, dynamic>> getChildDashboard(String studentId) => _tryOr(
+    () => _api.get(ApiConstants.childDashboard(studentId)),
+    DummyData.childDashboard(studentId),
+  );
+
   // ─── Academic year ──────────────────────────────────────
   Future<Map<String, dynamic>> getActiveAcademicYear() => _tryOr(
     () => _api.get(ApiConstants.activeAcademicYear),
@@ -381,7 +386,8 @@ class ApiService {
     {
       'id': 'new-msg',
       'conversationId': conversationId,
-      ...data,
+      'senderId': 'me',
+      'text': data['text'] ?? '',
       'createdAt': DateTime.now().toIso8601String(),
     },
   );
@@ -496,6 +502,11 @@ class ApiService {
     DummyData.myFeedbackList,
   );
 
+  Future<List<dynamic>> getTeacherFeedback() => _tryOr(
+    () => _api.getList(ApiConstants.feedbackForTeacher),
+    DummyData.teacherFeedbackList,
+  );
+
   // ─── Reports ────────────────────────────────────────────
   Future<Map<String, dynamic>> getStudentPerformance(String studentId) =>
       _tryOr(
@@ -547,6 +558,24 @@ class ApiService {
     () => _api.get(ApiConstants.aiLearningPath(studentId)),
     {'learningPath': []},
   );
+
+  Future<List<dynamic>> getAiAtRiskStudents(String subjectId) => _tryOr(
+    () => _api.getList(ApiConstants.aiAtRiskStudents(subjectId)),
+    [],
+  );
+
+  Future<List<dynamic>> getAiClassPerformance(String subjectId) => _tryOr(
+    () => _api.getList(ApiConstants.aiClassPerformance(subjectId)),
+    [],
+  );
+
+  Future<Map<String, dynamic>> postAiFeedbackAssistant(
+      String context, String audience) =>
+      _tryOr(
+        () => _api.post(ApiConstants.aiFeedbackAssistant,
+            data: {'context': context, 'audience': audience}),
+        {'draft': '', 'suggestions': []},
+      );
 
   // ═══════════════════════════════════════════════════════
   // ─── PARENT-SPECIFIC ENDPOINTS ─────────────────────────
@@ -750,10 +779,8 @@ class ApiService {
       );
 
   /// Get child's conversations (parent)
-  Future<List<dynamic>> getChildConversations(String studentId) => _tryOr(
-        () => _api.getList(ApiConstants.childConversations(studentId)),
-        [],
-      );
+  Future<List<dynamic>> getChildConversations(String studentId) =>
+      _api.getList(ApiConstants.childConversations(studentId));
 
   /// Get child's conversation messages (parent)
   Future<Map<String, dynamic>> getChildConversationMessages(
@@ -761,13 +788,9 @@ class ApiService {
     String convId, {
     int limit = 50,
     int skip = 0,
-  }) =>
-      _tryOr(
-        () => _api.get(
-          ApiConstants.childConversationMessages(studentId, convId),
-          queryParameters: {'limit': limit.toString(), 'skip': skip.toString()},
-        ),
-        {'conversationId': convId, 'messages': []},
+  }) => _api.get(
+        ApiConstants.childConversationMessages(studentId, convId),
+        queryParameters: {'limit': limit.toString(), 'skip': skip.toString()},
       );
 
   /// Search users (for messaging)
