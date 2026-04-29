@@ -41,6 +41,7 @@ class _ProfileAvatarState extends State<ProfileAvatar> {
   }
 
   Future<void> _loadProfileImage() async {
+    // If explicit path provided, use it
     if (widget.profileImagePath != null) {
       setState(() {
         _imagePath = widget.profileImagePath;
@@ -48,8 +49,10 @@ class _ProfileAvatarState extends State<ProfileAvatar> {
       return;
     }
 
-    // Load from storage if not provided AND no userId specified (current user only)
-    if (widget.userId == null) {
+    // ONLY load current user's image if BOTH userId and profileImagePath are null
+    // This means it's explicitly for the current user's profile
+    // If userId is provided (even if it's someone else), don't load current user's image
+    if (widget.userId == null && widget.profileImagePath == null) {
       try {
         final user = await _storage.getUser();
         final path = user?['profileImagePath'] as String?;

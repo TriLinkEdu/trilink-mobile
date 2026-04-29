@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+import '../network/api_client.dart';
 import '../services/sound_service.dart';
 import '../services/storage_service.dart';
 import '../services/feature_flags.dart';
@@ -79,6 +80,7 @@ Future<void> initDependencies() async {
   await Hive.initFlutter();
 
   // ── Core services ──
+  sl.registerLazySingleton<ApiClient>(() => ApiClient());
   final settingsBox = await Hive.openBox('settings');
   sl.registerLazySingleton<StorageService>(() => StorageService(settingsBox));
   final themeNotifier = ThemeNotifier(sl<StorageService>());

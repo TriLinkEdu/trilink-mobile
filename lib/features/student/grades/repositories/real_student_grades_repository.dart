@@ -39,29 +39,34 @@ class RealStudentGradesRepository implements StudentGradesRepository {
   }
 
   Future<List<GradeModel>> _fetchFreshAllGrades() async {
-    final data = await _api.get('/reports/my-grades');
-    final subjects = data['subjects'];
-    if (subjects is! List) return const [];
+    try {
+      final data = await _api.get('/reports/my-grades');
+      final subjects = data['subjects'];
+      if (subjects is! List) return const [];
 
-    final grades = <GradeModel>[];
-    for (final subject in subjects.whereType<Map<String, dynamic>>()) {
-      final subjectId = (subject['subjectId'] ?? '').toString();
-      final subjectName = (subject['subjectName'] ?? 'Subject').toString();
-      final exams = subject['exams'];
-      if (exams is! List) continue;
+      final grades = <GradeModel>[];
+      for (final subject in subjects.whereType<Map<String, dynamic>>()) {
+        final subjectId = (subject['subjectId'] ?? '').toString();
+        final subjectName = (subject['subjectName'] ?? 'Subject').toString();
+        final exams = subject['exams'];
+        if (exams is! List) continue;
 
-      for (final exam in exams.whereType<Map<String, dynamic>>()) {
-        final model = _toGrade(
-          subjectId: subjectId,
-          subjectName: subjectName,
-          raw: exam,
-        );
-        grades.add(model);
+        for (final exam in exams.whereType<Map<String, dynamic>>()) {
+          final model = _toGrade(
+            subjectId: subjectId,
+            subjectName: subjectName,
+            raw: exam,
+          );
+          grades.add(model);
+        }
       }
-    }
 
-    grades.sort((a, b) => b.date.compareTo(a.date));
-    return grades;
+      grades.sort((a, b) => b.date.compareTo(a.date));
+      return grades;
+    } catch (e) {
+      print('Error fetching grades: $e');
+      return const [];
+    }
   }
 
   @override

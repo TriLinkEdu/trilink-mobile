@@ -137,6 +137,7 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
                 type: MaterialType.transparency,
                 child: ProfileAvatar(
                   radius: 18,
+                  userId: 'other', // Prevent loading current user's image
                   fallbackText: widget.title,
                 ),
               ),
