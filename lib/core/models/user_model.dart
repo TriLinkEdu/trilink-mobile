@@ -132,38 +132,54 @@ class UserModel {
       last = parts.length > 1 ? parts.sublist(1).join(' ') : '';
     }
 
-    // Helper function to handle "null" strings from API
-    String? parseNullableString(dynamic value) {
-      if (value == null || value == 'null') return null;
-      final str = value as String?;
-      return str?.trim().isEmpty == true ? null : str?.trim();
-    }
-
     return UserModel(
       id: json['id'] as String? ?? '',
       email: json['email'] as String? ?? '',
       role: _parseRole(json['role']),
-      avatarUrl: parseNullableString(json['avatarUrl']),
-      school: parseNullableString(json['school']),
+      avatarUrl: _parseNullableString(json['avatarUrl']),
+      school: _parseNullableString(json['school']),
       firstName: first,
       lastName: last,
-      phone: parseNullableString(json['phone']),
-      grade: parseNullableString(json['grade']),
-      section: parseNullableString(json['section']),
-      subject: parseNullableString(json['subject']),
-      department: parseNullableString(json['department']),
-      childName: parseNullableString(json['childName']),
-      relationship: parseNullableString(json['relationship']),
+      phone: _parseNullableString(json['phone']),
+      grade: _parseNullableString(json['grade']),
+      section: _parseNullableString(json['section']),
+      subject: _parseNullableString(json['subject']),
+      department: _parseNullableString(json['department']),
+      childName: _parseNullableString(json['childName']),
+      relationship: _parseNullableString(json['relationship']),
       mustChangePassword: json['mustChangePassword'] as bool? ?? false,
-      createdAt: parseNullableString(json['createdAt']),
-      updatedAt: parseNullableString(json['updatedAt']),
-      profileImageFileId: parseNullableString(json['profileImageFileId']),
-      profileImagePath: parseNullableString(json['profileImagePath']),
-      country: parseNullableString(json['country']),
-      cityState: parseNullableString(json['cityState']),
-      postalCode: parseNullableString(json['postalCode']),
+      createdAt: _parseNullableString(json['createdAt']),
+      updatedAt: _parseNullableString(json['updatedAt']),
+      profileImageFileId: _parseNullableString(json['profileImageFileId']),
+      profileImagePath: _buildProfileImagePath(json),
+      country: _parseNullableString(json['country']),
+      cityState: _parseNullableString(json['cityState']),
+      postalCode: _parseNullableString(json['postalCode']),
       name: legacyName,
     );
+  }
+
+  /// Build profileImagePath from either explicit path or from profileImageFileId
+  static String? _buildProfileImagePath(Map<String, dynamic> json) {
+    // First check if profileImagePath is explicitly provided
+    final explicitPath = _parseNullableString(json['profileImagePath']);
+    if (explicitPath != null && explicitPath.isNotEmpty) {
+      return explicitPath;
+    }
+
+    // Otherwise, construct download endpoint path from profileImageFileId
+    final fileId = _parseNullableString(json['profileImageFileId']);
+    if (fileId != null && fileId.isNotEmpty) {
+      return '/files/$fileId/download';
+    }
+
+    return null;
+  }
+
+  static String? _parseNullableString(dynamic value) {
+    if (value == null || value == 'null') return null;
+    final str = value as String?;
+    return str?.trim().isEmpty == true ? null : str?.trim();
   }
 
   Map<String, dynamic> toJson() => {

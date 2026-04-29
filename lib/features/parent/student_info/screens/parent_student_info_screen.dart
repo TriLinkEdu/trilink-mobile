@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
 import '../../chat/screens/parent_message_view_screen.dart';
+import 'parent_subject_list_screen.dart';
+import 'parent_subject_detail_screen.dart';
+import 'parent_teachers_screen.dart';
+import '../../chat/screens/parent_child_chat_history_screen.dart';
 
 class ParentStudentInfoScreen extends StatefulWidget {
   final String childName;
@@ -25,6 +29,7 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
   Map<String, dynamic> _detail = {};
   Map<String, dynamic> _report = {};
   List<Map<String, dynamic>> _teachers = [];
+  int? _expandedTeacherIndex;
 
   String get _studentId => widget.studentUserId ?? '';
 
@@ -144,6 +149,8 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                     _buildProfileCard(),
                     const SizedBox(height: 16),
                     _buildSummaryRow(),
+                    const SizedBox(height: 16),
+                    _buildQuickActions(),
                     const SizedBox(height: 20),
                     _buildSectionLabel('Subjects & Results'),
                     const SizedBox(height: 10),
@@ -354,6 +361,94 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
     );
   }
 
+  Widget _buildQuickActions() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildActionButton(
+            icon: Icons.menu_book_outlined,
+            label: 'View Subjects',
+            color: AppColors.primary,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ParentSubjectListScreen(
+                    studentId: _studentId,
+                    childName: _studentName,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildActionButton(
+            icon: Icons.chat_bubble_outline,
+            label: 'Chat History',
+            color: AppColors.secondary,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ParentChildChatHistoryScreen(
+                    studentId: _studentId,
+                    childName: _studentName,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildSectionLabel(String text) {
     return Text(
       text,
@@ -384,46 +479,157 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
       const Color(0xFFE91E63),
     ];
 
+    // Show only top 3 subjects
+    final displayCourses = courses.take(3).toList();
+
     return Column(
-      children: courses.asMap().entries.map((entry) {
-        final i = entry.key;
-        final course = entry.value as Map<String, dynamic>;
-        final co = course['classOffering'] as Map<String, dynamic>? ?? {};
-        final subject = co['subject'] as Map<String, dynamic>? ?? {};
-        final teacher = co['teacher'] as Map<String, dynamic>? ?? {};
-        final assessments =
-            course['assessments'] as Map<String, dynamic>? ?? {};
-        final attendance = course['attendance'] as Map<String, dynamic>? ?? {};
-        final totals = attendance['totals'] as Map<String, dynamic>? ?? {};
+      children: [
+        ...displayCourses.asMap().entries.map((entry) {
+          final i = entry.key;
+          final course = entry.value as Map<String, dynamic>;
+          final co = course['classOffering'] as Map<String, dynamic>? ?? {};
+          final subject = co['subject'] as Map<String, dynamic>? ?? {};
+          final teacher = co['teacher'] as Map<String, dynamic>? ?? {};
 
-        final subjectName = subject['name'] as String? ?? 'Unknown';
-        final teacherName =
-            '${teacher['firstName'] ?? ''} ${teacher['lastName'] ?? ''}'.trim();
-        final avgPct = assessments['averagePercent'] as num?;
-        final releasedCount = assessments['releasedCount'] as int? ?? 0;
-        final attendancePct = totals['attendancePercent'] as num?;
-        final color = subjectColors[i % subjectColors.length];
-        final teacherId = teacher['id'] as String?;
+          final subjectId = subject['id'] as String? ?? '';
+          final subjectName = subject['name'] as String? ?? 'Unknown';
+          final subjectCode = subject['code'] as String? ?? '';
+          final teacherName =
+              '${teacher['firstName'] ?? ''} ${teacher['lastName'] ?? ''}'
+                  .trim();
+          final color = subjectColors[i % subjectColors.length];
 
-        return _SubjectCard(
-          subjectName: subjectName,
-          teacherName: teacherName,
-          teacherId: teacherId,
-          avgPercent: avgPct,
-          releasedCount: releasedCount,
-          attendancePercent: attendancePct,
-          color: color,
-          exams: (assessments['details'] as List<dynamic>? ?? [])
-              .cast<Map<String, dynamic>>(),
-          onMessageTeacher: teacherId != null
-              ? () => _openTeacherChat(
-                  teacherId: teacherId,
-                  teacherName: teacherName,
-                  subject: subjectName,
-                )
-              : null,
-        );
-      }).toList(),
+          return GestureDetector(
+            onTap: () {
+              // Navigate to subject detail page
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ParentSubjectDetailScreen(
+                    studentId: _studentId,
+                    subjectId: subjectId,
+                    subjectName: subjectName,
+                    childName: _studentName,
+                  ),
+                ),
+              );
+            },
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Text(
+                        subjectCode.isNotEmpty
+                            ? subjectCode
+                                .substring(
+                                    0,
+                                    subjectCode.length > 3
+                                        ? 3
+                                        : subjectCode.length)
+                                .toUpperCase()
+                            : subjectName.isNotEmpty
+                                ? subjectName[0].toUpperCase()
+                                : '?',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          subjectName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        if (teacherName.isNotEmpty)
+                          Row(
+                            children: [
+                              Icon(Icons.person_outline,
+                                  size: 13, color: Colors.grey.shade600),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  teacherName,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.arrow_forward_ios,
+                      size: 14, color: Colors.grey.shade400),
+                ],
+              ),
+            ),
+          );
+        }),
+        if (courses.length > 3) ...[
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ParentSubjectListScreen(
+                      studentId: _studentId,
+                      childName: _studentName,
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.grid_view, size: 16),
+              label: const Text('View All Subjects'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: BorderSide(color: AppColors.primary.withValues(alpha: 0.3)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -440,142 +646,285 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
       const Color(0xFF00BFA5),
     ];
 
-    return Column(
-      children: _teachers.asMap().entries.map((entry) {
-        final i = entry.key;
-        final t = entry.value;
-        final firstName = t['firstName'] as String? ?? '';
-        final lastName = t['lastName'] as String? ?? '';
-        final fullName = '$firstName $lastName'.trim();
-        final initials =
-            '${firstName.isNotEmpty ? firstName[0] : ''}${lastName.isNotEmpty ? lastName[0] : ''}'
-                .toUpperCase();
-        final subjects = (t['subjects'] as List<dynamic>? ?? [])
-            .map((s) => s.toString())
-            .toList();
-        final department = t['department'] as String? ?? '';
-        final color = colors[i % colors.length];
-        final teacherId = t['id'] as String? ?? '';
+    // Show only top 3 teachers
+    final displayTeachers = _teachers.take(3).toList();
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: color.withValues(alpha: 0.12),
-                child: Text(
-                  initials,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: color,
+    return Column(
+      children: [
+        ...displayTeachers.asMap().entries.map((entry) {
+          final i = entry.key;
+          final t = entry.value;
+          final firstName = t['firstName'] as String? ?? '';
+          final lastName = t['lastName'] as String? ?? '';
+          final fullName = '$firstName $lastName'.trim();
+          final initials =
+              '${firstName.isNotEmpty ? firstName[0] : ''}${lastName.isNotEmpty ? lastName[0] : ''}'
+                  .toUpperCase();
+          final subjects = (t['subjects'] as List<dynamic>? ?? [])
+              .map((s) => s.toString())
+              .toList();
+          final email = t['email'] as String? ?? '';
+          final phone = t['phone'] as String? ?? '';
+          final color = colors[i % colors.length];
+          final teacherId = t['id'] as String? ?? '';
+          final isExpanded = _expandedTeacherIndex == i;
+
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                _expandedTeacherIndex = isExpanded ? null : i;
+              });
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              margin: const EdgeInsets.only(bottom: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
                   ),
-                ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      fullName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    if (subjects.isNotEmpty)
-                      Wrap(
-                        spacing: 4,
-                        runSpacing: 4,
-                        children: subjects
-                            .map(
-                              (s) => Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 7,
-                                  vertical: 2,
+              child: Column(
+                children: [
+                  // Header row
+                  Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 24,
+                          backgroundColor: color.withValues(alpha: 0.12),
+                          child: Text(
+                            initials,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: color,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                fullName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                  color: AppColors.textPrimary,
                                 ),
-                                decoration: BoxDecoration(
-                                  color: color.withValues(alpha: 0.08),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  s,
+                              ),
+                              if (subjects.isNotEmpty) ...[
+                                const SizedBox(height: 3),
+                                Text(
+                                  subjects.join(', '),
                                   style: TextStyle(
-                                    fontSize: 11,
-                                    color: color,
-                                    fontWeight: FontWeight.w500,
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        AnimatedRotation(
+                          turns: isExpanded ? 0.25 : 0,
+                          duration: const Duration(milliseconds: 250),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.chevron_right_rounded,
+                              size: 18,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Expandable details
+                  AnimatedCrossFade(
+                    firstChild: const SizedBox.shrink(),
+                    secondChild: Column(
+                      children: [
+                        Divider(height: 1, color: Colors.grey.shade100),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Subjects chips
+                              if (subjects.isNotEmpty) ...[
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(Icons.book_outlined,
+                                        size: 16,
+                                        color: Colors.grey.shade600),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Wrap(
+                                        spacing: 6,
+                                        runSpacing: 6,
+                                        children: subjects
+                                            .map(
+                                              (s) => Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: 8,
+                                                  vertical: 4,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: color.withValues(
+                                                      alpha: 0.08),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                                child: Text(
+                                                  s,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: color,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ),
+                                            )
+                                            .toList(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                Divider(
+                                    height: 1, color: Colors.grey.shade100),
+                                const SizedBox(height: 10),
+                              ],
+                              // Email
+                              if (email.isNotEmpty) ...[
+                                Row(
+                                  children: [
+                                    Icon(Icons.email_outlined,
+                                        size: 16,
+                                        color: Colors.grey.shade600),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        email,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey.shade700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                              ],
+                              // Phone
+                              if (phone.isNotEmpty) ...[
+                                Row(
+                                  children: [
+                                    Icon(Icons.phone_outlined,
+                                        size: 16,
+                                        color: Colors.grey.shade600),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      phone,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.grey.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                              ],
+                              // Send Message button
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: () => _openTeacherChat(
+                                    teacherId: teacherId,
+                                    teacherName: fullName,
+                                    subject: subjects.isNotEmpty
+                                        ? subjects.first
+                                        : '',
+                                  ),
+                                  icon: const Icon(Icons.send_rounded,
+                                      size: 16),
+                                  label: const Text('Send Message'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12),
                                   ),
                                 ),
                               ),
-                            )
-                            .toList(),
-                      ),
-                    if (department.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        department,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey.shade500,
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ],
-                ),
+                      ],
+                    ),
+                    crossFadeState: isExpanded
+                        ? CrossFadeState.showSecond
+                        : CrossFadeState.showFirst,
+                    duration: const Duration(milliseconds: 250),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () => _openTeacherChat(
-                  teacherId: teacherId,
-                  teacherName: fullName,
-                  subject: subjects.isNotEmpty ? subjects.first : '',
+            ),
+          );
+        }),
+        if (_teachers.length > 3) ...[
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ParentTeachersScreen(
+                      studentId: _studentId,
+                      childName: _studentName,
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.people, size: 16),
+              label: const Text('View All Teachers'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.secondary,
+                side: BorderSide(
+                    color: AppColors.secondary.withValues(alpha: 0.3)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.send_rounded, color: Colors.white, size: 14),
-                      SizedBox(width: 4),
-                      Text(
-                        'Message',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
               ),
-            ],
+            ),
           ),
-        );
-      }).toList(),
+        ],
+      ],
     );
   }
 

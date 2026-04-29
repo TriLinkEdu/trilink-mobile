@@ -70,6 +70,7 @@ class RouteNames {
       '/teacher/messages/conversation';
   static const String teacherCreateGroup = '/teacher/messages/create-group';
   static const String teacherClasses = '/teacher/classes';
+  static const String teacherClassDetail = '/teacher/classes/detail';
   static const String teacherSettings = '/teacher/settings';
   static const String teacherAiAssistant = '/teacher/ai-assistant';
 
@@ -87,6 +88,10 @@ class RouteNames {
   static const String parentFeedback = '/parent/feedback';
   static const String parentWeeklyReport = '/parent/weekly-report';
   static const String parentReportComparison = '/parent/report-comparison';
+  static const String parentSubjectList = '/parent/subject-list';
+  static const String parentSubjectDetail = '/parent/subject-detail';
+  static const String parentChildChatHistory = '/parent/child-chat-history';
+  static const String parentChildConversationView = '/parent/child-conversation-view';
 
   // Shared
   static const String themeCustomization = '/settings/theme-customization';

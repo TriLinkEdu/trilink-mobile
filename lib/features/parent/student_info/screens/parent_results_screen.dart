@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
+import 'parent_subject_detail_screen.dart';
 
 class ParentResultsScreen extends StatefulWidget {
   final String? studentId;
@@ -21,7 +22,6 @@ class _ParentResultsScreenState extends State<ParentResultsScreen> {
   String _gradeSection = '';
 
   Map<String, dynamic> _report = {};
-  String _selectedPeriod = 'monthly'; // weekly | monthly
 
   @override
   void initState() {
@@ -49,11 +49,8 @@ class _ParentResultsScreenState extends State<ParentResultsScreen> {
       }
       _studentId = sid;
 
-      // GET /reports/students/:studentId/report?periodType=monthly
-      final report = await ApiService().getStudentReport(
-        sid,
-        periodType: _selectedPeriod,
-      );
+      // GET /reports/students/:studentId/report
+      final report = await ApiService().getStudentReport(sid);
       if (!mounted) return;
 
       final student = report['student'] as Map<String, dynamic>? ?? {};
@@ -110,11 +107,9 @@ class _ParentResultsScreenState extends State<ParentResultsScreen> {
                       children: [
                         _buildStudentHeader(),
                         const SizedBox(height: 16),
-                        _buildPeriodToggle(),
-                        const SizedBox(height: 16),
                         _buildSummaryCard(),
                         const SizedBox(height: 20),
-                        _buildSectionLabel('Subjects'),
+                        _buildSectionLabel('Subject Results'),
                         const SizedBox(height: 10),
                         _buildSubjectsList(),
                         const SizedBox(height: 20),
@@ -222,57 +217,9 @@ class _ParentResultsScreenState extends State<ParentResultsScreen> {
     );
   }
 
-  Widget _buildPeriodToggle() {
-    return Row(
-      children: [
-        _buildPeriodChip('weekly', 'This Week'),
-        const SizedBox(width: 10),
-        _buildPeriodChip('monthly', 'This Month'),
-      ],
-    );
-  }
-
-  Widget _buildPeriodChip(String value, String label) {
-    final selected = _selectedPeriod == value;
-    return GestureDetector(
-      onTap: () {
-        if (_selectedPeriod != value) {
-          setState(() => _selectedPeriod = value);
-          _loadData();
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primary : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-              color: selected ? AppColors.primary : Colors.grey.shade300),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.25),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2))
-                ]
-              : [],
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : Colors.grey.shade600,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildSummaryCard() {
     final summary = _report['summary'] as Map<String, dynamic>? ?? {};
     final avgPct = summary['overallSubjectsAveragePercent'] as num?;
-    final attPct = summary['overallAttendancePercent'] as num?;
     final courses = (_report['courses'] as List<dynamic>?)?.length ?? 0;
     final exams = _report['exams'] as Map<String, dynamic>? ?? {};
     final releasedCount = exams['releasedAttempts'] as int? ?? 0;
@@ -285,79 +232,65 @@ class _ParentResultsScreenState extends State<ParentResultsScreen> {
                 ? AppColors.warning
                 : AppColors.error;
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [avgColor, avgColor.withValues(alpha: 0.75)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return SizedBox(
+      width: double.infinity,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [avgColor, avgColor.withValues(alpha: 0.75)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+                color: avgColor.withValues(alpha: 0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 4)),
+          ],
         ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-              color: avgColor.withValues(alpha: 0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 4)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            _selectedPeriod == 'weekly' ? 'This Week' : 'This Month',
-            style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.8), fontSize: 13),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            avgPct != null ? '${avgPct.toStringAsFixed(0)}%' : '--',
-            style: const TextStyle(
-                color: Colors.white,
-                fontSize: 42,
-                fontWeight: FontWeight.bold),
-          ),
-          Text(
-            'Average across $courses subject${courses == 1 ? '' : 's'}',
-            style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.8), fontSize: 12),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              _buildSummaryChip(
-                Icons.event_available_outlined,
-                attPct != null
-                    ? '${attPct.toStringAsFixed(0)}% attendance'
-                    : 'No attendance data',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Overall Performance',
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.9), fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              avgPct != null ? '${avgPct.toStringAsFixed(0)}%' : '--',
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 48,
+                  fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Average across $courses subject${courses == 1 ? '' : 's'}',
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(20),
               ),
-              const SizedBox(width: 8),
-              _buildSummaryChip(
-                Icons.assignment_outlined,
-                '$releasedCount exam${releasedCount == 1 ? '' : 's'} released',
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.assignment_outlined, color: Colors.white, size: 14),
+                  const SizedBox(width: 6),
+                  Text('$releasedCount exam${releasedCount == 1 ? '' : 's'} released',
+                      style: const TextStyle(color: Colors.white, fontSize: 12)),
+                ],
               ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSummaryChip(IconData icon, String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: Colors.white, size: 13),
-          const SizedBox(width: 5),
-          Text(text,
-              style: const TextStyle(color: Colors.white, fontSize: 11)),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -412,23 +345,25 @@ class _ParentResultsScreenState extends State<ParentResultsScreen> {
             course['attendance'] as Map<String, dynamic>? ?? {};
         final totals = attendance['totals'] as Map<String, dynamic>? ?? {};
 
+        final subjectId = subject['id'] as String? ?? '';
         final subjectName = subject['name'] as String? ?? 'Unknown';
         final teacherName =
             '${teacher['firstName'] ?? ''} ${teacher['lastName'] ?? ''}'
                 .trim();
         final avgPct = assessments['averagePercent'] as num?;
         final releasedCount = assessments['releasedCount'] as int? ?? 0;
-        final attPct = totals['attendancePercent'] as num?;
         final exams = (assessments['details'] as List<dynamic>? ?? [])
             .cast<Map<String, dynamic>>();
         final color = colors[i % colors.length];
 
         return _SubjectResultCard(
+          studentId: _studentId,
+          studentName: _studentName,
+          subjectId: subjectId,
           subjectName: subjectName,
           teacherName: teacherName,
           avgPercent: avgPct,
           releasedCount: releasedCount,
-          attendancePercent: attPct,
           color: color,
           exams: exams,
         );
@@ -440,20 +375,24 @@ class _ParentResultsScreenState extends State<ParentResultsScreen> {
 // ─── Subject Result Card ─────────────────────────────────
 
 class _SubjectResultCard extends StatefulWidget {
+  final String studentId;
+  final String studentName;
+  final String subjectId;
   final String subjectName;
   final String teacherName;
   final num? avgPercent;
   final int releasedCount;
-  final num? attendancePercent;
   final Color color;
   final List<Map<String, dynamic>> exams;
 
   const _SubjectResultCard({
+    required this.studentId,
+    required this.studentName,
+    required this.subjectId,
     required this.subjectName,
     required this.teacherName,
     this.avgPercent,
     required this.releasedCount,
-    this.attendancePercent,
     required this.color,
     required this.exams,
   });
@@ -579,16 +518,8 @@ class _SubjectResultCardState extends State<_SubjectResultCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (widget.attendancePercent != null)
-                    _buildInfoRow(
-                      Icons.event_available_outlined,
-                      'Attendance',
-                      '${widget.attendancePercent!.toStringAsFixed(0)}%',
-                      AppColors.secondary,
-                    ),
                   if (widget.exams.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    Text('Exam Results',
+                    Text('Recent Exam Results',
                         style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -632,12 +563,42 @@ class _SubjectResultCardState extends State<_SubjectResultCard> {
                         ),
                       );
                     }),
+                    const SizedBox(height: 12),
                   ] else ...[
-                    const SizedBox(height: 8),
                     Text('No exams released yet',
                         style: TextStyle(
                             fontSize: 12, color: Colors.grey.shade400)),
+                    const SizedBox(height: 12),
                   ],
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ParentSubjectDetailScreen(
+                              studentId: widget.studentId,
+                              subjectId: widget.subjectId,
+                              subjectName: widget.subjectName,
+                              childName: widget.studentName,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.arrow_forward, size: 16),
+                      label: const Text('View Details'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: widget.color,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

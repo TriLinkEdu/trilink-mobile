@@ -197,6 +197,25 @@ class ApiConstants {
 
   // Enrollments (teacher)
   static const String enrollments = '/enrollments';
+  static String classStudents(String classOfferingId) =>
+      '/enrollments/class/$classOfferingId/students';
+  static const String mySubjects = '/enrollments/mine/subjects';
+  static String childSubjects(String studentId) =>
+      '/enrollments/children/$studentId/subjects';
+
+  // Grades by Subject
+  static String gradesBySubject(String studentId, String subjectId) =>
+      '/grades/student/$studentId/by-subject/$subjectId';
+
+  // Attendance by Subject
+  static String attendanceBySubject(String studentId, String subjectId) =>
+      '/reports/attendance/student/$studentId/by-subject/$subjectId';
+
+  // Chat - Parent reads child's history
+  static String childConversations(String studentId) =>
+      '/chat/children/$studentId/conversations';
+  static String childConversationMessages(String studentId, String convId) =>
+      '/chat/children/$studentId/conversations/$convId/messages';
 
   // User Search
   static const String usersSearch = '/users/search';

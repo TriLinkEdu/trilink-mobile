@@ -7,6 +7,8 @@ import '../../../../core/services/api_service.dart';
 import '../../../../features/auth/services/auth_service.dart';
 import '../../student_info/screens/parent_student_info_screen.dart';
 import '../../student_info/screens/parent_results_screen.dart';
+import '../../student_info/screens/parent_subject_list_screen.dart';
+import '../../student_info/screens/parent_teachers_screen.dart';
 import '../../attendance/screens/parent_attendance_screen.dart';
 import '../../chat/screens/parent_chat_screen.dart';
 import '../../announcements/screens/parent_announcements_screen.dart';
@@ -33,11 +35,13 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   int _selectedChildIndex = 0;
   List<Map<String, dynamic>> _children = [];
   Map<String, dynamic> _currentSummary = {};
+  int _unreadCount = 0;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _loadUnreadCount();
   }
 
   Future<void> _loadData() async {
@@ -88,6 +92,17 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         _error = e.toString();
         _loading = false;
       });
+    }
+  }
+
+  Future<void> _loadUnreadCount() async {
+    try {
+      final notifications = await ApiService().getNotifications();
+      if (!mounted) return;
+      final unread = notifications.where((n) => n['readAt'] == null).length;
+      setState(() => _unreadCount = unread);
+    } catch (e) {
+      // Silently fail
     }
   }
 
@@ -223,25 +238,60 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
             ),
           ),
           const Spacer(),
-          GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const ParentNotificationsScreen(),
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ParentNotificationsScreen(),
+                    ),
+                  ).then((_) {
+                    // Refresh unread count when returning
+                    _loadUnreadCount();
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.notifications_outlined,
+                    color: theme.colorScheme.onSurfaceVariant,
+                    size: 20,
+                  ),
+                ),
               ),
-            ),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                Icons.notifications_outlined,
-                color: theme.colorScheme.onSurfaceVariant,
-                size: 20,
-              ),
-            ),
+              if (_unreadCount > 0)
+                Positioned(
+                  right: 2,
+                  top: 2,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: AppColors.error,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Text(
+                      _unreadCount > 99 ? '99+' : '$_unreadCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ],
       ),
@@ -270,7 +320,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                   radius: 30,
                   backgroundColor: Colors.white.withValues(alpha: 0.2),
                   child: Text(
-                    user?.firstName?.isNotEmpty == true
+                    (user?.firstName ?? '').isNotEmpty
                         ? user!.firstName[0].toUpperCase()
                         : 'P',
                     style: const TextStyle(
@@ -386,6 +436,48 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (_) => ParentAttendanceScreen(
+                          studentId: childId,
+                          childName: _childName,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                _DrawerItem(
+                  icon: Icons.people_outline,
+                  label: 'Teachers',
+                  onTap: () {
+                    Navigator.pop(context);
+                    final childId = _children.isNotEmpty
+                        ? (_children[_selectedChildIndex]['studentId'] as String? ??
+                              _children[_selectedChildIndex]['id'] as String? ??
+                              '')
+                        : '';
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ParentTeachersScreen(
+                          studentId: childId,
+                          childName: _childName,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                _DrawerItem(
+                  icon: Icons.book_outlined,
+                  label: 'Subjects',
+                  onTap: () {
+                    Navigator.pop(context);
+                    final childId = _children.isNotEmpty
+                        ? (_children[_selectedChildIndex]['studentId'] as String? ??
+                              _children[_selectedChildIndex]['id'] as String? ??
+                              '')
+                        : '';
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ParentSubjectListScreen(
                           studentId: childId,
                           childName: _childName,
                         ),
@@ -544,12 +636,22 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                 letterSpacing: 0.8,
               ),
             ),
-            Text(
-              'View Report',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.primary,
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => WeeklyReportScreen(childName: _childName),
+                  ),
+                );
+              },
+              child: Text(
+                'View Report',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.primary,
+                ),
               ),
             ),
           ],
@@ -643,12 +745,17 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         ),
       ),
       _FeatureItem(
-        icon: Icons.chat_bubble_outline,
-        label: 'Messages',
+        icon: Icons.book_outlined,
+        label: 'Subjects\nInfo',
         color: const Color(0xFF00BFA5),
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const ParentChatScreen()),
+          MaterialPageRoute(
+            builder: (_) => ParentSubjectListScreen(
+              studentId: childId,
+              childName: _childName,
+            ),
+          ),
         ),
       ),
     ];
@@ -707,150 +814,202 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   }
 
   Widget _buildContactTeacher() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1A73E8), Color(0xFF4A9AF5)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
+    final childId = _children.isNotEmpty
+        ? (_children[_selectedChildIndex]['studentId'] as String? ??
+              _children[_selectedChildIndex]['id'] as String? ??
+              '')
+        : '';
+    
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ParentTeachersScreen(
+              studentId: childId,
+              childName: _childName,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF1A73E8), Color(0xFF4A9AF5)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          borderRadius: BorderRadius.circular(14),
         ),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Contact Teacher',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Contact Teacher',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Reach out to your child\'s teacher.',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontSize: 13,
+                  const SizedBox(height: 4),
+                  Text(
+                    'View and message your child\'s teachers.',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      fontSize: 13,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(10),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.arrow_forward, color: Colors.white, size: 20),
             ),
-            child: const Icon(Icons.chat_bubble, color: Colors.white, size: 20),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildRecentActivity() {
     final theme = Theme.of(context);
-    final activities =
-        (_currentSummary['recentActivity'] as List<dynamic>?) ?? [];
     
-    // Show only top 3 activities
-    final displayActivities = activities.take(3).toList();
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    // Fetch notifications instead of using summary activities
+    return FutureBuilder<List<dynamic>>(
+      future: ApiService().getNotifications(),
+      builder: (context, snapshot) {
+        final notifications = snapshot.data ?? [];
+        final displayNotifications = notifications.take(3).toList();
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'RECENT ACTIVITY',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurfaceVariant,
-                letterSpacing: 0.8,
-              ),
-            ),
-            if (activities.length > 3)
-              GestureDetector(
-                onTap: () {
-                  // Navigate to notifications screen to see all
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ParentNotificationsScreen(),
-                    ),
-                  );
-                },
-                child: Text(
-                  'View All',
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'RECENT ACTIVITY',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.primary,
+                    color: theme.colorScheme.onSurfaceVariant,
+                    letterSpacing: 0.8,
                   ),
                 ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        if (displayActivities.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            child: Center(
-              child: Text(
-                'No recent activity',
-                style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-              ),
+                if (notifications.length > 3)
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ParentNotificationsScreen(),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      'View All',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+              ],
             ),
-          ),
-        ...displayActivities.map<Widget>((a) {
-          final type = a['type'] as String? ?? '';
-          IconData icon;
-          Color iconColor;
-          Color iconBgColor;
-          switch (type) {
-            case 'quiz':
-            case 'exam':
-            case 'grade':
-              icon = Icons.quiz;
-              iconColor = AppColors.primary;
-              iconBgColor = AppColors.primary.withValues(alpha: 0.1);
-            case 'submission':
-            case 'assignment':
-              icon = Icons.description;
-              iconColor = Colors.grey.shade600;
-              iconBgColor = Colors.grey.shade100;
-            case 'attendance':
-              icon = Icons.access_time;
-              iconColor = AppColors.secondary;
-              iconBgColor = AppColors.secondary.withValues(alpha: 0.1);
-            default:
-              icon = Icons.menu_book;
-              iconColor = Colors.purple;
-              iconBgColor = Colors.purple.withValues(alpha: 0.1);
-          }
-          return _ActivityItem(
-            icon: icon,
-            iconBgColor: iconBgColor,
-            iconColor: iconColor,
-            title: a['title'] as String? ?? '',
-            subtitle: a['description'] as String? ?? '',
-            time: a['time'] as String? ?? a['date'] as String? ?? '',
-            teacher: a['teacher'] as String?,
-            tag: a['tag'] as String?,
-          );
-        }),
-      ],
+            const SizedBox(height: 12),
+            if (snapshot.connectionState == ConnectionState.waiting)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (displayNotifications.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Center(
+                  child: Text(
+                    'No recent activity',
+                    style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                ),
+              )
+            else
+              ...displayNotifications.map<Widget>((notification) {
+                final type = notification['type'] as String? ?? '';
+                final category = notification['category'] as String? ?? '';
+                IconData icon;
+                Color iconColor;
+                Color iconBgColor;
+                
+                // Determine icon based on type or category
+                if (type.contains('grade') || category.contains('grade')) {
+                  icon = Icons.grade;
+                  iconColor = AppColors.primary;
+                  iconBgColor = AppColors.primary.withValues(alpha: 0.1);
+                } else if (type.contains('attendance') || category.contains('attendance')) {
+                  icon = Icons.event_available;
+                  iconColor = AppColors.secondary;
+                  iconBgColor = AppColors.secondary.withValues(alpha: 0.1);
+                } else if (type.contains('assignment') || category.contains('assignment')) {
+                  icon = Icons.assignment;
+                  iconColor = Colors.orange;
+                  iconBgColor = Colors.orange.withValues(alpha: 0.1);
+                } else if (type.contains('announcement') || category.contains('announcement')) {
+                  icon = Icons.campaign;
+                  iconColor = Colors.purple;
+                  iconBgColor = Colors.purple.withValues(alpha: 0.1);
+                } else {
+                  icon = Icons.notifications;
+                  iconColor = Colors.blue;
+                  iconBgColor = Colors.blue.withValues(alpha: 0.1);
+                }
+                
+                return _ActivityItem(
+                  icon: icon,
+                  iconBgColor: iconBgColor,
+                  iconColor: iconColor,
+                  title: notification['title'] as String? ?? 'Notification',
+                  subtitle: notification['message'] as String? ?? notification['body'] as String? ?? '',
+                  time: _formatNotificationTime(notification['createdAt'] as String?),
+                  tag: notification['isRead'] == false ? 'NEW' : null,
+                );
+              }),
+          ],
+        );
+      },
     );
+  }
+
+  String _formatNotificationTime(String? timestamp) {
+    if (timestamp == null) return '';
+    try {
+      final date = DateTime.parse(timestamp);
+      final now = DateTime.now();
+      final diff = now.difference(date);
+      
+      if (diff.inMinutes < 60) {
+        return '${diff.inMinutes}m ago';
+      } else if (diff.inHours < 24) {
+        return '${diff.inHours}h ago';
+      } else if (diff.inDays < 7) {
+        return '${diff.inDays}d ago';
+      } else {
+        return '${date.month}/${date.day}';
+      }
+    } catch (e) {
+      return '';
+    }
   }
 
   Widget _buildBottomNav() {

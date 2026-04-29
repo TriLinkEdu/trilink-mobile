@@ -103,34 +103,56 @@ class _TeacherNotificationsScreenState
   }
 
   IconData _iconForType(String? type) {
-    switch (type) {
-      case 'assignment':
+    switch (type?.toLowerCase()) {
+      case 'badge':
+        return Icons.emoji_events;
+      case 'broadcast':
+        return Icons.campaign;
+      case 'weekly_digest':
+        return Icons.summarize;
+      case 'attendance':
+        return Icons.event_available;
+      case 'announcement':
+        return Icons.announcement;
+      case 'exam_result':
+        return Icons.grade;
+      case 'exam_submission':
         return Icons.assignment_turned_in;
+      case 'assignment':
+        return Icons.assignment;
       case 'alert':
       case 'system':
         return Icons.warning_amber_rounded;
-      case 'announcement':
-        return Icons.campaign;
-      case 'grade':
-        return Icons.grading;
       default:
         return Icons.notifications;
     }
   }
 
   Color _colorForType(String? type) {
-    switch (type) {
+    switch (type?.toLowerCase()) {
+      case 'badge':
+        return Colors.amber;
+      case 'broadcast':
+        return AppColors.primary;
+      case 'weekly_digest':
+        return Colors.blue;
+      case 'attendance':
+        return AppColors.secondary;
+      case 'announcement':
+        return AppColors.accent;
+      case 'exam_result':
+        return Colors.green;
+      case 'exam_submission':
+        return Colors.purple;
       case 'assignment':
         return AppColors.primary;
       case 'alert':
       case 'system':
         return AppColors.error;
-      case 'announcement':
-        return Colors.purple;
       case 'grade':
         return AppColors.secondary;
       default:
-        return Colors.orange;
+        return Colors.grey;
     }
   }
 
