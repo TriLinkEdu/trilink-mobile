@@ -23,7 +23,7 @@ class UserModel {
   final String? createdAt;
   final String? updatedAt;
   final String? legacyName;
-  
+
   // Profile fields
   final String? profileImageFileId;
   final String? profileImagePath;
@@ -183,30 +183,30 @@ class UserModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'email': email,
-        'role': role.name,
-        'name': fullName, // backward compatibility
-        'firstName': firstName,
-        'lastName': lastName,
-        'avatarUrl': avatarUrl,
-        'school': school,
-        'phone': phone,
-        'grade': grade,
-        'section': section,
-        'subject': subject,
-        'department': department,
-        'childName': childName,
-        'relationship': relationship,
-        'mustChangePassword': mustChangePassword,
-        'createdAt': createdAt,
-        'updatedAt': updatedAt,
-        'profileImageFileId': profileImageFileId,
-        'profileImagePath': profileImagePath,
-        'country': country,
-        'cityState': cityState,
-        'postalCode': postalCode,
-      };
+    'id': id,
+    'email': email,
+    'role': role.name,
+    'name': fullName, // backward compatibility
+    'firstName': firstName,
+    'lastName': lastName,
+    'avatarUrl': avatarUrl,
+    'school': school,
+    'phone': phone,
+    'grade': grade,
+    'section': section,
+    'subject': subject,
+    'department': department,
+    'childName': childName,
+    'relationship': relationship,
+    'mustChangePassword': mustChangePassword,
+    'createdAt': createdAt,
+    'updatedAt': updatedAt,
+    'profileImageFileId': profileImageFileId,
+    'profileImagePath': profileImagePath,
+    'country': country,
+    'cityState': cityState,
+    'postalCode': postalCode,
+  };
 
   static UserRole _parseRole(dynamic role) {
     if (role is String) {

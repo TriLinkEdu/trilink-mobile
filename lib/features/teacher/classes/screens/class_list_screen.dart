@@ -34,7 +34,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
       if (yearId == null || yearId.isEmpty) {
         throw Exception('Active academic year is missing id');
       }
-      
+
       final offerings = await ApiService().getMyClassOfferings(yearId);
 
       if (!mounted) return;
@@ -57,7 +57,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
     if (displayName != null && displayName.isNotEmpty) {
       return displayName;
     }
-    
+
     final subjectName = offering['subjectName'] as String?;
     return subjectName ?? 'Unknown';
   }
@@ -66,11 +66,11 @@ class _ClassListScreenState extends State<ClassListScreen> {
     // Backend returns flat fields
     final gradeName = offering['gradeName'] as String? ?? '';
     final sectionName = offering['sectionName'] as String? ?? '';
-    
+
     if (gradeName.isEmpty && sectionName.isEmpty) return '';
     if (sectionName.isEmpty) return gradeName;
     if (gradeName.isEmpty) return sectionName;
-    
+
     return '$gradeName - $sectionName';
   }
 
@@ -90,7 +90,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
   Widget build(BuildContext context) {
     // Check if we're in a navigation stack (pushed) or in IndexedStack (bottom nav)
     final canPop = Navigator.of(context).canPop();
-    
+
     return PopScope(
       canPop: canPop,
       onPopInvoked: (didPop) {
@@ -220,10 +220,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
               subtitle: Text(_classPeriod(c)),
-              trailing: Icon(
-                Icons.chevron_right,
-                color: Colors.grey.shade400,
-              ),
+              trailing: Icon(Icons.chevron_right, color: Colors.grey.shade400),
               onTap: () {
                 final classId = c['id'] as String? ?? '';
                 if (classId.isNotEmpty) {

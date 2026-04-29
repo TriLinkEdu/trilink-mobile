@@ -50,10 +50,10 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         _loading = true;
         _error = null;
       });
-      
+
       // Load children list using new API
       final children = await ApiService().getMyChildren();
-      
+
       if (children.isEmpty) {
         if (!mounted) return;
         setState(() {
@@ -71,7 +71,9 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           'studentId': student?['id'] ?? child['studentId'],
           'firstName': student?['firstName'] ?? child['firstName'],
           'lastName': student?['lastName'] ?? child['lastName'],
-          'fullName': '${student?['firstName'] ?? ''} ${student?['lastName'] ?? ''}'.trim(),
+          'fullName':
+              '${student?['firstName'] ?? ''} ${student?['lastName'] ?? ''}'
+                  .trim(),
           'grade': student?['grade'] ?? child['grade'],
           'section': student?['section'] ?? child['section'],
           'avatar': '',
@@ -307,7 +309,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       ),
       theme.colorScheme.surface,
     );
-    
+
     return Drawer(
       backgroundColor: drawerSurface,
       child: Column(
@@ -379,7 +381,9 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                     Navigator.pop(context);
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (_) => const ParentHomeScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const ParentHomeScreen(),
+                      ),
                     );
                   },
                 ),
@@ -396,7 +400,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                   onTap: () {
                     Navigator.pop(context);
                     final childId = _children.isNotEmpty
-                        ? (_children[_selectedChildIndex]['studentId'] as String? ??
+                        ? (_children[_selectedChildIndex]['studentId']
+                                  as String? ??
                               _children[_selectedChildIndex]['id'] as String? ??
                               '')
                         : '';
@@ -418,7 +423,9 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                     Navigator.pop(context);
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const ParentResultsScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const ParentResultsScreen(),
+                      ),
                     );
                   },
                 ),
@@ -428,7 +435,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                   onTap: () {
                     Navigator.pop(context);
                     final childId = _children.isNotEmpty
-                        ? (_children[_selectedChildIndex]['studentId'] as String? ??
+                        ? (_children[_selectedChildIndex]['studentId']
+                                  as String? ??
                               _children[_selectedChildIndex]['id'] as String? ??
                               '')
                         : '';
@@ -449,7 +457,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                   onTap: () {
                     Navigator.pop(context);
                     final childId = _children.isNotEmpty
-                        ? (_children[_selectedChildIndex]['studentId'] as String? ??
+                        ? (_children[_selectedChildIndex]['studentId']
+                                  as String? ??
                               _children[_selectedChildIndex]['id'] as String? ??
                               '')
                         : '';
@@ -470,7 +479,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                   onTap: () {
                     Navigator.pop(context);
                     final childId = _children.isNotEmpty
-                        ? (_children[_selectedChildIndex]['studentId'] as String? ??
+                        ? (_children[_selectedChildIndex]['studentId']
+                                  as String? ??
                               _children[_selectedChildIndex]['id'] as String? ??
                               '')
                         : '';
@@ -494,7 +504,9 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                     Navigator.pop(context);
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const ParentChatScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const ParentChatScreen(),
+                      ),
                     );
                   },
                 ),
@@ -505,7 +517,9 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                     Navigator.pop(context);
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const ParentAnnouncementsScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const ParentAnnouncementsScreen(),
+                      ),
                     );
                   },
                 ),
@@ -516,7 +530,9 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                     Navigator.pop(context);
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const ParentNotificationsScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const ParentNotificationsScreen(),
+                      ),
                     );
                   },
                 ),
@@ -527,7 +543,9 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                     Navigator.pop(context);
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const ParentFeedbackScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const ParentFeedbackScreen(),
+                      ),
                     );
                   },
                 ),
@@ -541,7 +559,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => WeeklyReportScreen(childName: _childName),
+                        builder: (_) =>
+                            WeeklyReportScreen(childName: _childName),
                       ),
                     );
                   },
@@ -554,7 +573,9 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                     Navigator.pop(context);
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const ParentProfileScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const ParentProfileScreen(),
+                      ),
                     );
                   },
                 ),
@@ -565,7 +586,9 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                     Navigator.pop(context);
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const ParentSettingsScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const ParentSettingsScreen(),
+                      ),
                     );
                   },
                 ),
@@ -610,6 +633,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       ),
     );
   }
+
   Widget _buildOverviewSection() {
     final theme = Theme.of(context);
     final average = _currentSummary['average']?.toString() ?? '--';
@@ -819,16 +843,14 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
               _children[_selectedChildIndex]['id'] as String? ??
               '')
         : '';
-    
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ParentTeachersScreen(
-              studentId: childId,
-              childName: _childName,
-            ),
+            builder: (_) =>
+                ParentTeachersScreen(studentId: childId, childName: _childName),
           ),
         );
       },
@@ -874,7 +896,11 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                 color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+              child: const Icon(
+                Icons.arrow_forward,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
           ],
         ),
@@ -884,14 +910,14 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
 
   Widget _buildRecentActivity() {
     final theme = Theme.of(context);
-    
+
     // Fetch notifications instead of using summary activities
     return FutureBuilder<List<dynamic>>(
       future: ApiService().getNotifications(),
       builder: (context, snapshot) {
         final notifications = snapshot.data ?? [];
         final displayNotifications = notifications.take(3).toList();
-        
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -951,21 +977,24 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                 IconData icon;
                 Color iconColor;
                 Color iconBgColor;
-                
+
                 // Determine icon based on type or category
                 if (type.contains('grade') || category.contains('grade')) {
                   icon = Icons.grade;
                   iconColor = AppColors.primary;
                   iconBgColor = AppColors.primary.withValues(alpha: 0.1);
-                } else if (type.contains('attendance') || category.contains('attendance')) {
+                } else if (type.contains('attendance') ||
+                    category.contains('attendance')) {
                   icon = Icons.event_available;
                   iconColor = AppColors.secondary;
                   iconBgColor = AppColors.secondary.withValues(alpha: 0.1);
-                } else if (type.contains('assignment') || category.contains('assignment')) {
+                } else if (type.contains('assignment') ||
+                    category.contains('assignment')) {
                   icon = Icons.assignment;
                   iconColor = Colors.orange;
                   iconBgColor = Colors.orange.withValues(alpha: 0.1);
-                } else if (type.contains('announcement') || category.contains('announcement')) {
+                } else if (type.contains('announcement') ||
+                    category.contains('announcement')) {
                   icon = Icons.campaign;
                   iconColor = Colors.purple;
                   iconBgColor = Colors.purple.withValues(alpha: 0.1);
@@ -974,14 +1003,19 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                   iconColor = Colors.blue;
                   iconBgColor = Colors.blue.withValues(alpha: 0.1);
                 }
-                
+
                 return _ActivityItem(
                   icon: icon,
                   iconBgColor: iconBgColor,
                   iconColor: iconColor,
                   title: notification['title'] as String? ?? 'Notification',
-                  subtitle: notification['message'] as String? ?? notification['body'] as String? ?? '',
-                  time: _formatNotificationTime(notification['createdAt'] as String?),
+                  subtitle:
+                      notification['message'] as String? ??
+                      notification['body'] as String? ??
+                      '',
+                  time: _formatNotificationTime(
+                    notification['createdAt'] as String?,
+                  ),
                   tag: notification['isRead'] == false ? 'NEW' : null,
                 );
               }),
@@ -997,7 +1031,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       final date = DateTime.parse(timestamp);
       final now = DateTime.now();
       final diff = now.difference(date);
-      
+
       if (diff.inMinutes < 60) {
         return '${diff.inMinutes}m ago';
       } else if (diff.inHours < 24) {
@@ -1110,7 +1144,7 @@ class _DrawerItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final itemColor = color ?? theme.colorScheme.onSurface;
-    
+
     return ListTile(
       leading: Icon(icon, color: itemColor, size: 22),
       title: Text(
