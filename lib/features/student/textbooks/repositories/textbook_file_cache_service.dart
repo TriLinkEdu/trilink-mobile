@@ -14,6 +14,12 @@ class TextbookOpenResult {
   const TextbookOpenResult({required this.localPath, required this.fromCache});
 }
 
+/// Callback for download progress updates
+typedef ProgressCallback = void Function(int downloadedBytes, int totalBytes);
+
+/// Callback for download cancellation
+typedef CancelCallback = bool Function();
+
 class TextbookFileCacheService {
   final StorageService _storage;
 
@@ -27,17 +33,28 @@ class TextbookFileCacheService {
     StorageService? storageService,
   }) : _storage = storageService ?? StorageService();
 
-  Future<TextbookOpenResult> prepareLocalPdf(TextbookModel textbook) {
+  /// Opens a PDF locally, downloading if necessary
+  /// Optional [onProgress] callback receives (downloadedBytes, totalBytes)
+  /// Optional [shouldCancel] callback should return true to cancel download
+  Future<TextbookOpenResult> prepareLocalPdf(
+    TextbookModel textbook, {
+    ProgressCallback? onProgress,
+    CancelCallback? shouldCancel,
+  }) {
     final key = textbook.cacheKey;
     final inFlight = _inFlight[key];
     if (inFlight != null) return inFlight;
-    final future = _prepare(textbook);
+    final future = _prepare(textbook, onProgress: onProgress, shouldCancel: shouldCancel);
     _inFlight[key] = future;
     future.whenComplete(() => _inFlight.remove(key));
     return future;
   }
 
-  Future<TextbookOpenResult> _prepare(TextbookModel textbook) async {
+  Future<TextbookOpenResult> _prepare(
+    TextbookModel textbook, {
+    ProgressCallback? onProgress,
+    CancelCallback? shouldCancel,
+  }) async {
     final root = await getApplicationDocumentsDirectory();
     final dir = Directory('${root.path}/textbook_cache');
     if (!await dir.exists()) {
@@ -69,7 +86,14 @@ class TextbookFileCacheService {
       throw StateError('Missing file access URL for textbook');
     }
 
-    await Dio().download(accessUrl, file.path);
+    // Download with progress tracking and cancellation support
+    await _downloadWithProgress(
+      accessUrl,
+      file.path,
+      onProgress: onProgress,
+      shouldCancel: shouldCancel,
+    );
+    
     final size = await file.length();
     index[safeId] = <String, dynamic>{
       'cacheKey': textbook.cacheKey,
@@ -80,6 +104,45 @@ class TextbookFileCacheService {
     await _evictIfNeeded(index);
     await _writeIndex(index);
     return TextbookOpenResult(localPath: file.path, fromCache: false);
+  }
+
+  /// Download file with progress tracking and cancellation support
+  Future<void> _downloadWithProgress(
+    String url,
+    String filePath, {
+    ProgressCallback? onProgress,
+    CancelCallback? shouldCancel,
+  }) async {
+    final dio = Dio();
+    final response = await dio.getUri<List<int>>(
+      Uri.parse(url),
+      options: Options(responseType: ResponseType.bytes),
+      onReceiveProgress: (received, total) {
+        if (onProgress != null) {
+          onProgress(received, total);
+        }
+        // Check if download should be cancelled
+        if (shouldCancel?.call() ?? false) {
+          throw DioException(
+            requestOptions: RequestOptions(path: url),
+            error: 'Download cancelled by user',
+            type: DioExceptionType.cancel,
+          );
+        }
+      },
+    );
+
+    if (response.data == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: url),
+        error: 'Empty response',
+        type: DioExceptionType.badResponse,
+      );
+    }
+
+    // Write the downloaded bytes to file
+    final file = File(filePath);
+    await file.writeAsBytes(response.data!, flush: true);
   }
 
   Future<void> _evictIfNeeded(Map<String, dynamic> index) async {
