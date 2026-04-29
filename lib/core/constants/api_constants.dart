@@ -187,6 +187,15 @@ class ApiConstants {
   static const String gamificationMyBadges = '/gamification/me/badges';
   static const String gamificationMyPoints = '/gamification/me/badge-points';
   static const String gamificationMyProgress = '/gamification/me/progress';
+  static const String gamificationMissions = '/gamification/me/missions';
+  static String gamificationMissionComplete(String missionId) =>
+      '/gamification/me/missions/$missionId/complete';
+  static const String gamificationTeamChallenge =
+      '/gamification/me/team-challenge';
+  static const String gamificationQuizzes = '/gamification/quizzes';
+  static String gamificationQuizById(String id) => '/gamification/quizzes/$id';
+  static String gamificationQuizSubmit(String id) =>
+      '/gamification/quizzes/$id/submit';
   static const String gamificationLeaderboard =
       '/gamification/leaderboard/exam-average';
   static const String gamificationStreakLeaderboard =
@@ -207,7 +216,8 @@ class ApiConstants {
 
   // Curriculum
   static const String curriculumSubjects = '/curriculum/me/subjects';
-  static String curriculumTopics(String subjectId) => '/curriculum/me/subjects/$subjectId/topics';
+  static String curriculumTopics(String subjectId) =>
+      '/curriculum/me/subjects/$subjectId/topics';
 
   // Course Resources
   static const String courseResources = '/resources/me';
@@ -223,13 +233,19 @@ class ApiConstants {
 
   // AI/ML Endpoints
   static const String aiChat = '/ai/chat';
-  static String aiChatHistory(String studentId) => '/ai/chat/history/$studentId';
+  static String aiChatHistory(String studentId) =>
+      '/ai/chat/history/$studentId';
   static const String aiMasteryUpdate = '/ai/mastery/update';
-  static String aiMastery(String studentId, String topicId) => '/ai/mastery/$studentId/$topicId';
-  static String aiWeakTopics(String studentId, String subjectId) => '/ai/mastery/$studentId/weak/$subjectId';
-  static String aiNextQuestion(String studentId, String topicId) => '/ai/content/next-question/$studentId/$topicId';
-  static String aiWeeklySummary(String studentId) => '/ai/analytics/student/$studentId/weekly-summary';
-  static String aiEvaluate(String studentId) => '/ai/students/$studentId/evaluate';
+  static String aiMastery(String studentId, String topicId) =>
+      '/ai/mastery/$studentId/$topicId';
+  static String aiWeakTopics(String studentId, String subjectId) =>
+      '/ai/mastery/$studentId/weak/$subjectId';
+  static String aiNextQuestion(String studentId, String topicId) =>
+      '/ai/content/next-question/$studentId/$topicId';
+  static String aiWeeklySummary(String studentId) =>
+      '/ai/analytics/student/$studentId/weekly-summary';
+  static String aiEvaluate(String studentId) =>
+      '/ai/students/$studentId/evaluate';
 
   // ═══════════════════════════════════════════════════════
   // ─── PARENT-SPECIFIC ENDPOINTS ─────────────────────────
