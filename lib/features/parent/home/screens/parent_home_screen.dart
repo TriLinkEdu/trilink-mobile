@@ -18,11 +18,13 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
   bool _loading = true;
   List<Map<String, dynamic>> _linkedChildren = [];
   int _currentIndex = 0;
+  int _unreadCount = 0;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _loadUnreadCount();
   }
 
   Future<void> _loadData() async {
@@ -38,6 +40,17 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _loadUnreadCount() async {
+    try {
+      final notifications = await ApiService().getNotifications();
+      if (!mounted) return;
+      final unread = notifications.where((n) => n['readAt'] == null).length;
+      setState(() => _unreadCount = unread);
+    } catch (e) {
+      // Silently fail
     }
   }
 
@@ -90,8 +103,9 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          const SizedBox(width: 40), // Balance the layout
           Text(
             'TriLink',
             style: TextStyle(
@@ -100,8 +114,52 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
               color: theme.colorScheme.onSurface,
             ),
           ),
+          _buildNotificationIcon(),
         ],
       ),
+    );
+  }
+
+  Widget _buildNotificationIcon() {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.notifications_outlined),
+          iconSize: 26,
+          onPressed: () {
+            Navigator.pushNamed(context, '/parent/notifications').then((_) {
+              // Refresh unread count when returning
+              _loadUnreadCount();
+            });
+          },
+        ),
+        if (_unreadCount > 0)
+          Positioned(
+            right: 8,
+            top: 8,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: const BoxDecoration(
+                color: AppColors.error,
+                shape: BoxShape.circle,
+              ),
+              constraints: const BoxConstraints(
+                minWidth: 18,
+                minHeight: 18,
+              ),
+              child: Text(
+                _unreadCount > 99 ? '99+' : '$_unreadCount',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+      ],
     );
   }
 

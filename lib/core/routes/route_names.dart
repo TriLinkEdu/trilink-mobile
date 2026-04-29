@@ -62,12 +62,6 @@ class RouteNames {
   static const String teacherAnnouncements = '/teacher/announcements';
   static const String teacherCreateAnnouncement =
       '/teacher/announcements/create';
-  static const String teacherExams = '/teacher/exams';
-  static const String teacherCreateExam = '/teacher/exams/create';
-  static const String teacherExamBank = '/teacher/exams/bank';
-  static const String teacherExamAnalytics = '/teacher/exams/analytics';
-  static const String teacherEvaluateSubmissions = '/teacher/exams/evaluate';
-  static const String teacherLiveExam = '/teacher/exams/live';
   static const String teacherNotifications = '/teacher/notifications';
   static const String teacherStudentList = '/teacher/students';
   static const String teacherStudentAnalytics = '/teacher/student/analytics';
@@ -77,6 +71,7 @@ class RouteNames {
       '/teacher/messages/conversation';
   static const String teacherCreateGroup = '/teacher/messages/create-group';
   static const String teacherClasses = '/teacher/classes';
+  static const String teacherClassDetail = '/teacher/classes/detail';
   static const String teacherSettings = '/teacher/settings';
   static const String teacherAiAssistant = '/teacher/ai-assistant';
 
@@ -94,6 +89,10 @@ class RouteNames {
   static const String parentFeedback = '/parent/feedback';
   static const String parentWeeklyReport = '/parent/weekly-report';
   static const String parentReportComparison = '/parent/report-comparison';
+  static const String parentSubjectList = '/parent/subject-list';
+  static const String parentSubjectDetail = '/parent/subject-detail';
+  static const String parentChildChatHistory = '/parent/child-chat-history';
+  static const String parentChildConversationView = '/parent/child-conversation-view';
 
   // Shared
   static const String themeCustomization = '/settings/theme-customization';

@@ -111,7 +111,10 @@ class ApiService {
     String sessionId,
     List<Map<String, dynamic>> marks,
   ) => _tryOr(
-    () => _api.put(ApiConstants.attendanceMarks(sessionId), data: marks),
+    () => _api.put(
+      ApiConstants.attendanceMarks(sessionId),
+      data: {'marks': marks},
+    ),
     {'ok': true},
   );
 
@@ -126,6 +129,19 @@ class ApiService {
         DummyData.studentAttendanceReport(studentId),
       );
 
+  /// Real API only: Get student attendance report without mock fallback.
+  Future<Map<String, dynamic>> getStudentAttendanceReportReal(
+    String studentId,
+  ) => _api.get(ApiConstants.attendanceStudentReport(studentId));
+
+  Future<Map<String, dynamic>> getStudentAttendanceByDay(
+    String studentId,
+    String date,
+  ) => _tryOr(
+    () => _api.get(ApiConstants.attendanceStudentByDay(studentId, date)),
+    DummyData.studentAttendanceByDay,
+  );
+
   Future<Map<String, dynamic>> getClassAttendanceReport(
     String classOfferingId,
   ) => _tryOr(
@@ -134,18 +150,53 @@ class ApiService {
   );
 
   // ─── Calendar ───────────────────────────────────────────
-  Future<List<dynamic>> getCalendarEvents({Map<String, dynamic>? filters}) =>
+  Future<List<dynamic>> getCalendarEvents({
+    String? from,
+    String? to,
+    String? academicYearId,
+    String? classOfferingId,
+  }) =>
       _tryOr(
-        () =>
-            _api.getList(ApiConstants.calendarEvents, queryParameters: filters),
+        () => _api.getList(
+          ApiConstants.calendarEvents,
+          queryParameters: {
+            if (from != null) 'from': from,
+            if (to != null) 'to': to,
+            if (academicYearId != null) 'academicYearId': academicYearId,
+            if (classOfferingId != null) 'classOfferingId': classOfferingId,
+          },
+        ),
         DummyData.calendarEvents,
       );
 
-  Future<Map<String, dynamic>> createCalendarEvent(Map<String, dynamic> data) =>
-      _tryOr(() => _api.post(ApiConstants.calendarEvents, data: data), {
-        'id': 'new-event',
-        ...data,
-      });
+  Future<Map<String, dynamic>> createCalendarEvent(
+    Map<String, dynamic> data,
+  ) async {
+    // Get active academic year
+    final yearData = await getActiveAcademicYear();
+    final yearId = (yearData['id'] ?? yearData['data']?['id']) as String?;
+
+    if (yearId == null || yearId.isEmpty) {
+      throw Exception('Active academic year is required');
+    }
+
+    return _tryOr(
+      () => _api.post(
+        ApiConstants.calendarEvents,
+        data: {
+          'academicYearId': yearId,
+          'title': data['title'],
+          'date': data['date'],
+          'time': data['time'],
+          'type': data['type'] ?? 'other',
+          'description': data['description'],
+          if (data['classOfferingId'] != null)
+            'classOfferingId': data['classOfferingId'],
+        },
+      ),
+      {'id': 'new-event', ...data},
+    );
+  }
 
   Future<Map<String, dynamic>> updateCalendarEvent(
     String id,
@@ -174,6 +225,14 @@ class ApiService {
         ...data,
         'createdAt': DateTime.now().toIso8601String(),
       });
+
+  Future<Map<String, dynamic>> updateAnnouncement(
+    String id,
+    Map<String, dynamic> data,
+  ) => _tryOr(
+    () => _api.patch('${ApiConstants.announcements}/$id', data: data),
+    {'id': id, ...data},
+  );
 
   // ─── Exams ──────────────────────────────────────────────
   Future<List<dynamic>> getExams({Map<String, dynamic>? filters}) => _tryOr(
@@ -271,6 +330,13 @@ class ApiService {
     }, true);
   }
 
+  Future<void> markNotificationUnread(String id) async {
+    await _tryOr(() async {
+      await _api.patch(ApiConstants.notificationUnread(id));
+      return true;
+    }, true);
+  }
+
   Future<void> markAllNotificationsRead() async {
     await _tryOr(() async {
       await _api.post(ApiConstants.notificationsReadAll);
@@ -290,6 +356,24 @@ class ApiService {
         ...data,
         'createdAt': DateTime.now().toIso8601String(),
       });
+
+  Future<Map<String, dynamic>> initiateDirectChat(String targetUserId) =>
+      _tryOr(
+        () => _api.post(
+          ApiConstants.conversationsInitiate,
+          data: {'targetUserId': targetUserId},
+        ),
+        {
+          'conversation': {
+            'id': 'conv-${DateTime.now().millisecondsSinceEpoch}',
+            'type': 'direct',
+            'title': 'Direct Chat',
+            'createdAt': DateTime.now().toIso8601String(),
+            'updatedAt': DateTime.now().toIso8601String(),
+          },
+          'isNew': true,
+        },
+      );
 
   Future<Map<String, dynamic>> getConversation(String id) => _tryOr(
     () => _api.get(ApiConstants.conversation(id)),
@@ -425,6 +509,11 @@ class ApiService {
         DummyData.feedbackResponse,
       );
 
+  Future<List<dynamic>> getMyFeedback() => _tryOr(
+    () => _api.getList(ApiConstants.feedbackMine),
+    DummyData.myFeedbackList,
+  );
+
   // ─── Reports ────────────────────────────────────────────
   Future<Map<String, dynamic>> getStudentPerformance(String studentId) =>
       _tryOr(
@@ -484,6 +573,10 @@ class ApiService {
   /// Get list of children linked to current parent
   Future<List<dynamic>> getMyChildren() =>
       _tryOr(() => _api.getList(ApiConstants.myChildren), DummyData.myChildren);
+
+  /// Real API only: Get children linked to current parent without mock fallback.
+  Future<List<dynamic>> getMyChildrenReal() =>
+      _api.getList(ApiConstants.myChildren);
 
   /// Get child enrollments (classes)
   Future<List<dynamic>> getChildEnrollments(String studentId) => _tryOr(
@@ -575,5 +668,166 @@ class ApiService {
   Future<List<dynamic>> getChildExamResults(String studentId) => _tryOr(
     () => _api.getList('/attempts/student/$studentId/results'),
     DummyData.childExamResults(studentId),
+  );
+
+  /// Get student detail (profile + classes + teachers)
+  Future<Map<String, dynamic>> getStudentDetail(String studentUserId) =>
+      _tryOr(() => _api.get(ApiConstants.studentDetail(studentUserId)), {});
+
+  /// Get comprehensive student report (weekly/monthly/custom)
+  Future<Map<String, dynamic>> getStudentReport(
+    String studentId, {
+    String periodType = 'monthly',
+    String? startDate,
+    String? endDate,
+  }) => _tryOr(
+    () => _api.get(
+      ApiConstants.studentReport(studentId),
+      queryParameters: {
+        'periodType': periodType,
+        if (startDate != null) 'startDate': startDate,
+        if (endDate != null) 'endDate': endDate,
+      },
+    ),
+    {},
+  );
+
+  /// Get teachers for a student
+  Future<Map<String, dynamic>> getStudentTeachers(String studentId) =>
+      _tryOr(() => _api.get(ApiConstants.studentTeachers(studentId)), {});
+
+  /// Get enrollments for a class offering (teacher use)
+  Future<List<dynamic>> getClassEnrollments(String classOfferingId) => _tryOr(
+    () => _api.getList(
+      ApiConstants.enrollments,
+      queryParameters: {'classOfferingId': classOfferingId},
+    ),
+    [],
+  );
+
+  /// Get students in a class with enriched data (NEW endpoint)
+  Future<Map<String, dynamic>> getClassStudents(String classOfferingId) =>
+      _tryOr(
+        () => _api.get(ApiConstants.classStudents(classOfferingId)),
+        {
+          'classOfferingId': classOfferingId,
+          'className': 'Class',
+          'studentCount': 0,
+          'students': [],
+        },
+      );
+
+  /// Get my subjects (student)
+  Future<List<dynamic>> getMySubjects() => _tryOr(
+        () => _api.getList(ApiConstants.mySubjects),
+        [],
+      );
+
+  /// Get child's subjects (parent)
+  Future<List<dynamic>> getChildSubjects(String studentId) => _tryOr(
+        () => _api.getList(ApiConstants.childSubjects(studentId)),
+        [],
+      );
+
+  /// Get grades by subject
+  Future<Map<String, dynamic>> getGradesBySubject(
+    String studentId,
+    String subjectId,
+  ) =>
+      _tryOr(
+        () => _api.get(ApiConstants.gradesBySubject(studentId, subjectId)),
+        {
+          'studentId': studentId,
+          'subjectId': subjectId,
+          'summary': {'total': 0, 'withScore': 0, 'averagePercent': 0},
+          'entries': [],
+        },
+      );
+
+  /// Get attendance by subject
+  Future<Map<String, dynamic>> getAttendanceBySubject(
+    String studentId,
+    String subjectId,
+  ) =>
+      _tryOr(
+        () =>
+            _api.get(ApiConstants.attendanceBySubject(studentId, subjectId)),
+        {
+          'studentId': studentId,
+          'subjectId': subjectId,
+          'summary': {
+            'total': 0,
+            'present': 0,
+            'late': 0,
+            'absent': 0,
+            'excused': 0,
+            'attendanceRate': 0,
+          },
+          'sessions': [],
+        },
+      );
+
+  /// Get child's conversations (parent)
+  Future<List<dynamic>> getChildConversations(String studentId) => _tryOr(
+        () => _api.getList(ApiConstants.childConversations(studentId)),
+        [],
+      );
+
+  /// Get child's conversation messages (parent)
+  Future<Map<String, dynamic>> getChildConversationMessages(
+    String studentId,
+    String convId, {
+    int limit = 50,
+    int skip = 0,
+  }) =>
+      _tryOr(
+        () => _api.get(
+          ApiConstants.childConversationMessages(studentId, convId),
+          queryParameters: {'limit': limit.toString(), 'skip': skip.toString()},
+        ),
+        {'conversationId': convId, 'messages': []},
+      );
+
+  /// Search users (for messaging)
+  Future<List<dynamic>> searchUsers({String? role, String? q}) => _tryOr(
+    () => _api.getList(
+      ApiConstants.usersSearch,
+      queryParameters: {if (role != null) 'role': role, if (q != null) 'q': q},
+    ),
+    [],
+  );
+
+  /// Initiate conversation with a user
+  Future<Map<String, dynamic>> initiateConversation(String targetUserId) =>
+      _tryOr(
+        () => _api.post(
+          ApiConstants.conversationsInitiate,
+          data: {'targetUserId': targetUserId},
+        ),
+        {
+          'conversation': {
+            'id': 'mock-conversation-id',
+            'type': 'direct',
+            'title': 'Mock Conversation',
+            'createdAt': DateTime.now().toIso8601String(),
+          },
+          'isNew': true,
+        },
+      );
+
+  /// Get messages from conversation
+  Future<List<dynamic>> getConversationMessages(
+    String conversationId, {
+    int? limit,
+    int? skip,
+  }) => _tryOr(
+    () => _api.getList(
+      ApiConstants.conversationMessages(conversationId),
+      queryParameters: {
+        if (limit != null) 'limit': limit.toString(),
+        if (skip != null) 'skip': skip.toString(),
+      },
+    ),
+    [],
   );
 }

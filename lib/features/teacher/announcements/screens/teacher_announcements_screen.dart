@@ -27,12 +27,9 @@ class _TeacherAnnouncementsScreenState
   }
 
   Future<void> _loadData() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+    setState(() { _loading = true; _error = null; });
     try {
-      final raw = await ApiService().getAnnouncements();
+      final raw = await ApiService().getAnnouncementsForMe();
       setState(() {
         _announcements = raw
             .map((a) => _AnnouncementItem.fromJson(a as Map<String, dynamic>))
@@ -42,6 +39,49 @@ class _TeacherAnnouncementsScreenState
       setState(() => _error = e.toString());
     } finally {
       setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _patchAnnouncement(_AnnouncementItem item) async {
+    final titleCtrl = TextEditingController(text: item.title);
+    final bodyCtrl = TextEditingController(text: item.preview);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Edit Announcement'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: titleCtrl,
+                decoration: const InputDecoration(labelText: 'Title')),
+            const SizedBox(height: 12),
+            TextField(controller: bodyCtrl, maxLines: 4,
+                decoration: const InputDecoration(labelText: 'Message')),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
+          ElevatedButton(onPressed: () => Navigator.pop(context, true),
+              child: const Text('Save')),
+        ],
+      ),
+    );
+
+    if (confirmed != true || item.id.isEmpty) return;
+    try {
+      await ApiService().updateAnnouncement(item.id, {
+        'title': titleCtrl.text.trim(),
+        'body': bodyCtrl.text.trim(),
+      });
+      _loadData();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Failed to update: $e'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating));
     }
   }
 
@@ -140,6 +180,7 @@ class _TeacherAnnouncementsScreenState
                             itemBuilder: (context, index) {
                               return _AnnouncementCard(
                                 announcement: _filteredAnnouncements[index],
+                                onEdit: () => _patchAnnouncement(_filteredAnnouncements[index]),
                               );
                             },
                           ),
@@ -205,8 +246,9 @@ class _TeacherAnnouncementsScreenState
 
 class _AnnouncementCard extends StatelessWidget {
   final _AnnouncementItem announcement;
+  final VoidCallback? onEdit;
 
-  const _AnnouncementCard({required this.announcement});
+  const _AnnouncementCard({required this.announcement, this.onEdit});
 
   Color get _statusColor {
     switch (announcement.status) {
@@ -232,7 +274,9 @@ class _AnnouncementCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      onLongPress: onEdit,
+      child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -341,6 +385,7 @@ class _AnnouncementCard extends StatelessWidget {
           ),
         ],
       ),
+      ),
     );
   }
 }
@@ -348,6 +393,7 @@ class _AnnouncementCard extends StatelessWidget {
 enum _AnnouncementStatus { sent, scheduled, draft }
 
 class _AnnouncementItem {
+  final String id;
   final String title;
   final String preview;
   final List<String> audiences;
@@ -356,6 +402,7 @@ class _AnnouncementItem {
   final int attachments;
 
   _AnnouncementItem({
+    required this.id,
     required this.title,
     required this.preview,
     required this.audiences,
@@ -378,22 +425,23 @@ class _AnnouncementItem {
         status = _AnnouncementStatus.sent;
     }
 
-    final audienceRaw = json['audiences'] ?? json['targetAudience'] ?? [];
+    final audienceRaw = json['audiences'] ?? json['targetAudience'] ?? json['audience'] ?? 'all';
     final audiences = (audienceRaw is List)
         ? audienceRaw
               .map((a) => a is Map ? (a['name'] ?? a.toString()) : a.toString())
               .toList()
               .cast<String>()
-        : <String>[];
+        : [audienceRaw.toString()];
 
     final attachmentsRaw = json['attachments'];
     final attachmentCount = attachmentsRaw is List ? attachmentsRaw.length : 0;
 
     return _AnnouncementItem(
+      id: json['id'] as String? ?? '',
       title: json['title'] ?? '',
       preview: json['message'] ?? json['body'] ?? json['content'] ?? '',
       audiences: audiences,
-      dateTime: json['createdAt'] ?? json['scheduledAt'] ?? '',
+      dateTime: json['createdAt'] ?? json['scheduledAt'] ?? json['publishAt'] ?? '',
       status: status,
       attachments: attachmentCount,
     );

@@ -12,18 +12,20 @@ class ApiClient {
   bool _isRefreshing = false;
 
   ApiClient._internal() {
-    print('🔧 API Client initialized with baseUrl: ${ApiConstants.baseUrl}');
-    _dio = Dio(BaseOptions(
-      baseUrl: ApiConstants.baseUrl,
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 15),
-      headers: {'Content-Type': 'application/json'},
-    ));
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: ApiConstants.baseUrl,
+        // Keep login and data calls resilient on slower networks.
+        connectTimeout: const Duration(seconds: 30),
+        sendTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 45),
+        headers: {'Content-Type': 'application/json'},
+      ),
+    );
 
-    _dio.interceptors.add(InterceptorsWrapper(
-      onRequest: _onRequest,
-      onError: _onError,
-    ));
+    _dio.interceptors.add(
+      InterceptorsWrapper(onRequest: _onRequest, onError: _onError),
+    );
   }
 
   Future<void> _onRequest(
@@ -46,8 +48,9 @@ class ApiClient {
       try {
         final rt = await _storage.refreshToken;
         if (rt != null) {
-          final res = await Dio(BaseOptions(baseUrl: ApiConstants.baseUrl))
-              .post(ApiConstants.refresh, data: {'refreshToken': rt});
+          final res = await Dio(
+            BaseOptions(baseUrl: ApiConstants.baseUrl),
+          ).post(ApiConstants.refresh, data: {'refreshToken': rt});
           final data = res.data as Map<String, dynamic>;
           await _storage.saveTokens(
             accessToken: data['accessToken'] as String,
@@ -58,8 +61,7 @@ class ApiClient {
           }
           _isRefreshing = false;
           final opts = err.requestOptions;
-          opts.headers['Authorization'] =
-              'Bearer ${data['accessToken']}';
+          opts.headers['Authorization'] = 'Bearer ${data['accessToken']}';
           final retry = await _dio.fetch(opts);
           return handler.resolve(retry);
         }
@@ -96,10 +98,7 @@ class ApiClient {
     }
   }
 
-  Future<Map<String, dynamic>> post(
-    String path, {
-    dynamic data,
-  }) async {
+  Future<Map<String, dynamic>> post(String path, {dynamic data}) async {
     try {
       final res = await _dio.post(path, data: data);
       return _extractData(res);
@@ -108,10 +107,7 @@ class ApiClient {
     }
   }
 
-  Future<Map<String, dynamic>> patch(
-    String path, {
-    dynamic data,
-  }) async {
+  Future<Map<String, dynamic>> patch(String path, {dynamic data}) async {
     try {
       final res = await _dio.patch(path, data: data);
       return _extractData(res);
@@ -120,10 +116,7 @@ class ApiClient {
     }
   }
 
-  Future<Map<String, dynamic>> put(
-    String path, {
-    dynamic data,
-  }) async {
+  Future<Map<String, dynamic>> put(String path, {dynamic data}) async {
     try {
       final res = await _dio.put(path, data: data);
       return _extractData(res);
@@ -148,13 +141,15 @@ class ApiClient {
   }
 
   ApiException _handleDioError(DioException e) {
-    print('🚨 DioException: ${e.type} - ${e.message}');
-    print('🚨 Request URL: ${e.requestOptions.uri}');
-    
+    if (e.type == DioExceptionType.connectionError) {
+      return NetworkException();
+    }
     if (e.type == DioExceptionType.connectionTimeout ||
-        e.type == DioExceptionType.receiveTimeout ||
-        e.type == DioExceptionType.connectionError) {
-      return NetworkException(message: 'Cannot connect to ${e.requestOptions.uri.host}:${e.requestOptions.uri.port}');
+        e.type == DioExceptionType.sendTimeout ||
+        e.type == DioExceptionType.receiveTimeout) {
+      return ApiException(
+        message: 'Connection is slow and request timed out. Please try again.',
+      );
     }
     final statusCode = e.response?.statusCode;
     final data = e.response?.data;

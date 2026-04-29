@@ -13,7 +13,8 @@ class AnnouncementDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final title = announcement['title'] as String? ?? 'Announcement';
-    final message = announcement['message'] as String? ?? '';
+    // Backend uses 'body' field, not 'message'
+    final body = announcement['body'] as String? ?? announcement['message'] as String? ?? '';
     final createdAt = announcement['createdAt'] as String? ?? '';
     final author = announcement['author'] as Map<String, dynamic>?;
     final authorName = author != null
@@ -143,7 +144,7 @@ class AnnouncementDetailScreen extends StatelessWidget {
 
                   // Message content
                   Text(
-                    message,
+                    body,
                     style: TextStyle(
                       fontSize: 16,
                       height: 1.6,

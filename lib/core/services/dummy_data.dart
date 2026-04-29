@@ -242,6 +242,56 @@ class DummyData {
         ],
       };
 
+  static Map<String, dynamic> get studentAttendanceByDay => {
+        'studentId': 'stu-001',
+        'firstName': 'Ali',
+        'lastName': 'Hassan',
+        'email': 'ali@school.edu',
+        'grade': 'Grade 9',
+        'section': 'A',
+        'date': '2026-04-22',
+        'records': [
+          {
+            'markId': 'mark-001',
+            'status': 'present',
+            'note': null,
+            'sessionId': 'session-001',
+            'classOfferingId': 'co-001',
+            'className': 'Math 9A',
+            'subject': {'id': 'subj-001', 'name': 'Mathematics', 'code': 'MATH'},
+            'grade': {'id': 'grade-001', 'name': 'Grade 9'},
+            'section': {'id': 'sec-001', 'name': 'A'},
+            'teacher': {
+              'id': 'teacher-001',
+              'firstName': 'Jane',
+              'lastName': 'Doe',
+              'email': 'jane@school.edu',
+              'department': 'Science',
+              'officeRoom': '101'
+            },
+          },
+          {
+            'markId': 'mark-002',
+            'status': 'late',
+            'note': 'Arrived 10 minutes late',
+            'sessionId': 'session-002',
+            'classOfferingId': 'co-002',
+            'className': 'Physics 9A',
+            'subject': {'id': 'subj-002', 'name': 'Physics', 'code': 'PHYS'},
+            'grade': {'id': 'grade-001', 'name': 'Grade 9'},
+            'section': {'id': 'sec-001', 'name': 'A'},
+            'teacher': {
+              'id': 'teacher-002',
+              'firstName': 'John',
+              'lastName': 'Smith',
+              'email': 'john@school.edu',
+              'department': 'Science',
+              'officeRoom': '102'
+            },
+          },
+        ],
+      };
+
   // ─── Calendar Events ──────────────────────────────────
   static List<dynamic> get calendarEvents => [
         {
@@ -601,6 +651,31 @@ class DummyData {
         'status': 'submitted',
         'createdAt': DateTime.now().toIso8601String(),
       };
+
+  static List<dynamic> get myFeedbackList => [
+        {
+          'id': 'fb-001',
+          'authorId': 'user-001',
+          'senderRole': 'parent',
+          'category': 'general',
+          'message': 'Great school environment!',
+          'status': 'open',
+          'isAnonymous': false,
+          'createdAt': '2026-04-20T10:00:00.000Z',
+        },
+        {
+          'id': 'fb-002',
+          'authorId': 'user-001',
+          'senderRole': 'parent',
+          'category': 'teacher',
+          'message': 'Excellent teaching methods',
+          'status': 'resolved',
+          'teacherId': 'teacher-001',
+          'subjectId': 'subject-001',
+          'isAnonymous': false,
+          'createdAt': '2026-04-15T09:00:00.000Z',
+        },
+      ];
 
   // ─── Reports ──────────────────────────────────────────
   static Map<String, dynamic> studentPerformance(String studentId) => {
