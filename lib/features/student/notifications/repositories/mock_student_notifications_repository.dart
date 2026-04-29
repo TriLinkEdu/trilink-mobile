@@ -20,11 +20,13 @@ class MockStudentNotificationsRepository
     NotificationModel(
       id: 'n2',
       title: 'New Course Resource',
-      body: 'Prof. Williams uploaded "Thermodynamics Reference Sheet" for Physics.',
+      body:
+          'Prof. Williams uploaded "Thermodynamics Reference Sheet" for Physics.',
       type: 'academic',
       isRead: false,
       createdAt: DateTime.now().subtract(const Duration(hours: 2)),
       routeName: RouteNames.studentCourseResources,
+      routeArgs: {'subjectId': 'physics', 'subjectName': 'Physics'},
     ),
     NotificationModel(
       id: 'n3',
@@ -57,7 +59,8 @@ class MockStudentNotificationsRepository
     NotificationModel(
       id: 'n6',
       title: 'Campus Career Fair',
-      body: 'Don\'t miss the annual career fair on the 12th at the Student Union.',
+      body:
+          'Don\'t miss the annual career fair on the 12th at the Student Union.',
       type: 'administrative',
       isRead: true,
       createdAt: DateTime.now().subtract(const Duration(days: 2)),
@@ -93,7 +96,8 @@ class MockStudentNotificationsRepository
     NotificationModel(
       id: 'n10',
       title: 'Schedule Change',
-      body: 'Your Literature Discussion on the 10th has been moved to Room 210.',
+      body:
+          'Your Literature Discussion on the 10th has been moved to Room 210.',
       type: 'administrative',
       isRead: true,
       createdAt: DateTime.now().subtract(const Duration(days: 2, hours: 5)),

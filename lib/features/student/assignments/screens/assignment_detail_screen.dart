@@ -21,7 +21,7 @@ class AssignmentDetailScreen extends StatelessWidget {
       create: (_) => AssignmentDetailCubit(
         sl<StudentAssignmentsRepository>(),
         assignmentId,
-      )..loadAssignment(),
+      )..loadIfNeeded(),
       child: const _AssignmentDetailView(),
     );
   }

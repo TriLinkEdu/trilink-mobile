@@ -6,8 +6,20 @@ export 'feedback_state.dart';
 
 class FeedbackCubit extends Cubit<FeedbackState> {
   final StudentFeedbackRepository _repository;
+  DateTime? _lastLoadedAt;
+
+  static const Duration _ttl = Duration(seconds: 20);
 
   FeedbackCubit(this._repository) : super(const FeedbackState());
+
+  Future<void> loadIfNeeded() async {
+    if (state.status == FeedbackStatus.loaded &&
+        _lastLoadedAt != null &&
+        DateTime.now().difference(_lastLoadedAt!) < _ttl) {
+      return;
+    }
+    await loadFeedbackHistory();
+  }
 
   Future<void> loadFeedbackHistory() async {
     emit(state.copyWith(status: FeedbackStatus.loading));
@@ -20,6 +32,7 @@ class FeedbackCubit extends Cubit<FeedbackState> {
           errorMessage: null,
         ),
       );
+      _lastLoadedAt = DateTime.now();
     } catch (e) {
       emit(
         state.copyWith(

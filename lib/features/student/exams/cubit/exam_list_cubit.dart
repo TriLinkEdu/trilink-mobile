@@ -38,14 +38,27 @@ class ExamListState extends Equatable {
 
 class ExamListCubit extends Cubit<ExamListState> {
   final StudentExamsRepository _repository;
+  DateTime? _lastLoadedAt;
+
+  static const Duration _ttl = Duration(seconds: 20);
 
   ExamListCubit(this._repository) : super(const ExamListState());
+
+  Future<void> loadIfNeeded() async {
+    if (state.status == ExamListStatus.loaded &&
+        _lastLoadedAt != null &&
+        DateTime.now().difference(_lastLoadedAt!) < _ttl) {
+      return;
+    }
+    await loadExams();
+  }
 
   Future<void> loadExams() async {
     emit(state.copyWith(status: ExamListStatus.loading));
     try {
       final exams = await _repository.fetchAvailableExams();
       emit(ExamListState(status: ExamListStatus.loaded, exams: exams));
+      _lastLoadedAt = DateTime.now();
     } catch (e) {
       emit(
         state.copyWith(

@@ -11,9 +11,21 @@ class ActionPlanCubit extends Cubit<ActionPlanState> {
   final StudentAnalyticsRepository _repository;
   final StorageService _storage;
   static const String _actionPlanDoneKey = 'student_growth_action_plan_done';
+  DateTime? _lastLoadedAt;
+
+  static const Duration _ttl = Duration(seconds: 20);
 
   ActionPlanCubit(this._repository, this._storage)
     : super(const ActionPlanState());
+
+  Future<void> loadIfNeeded() async {
+    if (state.status == ActionPlanStatus.loaded &&
+        _lastLoadedAt != null &&
+        DateTime.now().difference(_lastLoadedAt!) < _ttl) {
+      return;
+    }
+    await loadPlan();
+  }
 
   Future<void> loadPlan() async {
     emit(state.copyWith(status: ActionPlanStatus.loading));
@@ -30,6 +42,7 @@ class ActionPlanCubit extends Cubit<ActionPlanState> {
           errorMessage: null,
         ),
       );
+      _lastLoadedAt = DateTime.now();
     } catch (_) {
       emit(
         state.copyWith(

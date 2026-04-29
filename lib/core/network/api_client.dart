@@ -12,6 +12,7 @@ class ApiClient {
   bool _isRefreshing = false;
 
   ApiClient._internal() {
+    print('🔧 API Client initialized with baseUrl: ${ApiConstants.baseUrl}');
     _dio = Dio(BaseOptions(
       baseUrl: ApiConstants.baseUrl,
       connectTimeout: const Duration(seconds: 15),
@@ -147,10 +148,13 @@ class ApiClient {
   }
 
   ApiException _handleDioError(DioException e) {
+    print('🚨 DioException: ${e.type} - ${e.message}');
+    print('🚨 Request URL: ${e.requestOptions.uri}');
+    
     if (e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.receiveTimeout ||
         e.type == DioExceptionType.connectionError) {
-      return NetworkException();
+      return NetworkException(message: 'Cannot connect to ${e.requestOptions.uri.host}:${e.requestOptions.uri.port}');
     }
     final statusCode = e.response?.statusCode;
     final data = e.response?.data;

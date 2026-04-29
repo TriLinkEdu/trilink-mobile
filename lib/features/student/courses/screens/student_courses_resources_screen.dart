@@ -16,20 +16,30 @@ import '../models/course_resource_model.dart';
 import '../repositories/student_courses_repository.dart';
 
 class StudentCoursesResourcesScreen extends StatelessWidget {
-  const StudentCoursesResourcesScreen({super.key});
+  final String? subjectId;
+  final String? subjectName;
+
+  const StudentCoursesResourcesScreen({
+    super.key,
+    this.subjectId,
+    this.subjectName,
+  });
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) =>
-          CourseResourcesCubit(sl<StudentCoursesRepository>())..loadResources(),
-      child: const _StudentCoursesResourcesView(),
+          CourseResourcesCubit(sl<StudentCoursesRepository>())
+            ..loadIfNeeded(subjectId: subjectId),
+      child: _StudentCoursesResourcesView(subjectName: subjectName),
     );
   }
 }
 
 class _StudentCoursesResourcesView extends StatelessWidget {
-  const _StudentCoursesResourcesView();
+  final String? subjectName;
+
+  const _StudentCoursesResourcesView({this.subjectName});
 
   IconData _iconForType(ResourceType type) {
     switch (type) {
@@ -66,7 +76,13 @@ class _StudentCoursesResourcesView extends StatelessWidget {
     return BlocBuilder<CourseResourcesCubit, CourseResourcesState>(
       builder: (context, state) {
         return Scaffold(
-          appBar: AppBar(title: const Text('Courses & Resources')),
+          appBar: AppBar(
+            title: Text(
+              subjectName == null || subjectName!.isEmpty
+                  ? 'Course Resources'
+                  : '$subjectName Resources',
+            ),
+          ),
           body: StudentPageBackground(
             child:
                 state.status == CourseResourcesStatus.loading ||
@@ -138,7 +154,9 @@ class _StudentCoursesResourcesView extends StatelessWidget {
                                   borderRadius: AppRadius.borderSm,
                                 ),
                                 child: Text(
-                                  resource.typeLabel,
+                                  resource.textbookId != null
+                                      ? 'Textbook'
+                                      : resource.typeLabel,
                                   style: Theme.of(context).textTheme.labelSmall
                                       ?.copyWith(
                                         fontWeight: FontWeight.w600,

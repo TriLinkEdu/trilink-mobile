@@ -19,7 +19,7 @@ class StudentSyncStatusScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => SyncCubit(sl<StudentSyncRepository>())..loadSyncStatus(),
+      create: (_) => SyncCubit(sl<StudentSyncRepository>())..loadIfNeeded(),
       child: const _StudentSyncStatusView(),
     );
   }

@@ -7,9 +7,21 @@ export 'chat_conversation_state.dart';
 class ChatConversationCubit extends Cubit<ChatConversationState> {
   final StudentChatRepository _repository;
   final String conversationId;
+  DateTime? _lastLoadedAt;
+
+  static const Duration _ttl = Duration(seconds: 10);
 
   ChatConversationCubit(this._repository, this.conversationId)
     : super(const ChatConversationState());
+
+  Future<void> loadIfNeeded() async {
+    if (state.status == ConversationStatus.loaded &&
+        _lastLoadedAt != null &&
+        DateTime.now().difference(_lastLoadedAt!) < _ttl) {
+      return;
+    }
+    await loadMessages();
+  }
 
   Future<void> loadMessages({bool showLoading = true}) async {
     if (showLoading) {
@@ -23,6 +35,7 @@ class ChatConversationCubit extends Cubit<ChatConversationState> {
           messages: messages,
         ),
       );
+      _lastLoadedAt = DateTime.now();
     } catch (e) {
       if (showLoading) {
         emit(
@@ -44,6 +57,7 @@ class ChatConversationCubit extends Cubit<ChatConversationState> {
           messages: [...state.messages, sentMessage],
         ),
       );
+      _lastLoadedAt = DateTime.now();
     } catch (e) {
       emit(state.copyWith(errorMessage: 'Unable to send message.'));
       rethrow;

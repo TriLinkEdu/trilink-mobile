@@ -7,9 +7,22 @@ export 'assignment_detail_state.dart';
 class AssignmentDetailCubit extends Cubit<AssignmentDetailState> {
   final StudentAssignmentsRepository _repository;
   final String assignmentId;
+  DateTime? _lastLoadedAt;
+
+  static const Duration _ttl = Duration(seconds: 30);
 
   AssignmentDetailCubit(this._repository, this.assignmentId)
     : super(const AssignmentDetailState());
+
+  Future<void> loadIfNeeded() async {
+    if (state.status == AssignmentDetailStatus.loaded &&
+        state.assignment?.id == assignmentId &&
+        _lastLoadedAt != null &&
+        DateTime.now().difference(_lastLoadedAt!) < _ttl) {
+      return;
+    }
+    await loadAssignment();
+  }
 
   Future<void> loadAssignment() async {
     emit(state.copyWith(status: AssignmentDetailStatus.loading));
@@ -21,6 +34,7 @@ class AssignmentDetailCubit extends Cubit<AssignmentDetailState> {
           assignment: assignment,
         ),
       );
+      _lastLoadedAt = DateTime.now();
     } catch (e) {
       emit(
         state.copyWith(

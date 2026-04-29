@@ -23,7 +23,7 @@ class StudentNotificationsScreen extends StatelessWidget {
     return BlocProvider(
       create: (_) =>
           NotificationsCubit(sl<StudentNotificationsRepository>())
-            ..loadNotifications(),
+            ..loadIfNeeded(),
       child: const _NotificationsView(),
     );
   }

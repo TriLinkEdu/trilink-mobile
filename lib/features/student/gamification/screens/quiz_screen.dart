@@ -20,7 +20,8 @@ class QuizScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) =>
-          QuizCubit(sl<StudentGamificationRepository>())..loadQuiz(subjectId),
+          QuizCubit(sl<StudentGamificationRepository>())
+            ..loadQuizIfNeeded(subjectId),
       child: _QuizView(subjectId: subjectId),
     );
   }

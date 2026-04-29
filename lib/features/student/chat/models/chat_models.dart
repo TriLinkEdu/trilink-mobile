@@ -118,3 +118,44 @@ class ChatConversationModel {
         'unreadCount': unreadCount,
       };
 }
+
+class ChatContactModel {
+  final String id;
+  final String firstName;
+  final String lastName;
+  final String role;
+  final String? subject;
+  final String? grade;
+  final String? section;
+
+  const ChatContactModel({
+    required this.id,
+    required this.firstName,
+    required this.lastName,
+    required this.role,
+    this.subject,
+    this.grade,
+    this.section,
+  });
+
+  String get fullName => '$firstName $lastName'.trim();
+  
+  String get displayName {
+    if (role == 'teacher' && subject != null && subject!.isNotEmpty) {
+      return '$fullName ($subject)';
+    }
+    return fullName;
+  }
+
+  factory ChatContactModel.fromJson(Map<String, dynamic> json) {
+    return ChatContactModel(
+      id: json['id'] as String,
+      firstName: json['firstName'] as String,
+      lastName: json['lastName'] as String,
+      role: json['role'] as String,
+      subject: json['subject'] as String?,
+      grade: json['grade'] as String?,
+      section: json['section'] as String?,
+    );
+  }
+}

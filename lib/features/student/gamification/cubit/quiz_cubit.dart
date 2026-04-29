@@ -8,14 +8,30 @@ export 'quiz_state.dart';
 
 class QuizCubit extends Cubit<QuizState> {
   final StudentGamificationRepository _repository;
+  DateTime? _lastLoadedAt;
+  String? _lastSubjectId;
+
+  static const Duration _ttl = Duration(seconds: 30);
 
   QuizCubit(this._repository) : super(const QuizState());
+
+  Future<void> loadQuizIfNeeded(String subjectId) async {
+    if (state.status == QuizLoadStatus.loaded &&
+        _lastLoadedAt != null &&
+        _lastSubjectId == subjectId &&
+        DateTime.now().difference(_lastLoadedAt!) < _ttl) {
+      return;
+    }
+    await loadQuiz(subjectId);
+  }
 
   Future<void> loadQuiz(String subjectId) async {
     emit(const QuizState(status: QuizLoadStatus.loading));
     try {
       final quiz = await _repository.fetchQuiz(subjectId);
       emit(QuizState(status: QuizLoadStatus.loaded, quiz: quiz));
+      _lastSubjectId = subjectId;
+      _lastLoadedAt = DateTime.now();
     } catch (e) {
       emit(
         const QuizState(

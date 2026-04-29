@@ -27,7 +27,7 @@ class StudentGradesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => GradesCubit(sl<StudentGradesRepository>())..loadGrades(),
+      create: (_) => GradesCubit(sl<StudentGradesRepository>())..loadIfNeeded(),
       child: const _GradesView(),
     );
   }

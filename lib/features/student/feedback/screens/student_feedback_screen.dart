@@ -16,6 +16,7 @@ import '../cubit/feedback_cubit.dart';
 import '../models/feedback_model.dart';
 import '../repositories/student_feedback_repository.dart';
 import '../../shared/widgets/student_page_background.dart';
+import '../../shared/widgets/profile_avatar.dart';
 
 class StudentFeedbackScreen extends StatelessWidget {
   const StudentFeedbackScreen({super.key});
@@ -24,7 +25,7 @@ class StudentFeedbackScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) =>
-          FeedbackCubit(sl<StudentFeedbackRepository>())..loadFeedbackHistory(),
+          FeedbackCubit(sl<StudentFeedbackRepository>())..loadIfNeeded(),
       child: const _StudentFeedbackView(),
     );
   }
