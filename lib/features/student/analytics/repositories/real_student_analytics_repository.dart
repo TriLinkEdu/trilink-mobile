@@ -38,6 +38,20 @@ class RealStudentAnalyticsRepository implements StudentAnalyticsRepository {
 
   @override
   Future<StudentWeeklySnapshot> fetchWeeklySnapshot() async {
+    final api = await _safeGetMap('/analytics/student/weekly-snapshot');
+    if (api.isNotEmpty) {
+      return StudentWeeklySnapshot(
+        attendanceRate: _asDouble(api['attendanceRate'], fallback: 0),
+        averageQuizScore: _asDouble(api['averageQuizScore'], fallback: 0),
+        dueAssignments: _asInt(api['dueAssignments'], fallback: 0),
+        trend: (api['trend'] ?? 'flat').toString(),
+        focusSubjects: _readList(
+          api['focusSubjects'],
+        ).map((e) => e.toString()).toList(),
+        summary: (api['summary'] ?? '').toString(),
+      );
+    }
+
     final dashboard = await _getDashboardData();
     final grades = await _getGradesData();
 
@@ -75,6 +89,44 @@ class RealStudentAnalyticsRepository implements StudentAnalyticsRepository {
 
   @override
   Future<StudentPerformanceTrends> fetchPerformanceTrends() async {
+    final api = await _safeGetMap('/analytics/student/performance-trends');
+    if (api.isNotEmpty) {
+      final subjects = _readList(api['subjects'])
+          .whereType<Map<String, dynamic>>()
+          .map((raw) {
+            final points = _readList(raw['points'])
+                .whereType<Map<String, dynamic>>()
+                .map(
+                  (p) => StudentTrendPoint(
+                    label: (p['label'] ?? '').toString(),
+                    value: _asDouble(p['value'], fallback: 0),
+                  ),
+                )
+                .toList();
+            return StudentSubjectTrend(
+              subjectId: (raw['subjectId'] ?? '').toString(),
+              subjectName: (raw['subjectName'] ?? 'Subject').toString(),
+              points: points,
+              strengthTopics: _readList(
+                raw['strengthTopics'],
+              ).map((e) => e.toString()).toList(),
+              riskTopics: _readList(
+                raw['riskTopics'],
+              ).map((e) => e.toString()).toList(),
+              recommendation: (raw['recommendation'] ?? '').toString(),
+            );
+          })
+          .toList();
+
+      return StudentPerformanceTrends(
+        examReadinessScore: _asInt(
+          api['examReadinessScore'],
+          fallback: 0,
+        ).clamp(0, 100),
+        subjects: subjects,
+      );
+    }
+
     final grades = await _getGradesData();
     final subjectsRaw = _readList(grades['subjects']);
     final subjects = <StudentSubjectTrend>[];
@@ -133,6 +185,31 @@ class RealStudentAnalyticsRepository implements StudentAnalyticsRepository {
 
   @override
   Future<StudentAttendanceInsight> fetchAttendanceInsight() async {
+    final api = await _safeGetMap('/analytics/student/attendance-insights');
+    if (api.isNotEmpty) {
+      final weeklyTrend = _readList(api['weeklyTrend'])
+          .whereType<Map<String, dynamic>>()
+          .map(
+            (p) => StudentTrendPoint(
+              label: (p['label'] ?? '').toString(),
+              value: _asDouble(p['value'], fallback: 0),
+            ),
+          )
+          .toList();
+
+      return StudentAttendanceInsight(
+        currentRate: _asDouble(api['currentRate'], fallback: 0),
+        weeklyTrend: weeklyTrend,
+        riskLevel: (api['riskLevel'] ?? 'High').toString(),
+        projectedMonthEndRate: _asDouble(
+          api['projectedMonthEndRate'],
+          fallback: 0,
+        ),
+        bestDay: (api['bestDay'] ?? 'N/A').toString(),
+        weakDay: (api['weakDay'] ?? 'N/A').toString(),
+      );
+    }
+
     final report = await _getAttendanceData();
     final marks = _readList(report['marks']);
 
@@ -196,6 +273,22 @@ class RealStudentAnalyticsRepository implements StudentAnalyticsRepository {
 
   @override
   Future<List<StudentActionItem>> fetchActionPlan() async {
+    final api = await _safeGetList('/analytics/student/action-plan');
+    if (api.isNotEmpty) {
+      return api.whereType<Map<String, dynamic>>().map((raw) {
+        return StudentActionItem(
+          id: (raw['id'] ?? '').toString(),
+          title: (raw['title'] ?? 'Action').toString(),
+          reason: (raw['reason'] ?? '').toString(),
+          category: (raw['category'] ?? 'study').toString(),
+          effortMinutes: _asInt(raw['effortMinutes'], fallback: 20),
+          routeName: raw['routeName']?.toString(),
+          routeArgs: null,
+          done: raw['done'] == true,
+        );
+      }).toList();
+    }
+
     final goalsRows = await _getGoalsData();
     final dashboard = await _getDashboardData();
     final grades = await _getGradesData();
@@ -468,6 +561,12 @@ class RealStudentAnalyticsRepository implements StudentAnalyticsRepository {
   double _asDouble(dynamic value, {required double fallback}) {
     if (value is num) return value.toDouble();
     return double.tryParse(value?.toString() ?? '') ?? fallback;
+  }
+
+  int _asInt(dynamic value, {required int fallback}) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? fallback;
   }
 
   Future<String> _resolveStudentId() async {

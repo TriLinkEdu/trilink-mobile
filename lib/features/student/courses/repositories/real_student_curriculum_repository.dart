@@ -1,7 +1,10 @@
+import '../../../../core/network/api_client.dart';
+import '../../../../core/constants/api_constants.dart';
 import '../../../../core/models/curriculum_models.dart';
 import 'student_curriculum_repository.dart';
 
 class RealStudentCurriculumRepository implements StudentCurriculumRepository {
+  final ApiClient _api;
   final StudentCurriculumRepository _fallback;
 
   static const Duration _subjectsTtl = Duration(seconds: 30);
@@ -18,8 +21,10 @@ class RealStudentCurriculumRepository implements StudentCurriculumRepository {
       <String, Future<List<TopicModel>>>{};
 
   RealStudentCurriculumRepository({
+    ApiClient? apiClient,
     required StudentCurriculumRepository fallback,
-  }) : _fallback = fallback;
+  }) : _api = apiClient ?? ApiClient(),
+       _fallback = fallback;
 
   @override
   Future<List<SubjectModel>> fetchSubjects() async {
@@ -31,13 +36,26 @@ class RealStudentCurriculumRepository implements StudentCurriculumRepository {
     final inFlight = _subjectsInFlight;
     if (inFlight != null) return inFlight;
 
-    final future = _fallback.fetchSubjects();
+    final future = _fetchSubjectsFresh();
     _subjectsInFlight = future;
     final data = await future;
     _subjectsInFlight = null;
     _subjectsCache = data;
     _subjectsFetchedAt = DateTime.now();
     return data;
+  }
+
+  Future<List<SubjectModel>> _fetchSubjectsFresh() async {
+    try {
+      final rows = await _api.getList(ApiConstants.curriculumSubjects);
+      if (rows.isEmpty) return _fallback.fetchSubjects();
+      return rows
+          .whereType<Map<String, dynamic>>()
+          .map(SubjectModel.fromJson)
+          .toList();
+    } catch (_) {
+      return _fallback.fetchSubjects();
+    }
   }
 
   @override
@@ -52,12 +70,25 @@ class RealStudentCurriculumRepository implements StudentCurriculumRepository {
     final inFlight = _topicsInFlight[subjectId];
     if (inFlight != null) return inFlight;
 
-    final future = _fallback.fetchTopics(subjectId);
+    final future = _fetchTopicsFresh(subjectId);
     _topicsInFlight[subjectId] = future;
     final data = await future;
     _topicsInFlight.remove(subjectId);
     _topicsCache[subjectId] = data;
     _topicsFetchedAt[subjectId] = DateTime.now();
     return data;
+  }
+
+  Future<List<TopicModel>> _fetchTopicsFresh(String subjectId) async {
+    try {
+      final rows = await _api.getList(ApiConstants.curriculumTopics(subjectId));
+      if (rows.isEmpty) return _fallback.fetchTopics(subjectId);
+      return rows
+          .whereType<Map<String, dynamic>>()
+          .map(TopicModel.fromJson)
+          .toList();
+    } catch (_) {
+      return _fallback.fetchTopics(subjectId);
+    }
   }
 }

@@ -206,4 +206,20 @@ class RealStudentChatRepository implements StudentChatRepository {
     final user = await _storage.getUser();
     return (user?['id'] ?? '').toString();
   }
+
+  @override
+  Future<List<ChatContactModel>> searchUsers(String query) async {
+    try {
+      final rows = await _api.getList(
+        ApiConstants.usersSearch,
+        queryParameters: {'q': query},
+      );
+      return rows
+          .whereType<Map<String, dynamic>>()
+          .map((json) => ChatContactModel.fromJson(json))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
 }

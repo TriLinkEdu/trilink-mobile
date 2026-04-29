@@ -104,10 +104,9 @@ class StudentDrawer extends StatelessWidget {
                 ),
                 _DrawerItem(
                   icon: Icons.menu_book_rounded,
-                  label: 'Resources',
-                  color: theme.colorScheme.secondary,
-                  onTap: () =>
-                      _navigate(context, RouteNames.studentCourseResources),
+                  label: 'Textbooks',
+                  color: AppColors.levelPurple,
+                  onTap: () => _navigate(context, RouteNames.studentTextbooks),
                 ),
                 _DrawerItem(
                   icon: Icons.quiz_rounded,
@@ -265,7 +264,7 @@ class _DrawerHeader extends StatelessWidget {
                   backgroundColor: headerForeground.withAlpha(40),
                   backgroundImage:
                       (avatarPath != null && avatarPath!.isNotEmpty)
-                      ? NetworkImage('${ApiConstants.fileBaseUrl}$avatarPath')
+                      ? NetworkImage(avatarPath!.startsWith('http') ? avatarPath! : '${ApiConstants.fileBaseUrl}$avatarPath')
                       : null,
                   child: (avatarPath == null || avatarPath!.isEmpty)
                       ? Icon(

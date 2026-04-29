@@ -33,8 +33,11 @@ class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
 
   bool _isRareThemeUnlocked(StudentMoodTheme mood) {
     if (mood != StudentMoodTheme.midnightPurple) return true;
-    final streak = _storage.getInt('mockCurrentStreak', defaultValue: 12);
-    return streak >= 14;
+    // TODO: Get real streak from gamification progress API
+    // For now, always unlock (remove mock data)
+    return true;
+    // final streak = _storage.getInt('mockCurrentStreak', defaultValue: 12);
+    // return streak >= 14;
   }
 
   @override

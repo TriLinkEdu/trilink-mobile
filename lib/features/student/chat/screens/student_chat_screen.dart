@@ -14,6 +14,7 @@ import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
 import 'package:trilink_mobile/core/widgets/pressable.dart';
 
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/profile_avatar.dart';
 import '../../shared/widgets/student_page_background.dart';
 import '../cubit/chat_cubit.dart';
 import '../models/chat_models.dart';
@@ -97,16 +98,20 @@ class _ChatViewState extends State<_ChatView> {
     );
   }
 
-  void _showNewGroupDialog() {
+  void _showNewGroupDialog() async {
     final nameController = TextEditingController();
-    final mockContacts = <String, String>{
-      'student2': 'Alice Chen',
-      'student3': 'Carlos Rivera',
-      'student5': 'Bob Martinez',
-      'student6': 'Fatima Al-Rashid',
-      'student8': 'Emily Davis',
-    };
     final selected = <String>{};
+    
+    // Fetch real contacts from API
+    List<ChatContactModel> contacts = [];
+    try {
+      contacts = await sl<StudentChatRepository>().searchUsers('');
+    } catch (e) {
+      // Fallback to empty list if API fails
+      contacts = [];
+    }
+
+    if (!mounted) return;
 
     showDialog<void>(
       context: context,
@@ -134,26 +139,41 @@ class _ChatViewState extends State<_ChatView> {
                     ),
                   ),
                 ),
-                ...mockContacts.entries.map((entry) {
-                  return CheckboxListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      entry.value,
-                      style: Theme.of(ctx).textTheme.bodyMedium,
+                if (contacts.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                      'No contacts available',
+                      style: Theme.of(ctx).textTheme.bodySmall,
                     ),
-                    value: selected.contains(entry.key),
-                    onChanged: (v) {
-                      setDialogState(() {
-                        if (v == true) {
-                          selected.add(entry.key);
-                        } else {
-                          selected.remove(entry.key);
-                        }
-                      });
-                    },
-                  );
-                }),
+                  )
+                else
+                  ...contacts.map((contact) {
+                    return CheckboxListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        contact.displayName,
+                        style: Theme.of(ctx).textTheme.bodyMedium,
+                      ),
+                      subtitle: contact.role == 'teacher' && contact.subject != null
+                          ? Text(
+                              contact.subject!,
+                              style: Theme.of(ctx).textTheme.bodySmall,
+                            )
+                          : null,
+                      value: selected.contains(contact.id),
+                      onChanged: (v) {
+                        setDialogState(() {
+                          if (v == true) {
+                            selected.add(contact.id);
+                          } else {
+                            selected.remove(contact.id);
+                          }
+                        });
+                      },
+                    );
+                  }),
               ],
             ),
           ),
@@ -222,9 +242,9 @@ class _ChatViewState extends State<_ChatView> {
             },
             child: Row(
               children: [
-                CircleAvatar(
+                ProfileAvatar(
                   radius: 16,
-                  child: Text(entry.value.characters.first.toUpperCase()),
+                  fallbackText: entry.value,
                 ),
                 AppSpacing.hGapMd,
                 Text(entry.value),
@@ -374,8 +394,8 @@ class _ChatList extends StatelessWidget {
                 tag: 'chat-avatar-${item.id}',
                 child: Material(
                   type: MaterialType.transparency,
-                  child: CircleAvatar(
-                    child: Text(item.title.characters.first.toUpperCase()),
+                  child: ProfileAvatar(
+                    fallbackText: item.title,
                   ),
                 ),
               ),

@@ -10,4 +10,5 @@ abstract class StudentChatRepository {
     required bool isGroup,
   });
   Future<List<MessageReadReceipt>> fetchReadReceipts(String messageId);
+  Future<List<ChatContactModel>> searchUsers(String query);
 }

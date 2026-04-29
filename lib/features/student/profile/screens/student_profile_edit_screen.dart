@@ -8,6 +8,7 @@ import '../../../../core/widgets/pressable.dart';
 import '../../../../core/widgets/error_widget.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/constants/api_constants.dart';
 import '../../shared/widgets/student_page_background.dart';
 import '../../../auth/cubit/auth_cubit.dart';
 import '../repositories/student_profile_repository.dart';
@@ -31,6 +32,7 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
   String? _loadError;
   XFile? _selectedImage;
   Uint8List? _selectedImageBytes;
+  String? _existingImageUrl;
   final ImagePicker _imagePicker = ImagePicker();
 
   @override
@@ -51,9 +53,15 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
         _nameController.text = user.name;
         _emailController.text = user.email;
         _phoneController.text = user.phone ?? '';
+        final imgPath = user.profileImagePath;
         setState(() {
           _isLoading = false;
           _loadError = null;
+          if (imgPath != null && imgPath.isNotEmpty) {
+            _existingImageUrl = imgPath.startsWith('http')
+                ? imgPath
+                : '${ApiConstants.fileBaseUrl}$imgPath';
+          }
         });
       }
     } catch (e) {
@@ -180,8 +188,10 @@ class _StudentProfileEditScreenState extends State<StudentProfileEditScreen> {
                                   theme.colorScheme.primaryContainer,
                               backgroundImage: _selectedImageBytes != null
                                   ? MemoryImage(_selectedImageBytes!)
-                                  : null,
-                              child: _selectedImageBytes == null
+                                  : _existingImageUrl != null
+                                      ? NetworkImage(_existingImageUrl!)
+                                      : null,
+                              child: _selectedImageBytes == null && _existingImageUrl == null
                                   ? Icon(
                                       Icons.person,
                                       size: 50,

@@ -51,21 +51,8 @@ class AiAssistantCubit extends Cubit<AiAssistantState> {
     final current = state.data;
     if (current == null) return;
 
-    final updatedPath = current.learningPath
-        .map(
-          (it) => _sameLearningPathItem(it, item)
-              ? it.copyWith(isBookmarked: !it.isBookmarked)
-              : it,
-        )
-        .toList();
-
-    final updatedData = AiAssistantData(
-      learningPath: updatedPath,
-      resources: current.resources,
-      insights: current.insights,
-    );
-    emit(state.copyWith(data: updatedData));
-    await _saveLearningPathOverrides(updatedPath);
+    // isBookmarked removed from model - no-op for now
+    emit(state.copyWith(data: current));
   }
 
   Future<void> markLearningPathComplete(LearningPathItemModel item) async {
@@ -75,7 +62,7 @@ class AiAssistantCubit extends Cubit<AiAssistantState> {
     final updatedPath = current.learningPath
         .map(
           (it) => _sameLearningPathItem(it, item)
-              ? it.copyWith(progress: 1.0, isActive: false)
+              ? it.copyWith(isCompleted: true, currentMastery: 1.0)
               : it,
         )
         .toList();
@@ -99,14 +86,12 @@ class AiAssistantCubit extends Cubit<AiAssistantState> {
       final raw = overrides[_learningPathKey(item)];
       if (raw is! Map<String, dynamic>) return item;
 
-      final progress = raw['progress'];
-      final isActive = raw['isActive'];
-      final isBookmarked = raw['isBookmarked'];
+      final isCompleted = raw['isCompleted'];
+      final currentMastery = raw['currentMastery'];
 
       return item.copyWith(
-        progress: progress is num ? progress.toDouble() : item.progress,
-        isActive: isActive is bool ? isActive : item.isActive,
-        isBookmarked: isBookmarked is bool ? isBookmarked : item.isBookmarked,
+        isCompleted: isCompleted is bool ? isCompleted : item.isCompleted,
+        currentMastery: currentMastery is num ? currentMastery.toDouble() : item.currentMastery,
       );
     }).toList();
 
@@ -137,16 +122,15 @@ class AiAssistantCubit extends Cubit<AiAssistantState> {
     final map = <String, dynamic>{
       for (final item in items)
         _learningPathKey(item): {
-          'progress': item.progress,
-          'isActive': item.isActive,
-          'isBookmarked': item.isBookmarked,
+          'isCompleted': item.isCompleted,
+          'currentMastery': item.currentMastery,
         },
     };
     await _storage.setString(_learningPathOverridesKey, jsonEncode(map));
   }
 
   String _learningPathKey(LearningPathItemModel item) {
-    return '${item.step}|${item.subject}|${item.title}'.toLowerCase();
+    return '${item.topicId}|${item.topicName}'.toLowerCase();
   }
 
   bool _sameLearningPathItem(

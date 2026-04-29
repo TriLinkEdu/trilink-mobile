@@ -466,10 +466,9 @@ class _StudentProfileScreenState extends State<StudentProfileScreen>
                                       label: 'Courses & Resources',
                                       compact: isCompact,
                                       showChevron: true,
-                                      onTap: () =>
-                                          Navigator.of(context).pushNamed(
-                                            RouteNames.studentCourseResources,
-                                          ),
+                                      onTap: () => Navigator.of(
+                                        context,
+                                      ).pushNamed(RouteNames.studentCourses),
                                     ),
                                     _divider(),
                                     _SettingsRow(
@@ -980,7 +979,7 @@ class _StudentAvatarImage extends StatelessWidget {
       color: theme.colorScheme.surfaceContainerHigh,
       child: hasImage
           ? Image.network(
-              '${ApiConstants.fileBaseUrl}$profilePath',
+              profilePath.startsWith('http') ? profilePath : '${ApiConstants.fileBaseUrl}$profilePath',
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) => Icon(
                 Icons.person_rounded,

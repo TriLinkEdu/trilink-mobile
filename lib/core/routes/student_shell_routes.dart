@@ -38,6 +38,7 @@ import '../../features/student/analytics/screens/student_weekly_snapshot_screen.
 import '../../features/student/analytics/screens/student_action_plan_screen.dart';
 import '../../features/student/analytics/screens/student_performance_trends_screen.dart';
 import '../../features/student/analytics/screens/student_attendance_insights_screen.dart';
+import '../../features/student/textbooks/screens/textbooks_screen.dart';
 
 /// Handles all student sub-page routing within the nested shell navigator.
 /// This keeps the bottom nav visible for every student screen.
@@ -149,7 +150,13 @@ class StudentShellRoutes {
           settings,
         );
       case RouteNames.studentCourseResources:
-        return _page(const StudentCoursesResourcesScreen(), settings);
+        return _page(
+          StudentCoursesResourcesScreen(
+            subjectId: safeArgs['subjectId']?.toString(),
+            subjectName: safeArgs['subjectName']?.toString(),
+          ),
+          settings,
+        );
       case RouteNames.studentCourseResourceDetail:
         return _page(
           CourseResourceDetailScreen(
@@ -176,6 +183,8 @@ class StudentShellRoutes {
         return _page(const StudentPerformanceTrendsScreen(), settings);
       case RouteNames.studentAttendanceInsights:
         return _page(const StudentAttendanceInsightsScreen(), settings);
+      case RouteNames.studentTextbooks:
+        return _page(const TextbooksScreen(), settings);
       default:
         return null;
     }
