@@ -11,7 +11,7 @@ class ParentFeedbackScreen extends StatefulWidget {
 
 class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
   final _messageController = TextEditingController();
-  // Backend only accepts 'general' | 'teacher'
+  // Backend only accepts 'general' | 'teacher' | 'school'
   String _selectedCategory = 'general';
   bool _isAnonymous = true;
   bool _sending = false;
@@ -19,10 +19,16 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
   bool _loadingHistory = false;
   List<Map<String, dynamic>> _feedbackHistory = [];
 
+  // Teacher selection
+  bool _loadingTeachers = false;
+  List<Map<String, dynamic>> _teachers = [];
+  String? _selectedTeacherId;
+
   @override
   void initState() {
     super.initState();
     _loadHistory();
+    _loadTeachers();
   }
 
   @override
@@ -46,6 +52,21 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
     }
   }
 
+  Future<void> _loadTeachers() async {
+    setState(() => _loadingTeachers = true);
+    try {
+      final teachers = await ApiService().searchUsers(role: 'teacher');
+      if (!mounted) return;
+      setState(() {
+        _teachers = teachers.cast<Map<String, dynamic>>();
+        _loadingTeachers = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loadingTeachers = false);
+    }
+  }
+
   Future<void> _sendFeedback() async {
     final msg = _messageController.text.trim();
     if (msg.isEmpty) {
@@ -58,15 +79,29 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
       return;
     }
 
+    // Validate teacher selection if category is 'teacher'
+    if (_selectedCategory == 'teacher' && _selectedTeacherId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a teacher'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     setState(() => _sending = true);
     try {
       await ApiService().submitFeedback({
         'category': _selectedCategory,
         'message': msg,
         'isAnonymous': _isAnonymous,
+        if (_selectedCategory == 'teacher' && _selectedTeacherId != null)
+          'teacherId': _selectedTeacherId,
       });
       if (!mounted) return;
       _messageController.clear();
+      setState(() => _selectedTeacherId = null); // Reset teacher selection
       _loadHistory(); // Reload history after successful submission
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -174,6 +209,69 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
               ],
             ),
             const SizedBox(height: 20),
+
+            // Teacher selection (only show when category is 'teacher')
+            if (_selectedCategory == 'teacher') ...[
+              _buildLabel('Select Teacher'),
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: _loadingTeachers
+                    ? const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : DropdownButtonFormField<String>(
+                        value: _selectedTeacherId,
+                        decoration: InputDecoration(
+                          hintText: 'Choose a teacher...',
+                          hintStyle: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade400,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                        ),
+                        items: _teachers.map((teacher) {
+                          final firstName = teacher['firstName'] as String? ?? '';
+                          final lastName = teacher['lastName'] as String? ?? '';
+                          final name = '$firstName $lastName'.trim();
+                          final id = teacher['id'] as String? ?? '';
+                          return DropdownMenuItem(
+                            value: id,
+                            child: Text(
+                              name.isNotEmpty ? name : 'Unknown Teacher',
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() => _selectedTeacherId = value);
+                        },
+                      ),
+              ),
+              const SizedBox(height: 20),
+            ],
 
             // Message
             _buildLabel('Message'),

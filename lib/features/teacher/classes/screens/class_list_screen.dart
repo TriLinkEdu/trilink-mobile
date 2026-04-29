@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/routes/route_names.dart';
+import 'teacher_class_detail_screen.dart';
 
 class ClassListScreen extends StatefulWidget {
   const ClassListScreen({super.key});
@@ -29,7 +30,11 @@ class _ClassListScreenState extends State<ClassListScreen> {
       });
 
       final yearData = await ApiService().getActiveAcademicYear();
-      final yearId = yearData['id'] as String;
+      final yearId = (yearData['id'] ?? yearData['data']?['id']) as String?;
+      if (yearId == null || yearId.isEmpty) {
+        throw Exception('Active academic year is missing id');
+      }
+
       final offerings = await ApiService().getMyClassOfferings(yearId);
 
       if (!mounted) return;
@@ -47,19 +52,26 @@ class _ClassListScreenState extends State<ClassListScreen> {
   }
 
   String _className(Map<String, dynamic> offering) {
-    final subject = offering['subject'];
-    final subjectName = subject is Map
-        ? (subject['name'] ?? 'Unknown')
-        : 'Unknown';
-    return subjectName.toString();
+    // Backend returns flat fields: subjectName, gradeName, sectionName, displayName
+    final displayName = offering['displayName'] as String?;
+    if (displayName != null && displayName.isNotEmpty) {
+      return displayName;
+    }
+
+    final subjectName = offering['subjectName'] as String?;
+    return subjectName ?? 'Unknown';
   }
 
   String _classPeriod(Map<String, dynamic> offering) {
-    final grade = offering['grade'];
-    final section = offering['section'];
-    final gradeName = grade is Map ? (grade['name'] ?? '') : '';
-    final sectionName = section is Map ? (section['name'] ?? '') : '';
-    return '$gradeName - $sectionName'.trim();
+    // Backend returns flat fields
+    final gradeName = offering['gradeName'] as String? ?? '';
+    final sectionName = offering['sectionName'] as String? ?? '';
+
+    if (gradeName.isEmpty && sectionName.isEmpty) return '';
+    if (sectionName.isEmpty) return gradeName;
+    if (gradeName.isEmpty) return sectionName;
+
+    return '$gradeName - $sectionName';
   }
 
   Color _classColor(int index) {
@@ -76,35 +88,27 @@ class _ClassListScreenState extends State<ClassListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Check if we're in a navigation stack (pushed) or in IndexedStack (bottom nav)
+    final canPop = Navigator.of(context).canPop();
+
     return PopScope(
-      canPop: false,
+      canPop: canPop,
       onPopInvoked: (didPop) {
-        if (didPop) return;
-        _handleBack(context);
+        // If we're in IndexedStack and user pressed back, do nothing
+        // The system will handle it (minimize app)
+        if (!canPop && !didPop) {
+          // Prevent any navigation attempts
+          return;
+        }
       },
       child: Scaffold(
         appBar: AppBar(
           title: const Text('My Classes'),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => _handleBack(context),
-          ),
+          // Only show back button if we can actually pop
+          automaticallyImplyLeading: canPop,
         ),
         body: _buildBody(),
       ),
-    );
-  }
-
-  void _handleBack(BuildContext context) {
-    final navigator = Navigator.of(context);
-    if (navigator.canPop()) {
-      navigator.pop();
-      return;
-    }
-
-    navigator.pushNamedAndRemoveUntil(
-      RouteNames.teacherDashboard,
-      (_) => false,
     );
   }
 
@@ -216,15 +220,22 @@ class _ClassListScreenState extends State<ClassListScreen> {
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
               subtitle: Text(_classPeriod(c)),
-              trailing: teacherName.isNotEmpty
-                  ? Chip(
-                      label: Text(
-                        teacherName,
-                        style: const TextStyle(fontSize: 12),
+              trailing: Icon(Icons.chevron_right, color: Colors.grey.shade400),
+              onTap: () {
+                final classId = c['id'] as String? ?? '';
+                if (classId.isNotEmpty) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => TeacherClassDetailScreen(
+                        classId: classId,
+                        className: _className(c),
+                        classPeriod: _classPeriod(c),
                       ),
-                      backgroundColor: Colors.grey.shade100,
-                    )
-                  : null,
+                    ),
+                  );
+                }
+              },
             ),
           );
         },

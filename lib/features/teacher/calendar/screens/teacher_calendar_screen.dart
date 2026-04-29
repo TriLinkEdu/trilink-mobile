@@ -50,7 +50,18 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
       _error = null;
     });
     try {
-      final raw = await ApiService().getCalendarEvents();
+      // Get current month date range
+      final firstDay = DateTime(_currentMonth.year, _currentMonth.month, 1);
+      final lastDay = DateTime(_currentMonth.year, _currentMonth.month + 1, 0);
+      
+      final from = '${firstDay.year}-${firstDay.month.toString().padLeft(2, '0')}-${firstDay.day.toString().padLeft(2, '0')}';
+      final to = '${lastDay.year}-${lastDay.month.toString().padLeft(2, '0')}-${lastDay.day.toString().padLeft(2, '0')}';
+      
+      final raw = await ApiService().getCalendarEvents(
+        from: from,
+        to: to,
+      );
+      
       setState(() {
         _allEvents = raw
             .map((e) => _CalendarEvent.fromJson(e as Map<String, dynamic>))
@@ -288,14 +299,20 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                                     _currentMonth.year,
                                     _currentMonth.month,
                                     _selectedDay,
-                                    startTime.hour,
-                                    startTime.minute,
                                   );
+                                  
+                                  // Format date as YYYY-MM-DD
+                                  final dateStr = '${eventDate.year}-${eventDate.month.toString().padLeft(2, '0')}-${eventDate.day.toString().padLeft(2, '0')}';
+                                  
+                                  // Format time as HH:MM
+                                  final timeStr = '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
+                                  
                                   await ApiService().createCalendarEvent({
                                     'title': titleController.text.trim(),
-                                    'type': selectedType,
-                                    'location': locationController.text.trim(),
-                                    'startDate': eventDate.toIso8601String(),
+                                    'date': dateStr,
+                                    'time': timeStr,
+                                    'type': selectedType.toLowerCase(),
+                                    'description': locationController.text.trim(),
                                   });
                                   if (!ctx.mounted) return;
                                   Navigator.pop(ctx);
@@ -716,61 +733,56 @@ class _CalendarEvent {
   });
 
   factory _CalendarEvent.fromJson(Map<String, dynamic> json) {
-    final type = (json['type'] as String?) ?? 'Other';
+    final type = (json['type'] as String?) ?? 'other';
     Color typeColor;
     switch (type.toLowerCase()) {
+      case 'class':
       case 'lecture':
         typeColor = AppColors.primary;
         break;
-      case 'availability':
-      case 'office hours':
-        typeColor = AppColors.secondary;
+      case 'exam':
+        typeColor = AppColors.error;
         break;
       case 'meeting':
         typeColor = Colors.purple;
         break;
-      case 'exam':
-        typeColor = AppColors.error;
+      case 'holiday':
+        typeColor = AppColors.secondary;
         break;
       default:
         typeColor = AppColors.accent;
     }
 
     DateTime? parsedDate;
-    final dateStr = json['startDate'] ?? json['date'] ?? json['start'];
-    if (dateStr is String && dateStr.isNotEmpty) {
-      parsedDate = DateTime.tryParse(dateStr);
+    final dateStr = json['date'] as String?;
+    final timeStr = json['time'] as String?;
+    
+    if (dateStr != null && dateStr.isNotEmpty) {
+      if (timeStr != null && timeStr.isNotEmpty) {
+        // Combine date and time: YYYY-MM-DD + HH:MM
+        parsedDate = DateTime.tryParse('$dateStr $timeStr:00');
+      } else {
+        parsedDate = DateTime.tryParse(dateStr);
+      }
     }
 
-    String timeStr = '';
+    String displayTime = '';
     if (parsedDate != null) {
       final h = parsedDate.hour;
       final m = parsedDate.minute;
       final period = h >= 12 ? 'PM' : 'AM';
       final h12 = h == 0 ? 12 : (h > 12 ? h - 12 : h);
-      timeStr =
+      displayTime =
           '${h12.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')} $period';
     }
 
-    final durationMin = json['durationMinutes'] ?? json['duration'];
-    String durationStr = '';
-    if (durationMin is num) {
-      if (durationMin >= 60) {
-        final hrs = durationMin / 60;
-        durationStr =
-            '${hrs.toStringAsFixed(hrs.truncateToDouble() == hrs ? 0 : 1)} hrs';
-      } else {
-        durationStr = '${durationMin.toInt()} min';
-      }
-    }
-
     return _CalendarEvent(
-      time: timeStr,
+      time: displayTime,
       title: json['title'] ?? '',
-      type: type,
+      type: type[0].toUpperCase() + type.substring(1),
       typeColor: typeColor,
-      duration: durationStr,
-      location: json['location'] ?? '',
+      duration: '', // Backend doesn't provide duration
+      location: json['description'] ?? '',
       date: parsedDate,
     );
   }

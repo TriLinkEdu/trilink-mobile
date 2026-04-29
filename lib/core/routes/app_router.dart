@@ -20,6 +20,7 @@ import '../../features/teacher/calendar/screens/teacher_calendar_screen.dart';
 import '../../features/teacher/settings/screens/teacher_settings_screen.dart';
 import '../../features/teacher/notifications/screens/teacher_notifications_screen.dart';
 import '../../features/teacher/classes/screens/class_list_screen.dart';
+import '../../features/teacher/classes/screens/teacher_class_detail_screen.dart';
 import '../../features/teacher/ai_assistant/screens/teacher_ai_assistant_screen.dart';
 
 import '../../features/parent/home/screens/parent_home_screen.dart';
@@ -27,7 +28,11 @@ import '../../features/parent/dashboard/screens/parent_dashboard_screen.dart';
 import '../../features/parent/attendance/screens/parent_attendance_screen.dart';
 import '../../features/parent/student_info/screens/parent_results_screen.dart';
 import '../../features/parent/student_info/screens/parent_student_info_screen.dart';
+import '../../features/parent/student_info/screens/parent_subject_list_screen.dart';
+import '../../features/parent/student_info/screens/parent_subject_detail_screen.dart';
 import '../../features/parent/chat/screens/parent_chat_screen.dart';
+import '../../features/parent/chat/screens/parent_child_chat_history_screen.dart';
+import '../../features/parent/chat/screens/parent_child_conversation_view_screen.dart';
 import '../../features/parent/profile_settings/screens/parent_profile_screen.dart';
 import '../../features/parent/profile_settings/screens/parent_settings_screen.dart';
 import '../../features/parent/notifications/screens/parent_notifications_screen.dart';
@@ -86,6 +91,15 @@ class AppRouter {
         );
       case RouteNames.teacherClasses:
         return MaterialPageRoute(builder: (_) => const ClassListScreen());
+      case RouteNames.teacherClassDetail:
+        final args = settings.arguments as Map<String, dynamic>? ?? {};
+        return MaterialPageRoute(
+          builder: (_) => TeacherClassDetailScreen(
+            classId: args['classId'] as String? ?? '',
+            className: args['className'] as String? ?? 'Class',
+            classPeriod: args['classPeriod'] as String? ?? '',
+          ),
+        );
       case RouteNames.teacherSettings:
         return MaterialPageRoute(builder: (_) => const TeacherSettingsScreen());
       case RouteNames.teacherNotifications:
@@ -150,6 +164,42 @@ class AppRouter {
       case RouteNames.parentReportComparison:
         return MaterialPageRoute(
           builder: (_) => const ReportComparisonScreen(),
+        );
+      case RouteNames.parentSubjectList:
+        final args = settings.arguments as Map<String, String>?;
+        return MaterialPageRoute(
+          builder: (_) => ParentSubjectListScreen(
+            studentId: args?['studentId'] ?? '',
+            childName: args?['childName'] ?? '',
+          ),
+        );
+      case RouteNames.parentSubjectDetail:
+        final args = settings.arguments as Map<String, String>?;
+        return MaterialPageRoute(
+          builder: (_) => ParentSubjectDetailScreen(
+            studentId: args?['studentId'] ?? '',
+            subjectId: args?['subjectId'] ?? '',
+            subjectName: args?['subjectName'] ?? '',
+            childName: args?['childName'] ?? '',
+          ),
+        );
+      case RouteNames.parentChildChatHistory:
+        final args = settings.arguments as Map<String, String>?;
+        return MaterialPageRoute(
+          builder: (_) => ParentChildChatHistoryScreen(
+            studentId: args?['studentId'] ?? '',
+            childName: args?['childName'] ?? '',
+          ),
+        );
+      case RouteNames.parentChildConversationView:
+        final args = settings.arguments as Map<String, String>?;
+        return MaterialPageRoute(
+          builder: (_) => ParentChildConversationViewScreen(
+            studentId: args?['studentId'] ?? '',
+            conversationId: args?['conversationId'] ?? '',
+            conversationTitle: args?['conversationTitle'] ?? 'Conversation',
+            childName: args?['childName'] ?? '',
+          ),
         );
 
       case RouteNames.themeCustomization:
