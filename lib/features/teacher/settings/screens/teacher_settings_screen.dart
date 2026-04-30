@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/theme_notifier.dart';
-import '../../../../core/services/api_service.dart';
-import '../../../../features/auth/services/auth_service.dart';
 import '../../../../core/routes/route_names.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/theme_notifier.dart';
+import '../../../../features/auth/services/auth_service.dart';
+import '../../../shared/widgets/role_page_background.dart';
 
 class TeacherSettingsScreen extends StatefulWidget {
   const TeacherSettingsScreen({super.key});
@@ -13,309 +14,198 @@ class TeacherSettingsScreen extends StatefulWidget {
 }
 
 class _TeacherSettingsScreenState extends State<TeacherSettingsScreen> {
-  bool _predictiveInsights = true;
+  bool _pushNotifications = true;
   bool _darkMode = ThemeNotifier.instance.isDark;
-  bool _loadingSettings = true;
 
-  String _fullName = '';
-  String _email = '';
-  String _subject = '';
+  String _textSize = ThemeNotifier.instance.textScaleLabel;
+  String _fontFamily = ThemeNotifier.instance.fontFamily;
 
   @override
   void initState() {
     super.initState();
-    _loadProfile();
-    _loadSettings();
+    final notifier = ThemeNotifier.instance;
+    _darkMode = notifier.isDark;
+    _textSize = notifier.textScaleLabel;
+    _fontFamily = notifier.fontFamily;
   }
 
-  void _loadProfile() {
-    final user = AuthService().currentUser;
-    if (user != null) {
-      setState(() {
-        _fullName = user.fullName;
-        _email = user.email;
-        _subject = user.subject ?? '';
-      });
-    }
-  }
-
-  Future<void> _loadSettings() async {
-    try {
-      final settings = await ApiService().getUserSettings();
-      if (!mounted) return;
-      setState(() {
-        _predictiveInsights =
-            settings['predictiveInsights'] as bool? ?? _predictiveInsights;
-        _loadingSettings = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _loadingSettings = false);
-    }
-  }
-
-  Future<void> _saveSettings() async {
-    try {
-      await ApiService().updateUserSettings({
-        'predictiveInsights': _predictiveInsights,
-      });
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to save settings: $e')));
-    }
-  }
-
-  Future<void> _handleLogout() async {
-    final confirmed = await showDialog<bool>(
+  Future<void> _showTextSizePicker() async {
+    final selected = await showModalBottomSheet<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (sheetContext) {
+        final options = ThemeNotifier.scaleOptions.keys.toList();
+        final theme = Theme.of(sheetContext);
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppSpacing.gapMd,
+              Text(
+                'Text Size',
+                style: theme.textTheme.titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              AppSpacing.gapMd,
+              ...options.map(
+                (option) => ListTile(
+                  title: Text(option),
+                  trailing: option == _textSize
+                      ? Icon(Icons.check, color: theme.colorScheme.primary)
+                      : null,
+                  onTap: () => Navigator.pop(sheetContext, option),
+                ),
+              ),
+              AppSpacing.gapSm,
+            ],
+          ),
+        );
+      },
+    );
+    if (selected == null || !mounted) return;
+    setState(() => _textSize = selected);
+    ThemeNotifier.instance.setTextScale(selected);
+  }
+
+  Future<void> _showFontFamilyPicker() async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      builder: (sheetContext) {
+        final options = ThemeNotifier.availableFonts;
+        final theme = Theme.of(sheetContext);
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppSpacing.gapMd,
+              Text(
+                'Font Family',
+                style: theme.textTheme.titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              AppSpacing.gapMd,
+              ...options.map(
+                (option) => ListTile(
+                  title: Text(option),
+                  trailing: option == _fontFamily
+                      ? Icon(Icons.check, color: theme.colorScheme.primary)
+                      : null,
+                  onTap: () => Navigator.pop(sheetContext, option),
+                ),
+              ),
+              AppSpacing.gapSm,
+            ],
+          ),
+        );
+      },
+    );
+    if (selected == null || !mounted) return;
+    setState(() => _fontFamily = selected);
+    ThemeNotifier.instance.setFontFamily(selected);
+  }
+
+  Future<void> _confirmLogout() async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Log Out'),
         content: const Text('Are you sure you want to log out?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Cancel'),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              'Log Out',
-              style: TextStyle(color: AppColors.error),
-            ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Log Out'),
           ),
         ],
       ),
     );
-
-    if (confirmed != true || !mounted) return;
-
+    if (shouldLogout != true || !mounted) return;
     await AuthService().logout();
     if (!mounted) return;
-    Navigator.of(
-      context,
-    ).pushNamedAndRemoveUntil(RouteNames.login, (_) => false);
+    Navigator.of(context, rootNavigator: true)
+        .pushNamedAndRemoveUntil(RouteNames.login, (_) => false);
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final dividerColor =
+        theme.colorScheme.outlineVariant.withAlpha(isDark ? 120 : 170);
+
     return Scaffold(
       appBar: AppBar(
-        elevation: 0,
-        leading: TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(
-            'Back',
-            style: TextStyle(color: theme.colorScheme.primary, fontSize: 15),
-          ),
-        ),
-        leadingWidth: 70,
-        title: Text(
-          'Profile & Settings',
-          style: TextStyle(
-            color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
-            fontSize: 17,
-          ),
-        ),
+        title: const Text('Settings'),
         centerTitle: true,
-        actions: [
-          TextButton(
-            onPressed: () {},
-            child: Text(
-              'Edit',
-              style: TextStyle(color: theme.colorScheme.primary, fontSize: 15),
-            ),
-          ),
-        ],
+        automaticallyImplyLeading: false,
       ),
-      body: SingleChildScrollView(
-        child: Column(
+      body: RolePageBackground(
+        flavor: RoleThemeFlavor.teacher,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
           children: [
-            const SizedBox(height: 16),
-            _buildProfileHeader(),
-            const SizedBox(height: 28),
-            _buildAccountSection(),
-            const SizedBox(height: 20),
-            _buildSignatureSection(),
-            const SizedBox(height: 20),
-            _buildPreferencesSection(),
-            const SizedBox(height: 20),
-            _buildSupportSection(),
-            const SizedBox(height: 16),
-            _buildLogout(),
-            const SizedBox(height: 12),
-            _buildVersionInfo(),
-            const SizedBox(height: 32),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProfileHeader() {
-    final theme = Theme.of(context);
-    return Column(
-      children: [
-        Stack(
-          children: [
-            const CircleAvatar(
-              radius: 48,
-              backgroundImage: NetworkImage('https://i.pravatar.cc/200?img=32'),
-            ),
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                ),
-                child: const Icon(Icons.edit, color: Colors.white, size: 14),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 14),
-        Text(
-          _fullName.isNotEmpty ? _fullName : 'Teacher',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          _subject.isNotEmpty ? _subject : _email,
-          style: TextStyle(
-            fontSize: 14,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.email_outlined,
-              size: 14,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              _email,
-              style: TextStyle(
-                fontSize: 13,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAccountSection() {
-    return _Section(
-      label: 'ACCOUNT',
-      children: [
-        _SettingsTile(
-          icon: Icons.person_outline,
-          title: 'Personal Information',
-          onTap: () {},
-        ),
-        _SettingsTile(
-          icon: Icons.notifications_outlined,
-          title: 'Notifications',
-          onTap: () {},
-        ),
-        _SettingsTile(
-          icon: Icons.draw_outlined,
-          title: 'Digital Signature',
-          trailing: Text(
-            'Configured',
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-          ),
-          onTap: () {},
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSignatureSection() {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: theme.colorScheme.outlineVariant),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            _SectionCard(
+              title: 'Teacher Preferences',
+              isDark: isDark,
               children: [
-                Row(
-                  children: [
-                    Icon(Icons.verified, color: AppColors.secondary, size: 18),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Authorized Signature',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                  ],
+                _AdaptiveToggleTile(
+                  icon: Icons.notifications_none,
+                  title: 'Push Notifications',
+                  value: _pushNotifications,
+                  onChanged: (value) =>
+                      setState(() => _pushNotifications = value),
                 ),
-                GestureDetector(
-                  onTap: () {},
-                  child: const Text(
-                    'Update',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                  ),
+                Divider(height: 1, color: dividerColor),
+                _AdaptiveToggleTile(
+                  icon: Icons.dark_mode_outlined,
+                  title: 'Dark Mode',
+                  value: _darkMode,
+                  onChanged: (value) {
+                    setState(() => _darkMode = value);
+                    if (value) {
+                      ThemeNotifier.instance.setDark();
+                    } else {
+                      ThemeNotifier.instance.setLight();
+                    }
+                  },
+                ),
+                Divider(height: 1, color: dividerColor),
+                _AdaptiveActionTile(
+                  icon: Icons.palette_outlined,
+                  title: 'Theme & Appearance',
+                  valueText: 'Customize',
+                  onTap: () => Navigator.pushNamed(
+                      context, RouteNames.themeCustomization),
+                ),
+                Divider(height: 1, color: dividerColor),
+                _AdaptiveActionTile(
+                  icon: Icons.text_fields,
+                  title: 'Text Size',
+                  valueText: _textSize,
+                  onTap: _showTextSizePicker,
+                ),
+                Divider(height: 1, color: dividerColor),
+                _AdaptiveActionTile(
+                  icon: Icons.font_download_outlined,
+                  title: 'Font Family',
+                  valueText: _fontFamily,
+                  onTap: _showFontFamilyPicker,
                 ),
               ],
             ),
-            const SizedBox(height: 14),
-            Container(
-              width: double.infinity,
-              height: 60,
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A2332),
-                borderRadius: BorderRadius.circular(10),
+            AppSpacing.gapLg,
+            OutlinedButton.icon(
+              onPressed: _confirmLogout,
+              icon: Icon(Icons.logout, color: theme.colorScheme.error),
+              label: Text(
+                'Log Out',
+                style: TextStyle(color: theme.colorScheme.error),
               ),
-              child: Center(
-                child: Container(
-                  width: 100,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'This signature is securely stored and used to authorize student report cards.',
-              style: TextStyle(
-                fontSize: 12,
-                color: theme.colorScheme.onSurfaceVariant,
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: theme.colorScheme.error),
+                minimumSize: const Size.fromHeight(46),
               ),
             ),
           ],
@@ -323,240 +213,129 @@ class _TeacherSettingsScreenState extends State<TeacherSettingsScreen> {
       ),
     );
   }
-
-  Widget _buildPreferencesSection() {
-    final theme = Theme.of(context);
-    return _Section(
-      label: 'PREFERENCES',
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.auto_awesome,
-                  color: AppColors.primary,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Predictive Insights',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Enable AI analysis for early warning alerts on student performance trends.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              _loadingSettings
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Switch(
-                      value: _predictiveInsights,
-                      onChanged: (val) {
-                        setState(() => _predictiveInsights = val);
-                        _saveSettings();
-                      },
-                      activeTrackColor: AppColors.primary,
-                    ),
-            ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.indigo.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  _darkMode ? Icons.light_mode : Icons.dark_mode,
-                  color: Colors.indigo,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  'Dark Mode',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-              ),
-              Switch(
-                value: _darkMode,
-                onChanged: (val) {
-                  setState(() => _darkMode = val);
-                  ThemeNotifier.instance.toggle();
-                },
-                activeTrackColor: AppColors.primary,
-              ),
-            ],
-          ),
-        ),
-        _SettingsTile(
-          icon: Icons.palette_outlined,
-          title: 'Theme and Appearance',
-          onTap: () =>
-              Navigator.pushNamed(context, RouteNames.themeCustomization),
-        ),
-        _SettingsTile(
-          icon: Icons.accessibility_new,
-          title: 'Accessibility',
-          onTap: () {},
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSupportSection() {
-    return _Section(
-      label: 'SUPPORT',
-      children: [
-        _SettingsTile(
-          icon: Icons.help_outline,
-          title: 'Help Center',
-          iconColor: AppColors.error,
-          trailing: const Icon(Icons.open_in_new, size: 16, color: Colors.grey),
-          onTap: () {},
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLogout() {
-    return GestureDetector(
-      onTap: _handleLogout,
-      child: const Text(
-        'Log Out',
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: AppColors.error,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildVersionInfo() {
-    final theme = Theme.of(context);
-    return Text(
-      'TriLink v2.4.1 (Build 892)',
-      style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
-    );
-  }
 }
 
-class _Section extends StatelessWidget {
-  final String label;
-  final List<Widget> children;
+// ─── Shared widgets (same as parent settings) ────────────────────────────────
 
-  const _Section({required this.label, required this.children});
+class _SectionCard extends StatelessWidget {
+  final String title;
+  final List<Widget> children;
+  final bool isDark;
+
+  const _SectionCard({
+    required this.title,
+    required this.children,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: theme.colorScheme.onSurfaceVariant,
-              letterSpacing: 0.8,
+    return Card(
+      elevation: 0,
+      color: isDark
+          ? theme.colorScheme.surface.withAlpha(220)
+          : theme.colorScheme.surface.withAlpha(246),
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.borderMd,
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+            child: Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 8),
-        ...children,
-      ],
+          ...children,
+        ],
+      ),
     );
   }
 }
 
-class _SettingsTile extends StatelessWidget {
+class _AdaptiveToggleTile extends StatelessWidget {
   final IconData icon;
   final String title;
-  final Color? iconColor;
-  final Widget? trailing;
-  final VoidCallback onTap;
+  final bool value;
+  final ValueChanged<bool> onChanged;
 
-  const _SettingsTile({
+  const _AdaptiveToggleTile({
     required this.icon,
     required this.title,
-    this.iconColor,
-    this.trailing,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: theme.textTheme.bodyLarge
+                  ?.copyWith(fontWeight: FontWeight.w500),
+            ),
+          ),
+          Switch.adaptive(value: value, onChanged: onChanged),
+        ],
+      ),
+    );
+  }
+}
+
+class _AdaptiveActionTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String valueText;
+  final VoidCallback onTap;
+
+  const _AdaptiveActionTile({
+    required this.icon,
+    required this.title,
+    required this.valueText,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 22,
-              color: iconColor ?? theme.colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-            ),
-            if (trailing != null) ...[trailing!, const SizedBox(width: 4)],
-            Icon(
-              Icons.chevron_right,
-              size: 20,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ],
-        ),
+    return ListTile(
+      leading:
+          Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant),
+      title: Text(
+        title,
+        style: theme.textTheme.bodyLarge
+            ?.copyWith(fontWeight: FontWeight.w500),
       ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            valueText,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Icon(Icons.chevron_right,
+              color: theme.colorScheme.onSurfaceVariant),
+        ],
+      ),
+      onTap: onTap,
     );
   }
 }
