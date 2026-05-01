@@ -44,18 +44,38 @@ class _TeacherChatConversationScreenState
     try {
       final msgs = await ApiService().getMessages(widget.conversationId);
       if (!mounted) return;
+
+      // Backend returns messages in DESC order (newest first), reverse for display
+      final reversed = msgs.reversed.toList();
+      final currentUserId = AuthService().currentUser?.id ?? '';
+
       setState(() {
-        _messages = msgs.map((m) {
+        _messages = reversed.map((m) {
           final map = m as Map<String, dynamic>;
-          final senderMap = map['sender'] as Map<String, dynamic>?;
-          final senderName = senderMap != null
-              ? '${senderMap['firstName'] ?? ''} ${senderMap['lastName'] ?? ''}'
-                    .trim()
-              : 'Unknown';
-          final senderId =
-              senderMap?['id'] as String? ?? map['senderId'] as String? ?? '';
-          final currentUserId = AuthService().currentUser?.id ?? '';
+
+          // Backend returns senderId (not a nested sender object)
+          final senderId = map['senderId'] as String? ?? '';
           final isSent = senderId == currentUserId;
+
+          // Try nested sender object first (future-proof), fall back to senderId
+          final senderMap = map['sender'] as Map<String, dynamic>?;
+          String senderName;
+          if (senderMap != null) {
+            senderName =
+                '${senderMap['firstName'] ?? ''} ${senderMap['lastName'] ?? ''}'
+                    .trim();
+            if (senderName.isEmpty) senderName = 'Unknown';
+          } else if (isSent) {
+            senderName = 'You';
+          } else {
+            // We only have senderId — show a short ID hint until enrichment is added
+            senderName = 'User';
+          }
+
+          // Backend uses 'text', not 'content'
+          final text = map['text'] as String?
+              ?? map['content'] as String?
+              ?? '';
 
           final createdAt = map['createdAt'] as String?;
           String time = '';
@@ -82,7 +102,7 @@ class _TeacherChatConversationScreenState
 
           return _ChatMessage(
             sender: isSent ? 'You' : senderName,
-            text: map['content'] as String? ?? '',
+            text: text,
             time: time,
             isSent: isSent,
             date: date,
@@ -120,7 +140,7 @@ class _TeacherChatConversationScreenState
     _scrollToBottom();
 
     try {
-      await ApiService().sendMessage(widget.conversationId, {'content': text});
+      await ApiService().sendMessage(widget.conversationId, {'text': text});
       if (!mounted) return;
       final now = DateTime.now();
       setState(() {

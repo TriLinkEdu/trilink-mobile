@@ -73,6 +73,7 @@ class RouteNames {
   static const String teacherClassDetail = '/teacher/classes/detail';
   static const String teacherSettings = '/teacher/settings';
   static const String teacherAiAssistant = '/teacher/ai-assistant';
+  static const String teacherFeedback = '/teacher/feedback';
 
   // Parent
   static const String parentHome = '/parent/home';

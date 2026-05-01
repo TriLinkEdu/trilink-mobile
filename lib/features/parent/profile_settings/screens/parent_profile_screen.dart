@@ -8,6 +8,7 @@ import '../../../../core/constants/api_constants.dart';
 import '../../../../features/auth/services/auth_service.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../shared/widgets/role_page_background.dart';
+import '../../student_info/screens/parent_student_info_screen.dart';
 
 class ParentProfileScreen extends StatefulWidget {
   const ParentProfileScreen({super.key});
@@ -112,7 +113,12 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
               '${student?['firstName'] ?? ''} ${student?['lastName'] ?? ''}'
                   .trim();
           final grade = student?['grade'] as String? ?? '';
-          return _LinkedChild(name: name, grade: grade, school: '');
+          final studentId =
+              student?['id'] as String? ??
+              child['studentId'] as String? ??
+              '';
+          return _LinkedChild(
+              name: name, grade: grade, school: '', studentId: studentId);
         }).toList();
         _loading = false;
       });
@@ -352,6 +358,7 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final canPop = Navigator.of(context).canPop();
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
@@ -361,7 +368,12 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
                 onPressed: _cancelEdit,
                 icon: const Icon(Icons.arrow_back),
               )
-            : null,
+            : canPop
+                ? IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                  )
+                : null,
         title: Text(
           _isEditing ? 'Edit Profile' : 'My Profile',
           style: TextStyle(
@@ -818,57 +830,78 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
 
   Widget _buildChildCard(_LinkedChild child) {
     final theme = Theme.of(context);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: AppColors.secondary.withValues(alpha: 0.12),
-            child: Text(
-              child.name
-                  .split(' ')
-                  .map((p) => p.isNotEmpty ? p[0] : '')
-                  .take(2)
-                  .join(),
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-                color: AppColors.secondary,
+    return GestureDetector(
+      onTap: child.studentId.isNotEmpty
+          ? () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ParentStudentInfoScreen(
+                    childName: child.name,
+                    studentUserId: child.studentId,
+                  ),
+                ),
+              );
+            }
+          : null,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 22,
+              backgroundColor: AppColors.secondary.withValues(alpha: 0.12),
+              child: Text(
+                child.name
+                    .split(' ')
+                    .map((p) => p.isNotEmpty ? p[0] : '')
+                    .take(2)
+                    .join(),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: AppColors.secondary,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  child.name,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: theme.colorScheme.onSurface,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    child.name,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: theme.colorScheme.onSurface,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  child.grade,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: theme.colorScheme.onSurfaceVariant,
+                  const SizedBox(height: 2),
+                  Text(
+                    child.grade,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+            if (child.studentId.isNotEmpty)
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 14,
+                color: AppColors.secondary.withValues(alpha: 0.6),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -926,6 +959,12 @@ class _LinkedChild {
   final String name;
   final String grade;
   final String school;
+  final String studentId;
 
-  _LinkedChild({required this.name, required this.grade, required this.school});
+  _LinkedChild({
+    required this.name,
+    required this.grade,
+    required this.school,
+    required this.studentId,
+  });
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
 import '../screens/create_announcement_screen.dart';
@@ -14,7 +15,7 @@ class TeacherAnnouncementsScreen extends StatefulWidget {
 class _TeacherAnnouncementsScreenState
     extends State<TeacherAnnouncementsScreen> {
   String _selectedFilter = 'All';
-  final List<String> _filters = ['All', 'Sent', 'Scheduled', 'Draft'];
+  final List<String> _filters = ['All', 'Sent', 'Scheduled'];
 
   bool _loading = true;
   String? _error;
@@ -93,8 +94,6 @@ class _TeacherAnnouncementsScreenState
           return a.status == _AnnouncementStatus.sent;
         case 'Scheduled':
           return a.status == _AnnouncementStatus.scheduled;
-        case 'Draft':
-          return a.status == _AnnouncementStatus.draft;
         default:
           return true;
       }
@@ -256,8 +255,6 @@ class _AnnouncementCard extends StatelessWidget {
         return AppColors.secondary;
       case _AnnouncementStatus.scheduled:
         return AppColors.primary;
-      case _AnnouncementStatus.draft:
-        return AppColors.textSecondary;
     }
   }
 
@@ -267,8 +264,6 @@ class _AnnouncementCard extends StatelessWidget {
         return 'Sent';
       case _AnnouncementStatus.scheduled:
         return 'Scheduled';
-      case _AnnouncementStatus.draft:
-        return 'Draft';
     }
   }
 
@@ -390,7 +385,7 @@ class _AnnouncementCard extends StatelessWidget {
   }
 }
 
-enum _AnnouncementStatus { sent, scheduled, draft }
+enum _AnnouncementStatus { sent, scheduled }
 
 class _AnnouncementItem {
   final String id;
@@ -412,20 +407,26 @@ class _AnnouncementItem {
   });
 
   factory _AnnouncementItem.fromJson(Map<String, dynamic> json) {
-    final statusStr = (json['status'] as String?) ?? 'sent';
+    // Status is derived from publishAt:
+    // - publishAt is null or in the past → sent
+    // - publishAt is in the future → scheduled
+    // Backend has no explicit 'draft' concept
+    final publishAtStr = json['publishAt'] as String?;
     _AnnouncementStatus status;
-    switch (statusStr.toLowerCase()) {
-      case 'scheduled':
-        status = _AnnouncementStatus.scheduled;
-        break;
-      case 'draft':
-        status = _AnnouncementStatus.draft;
-        break;
-      default:
+    if (publishAtStr != null && publishAtStr.isNotEmpty) {
+      try {
+        final publishAt = DateTime.parse(publishAtStr);
+        status = publishAt.isAfter(DateTime.now())
+            ? _AnnouncementStatus.scheduled
+            : _AnnouncementStatus.sent;
+      } catch (_) {
         status = _AnnouncementStatus.sent;
+      }
+    } else {
+      status = _AnnouncementStatus.sent;
     }
 
-    final audienceRaw = json['audiences'] ?? json['targetAudience'] ?? json['audience'] ?? 'all';
+    final audienceRaw = json['audience'] ?? json['audiences'] ?? json['targetAudience'] ?? 'all';
     final audiences = (audienceRaw is List)
         ? audienceRaw
               .map((a) => a is Map ? (a['name'] ?? a.toString()) : a.toString())
@@ -436,12 +437,24 @@ class _AnnouncementItem {
     final attachmentsRaw = json['attachments'];
     final attachmentCount = attachmentsRaw is List ? attachmentsRaw.length : 0;
 
+    // Format the display date
+    String dateTime = '';
+    final dateStr = publishAtStr ?? json['createdAt'] as String?;
+    if (dateStr != null && dateStr.isNotEmpty) {
+      try {
+        final dt = DateTime.parse(dateStr).toLocal();
+        dateTime = DateFormat('MMM d, yyyy  h:mm a').format(dt);
+      } catch (_) {
+        dateTime = dateStr;
+      }
+    }
+
     return _AnnouncementItem(
       id: json['id'] as String? ?? '',
       title: json['title'] ?? '',
-      preview: json['message'] ?? json['body'] ?? json['content'] ?? '',
+      preview: json['body'] ?? json['message'] ?? json['content'] ?? '',
       audiences: audiences,
-      dateTime: json['createdAt'] ?? json['scheduledAt'] ?? json['publishAt'] ?? '',
+      dateTime: dateTime,
       status: status,
       attachments: attachmentCount,
     );

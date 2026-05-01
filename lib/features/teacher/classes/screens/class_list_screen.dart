@@ -223,12 +223,16 @@ class _ClassListScreenState extends State<ClassListScreen> {
               trailing: Icon(Icons.chevron_right, color: Colors.grey.shade400),
               onTap: () {
                 final classId = c['id'] as String? ?? '';
+                final subjectId = c['subjectId'] as String? ?? '';
+                final subjectName = c['subjectName'] as String? ?? _className(c);
                 if (classId.isNotEmpty) {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => TeacherClassDetailScreen(
                         classId: classId,
+                        subjectId: subjectId,
+                        subjectName: subjectName,
                         className: _className(c),
                         classPeriod: _classPeriod(c),
                       ),

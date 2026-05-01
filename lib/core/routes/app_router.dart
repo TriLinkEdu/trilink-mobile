@@ -22,6 +22,7 @@ import '../../features/teacher/notifications/screens/teacher_notifications_scree
 import '../../features/teacher/classes/screens/class_list_screen.dart';
 import '../../features/teacher/classes/screens/teacher_class_detail_screen.dart';
 import '../../features/teacher/ai_assistant/screens/teacher_ai_assistant_screen.dart';
+import '../../features/teacher/feedback/screens/teacher_feedback_screen.dart';
 
 import '../../features/parent/home/screens/parent_home_screen.dart';
 import '../../features/parent/dashboard/screens/parent_dashboard_screen.dart';
@@ -120,6 +121,10 @@ class AppRouter {
       case RouteNames.teacherAiAssistant:
         return MaterialPageRoute(
           builder: (_) => const TeacherAiAssistantScreen(),
+        );
+      case RouteNames.teacherFeedback:
+        return MaterialPageRoute(
+          builder: (_) => const TeacherFeedbackScreen(),
         );
 
       // ── Parent routes ──

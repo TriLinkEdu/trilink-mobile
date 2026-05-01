@@ -13,7 +13,7 @@ class TeacherNotificationsScreen extends StatefulWidget {
 class _TeacherNotificationsScreenState
     extends State<TeacherNotificationsScreen> {
   int _selectedFilter = 0;
-  final List<String> _filters = ['All', 'Student Activity', 'System Alerts'];
+  final List<String> _filters = ['All', 'Unread', 'System Alerts'];
 
   bool _loading = true;
   String? _error;
@@ -27,7 +27,6 @@ class _TeacherNotificationsScreenState
 
   Future<void> _loadData() async {
     try {
-      final unreadOnly = _selectedFilter == 1; // index 1 = "Unread"
       final data = await ApiService().getNotifications();
       if (!mounted) return;
       setState(() {
@@ -115,6 +114,7 @@ class _TeacherNotificationsScreenState
       case 'announcement':
         return Icons.announcement;
       case 'exam_result':
+      case 'grade':
         return Icons.grade;
       case 'exam_submission':
         return Icons.assignment_turned_in;
@@ -160,14 +160,16 @@ class _TeacherNotificationsScreenState
     final filtered = _selectedFilter == 0
         ? _notifications
         : _notifications.where((n) {
-            final type = n['type'] as String? ?? '';
             if (_selectedFilter == 1) {
-              return type == 'assignment' || type == 'student';
+              // Unread filter
+              return n['readAt'] == null;
             }
+            // System Alerts filter
+            final type = n['type'] as String? ?? '';
             return type == 'system' ||
                 type == 'alert' ||
-                type == 'announcement' ||
-                type == 'grade';
+                type == 'broadcast' ||
+                type == 'announcement';
           }).toList();
 
     final Map<String, List<MapEntry<int, Map<String, dynamic>>>> grouped = {};

@@ -23,6 +23,7 @@ class _ParentChildChatHistoryScreenState
   bool _loading = true;
   String? _error;
   List<Map<String, dynamic>> _conversations = [];
+  String _typeFilter = 'all'; // all | direct | group
 
   @override
   void initState() {
@@ -105,14 +106,136 @@ class _ParentChildChatHistoryScreenState
       return _buildEmptyState();
     }
 
-    return RefreshIndicator(
-      onRefresh: _loadConversations,
-      child: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: _conversations.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
-        itemBuilder: (_, index) =>
-            _buildConversationCard(_conversations[index]),
+    final filtered = _typeFilter == 'all'
+        ? _conversations
+        : _conversations
+            .where((c) =>
+                (c['type'] as String? ?? '').toLowerCase() == _typeFilter)
+            .toList();
+
+    final directCount = _conversations
+        .where((c) => (c['type'] as String? ?? '') == 'direct')
+        .length;
+    final groupCount = _conversations
+        .where((c) => (c['type'] as String? ?? '') == 'group')
+        .length;
+
+    return Column(
+      children: [
+        // Filter bar
+        Container(
+          color: Colors.white,
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: Row(
+            children: [
+              _buildFilterChip(
+                'All',
+                'all',
+                _conversations.length,
+                AppColors.primary,
+              ),
+              const SizedBox(width: 8),
+              _buildFilterChip(
+                'Direct',
+                'direct',
+                directCount,
+                AppColors.primary,
+              ),
+              const SizedBox(width: 8),
+              _buildFilterChip(
+                'Groups',
+                'group',
+                groupCount,
+                AppColors.secondary,
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: filtered.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.chat_bubble_outline,
+                          size: 48, color: Colors.grey.shade300),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No ${_typeFilter == 'all' ? '' : _typeFilter} conversations',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadConversations,
+                  child: ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (_, index) =>
+                        _buildConversationCard(filtered[index]),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterChip(
+      String label, String value, int count, Color color) {
+    final selected = _typeFilter == value;
+    return GestureDetector(
+      onTap: () => setState(() => _typeFilter = value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color:
+              selected ? color.withValues(alpha: 0.12) : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? color : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight:
+                    selected ? FontWeight.w600 : FontWeight.w500,
+                color: selected ? color : Colors.grey.shade600,
+              ),
+            ),
+            if (count > 0) ...[
+              const SizedBox(width: 5),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(
+                  color: selected ? color : Colors.grey.shade400,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$count',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -121,12 +244,7 @@ class _ParentChildChatHistoryScreenState
     final id = conversation['id'] as String? ?? '';
     final title = conversation['title'] as String? ?? 'Conversation';
     final type = conversation['type'] as String? ?? 'direct';
-    final parentVisible = conversation['parentVisible'] as bool? ?? true;
     final updatedAt = conversation['updatedAt'] as String? ?? '';
-
-    if (!parentVisible) {
-      return const SizedBox.shrink();
-    }
 
     IconData typeIcon;
     Color typeColor;
