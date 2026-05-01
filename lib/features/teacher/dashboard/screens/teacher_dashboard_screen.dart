@@ -7,6 +7,7 @@ import '../../../auth/services/auth_service.dart';
 import '../../attendance/screens/teacher_attendance_screen.dart';
 import '../../announcements/screens/create_announcement_screen.dart';
 import '../../classes/screens/class_list_screen.dart';
+import '../../notifications/screens/teacher_notifications_screen.dart';
 
 class TeacherDashboardScreen extends StatefulWidget {
   const TeacherDashboardScreen({super.key});
@@ -22,6 +23,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   int _myClasses = 0;
   int _pendingGrading = 0;
   int _unreadNotifications = 0;
+  List<Map<String, dynamic>> _notifications = [];
 
   @override
   void initState() {
@@ -35,13 +37,20 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         _loading = true;
         _error = null;
       });
-      final data = await ApiService().getTeacherDashboard();
+      // Load dashboard stats and notifications in parallel
+      final results = await Future.wait([
+        ApiService().getTeacherDashboard(),
+        ApiService().getNotifications(),
+      ]);
       if (!mounted) return;
+      final data = results[0] as Map<String, dynamic>;
+      final notifs = results[1] as List<dynamic>;
       setState(() {
         _myClasses = (data['myClasses'] as num?)?.toInt() ?? 0;
         _pendingGrading = (data['pendingGradingApprox'] as num?)?.toInt() ?? 0;
         _unreadNotifications =
             (data['unreadNotifications'] as num?)?.toInt() ?? 0;
+        _notifications = notifs.cast<Map<String, dynamic>>();
         _loading = false;
       });
     } catch (e) {
@@ -185,25 +194,39 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             ],
           ),
         ),
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 8,
+        GestureDetector(
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const TeacherNotificationsScreen(),
               ),
-            ],
-          ),
-          child: Badge(
-            isLabelVisible: _unreadNotifications > 0,
-            label: Text('$_unreadNotifications'),
-            child: Icon(
-              Icons.notifications_outlined,
-              color: theme.colorScheme.onSurfaceVariant,
-              size: 22,
+            );
+            // Refresh unread count on return
+            _loadData();
+          },
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 8,
+                ),
+              ],
+            ),
+            child: Badge(
+              isLabelVisible: _unreadNotifications > 0,
+              label: Text(
+                _unreadNotifications > 99 ? '99+' : '$_unreadNotifications',
+              ),
+              child: Icon(
+                Icons.notifications_outlined,
+                color: theme.colorScheme.onSurfaceVariant,
+                size: 22,
+              ),
             ),
           ),
         ),
@@ -389,6 +412,8 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
 
   Widget _buildRecentActivity() {
     final theme = Theme.of(context);
+    final top3 = _notifications.take(3).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -404,7 +429,15 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               ),
             ),
             TextButton(
-              onPressed: () {},
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const TeacherNotificationsScreen(),
+                  ),
+                );
+                _loadData();
+              },
               child: Text(
                 'View All',
                 style: TextStyle(color: theme.colorScheme.primary),
@@ -413,34 +446,125 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           ],
         ),
         const SizedBox(height: 8),
-        _ActivityTile(
-          icon: Icons.assignment_turned_in,
-          iconBgColor: AppColors.primary.withValues(alpha: 0.1),
-          iconColor: AppColors.primary,
-          title: 'Student Submission',
-          subtitle: 'Sarah J. submitted Physics Homework "Motion Laws"',
-          time: '10m ago',
-        ),
-        const SizedBox(height: 12),
-        _ActivityTile(
-          icon: Icons.warning_amber_rounded,
-          iconBgColor: AppColors.accent.withValues(alpha: 0.15),
-          iconColor: Colors.orange.shade700,
-          title: 'System Alert',
-          subtitle: 'Maintenance scheduled for tonight at 2:00 AM.',
-          time: '1h ago',
-        ),
-        const SizedBox(height: 12),
-        _ActivityTile(
-          icon: Icons.description_outlined,
-          iconBgColor: AppColors.secondary.withValues(alpha: 0.1),
-          iconColor: AppColors.secondary,
-          title: 'Report Ready',
-          subtitle: 'Grade 10B Attendance Report is ready for review.',
-          time: '2h ago',
-        ),
+        if (top3.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 28),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                Icon(Icons.notifications_none,
+                    size: 36, color: Colors.grey.shade300),
+                const SizedBox(height: 8),
+                Text(
+                  'No recent activity',
+                  style: TextStyle(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontSize: 13),
+                ),
+              ],
+            ),
+          )
+        else
+          ...top3.asMap().entries.map((entry) {
+            final i = entry.key;
+            final n = entry.value;
+            final type = n['type'] as String? ?? '';
+            final title = n['title'] as String? ?? 'Notification';
+            final body = n['body'] as String? ?? '';
+            final createdAt = n['createdAt'] as String?;
+            final isRead = n['readAt'] != null;
+
+            final iconData = _iconForType(type);
+            final iconColor = _colorForType(type);
+
+            return Padding(
+              padding: EdgeInsets.only(bottom: i < top3.length - 1 ? 12 : 0),
+              child: _ActivityTile(
+                icon: iconData,
+                iconBgColor: iconColor.withValues(alpha: 0.1),
+                iconColor: iconColor,
+                title: title,
+                subtitle: body,
+                time: _timeAgo(createdAt),
+                isUnread: !isRead,
+              ),
+            );
+          }),
       ],
     );
+  }
+
+  IconData _iconForType(String type) {
+    switch (type.toLowerCase()) {
+      case 'badge':
+        return Icons.emoji_events;
+      case 'broadcast':
+        return Icons.campaign;
+      case 'weekly_digest':
+        return Icons.summarize;
+      case 'attendance':
+        return Icons.event_available;
+      case 'announcement':
+        return Icons.announcement;
+      case 'exam_result':
+      case 'grade':
+        return Icons.grade;
+      case 'exam_submission':
+        return Icons.assignment_turned_in;
+      case 'assignment':
+        return Icons.assignment;
+      case 'alert':
+      case 'system':
+        return Icons.warning_amber_rounded;
+      default:
+        return Icons.notifications;
+    }
+  }
+
+  Color _colorForType(String type) {
+    switch (type.toLowerCase()) {
+      case 'badge':
+        return Colors.amber;
+      case 'broadcast':
+        return AppColors.primary;
+      case 'weekly_digest':
+        return Colors.blue;
+      case 'attendance':
+        return AppColors.secondary;
+      case 'announcement':
+        return AppColors.accent;
+      case 'exam_result':
+      case 'grade':
+        return Colors.green;
+      case 'exam_submission':
+        return Colors.purple;
+      case 'assignment':
+        return AppColors.primary;
+      case 'alert':
+      case 'system':
+        return AppColors.error;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _timeAgo(String? dateStr) {
+    if (dateStr == null) return '';
+    try {
+      final date = DateTime.parse(dateStr);
+      final diff = DateTime.now().difference(date);
+      if (diff.inMinutes < 1) return 'Just now';
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+      if (diff.inHours < 24) return '${diff.inHours}h ago';
+      if (diff.inDays < 7) return '${diff.inDays}d ago';
+      return '${date.month}/${date.day}';
+    } catch (_) {
+      return '';
+    }
   }
 }
 
@@ -578,6 +702,7 @@ class _ActivityTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final String time;
+  final bool isUnread;
 
   const _ActivityTile({
     required this.icon,
@@ -586,6 +711,7 @@ class _ActivityTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.time,
+    this.isUnread = false,
   });
 
   @override
@@ -619,14 +745,21 @@ class _ActivityTile extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: theme.colorScheme.onSurface,
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          fontWeight: isUnread
+                              ? FontWeight.bold
+                              : FontWeight.w600,
+                          fontSize: 14,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    const SizedBox(width: 8),
                     Text(
                       time,
                       style: TextStyle(
@@ -643,10 +776,24 @@ class _ActivityTile extends StatelessWidget {
                     fontSize: 13,
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
+          if (isUnread) ...[
+            const SizedBox(width: 8),
+            Container(
+              width: 8,
+              height: 8,
+              margin: const EdgeInsets.only(top: 4),
+              decoration: const BoxDecoration(
+                color: AppColors.primary,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ],
         ],
       ),
     );

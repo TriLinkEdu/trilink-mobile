@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
+import 'teacher_chat_conversation_screen.dart';
 
 class CreateGroupScreen extends StatefulWidget {
   const CreateGroupScreen({super.key});
@@ -11,64 +12,72 @@ class CreateGroupScreen extends StatefulWidget {
 
 class _CreateGroupScreenState extends State<CreateGroupScreen> {
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
+
+  bool _loadingUsers = true;
   bool _creating = false;
+  String? _loadError;
+  String _searchQuery = '';
 
-  final List<_StudentItem> _students = [
-    _StudentItem(name: 'Ahmed Al-Farsi', className: 'Grade 10 - Section A'),
-    _StudentItem(name: 'Sara Mohammed', className: 'Grade 10 - Section A'),
-    _StudentItem(name: 'Omar Hassan', className: 'Grade 10 - Section B'),
-    _StudentItem(name: 'Fatima Noor', className: 'Grade 10 - Section B'),
-    _StudentItem(name: 'Khalid Ibrahim', className: 'Grade 11 - Section A'),
-    _StudentItem(name: 'Layla Ahmed', className: 'Grade 11 - Section A'),
-    _StudentItem(name: 'Youssef Karim', className: 'Grade 11 - Section B'),
-    _StudentItem(name: 'Nadia Saleh', className: 'Grade 9 - Section A'),
-    _StudentItem(name: 'Tariq Zain', className: 'Grade 9 - Section A'),
-    _StudentItem(name: 'Hana Basri', className: 'Grade 9 - Section B'),
-    _StudentItem(name: 'Rami Qasim', className: 'Grade 12 - Section A'),
-    _StudentItem(name: 'Dina Mansour', className: 'Grade 12 - Section A'),
-  ];
+  List<Map<String, dynamic>> _users = [];
+  final Set<String> _selectedIds = {};
 
-  final Set<int> _selectedIndices = {};
+  @override
+  void initState() {
+    super.initState();
+    _loadUsers();
+  }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _descriptionController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
-  List<int> get _filteredIndices {
-    if (_searchQuery.isEmpty) {
-      return List.generate(_students.length, (i) => i);
+  Future<void> _loadUsers() async {
+    setState(() {
+      _loadingUsers = true;
+      _loadError = null;
+    });
+    try {
+      // searchUsers with no query returns up to 20 relevant users
+      final results = await ApiService().searchUsers(q: _searchQuery);
+      if (!mounted) return;
+      setState(() {
+        _users = results.cast<Map<String, dynamic>>();
+        _loadingUsers = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = e.toString();
+        _loadingUsers = false;
+      });
     }
-    final query = _searchQuery.toLowerCase();
-    return List.generate(_students.length, (i) => i).where((i) {
-      final s = _students[i];
-      return s.name.toLowerCase().contains(query) ||
-          s.className.toLowerCase().contains(query);
+  }
+
+  List<Map<String, dynamic>> get _filtered {
+    if (_searchQuery.isEmpty) return _users;
+    final q = _searchQuery.toLowerCase();
+    return _users.where((u) {
+      final name =
+          '${u['firstName'] ?? ''} ${u['lastName'] ?? ''}'.toLowerCase();
+      return name.contains(q);
     }).toList();
   }
 
-  String _initials(String name) {
-    final parts = name.split(' ');
-    if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}';
-    return parts[0][0];
-  }
-
   Future<void> _createGroup() async {
-    if (_nameController.text.trim().isEmpty) {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a group name')),
       );
       return;
     }
-    if (_selectedIndices.isEmpty) {
+    if (_selectedIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select at least one student')),
+        const SnackBar(content: Text('Please select at least one member')),
       );
       return;
     }
@@ -76,29 +85,70 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     setState(() => _creating = true);
 
     try {
-      await ApiService().createConversation({
-        'name': _nameController.text.trim(),
-        'description': _descriptionController.text.trim(),
+      final result = await ApiService().createConversation({
+        'type': 'group',
+        'title': name,
+        'memberIds': _selectedIds.toList(),
+        'parentVisible': false,
       });
 
       if (!mounted) return;
+
+      final conversationId = result['id'] as String? ?? '';
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Group created successfully')),
+        const SnackBar(
+          content: Text('Group created successfully'),
+          backgroundColor: Colors.green,
+        ),
       );
-      Navigator.pop(context);
+
+      // Navigate directly into the new group conversation
+      if (conversationId.isNotEmpty) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => TeacherChatConversationScreen(
+              threadName: name,
+              conversationId: conversationId,
+            ),
+          ),
+        );
+      } else {
+        Navigator.pop(context);
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => _creating = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to create group: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to create group: $e')),
+      );
+    }
+  }
+
+  String _initials(Map<String, dynamic> user) {
+    final f = (user['firstName'] as String? ?? '');
+    final l = (user['lastName'] as String? ?? '');
+    return '${f.isNotEmpty ? f[0] : ''}${l.isNotEmpty ? l[0] : ''}'
+        .toUpperCase();
+  }
+
+  Color _roleColor(String role) {
+    switch (role.toLowerCase()) {
+      case 'student':
+        return AppColors.primary;
+      case 'parent':
+        return AppColors.secondary;
+      case 'admin':
+        return Colors.purple;
+      default:
+        return Colors.grey;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final filtered = _filteredIndices;
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
@@ -121,51 +171,70 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildTextField(
-                    controller: _nameController,
-                    label: 'Group Name',
-                    hint: 'e.g. Biology 101 - Period 2',
+                  // Group name field
+                  const Text(
+                    'Group Name',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  _buildTextField(
-                    controller: _descriptionController,
-                    label: 'Description (optional)',
-                    hint: 'Brief description of this group',
-                    maxLines: 3,
+                  const SizedBox(height: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.divider),
+                    ),
+                    child: TextField(
+                      controller: _nameController,
+                      decoration: InputDecoration(
+                        hintText: 'e.g. Biology 101 – Period 2',
+                        hintStyle: TextStyle(
+                            color: Colors.grey.shade400, fontSize: 14),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 12),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 24),
+
+                  // Members header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        'Select Students',
+                        'Add Members',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary,
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '${_selectedIndices.length} selected',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
+                      if (_selectedIds.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '${_selectedIds.length} selected',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primary,
+                            ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
+
+                  // Search bar
                   Container(
                     height: 44,
                     decoration: BoxDecoration(
@@ -174,27 +243,72 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                     ),
                     child: TextField(
                       controller: _searchController,
-                      onChanged: (v) => setState(() => _searchQuery = v),
+                      onChanged: (v) {
+                        setState(() => _searchQuery = v);
+                        _loadUsers();
+                      },
                       decoration: InputDecoration(
-                        hintText: 'Search students...',
+                        hintText: 'Search by name...',
                         hintStyle: TextStyle(
-                          color: Colors.grey.shade500,
-                          fontSize: 14,
-                        ),
-                        prefixIcon: Icon(
-                          Icons.search,
-                          color: Colors.grey.shade500,
-                          size: 20,
-                        ),
+                            color: Colors.grey.shade500, fontSize: 14),
+                        prefixIcon: Icon(Icons.search,
+                            color: Colors.grey.shade500, size: 20),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: Icon(Icons.clear,
+                                    color: Colors.grey.shade400, size: 18),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _searchQuery = '');
+                                  _loadUsers();
+                                },
+                              )
+                            : null,
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 12,
-                        ),
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  ...filtered.map((i) => _buildStudentTile(i)),
+
+                  // User list
+                  if (_loadingUsers)
+                    const Center(
+                        child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: CircularProgressIndicator(),
+                    ))
+                  else if (_loadError != null)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          children: [
+                            Text('Failed to load users',
+                                style: TextStyle(color: Colors.grey.shade600)),
+                            const SizedBox(height: 8),
+                            TextButton.icon(
+                              onPressed: _loadUsers,
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Retry'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else if (_filtered.isEmpty)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          'No users found',
+                          style: TextStyle(color: Colors.grey.shade500),
+                        ),
+                      ),
+                    )
+                  else
+                    ..._filtered.map((u) => _buildUserTile(u)),
                 ],
               ),
             ),
@@ -205,68 +319,35 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     );
   }
 
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    int maxLines = 1,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.divider),
-          ),
-          child: TextField(
-            controller: controller,
-            maxLines: maxLines,
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 12,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _buildUserTile(Map<String, dynamic> user) {
+    final id = user['id'] as String? ?? '';
+    final firstName = user['firstName'] as String? ?? '';
+    final lastName = user['lastName'] as String? ?? '';
+    final name = '$firstName $lastName'.trim();
+    final role = user['role'] as String? ?? '';
+    final subject = user['subject'] as String?;
+    final grade = user['grade'] as String?;
+    final section = user['section'] as String?;
+    final selected = _selectedIds.contains(id);
+    final color = _roleColor(role);
 
-  Widget _buildStudentTile(int index) {
-    final student = _students[index];
-    final selected = _selectedIndices.contains(index);
-    final colors = [
-      Colors.blue,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-      Colors.teal,
-      Colors.red,
-    ];
-    final avatarColor = colors[index % colors.length];
+    String subtitle = role.isNotEmpty
+        ? role[0].toUpperCase() + role.substring(1)
+        : '';
+    if (subject != null && subject.isNotEmpty) subtitle += ' • $subject';
+    if (grade != null && grade.isNotEmpty) {
+      subtitle += ' • $grade';
+      if (section != null && section.isNotEmpty) subtitle += '-$section';
+    }
 
     return GestureDetector(
       onTap: () {
+        if (id.isEmpty) return;
         setState(() {
           if (selected) {
-            _selectedIndices.remove(index);
+            _selectedIds.remove(id);
           } else {
-            _selectedIndices.add(index);
+            _selectedIds.add(id);
           }
         });
       },
@@ -286,11 +367,11 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
           children: [
             CircleAvatar(
               radius: 20,
-              backgroundColor: avatarColor.withValues(alpha: 0.15),
+              backgroundColor: color.withValues(alpha: 0.15),
               child: Text(
-                _initials(student.name),
+                _initials(user),
                 style: TextStyle(
-                  color: avatarColor,
+                  color: color,
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
                 ),
@@ -302,35 +383,41 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    student.name,
+                    name.isNotEmpty ? name : 'Unnamed',
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    student.className,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
+                  if (subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
             Checkbox(
               value: selected,
-              onChanged: (_) {
-                setState(() {
-                  if (selected) {
-                    _selectedIndices.remove(index);
-                  } else {
-                    _selectedIndices.add(index);
-                  }
-                });
-              },
+              onChanged: id.isEmpty
+                  ? null
+                  : (_) {
+                      setState(() {
+                        if (selected) {
+                          _selectedIds.remove(id);
+                        } else {
+                          _selectedIds.add(id);
+                        }
+                      });
+                    },
               activeColor: AppColors.primary,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(4),
@@ -385,11 +472,4 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
       ),
     );
   }
-}
-
-class _StudentItem {
-  final String name;
-  final String className;
-
-  _StudentItem({required this.name, required this.className});
 }

@@ -6,6 +6,8 @@ import 'parent_subject_list_screen.dart';
 import 'parent_subject_detail_screen.dart';
 import 'parent_teachers_screen.dart';
 import '../../chat/screens/parent_child_chat_history_screen.dart';
+import 'parent_results_screen.dart';
+import '../../reports/screens/weekly_report_screen.dart';
 
 class ParentStudentInfoScreen extends StatefulWidget {
   final String childName;
@@ -366,15 +368,15 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
       children: [
         Expanded(
           child: _buildActionButton(
-            icon: Icons.menu_book_outlined,
-            label: 'View Subjects',
+            icon: Icons.bar_chart_outlined,
+            label: 'Weekly Report',
             color: AppColors.primary,
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => ParentSubjectListScreen(
-                    studentId: _studentId,
+                  builder: (_) => WeeklyReportScreen(
+                    childStudentId: _studentId,
                     childName: _studentName,
                   ),
                 ),
@@ -600,35 +602,34 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
             ),
           );
         }),
-        if (courses.length > 3) ...[
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ParentSubjectListScreen(
-                      studentId: _studentId,
-                      childName: _studentName,
-                    ),
+        // Always show View All Subjects
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ParentSubjectListScreen(
+                    studentId: _studentId,
+                    childName: _studentName,
                   ),
-                );
-              },
-              icon: const Icon(Icons.grid_view, size: 16),
-              label: const Text('View All Subjects'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: BorderSide(color: AppColors.primary.withValues(alpha: 0.3)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
+              );
+            },
+            icon: const Icon(Icons.grid_view, size: 16),
+            label: const Text('View All Subjects'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              side: BorderSide(color: AppColors.primary.withValues(alpha: 0.3)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
+              padding: const EdgeInsets.symmetric(vertical: 12),
             ),
           ),
-        ],
+        ),
       ],
     );
   }
@@ -894,36 +895,35 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
             ),
           );
         }),
-        if (_teachers.length > 3) ...[
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ParentTeachersScreen(
-                      studentId: _studentId,
-                      childName: _studentName,
-                    ),
+        // Always show View All Teachers
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ParentTeachersScreen(
+                    studentId: _studentId,
+                    childName: _studentName,
                   ),
-                );
-              },
-              icon: const Icon(Icons.people, size: 16),
-              label: const Text('View All Teachers'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.secondary,
-                side: BorderSide(
-                    color: AppColors.secondary.withValues(alpha: 0.3)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
+              );
+            },
+            icon: const Icon(Icons.people, size: 16),
+            label: const Text('View All Teachers'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.secondary,
+              side: BorderSide(
+                  color: AppColors.secondary.withValues(alpha: 0.3)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
+              padding: const EdgeInsets.symmetric(vertical: 12),
             ),
           ),
-        ],
+        ),
       ],
     );
   }

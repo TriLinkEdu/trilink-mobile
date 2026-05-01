@@ -90,6 +90,8 @@ class ApiConstants {
   static const String dashboardStudent = '/dashboard/student';
   static String childSummary(String studentId) =>
       '/dashboard/children/$studentId/summary';
+  static String childDashboard(String studentId) =>
+      '/dashboard/children/$studentId';
 
   // Academic years
   static const String activeAcademicYear = '/academic-years/active';
@@ -169,6 +171,7 @@ class ApiConstants {
   static const String feedback = '/feedback';
   static const String feedbackMe = '/feedback/me';
   static const String feedbackMine = '/feedback/mine';
+  static const String feedbackForTeacher = '/feedback/for-teacher';
 
   // Reports
   static String studentPerformance(String studentId) =>
@@ -221,6 +224,10 @@ class ApiConstants {
   static String aiLearningPath(String studentId) =>
       '/ai/students/$studentId/learning-path';
   static const String aiFeedbackAssistant = '/ai/feedback-assistant';
+  static String aiAtRiskStudents(String subjectId) =>
+      '/ai/analytics/subject/$subjectId/at-risk';
+  static String aiClassPerformance(String subjectId) =>
+      '/ai/analytics/subject/$subjectId/class-performance';
 
   // Curriculum
   static const String curriculumSubjects = '/curriculum/me/subjects';

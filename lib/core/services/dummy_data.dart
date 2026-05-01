@@ -92,6 +92,66 @@ class DummyData {
         ],
       };
 
+  static Map<String, dynamic> childDashboard(String studentId) => {
+        'student': {
+          'id': studentId,
+          'firstName': 'Ali',
+          'lastName': 'Hassan',
+          'email': 'ali@school.edu',
+        },
+        'grades': {
+          'overallAveragePercent': 84.5,
+          'bySubject': [
+            {'subjectId': 'sub-001', 'subjectName': 'Mathematics', 'gradedEntries': 5, 'averagePercent': 88.0},
+            {'subjectId': 'sub-002', 'subjectName': 'Physics', 'gradedEntries': 3, 'averagePercent': 82.0},
+            {'subjectId': 'sub-003', 'subjectName': 'Chemistry', 'gradedEntries': 4, 'averagePercent': 79.5},
+          ],
+        },
+        'attendance': {
+          'overall': {
+            'total': 60,
+            'present': 54,
+            'absent': 4,
+            'excused': 2,
+            'attendancePercent': 90.0,
+          },
+          'bySubject': [
+            {'subjectId': 'sub-001', 'subjectName': 'Mathematics', 'total': 20, 'present': 19, 'absent': 1, 'excused': 0, 'attendancePercent': 95.0},
+            {'subjectId': 'sub-002', 'subjectName': 'Physics', 'total': 20, 'present': 17, 'absent': 2, 'excused': 1, 'attendancePercent': 85.0},
+            {'subjectId': 'sub-003', 'subjectName': 'Chemistry', 'total': 20, 'present': 18, 'absent': 1, 'excused': 1, 'attendancePercent': 90.0},
+          ],
+        },
+        'upcoming': {
+          'exams': [
+            {
+              'id': 'exam-001',
+              'title': 'Biology Midterm',
+              'opensAt': DateTime.now().add(const Duration(days: 3)).toIso8601String(),
+              'closesAt': DateTime.now().add(const Duration(days: 3, hours: 2)).toIso8601String(),
+              'maxPoints': 100,
+              'status': 'upcoming',
+              'score': null,
+            },
+          ],
+          'assignments': [
+            {
+              'id': 'asgn-001',
+              'title': 'Chapter 3 Worksheet',
+              'deadline': DateTime.now().add(const Duration(days: 5)).toIso8601String(),
+              'maxScore': 50,
+              'status': 'pending',
+              'score': null,
+            },
+          ],
+          'summary': {
+            'examsTotal': 1,
+            'examsAvailable': 0,
+            'assignmentsTotal': 1,
+            'assignmentsPending': 1,
+          },
+        },
+      };
+
   // ─── Academic Year ────────────────────────────────────
   static Map<String, dynamic> get activeAcademicYear => {
         'id': 'ay-001',
@@ -610,28 +670,28 @@ class DummyData {
           'id': 'msg-001',
           'conversationId': conversationId,
           'senderId': 'teacher-001',
-          'content': 'Good morning everyone! Remember, the midterm is next week.',
+          'text': 'Good morning everyone! Remember, the midterm is next week.',
           'createdAt': DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
         },
         {
           'id': 'msg-002',
           'conversationId': conversationId,
           'senderId': 'stu-001',
-          'content': 'Will it cover chapters 1-5?',
+          'text': 'Will it cover chapters 1-5?',
           'createdAt': DateTime.now().subtract(const Duration(hours: 1, minutes: 50)).toIso8601String(),
         },
         {
           'id': 'msg-003',
           'conversationId': conversationId,
           'senderId': 'teacher-001',
-          'content': 'Yes, chapters 1 through 5. Focus on the exercises at the end of each chapter.',
+          'text': 'Yes, chapters 1 through 5. Focus on the exercises at the end of each chapter.',
           'createdAt': DateTime.now().subtract(const Duration(hours: 1, minutes: 45)).toIso8601String(),
         },
         {
           'id': 'msg-004',
           'conversationId': conversationId,
           'senderId': 'stu-002',
-          'content': 'Thank you, Ms. Ahmed!',
+          'text': 'Thank you, Ms. Ahmed!',
           'createdAt': DateTime.now().subtract(const Duration(hours: 1, minutes: 30)).toIso8601String(),
         },
       ];
@@ -674,6 +734,54 @@ class DummyData {
           'subjectId': 'subject-001',
           'isAnonymous': false,
           'createdAt': '2026-04-15T09:00:00.000Z',
+        },
+      ];
+
+  static List<dynamic> get teacherFeedbackList => [
+        {
+          'id': 'fb-t-001',
+          'authorId': null,
+          'senderRole': 'student',
+          'category': 'teacher',
+          'message': 'Please slow down during explanations, it is hard to follow.',
+          'status': 'open',
+          'teacherId': 'teacher-001',
+          'subjectId': 'subject-001',
+          'isAnonymous': true,
+          'sender': null,
+          'createdAt': '2026-04-22T09:00:00.000Z',
+        },
+        {
+          'id': 'fb-t-002',
+          'authorId': 'user-002',
+          'senderRole': 'parent',
+          'category': 'teacher',
+          'message': 'My child really enjoys your classes. Thank you for the extra support!',
+          'status': 'open',
+          'teacherId': 'teacher-001',
+          'subjectId': null,
+          'isAnonymous': false,
+          'sender': {
+            'id': 'user-002',
+            'firstName': 'Amina',
+            'lastName': 'Hassan',
+            'email': 'amina@example.com',
+            'role': 'parent',
+          },
+          'createdAt': '2026-04-20T14:30:00.000Z',
+        },
+        {
+          'id': 'fb-t-003',
+          'authorId': null,
+          'senderRole': 'student',
+          'category': 'teacher',
+          'message': 'More practice problems would be very helpful before exams.',
+          'status': 'resolved',
+          'teacherId': 'teacher-001',
+          'subjectId': 'subject-001',
+          'isAnonymous': true,
+          'sender': null,
+          'createdAt': '2026-04-18T11:00:00.000Z',
         },
       ];
 

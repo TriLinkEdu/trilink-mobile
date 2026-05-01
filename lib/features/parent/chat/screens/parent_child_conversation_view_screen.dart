@@ -56,7 +56,10 @@ class _ParentChildConversationViewScreenState
       if (!mounted) return;
 
       final messages =
-          (response['messages'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+          (response['messages'] as List<dynamic>? ?? [])
+              .cast<Map<String, dynamic>>()
+              .reversed  // backend returns DESC (newest first) — reverse for display
+              .toList();
 
       setState(() {
         _messages = messages;

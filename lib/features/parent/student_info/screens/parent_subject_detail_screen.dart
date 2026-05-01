@@ -33,6 +33,10 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
 
   late TabController _tabController;
 
+  // Filters
+  String _gradeTypeFilter = 'all'; // all | exam | quiz | assignment
+  String _attendanceStatusFilter = 'all'; // all | present | absent | late | excused
+
   @override
   void initState() {
     super.initState();
@@ -171,12 +175,23 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
     }
 
     final summary = _gradesData?['summary'] as Map<String, dynamic>? ?? {};
-    final entries =
+    final allEntries =
         (_gradesData?['entries'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+
+    // Apply type filter
+    final entries = _gradeTypeFilter == 'all'
+        ? allEntries
+        : allEntries.where((e) =>
+            (e['type'] as String? ?? '').toLowerCase() == _gradeTypeFilter).toList();
 
     final total = summary['total'] as int? ?? 0;
     final withScore = summary['withScore'] as int? ?? 0;
     final avgPercent = summary['averagePercent'] as num? ?? 0;
+
+    // Count per type for filter badges
+    final examCount = allEntries.where((e) => (e['type'] as String? ?? '').toLowerCase() == 'exam').length;
+    final quizCount = allEntries.where((e) => (e['type'] as String? ?? '').toLowerCase() == 'quiz').length;
+    final assignCount = allEntries.where((e) => (e['type'] as String? ?? '').toLowerCase() == 'assignment').length;
 
     return RefreshIndicator(
       onRefresh: _loadGrades,
@@ -187,7 +202,27 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildGradesSummaryCard(total, withScore, avgPercent),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+            // Grade type filter
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildFilterChip('All', 'all', _gradeTypeFilter, allEntries.length,
+                      AppColors.primary, () => setState(() => _gradeTypeFilter = 'all')),
+                  const SizedBox(width: 8),
+                  _buildFilterChip('Exams', 'exam', _gradeTypeFilter, examCount,
+                      AppColors.error, () => setState(() => _gradeTypeFilter = 'exam')),
+                  const SizedBox(width: 8),
+                  _buildFilterChip('Quizzes', 'quiz', _gradeTypeFilter, quizCount,
+                      AppColors.warning, () => setState(() => _gradeTypeFilter = 'quiz')),
+                  const SizedBox(width: 8),
+                  _buildFilterChip('Assignments', 'assignment', _gradeTypeFilter, assignCount,
+                      AppColors.primary, () => setState(() => _gradeTypeFilter = 'assignment')),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
             Text(
               'GRADE ENTRIES',
               style: TextStyle(
@@ -202,7 +237,9 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
               _buildEmptyState(
                 Icons.grade_outlined,
                 'No grades yet',
-                'Grades will appear here once released',
+                _gradeTypeFilter == 'all'
+                    ? 'Grades will appear here once released'
+                    : 'No ${_gradeTypeFilter}s found',
               )
             else
               ...entries.map((entry) => _buildGradeCard(entry)),
@@ -222,8 +259,14 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
     }
 
     final summary = _attendanceData?['summary'] as Map<String, dynamic>? ?? {};
-    final sessions =
+    final allSessions =
         (_attendanceData?['sessions'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+
+    // Apply status filter
+    final sessions = _attendanceStatusFilter == 'all'
+        ? allSessions
+        : allSessions.where((s) =>
+            (s['status'] as String? ?? '').toLowerCase() == _attendanceStatusFilter).toList();
 
     final totalSessions = summary['total'] as int? ?? 0;
     final present = summary['present'] as int? ?? 0;
@@ -241,14 +284,32 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildAttendanceSummaryCard(
-              totalSessions,
-              present,
-              absent,
-              late,
-              excused,
-              attendancePercent,
+              totalSessions, present, absent, late, excused, attendancePercent,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+            // Attendance status filter
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildFilterChip('All', 'all', _attendanceStatusFilter, allSessions.length,
+                      AppColors.secondary, () => setState(() => _attendanceStatusFilter = 'all')),
+                  const SizedBox(width: 8),
+                  _buildFilterChip('Present', 'present', _attendanceStatusFilter, present,
+                      Colors.green, () => setState(() => _attendanceStatusFilter = 'present')),
+                  const SizedBox(width: 8),
+                  _buildFilterChip('Absent', 'absent', _attendanceStatusFilter, absent,
+                      AppColors.error, () => setState(() => _attendanceStatusFilter = 'absent')),
+                  const SizedBox(width: 8),
+                  _buildFilterChip('Late', 'late', _attendanceStatusFilter, late,
+                      Colors.orange, () => setState(() => _attendanceStatusFilter = 'late')),
+                  const SizedBox(width: 8),
+                  _buildFilterChip('Excused', 'excused', _attendanceStatusFilter, excused,
+                      Colors.blue, () => setState(() => _attendanceStatusFilter = 'excused')),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
             Text(
               'ATTENDANCE RECORDS',
               style: TextStyle(
@@ -263,10 +324,69 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
               _buildEmptyState(
                 Icons.event_available_outlined,
                 'No attendance records',
-                'Attendance records will appear here',
+                _attendanceStatusFilter == 'all'
+                    ? 'Attendance records will appear here'
+                    : 'No ${_attendanceStatusFilter} records found',
               )
             else
               ...sessions.map((session) => _buildAttendanceCard(session)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(
+    String label,
+    String value,
+    String current,
+    int count,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    final selected = current == value;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? color.withValues(alpha: 0.12) : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? color : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                color: selected ? color : Colors.grey.shade600,
+              ),
+            ),
+            if (count > 0) ...[
+              const SizedBox(width: 5),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(
+                  color: selected ? color : Colors.grey.shade400,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$count',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

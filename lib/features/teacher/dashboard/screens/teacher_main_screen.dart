@@ -8,6 +8,7 @@ import '../../classes/screens/class_list_screen.dart';
 import '../../student_analytics/screens/student_list_screen.dart';
 import '../../calendar/screens/teacher_calendar_screen.dart';
 import '../../settings/screens/teacher_settings_screen.dart';
+import '../../profile/screens/teacher_profile_screen.dart';
 
 class TeacherMainScreen extends StatefulWidget {
   const TeacherMainScreen({super.key});
@@ -25,7 +26,7 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
     ClassListScreen(),
     StudentListScreen(),
     TeacherCalendarScreen(),
-    TeacherSettingsScreen(),
+    TeacherProfileScreen(),
   ];
 
   @override
@@ -241,6 +242,14 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                     );
                   },
                 ),
+                _DrawerItem(
+                  icon: Icons.feedback_outlined,
+                  label: 'Feedback',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, RouteNames.teacherFeedback);
+                  },
+                ),
                 const Divider(height: 1),
                 _DrawerSection(title: 'TOOLS'),
                 _DrawerItem(
@@ -265,7 +274,11 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                   label: 'Settings',
                   onTap: () {
                     Navigator.pop(context);
-                    setState(() => _currentIndex = 4);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const TeacherSettingsScreen()),
+                    );
                   },
                 ),
                 _DrawerItem(

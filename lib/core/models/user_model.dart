@@ -30,6 +30,10 @@ class UserModel {
   final String? country;
   final String? cityState;
   final String? postalCode;
+  // Teacher-specific fields
+  final String? experience;
+  final String? homeroomClass;
+  final String? officeRoom;
 
   const UserModel({
     required this.id,
@@ -54,6 +58,9 @@ class UserModel {
     this.country,
     this.cityState,
     this.postalCode,
+    this.experience,
+    this.homeroomClass,
+    this.officeRoom,
     String? name,
   }) : legacyName = name;
 
@@ -92,6 +99,9 @@ class UserModel {
     String? country,
     String? cityState,
     String? postalCode,
+    String? experience,
+    String? homeroomClass,
+    String? officeRoom,
     String? name,
   }) {
     return UserModel(
@@ -117,6 +127,9 @@ class UserModel {
       country: country ?? this.country,
       cityState: cityState ?? this.cityState,
       postalCode: postalCode ?? this.postalCode,
+      experience: experience ?? this.experience,
+      homeroomClass: homeroomClass ?? this.homeroomClass,
+      officeRoom: officeRoom ?? this.officeRoom,
       name: name ?? legacyName,
     );
   }
@@ -155,6 +168,9 @@ class UserModel {
       country: _parseNullableString(json['country']),
       cityState: _parseNullableString(json['cityState']),
       postalCode: _parseNullableString(json['postalCode']),
+      experience: _parseNullableString(json['experience']),
+      homeroomClass: _parseNullableString(json['homeroomClass']),
+      officeRoom: _parseNullableString(json['officeRoom']),
       name: legacyName,
     );
   }
@@ -206,6 +222,9 @@ class UserModel {
     'country': country,
     'cityState': cityState,
     'postalCode': postalCode,
+    'experience': experience,
+    'homeroomClass': homeroomClass,
+    'officeRoom': officeRoom,
   };
 
   static UserRole _parseRole(dynamic role) {

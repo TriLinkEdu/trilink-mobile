@@ -11,6 +11,7 @@ import '../../student_info/screens/parent_subject_list_screen.dart';
 import '../../student_info/screens/parent_teachers_screen.dart';
 import '../../attendance/screens/parent_attendance_screen.dart';
 import '../../chat/screens/parent_chat_screen.dart';
+import '../../chat/screens/parent_child_chat_history_screen.dart';
 import '../../announcements/screens/parent_announcements_screen.dart';
 import '../../feedback/screens/parent_feedback_screen.dart';
 import '../../reports/screens/weekly_report_screen.dart';
@@ -34,7 +35,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   String? _error;
   int _selectedChildIndex = 0;
   List<Map<String, dynamic>> _children = [];
-  Map<String, dynamic> _currentSummary = {};
+  Map<String, dynamic> _childDashboard = {};
   int _unreadCount = 0;
 
   @override
@@ -113,10 +114,10 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       final child = _children[_selectedChildIndex];
       final studentId =
           child['studentId'] as String? ?? child['id'] as String? ?? '';
-      final summary = await ApiService().getChildSummary(studentId);
+      final dashboard = await ApiService().getChildDashboard(studentId);
       if (!mounted) return;
       setState(() {
-        _currentSummary = summary;
+        _childDashboard = dashboard;
         _loading = false;
       });
     } catch (e) {
@@ -180,6 +181,10 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                             children: [
                               const SizedBox(height: 20),
                               _buildOverviewSection(),
+                              const SizedBox(height: 24),
+                              _buildGradesBySubject(),
+                              const SizedBox(height: 24),
+                              _buildUpcomingTasks(),
                               const SizedBox(height: 24),
                               _buildFeatureGrid(context),
                               const SizedBox(height: 24),
@@ -511,6 +516,28 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                   },
                 ),
                 _DrawerItem(
+                  icon: Icons.history_edu_outlined,
+                  label: 'Chat History',
+                  onTap: () {
+                    Navigator.pop(context);
+                    final childId = _children.isNotEmpty
+                        ? (_children[_selectedChildIndex]['studentId']
+                                  as String? ??
+                              _children[_selectedChildIndex]['id'] as String? ??
+                              '')
+                        : '';
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ParentChildChatHistoryScreen(
+                          studentId: childId,
+                          childName: _childName,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                _DrawerItem(
                   icon: Icons.campaign_outlined,
                   label: 'Announcements',
                   onTap: () {
@@ -636,14 +663,17 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
 
   Widget _buildOverviewSection() {
     final theme = Theme.of(context);
-    final average = _currentSummary['average']?.toString() ?? '--';
-    final avgDelta = _currentSummary['avgDelta']?.toString() ?? '';
-    final attendance = _currentSummary['attendance']?.toString() ?? '--';
-    final absences = _currentSummary['absences']?.toString() ?? '--';
-    final tasks =
-        _currentSummary['pendingTasks']?.toString() ??
-        _currentSummary['tasks']?.toString() ??
-        '0';
+    final grades = _childDashboard['grades'] as Map<String, dynamic>? ?? {};
+    final attendance = _childDashboard['attendance'] as Map<String, dynamic>? ?? {};
+    final upcoming = _childDashboard['upcoming'] as Map<String, dynamic>? ?? {};
+    final upcomingSummary = upcoming['summary'] as Map<String, dynamic>? ?? {};
+
+    final overallAvg = grades['overallAveragePercent'] as num?;
+    final attOverall = attendance['overall'] as Map<String, dynamic>? ?? {};
+    final attPercent = attOverall['attendancePercent'] as num?;
+    final pendingAssignments = upcomingSummary['assignmentsPending'] as int? ?? 0;
+    final availableExams = upcomingSummary['examsAvailable'] as int? ?? 0;
+    final pendingTasks = pendingAssignments + availableExams;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -688,8 +718,10 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                 icon: Icons.trending_up,
                 iconColor: AppColors.secondary,
                 label: 'AVERAGE',
-                value: average.contains('%') ? average : '$average%',
-                subtitle: avgDelta,
+                value: overallAvg != null
+                    ? '${overallAvg.toStringAsFixed(1)}%'
+                    : '--',
+                subtitle: 'All subjects',
                 subtitleColor: AppColors.secondary,
               ),
             ),
@@ -699,8 +731,10 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                 icon: Icons.check_circle_outline,
                 iconColor: AppColors.primary,
                 label: 'ATTENDANCE',
-                value: attendance.contains('%') ? attendance : '$attendance%',
-                subtitle: absences,
+                value: attPercent != null
+                    ? '${attPercent.toStringAsFixed(1)}%'
+                    : '--',
+                subtitle: '${attOverall['absent'] ?? 0} absences',
                 subtitleColor: theme.colorScheme.onSurfaceVariant,
               ),
             ),
@@ -710,13 +744,253 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                 icon: Icons.assignment_outlined,
                 iconColor: Colors.orange,
                 label: 'TASKS',
-                value: tasks,
+                value: '$pendingTasks',
                 subtitle: 'Due Soon',
                 subtitleColor: AppColors.error,
               ),
             ),
           ],
         ),
+      ],
+    );
+  }
+
+  Widget _buildGradesBySubject() {
+    final theme = Theme.of(context);
+    final grades = _childDashboard['grades'] as Map<String, dynamic>? ?? {};
+    final bySubject = (grades['bySubject'] as List<dynamic>? ?? [])
+        .cast<Map<String, dynamic>>();
+
+    if (bySubject.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'GRADES BY SUBJECT',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurfaceVariant,
+                letterSpacing: 0.8,
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
+                final childId = _children.isNotEmpty
+                    ? (_children[_selectedChildIndex]['studentId'] as String? ??
+                        _children[_selectedChildIndex]['id'] as String? ?? '')
+                    : '';
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ParentSubjectListScreen(
+                      studentId: childId,
+                      childName: _childName,
+                    ),
+                  ),
+                );
+              },
+              child: Text(
+                'View All',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
+          child: Column(
+            children: bySubject.asMap().entries.map((entry) {
+              final i = entry.key;
+              final s = entry.value;
+              final name = s['subjectName'] as String? ?? 'Subject';
+              final avg = s['averagePercent'] as num?;
+              final graded = s['gradedEntries'] as int? ?? 0;
+
+              final colors = [
+                AppColors.primary,
+                AppColors.secondary,
+                const Color(0xFF7C4DFF),
+                const Color(0xFFFF6D00),
+                const Color(0xFF00BFA5),
+              ];
+              final color = colors[i % colors.length];
+              final pct = avg ?? 0;
+              final barWidth = (pct / 100).clamp(0.0, 1.0);
+
+              return Column(
+                children: [
+                  if (i > 0)
+                    Divider(height: 1, color: theme.colorScheme.outlineVariant),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Center(
+                            child: Text(
+                              name.isNotEmpty ? name[0] : '?',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: color,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    name,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: theme.colorScheme.onSurface,
+                                    ),
+                                  ),
+                                  Text(
+                                    avg != null
+                                        ? '${avg.toStringAsFixed(1)}%'
+                                        : '--',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: avg != null
+                                          ? (avg >= 80
+                                              ? Colors.green
+                                              : avg >= 60
+                                                  ? Colors.orange
+                                                  : AppColors.error)
+                                          : theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: LinearProgressIndicator(
+                                  value: barWidth,
+                                  backgroundColor:
+                                      color.withValues(alpha: 0.12),
+                                  valueColor:
+                                      AlwaysStoppedAnimation<Color>(color),
+                                  minHeight: 6,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '$graded graded entries',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUpcomingTasks() {
+    final theme = Theme.of(context);
+    final upcoming =
+        _childDashboard['upcoming'] as Map<String, dynamic>? ?? {};
+    final exams = (upcoming['exams'] as List<dynamic>? ?? [])
+        .cast<Map<String, dynamic>>();
+    final assignments = (upcoming['assignments'] as List<dynamic>? ?? [])
+        .cast<Map<String, dynamic>>();
+
+    if (exams.isEmpty && assignments.isEmpty) return const SizedBox.shrink();
+
+    String _formatDeadline(String? iso) {
+      if (iso == null) return '';
+      try {
+        final d = DateTime.parse(iso).toLocal();
+        final diff = d.difference(DateTime.now());
+        if (diff.inDays == 0) return 'Today';
+        if (diff.inDays == 1) return 'Tomorrow';
+        if (diff.inDays < 7) return 'In ${diff.inDays} days';
+        return '${d.month}/${d.day}';
+      } catch (_) {
+        return '';
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'UPCOMING',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurfaceVariant,
+            letterSpacing: 0.8,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...exams.take(3).map((exam) {
+          final status = exam['status'] as String? ?? '';
+          final isAvailable = status == 'available';
+          return _UpcomingTaskCard(
+            icon: Icons.quiz_outlined,
+            iconColor: isAvailable ? AppColors.error : AppColors.primary,
+            title: exam['title'] as String? ?? 'Exam',
+            subtitle: isAvailable ? 'Available now' : 'Exam',
+            deadline: _formatDeadline(exam['opensAt'] as String?),
+            tag: isAvailable ? 'OPEN' : 'UPCOMING',
+            tagColor: isAvailable ? AppColors.error : AppColors.primary,
+          );
+        }),
+        ...assignments.take(3).map((asgn) {
+          final status = asgn['status'] as String? ?? '';
+          return _UpcomingTaskCard(
+            icon: Icons.assignment_outlined,
+            iconColor: Colors.orange,
+            title: asgn['title'] as String? ?? 'Assignment',
+            subtitle: 'Assignment',
+            deadline: _formatDeadline(asgn['deadline'] as String?),
+            tag: status.toUpperCase(),
+            tagColor: status == 'pending' ? Colors.orange : Colors.green,
+          );
+        }),
       ],
     );
   }
@@ -1371,4 +1645,108 @@ class _FeatureItem {
     required this.color,
     required this.onTap,
   });
+}
+
+class _UpcomingTaskCard extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final String deadline;
+  final String tag;
+  final Color tagColor;
+
+  const _UpcomingTaskCard({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    required this.deadline,
+    required this.tag,
+    required this.tagColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: tagColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  tag,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: tagColor,
+                  ),
+                ),
+              ),
+              if (deadline.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  deadline,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }

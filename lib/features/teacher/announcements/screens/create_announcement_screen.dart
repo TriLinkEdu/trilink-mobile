@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
 
@@ -13,26 +16,78 @@ class CreateAnnouncementScreen extends StatefulWidget {
 class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _messageController = TextEditingController();
-  bool _scheduleForLater = false;
   bool _submitting = false;
 
-  final List<_AudienceChip> _audiences = [
-    _AudienceChip(label: '10A', selected: true),
-    _AudienceChip(label: '10B', selected: false),
-    _AudienceChip(label: '11A', selected: true),
-    _AudienceChip(label: '11B', selected: false),
-    _AudienceChip(label: 'S', selected: false),
-  ];
+  // Audience: 'all' | 'students' | 'parents'
+  String _selectedAudience = 'all';
 
-  final List<_Attachment> _attachments = [
-    _Attachment(name: 'Course_Syllabus_2024.pdf', size: '2.4 MB'),
-  ];
+  // Scheduling
+  bool _scheduleForLater = false;
+  DateTime? _scheduledDateTime;
+
+  // Attachments (uploaded file IDs)
+  final List<_AttachmentItem> _attachments = [];
+  bool _uploadingFile = false;
 
   @override
   void dispose() {
     _titleController.dispose();
     _messageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickAndUploadFile() async {
+    final picker = ImagePicker();
+    // Use file picker — pick any file via gallery (images only for now)
+    final XFile? file = await picker.pickImage(source: ImageSource.gallery);
+    if (file == null) return;
+
+    setState(() => _uploadingFile = true);
+    try {
+      final fileId = await ApiService().uploadProfileImage(file);
+      setState(() {
+        _attachments.add(_AttachmentItem(
+          name: file.name,
+          fileId: fileId,
+          isImage: true,
+        ));
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to upload: $e'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingFile = false);
+    }
+  }
+
+  Future<void> _pickScheduleDateTime() async {
+    final now = DateTime.now();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _scheduledDateTime ?? now.add(const Duration(hours: 1)),
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+    );
+    if (date == null || !mounted) return;
+
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(
+          _scheduledDateTime ?? now.add(const Duration(hours: 1))),
+    );
+    if (time == null || !mounted) return;
+
+    setState(() {
+      _scheduledDateTime = DateTime(
+          date.year, date.month, date.day, time.hour, time.minute);
+    });
   }
 
   Future<void> _sendAnnouncement() async {
@@ -49,10 +104,14 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
           const SnackBar(content: Text('Please enter a message')));
       return;
     }
+    if (_scheduleForLater && _scheduledDateTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please pick a schedule date/time')));
+      return;
+    }
 
     setState(() => _submitting = true);
     try {
-      // Get active academic year first
       final yearData = await ApiService().getActiveAcademicYear();
       final yearId = (yearData['id'] ?? yearData['data']?['id']) as String?;
       if (yearId == null || yearId.isEmpty) {
@@ -62,18 +121,17 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
       await ApiService().createAnnouncement({
         'academicYearId': yearId,
         'title': title,
-        'body': message,          // backend uses 'body' not 'message'
-        'audience': 'all',        // valid values: all, students, parents, class, grade
-        if (_scheduleForLater) 'publishAt': DateTime.now()
-            .add(const Duration(hours: 1))
-            .toIso8601String(),
+        'body': message,
+        'audience': _selectedAudience,
+        if (_scheduleForLater && _scheduledDateTime != null)
+          'publishAt': _scheduledDateTime!.toUtc().toIso8601String(),
       });
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(_scheduleForLater
-              ? 'Announcement scheduled!'
+              ? 'Announcement scheduled for ${DateFormat('MMM d, h:mm a').format(_scheduledDateTime!)}'
               : 'Announcement sent!'),
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
@@ -82,10 +140,10 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'),
-              backgroundColor: AppColors.error,
-              behavior: SnackBarBehavior.floating));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -131,14 +189,14 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
                   _buildTitleField(),
                   const SizedBox(height: 4),
                   _buildMessageField(),
-                  const SizedBox(height: 12),
-                  _buildRichTextToolbar(),
+                  const SizedBox(height: 4),
+                  _buildCharCount(),
                   const SizedBox(height: 24),
                   _buildTargetAudience(),
                   const SizedBox(height: 24),
                   _buildAttachments(),
                   const SizedBox(height: 24),
-                  _buildScheduleToggle(),
+                  _buildScheduleSection(theme),
                 ],
               ),
             ),
@@ -174,105 +232,88 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
     return TextField(
       controller: _messageController,
       maxLines: 6,
+      maxLength: 500,
       onChanged: (_) => setState(() {}),
       decoration: InputDecoration(
         hintText: 'Write your message here...',
         hintStyle: TextStyle(fontSize: 15, color: Colors.grey.shade400),
         border: InputBorder.none,
         contentPadding: EdgeInsets.zero,
+        counterText: '',
       ),
       style: const TextStyle(fontSize: 15, height: 1.5),
     );
   }
 
-  Widget _buildRichTextToolbar() {
-    return Row(
-      children: [
-        _ToolbarButton(icon: Icons.format_bold, onTap: () {}),
-        _ToolbarButton(icon: Icons.format_italic, onTap: () {}),
-        _ToolbarButton(icon: Icons.format_list_bulleted, onTap: () {}),
-        _ToolbarButton(icon: Icons.link, onTap: () {}),
-        const Spacer(),
-        Text(
-          '${_messageController.text.length}/500',
-          style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-        ),
-      ],
+  Widget _buildCharCount() {
+    final count = _messageController.text.length;
+    final color = count > 450 ? AppColors.error : Colors.grey.shade500;
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Text(
+        '$count / 500',
+        style: TextStyle(fontSize: 12, color: color),
+      ),
     );
   }
 
   Widget _buildTargetAudience() {
+    final options = [
+      ('all', 'Everyone', Icons.public),
+      ('students', 'Students', Icons.school_outlined),
+      ('parents', 'Parents', Icons.family_restroom_outlined),
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'TARGET AUDIENCE',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade500,
-                letterSpacing: 0.8,
-              ),
-            ),
-            GestureDetector(
-              onTap: () {
-                setState(() {
-                  for (var a in _audiences) {
-                    a.selected = true;
-                  }
-                });
-              },
-              child: const Text(
-                'Select All',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
-                ),
-              ),
-            ),
-          ],
-        ),
+        _sectionLabel('TARGET AUDIENCE'),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _audiences.map((a) {
-            return GestureDetector(
-              onTap: () => setState(() => a.selected = !a.selected),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: a.selected ? AppColors.primary : Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: a.selected
+        Row(
+          children: options.map((opt) {
+            final value = opt.$1;
+            final label = opt.$2;
+            final icon = opt.$3;
+            final selected = _selectedAudience == value;
+            return Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _selectedAudience = value),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 10, horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: selected
                         ? AppColors.primary
-                        : Colors.grey.shade300,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (a.selected) ...[
-                      const Icon(Icons.check, size: 14, color: Colors.white),
-                      const SizedBox(width: 4),
-                    ],
-                    Text(
-                      a.label,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: a.selected ? Colors.white : Colors.grey.shade700,
-                      ),
+                        : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: selected
+                          ? AppColors.primary
+                          : Colors.grey.shade300,
                     ),
-                  ],
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(icon,
+                          size: 20,
+                          color: selected
+                              ? Colors.white
+                              : Colors.grey.shade600),
+                      const SizedBox(height: 4),
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: selected
+                              ? Colors.white
+                              : Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -286,124 +327,239 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'ATTACHMENTS',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey.shade500,
-            letterSpacing: 0.8,
-          ),
-        ),
+        _sectionLabel('ATTACHMENTS'),
         const SizedBox(height: 12),
-        ..._attachments.map(
-          (a) => Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+        ..._attachments.map((a) => Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      a.isImage ? Icons.image_outlined : Icons.attach_file,
+                      color: AppColors.primary,
+                      size: 18,
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.picture_as_pdf,
-                    color: AppColors.error,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        a.name,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          a.name,
+                          style: const TextStyle(
+                              fontSize: 13, fontWeight: FontWeight.w500),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        a.size,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade500,
+                        Text(
+                          'Uploaded ✓',
+                          style: TextStyle(
+                              fontSize: 11, color: Colors.green.shade600),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                IconButton(
-                  icon: Icon(
-                    Icons.delete_outline,
-                    color: Colors.grey.shade500,
-                    size: 20,
+                  IconButton(
+                    icon: Icon(Icons.delete_outline,
+                        color: Colors.grey.shade500, size: 18),
+                    onPressed: () =>
+                        setState(() => _attachments.remove(a)),
                   ),
-                  onPressed: () {
-                    setState(() => _attachments.remove(a));
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
+                ],
+              ),
+            )),
+        const SizedBox(height: 4),
         OutlinedButton.icon(
-          onPressed: () {},
-          icon: const Icon(Icons.add, size: 18),
-          label: const Text('Add Attachment'),
+          onPressed: _uploadingFile ? null : _pickAndUploadFile,
+          icon: _uploadingFile
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.attach_file, size: 18),
+          label: Text(_uploadingFile ? 'Uploading...' : 'Add Attachment'),
           style: OutlinedButton.styleFrom(
             foregroundColor: Colors.grey.shade600,
             side: BorderSide(color: Colors.grey.shade300),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                borderRadius: BorderRadius.circular(10)),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildScheduleToggle() {
-    return Row(
+  Widget _buildScheduleSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(Icons.schedule, color: Colors.grey.shade600, size: 20),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Schedule for later',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
+        _sectionLabel('DELIVERY'),
+        const SizedBox(height: 12),
+        // Send now vs schedule toggle
+        Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _scheduleForLater = false),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 12, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: !_scheduleForLater
+                        ? AppColors.primary
+                        : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: !_scheduleForLater
+                          ? AppColors.primary
+                          : Colors.grey.shade300,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.send_rounded,
+                          size: 16,
+                          color: !_scheduleForLater
+                              ? Colors.white
+                              : Colors.grey.shade600),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Send Now',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: !_scheduleForLater
+                              ? Colors.white
+                              : Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              Text(
-                'Post automatically at a future date',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _scheduleForLater = true),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 12, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: _scheduleForLater
+                        ? AppColors.primary
+                        : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: _scheduleForLater
+                          ? AppColors.primary
+                          : Colors.grey.shade300,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.schedule,
+                          size: 16,
+                          color: _scheduleForLater
+                              ? Colors.white
+                              : Colors.grey.shade600),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Schedule',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: _scheduleForLater
+                              ? Colors.white
+                              : Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ],
+            ),
+          ],
+        ),
+        // Date/time picker (shown when schedule is selected)
+        if (_scheduleForLater) ...[
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: _pickScheduleDateTime,
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: _scheduledDateTime != null
+                      ? AppColors.primary.withValues(alpha: 0.4)
+                      : Colors.grey.shade300,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.calendar_today,
+                      size: 18,
+                      color: _scheduledDateTime != null
+                          ? AppColors.primary
+                          : Colors.grey.shade500),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _scheduledDateTime != null
+                          ? DateFormat('EEE, MMM d, yyyy  •  h:mm a')
+                              .format(_scheduledDateTime!)
+                          : 'Tap to pick date & time',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: _scheduledDateTime != null
+                            ? theme.colorScheme.onSurface
+                            : Colors.grey.shade500,
+                        fontWeight: _scheduledDateTime != null
+                            ? FontWeight.w500
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                  Icon(Icons.chevron_right,
+                      color: Colors.grey.shade400, size: 18),
+                ],
+              ),
+            ),
           ),
-        ),
-        Switch(
-          value: _scheduleForLater,
-          onChanged: (val) => setState(() => _scheduleForLater = val),
-          activeTrackColor: AppColors.primary.withValues(alpha: 0.5),
-        ),
+        ],
       ],
+    );
+  }
+
+  Widget _sectionLabel(String text) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: Colors.grey.shade500,
+        letterSpacing: 0.8,
+      ),
     );
   }
 
@@ -422,10 +578,19 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
       ),
       child: Row(
         children: [
-          Text(
-            _submitting ? 'Sending...' : '',
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-          ),
+          if (_attachments.isNotEmpty)
+            Row(
+              children: [
+                Icon(Icons.attach_file,
+                    size: 14, color: Colors.grey.shade500),
+                const SizedBox(width: 4),
+                Text(
+                  '${_attachments.length} file${_attachments.length > 1 ? 's' : ''}',
+                  style:
+                      TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                ),
+              ],
+            ),
           const Spacer(),
           ElevatedButton.icon(
             onPressed: _submitting ? null : _sendAnnouncement,
@@ -434,11 +599,11 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
+                        strokeWidth: 2, color: Colors.white),
                   )
-                : const Icon(Icons.send, size: 16),
+                : Icon(
+                    _scheduleForLater ? Icons.schedule : Icons.send,
+                    size: 16),
             label: Text(
               _scheduleForLater ? 'Schedule' : 'Send Now',
               style: const TextStyle(fontWeight: FontWeight.w600),
@@ -446,10 +611,10 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
+                  borderRadius: BorderRadius.circular(24)),
             ),
           ),
         ],
@@ -458,31 +623,10 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
   }
 }
 
-class _ToolbarButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  const _ToolbarButton({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.only(right: 16),
-        child: Icon(icon, size: 22, color: Colors.grey.shade700),
-      ),
-    );
-  }
-}
-
-class _AudienceChip {
-  final String label;
-  bool selected;
-  _AudienceChip({required this.label, required this.selected});
-}
-
-class _Attachment {
+class _AttachmentItem {
   final String name;
-  final String size;
-  _Attachment({required this.name, required this.size});
+  final String fileId;
+  final bool isImage;
+  _AttachmentItem(
+      {required this.name, required this.fileId, required this.isImage});
 }
