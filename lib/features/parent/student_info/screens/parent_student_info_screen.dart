@@ -543,15 +543,16 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                       child: Text(
                         subjectCode.isNotEmpty
                             ? subjectCode
-                                .substring(
+                                  .substring(
                                     0,
                                     subjectCode.length > 3
                                         ? 3
-                                        : subjectCode.length)
-                                .toUpperCase()
+                                        : subjectCode.length,
+                                  )
+                                  .toUpperCase()
                             : subjectName.isNotEmpty
-                                ? subjectName[0].toUpperCase()
-                                : '?',
+                            ? subjectName[0].toUpperCase()
+                            : '?',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -577,8 +578,11 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                         if (teacherName.isNotEmpty)
                           Row(
                             children: [
-                              Icon(Icons.person_outline,
-                                  size: 13, color: Colors.grey.shade600),
+                              Icon(
+                                Icons.person_outline,
+                                size: 13,
+                                color: Colors.grey.shade600,
+                              ),
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
@@ -595,8 +599,11 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                       ],
                     ),
                   ),
-                  Icon(Icons.arrow_forward_ios,
-                      size: 14, color: Colors.grey.shade400),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 14,
+                    color: Colors.grey.shade400,
+                  ),
                 ],
               ),
             ),
@@ -773,9 +780,11 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                                 Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Icon(Icons.book_outlined,
-                                        size: 16,
-                                        color: Colors.grey.shade600),
+                                    Icon(
+                                      Icons.book_outlined,
+                                      size: 16,
+                                      color: Colors.grey.shade600,
+                                    ),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Wrap(
@@ -786,12 +795,13 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                                               (s) => Container(
                                                 padding:
                                                     const EdgeInsets.symmetric(
-                                                  horizontal: 8,
-                                                  vertical: 4,
-                                                ),
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
                                                 decoration: BoxDecoration(
                                                   color: color.withValues(
-                                                      alpha: 0.08),
+                                                    alpha: 0.08,
+                                                  ),
                                                   borderRadius:
                                                       BorderRadius.circular(8),
                                                 ),
@@ -811,17 +821,18 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                                   ],
                                 ),
                                 const SizedBox(height: 10),
-                                Divider(
-                                    height: 1, color: Colors.grey.shade100),
+                                Divider(height: 1, color: Colors.grey.shade100),
                                 const SizedBox(height: 10),
                               ],
                               // Email
                               if (email.isNotEmpty) ...[
                                 Row(
                                   children: [
-                                    Icon(Icons.email_outlined,
-                                        size: 16,
-                                        color: Colors.grey.shade600),
+                                    Icon(
+                                      Icons.email_outlined,
+                                      size: 16,
+                                      color: Colors.grey.shade600,
+                                    ),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
@@ -840,9 +851,11 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                               if (phone.isNotEmpty) ...[
                                 Row(
                                   children: [
-                                    Icon(Icons.phone_outlined,
-                                        size: 16,
-                                        color: Colors.grey.shade600),
+                                    Icon(
+                                      Icons.phone_outlined,
+                                      size: 16,
+                                      color: Colors.grey.shade600,
+                                    ),
                                     const SizedBox(width: 8),
                                     Text(
                                       phone,
@@ -866,8 +879,10 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                                         ? subjects.first
                                         : '',
                                   ),
-                                  icon: const Icon(Icons.send_rounded,
-                                      size: 16),
+                                  icon: const Icon(
+                                    Icons.send_rounded,
+                                    size: 16,
+                                  ),
                                   label: const Text('Send Message'),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppColors.primary,
@@ -876,7 +891,8 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     padding: const EdgeInsets.symmetric(
-                                        vertical: 12),
+                                      vertical: 12,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -916,7 +932,8 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.secondary,
               side: BorderSide(
-                  color: AppColors.secondary.withValues(alpha: 0.3)),
+                color: AppColors.secondary.withValues(alpha: 0.3),
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
