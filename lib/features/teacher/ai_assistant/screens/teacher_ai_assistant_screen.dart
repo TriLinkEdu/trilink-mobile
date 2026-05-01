@@ -90,8 +90,10 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
     final gradeName = offering['gradeName'] as String? ?? '';
     final sectionName = offering['sectionName'] as String? ?? '';
     final subjectName = offering['subjectName'] as String? ?? '';
-    final classPart =
-        [gradeName, sectionName].where((s) => s.isNotEmpty).join(' ');
+    final classPart = [
+      gradeName,
+      sectionName,
+    ].where((s) => s.isNotEmpty).join(' ');
     if (classPart.isNotEmpty && subjectName.isNotEmpty)
       return '$classPart | $subjectName';
     if (classPart.isNotEmpty) return classPart;
@@ -102,8 +104,7 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
     if (_selectedSubjectId == null) return;
     setState(() => _loadingAtRisk = true);
     try {
-      final data =
-          await ApiService().getAiAtRiskStudents(_selectedSubjectId!);
+      final data = await ApiService().getAiAtRiskStudents(_selectedSubjectId!);
       if (!mounted) return;
       setState(() {
         _atRiskStudents = data.cast<Map<String, dynamic>>();
@@ -119,8 +120,9 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
     if (_selectedSubjectId == null) return;
     setState(() => _loadingPerformance = true);
     try {
-      final data =
-          await ApiService().getAiClassPerformance(_selectedSubjectId!);
+      final data = await ApiService().getAiClassPerformance(
+        _selectedSubjectId!,
+      );
       if (!mounted) return;
       setState(() {
         _classPerformance = data.cast<Map<String, dynamic>>();
@@ -145,7 +147,8 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
         AuthService().currentUser?.role.name ?? 'teacher',
       );
       if (!mounted) return;
-      final draft = result['draft'] as String? ??
+      final draft =
+          result['draft'] as String? ??
           result['response'] as String? ??
           result['message'] as String? ??
           '';
@@ -218,7 +221,11 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
                     ),
                   ),
                   Positioned(
-                      left: 16, right: 16, bottom: 24, child: _buildAskBar()),
+                    left: 16,
+                    right: 16,
+                    bottom: 24,
+                    child: _buildAskBar(),
+                  ),
                 ],
               ),
       ),
@@ -237,8 +244,10 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
         child: DropdownButton<String>(
           value: _selectedSubjectId,
           isExpanded: true,
-          icon: Icon(Icons.keyboard_arrow_down,
-              color: theme.colorScheme.onSurfaceVariant),
+          icon: Icon(
+            Icons.keyboard_arrow_down,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -333,8 +342,7 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.auto_awesome,
-                    color: Colors.white, size: 18),
+                const Icon(Icons.auto_awesome, color: Colors.white, size: 18),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -359,10 +367,11 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
   Widget _buildAtRiskSection(ThemeData theme) {
     if (_loadingAtRisk) {
       return const Center(
-          child: Padding(
-        padding: EdgeInsets.all(24),
-        child: CircularProgressIndicator(),
-      ));
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: CircularProgressIndicator(),
+        ),
+      );
     }
 
     if (_atRiskStudents.isEmpty) {
@@ -375,8 +384,11 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
         ),
         child: Row(
           children: [
-            const Icon(Icons.check_circle_outline,
-                color: Colors.green, size: 24),
+            const Icon(
+              Icons.check_circle_outline,
+              color: Colors.green,
+              size: 24,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -403,10 +415,12 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
         '${student['firstName'] ?? student['name'] ?? 'Unknown'} ${student['lastName'] ?? ''}'
             .trim();
     final riskScore = student['riskScore'] as num? ?? 0;
-    final reason = student['reason'] as String? ??
+    final reason =
+        student['reason'] as String? ??
         student['insight'] as String? ??
         'Low mastery or attendance detected';
-    final isHigh = riskScore >= 0.7 ||
+    final isHigh =
+        riskScore >= 0.7 ||
         (student['riskLevel'] as String? ?? '').toLowerCase() == 'high';
     final riskColor = isHigh ? AppColors.error : Colors.orange;
     final riskLabel = isHigh ? 'High Risk' : 'Medium Risk';
@@ -476,8 +490,7 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
           ),
           const SizedBox(width: 8),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: riskColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
@@ -499,10 +512,11 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
   Widget _buildClassPerformanceSection(ThemeData theme) {
     if (_loadingPerformance) {
       return const Center(
-          child: Padding(
-        padding: EdgeInsets.all(24),
-        child: CircularProgressIndicator(),
-      ));
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: CircularProgressIndicator(),
+        ),
+      );
     }
 
     if (_classPerformance.isEmpty) {
@@ -524,19 +538,19 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
 
     return Column(
       children: _classPerformance.take(5).map((topic) {
-        final topicName = topic['topicName'] as String? ??
+        final topicName =
+            topic['topicName'] as String? ??
             topic['name'] as String? ??
             'Unknown Topic';
-        final mastery = (topic['averageMastery'] as num? ??
-                topic['mastery'] as num? ??
-                0)
-            .toDouble();
+        final mastery =
+            (topic['averageMastery'] as num? ?? topic['mastery'] as num? ?? 0)
+                .toDouble();
         final pct = (mastery * 100).clamp(0.0, 100.0);
         final color = pct >= 70
             ? Colors.green
             : pct >= 50
-                ? Colors.orange
-                : AppColors.error;
+            ? Colors.orange
+            : AppColors.error;
 
         return Container(
           margin: const EdgeInsets.only(bottom: 10),
@@ -603,8 +617,11 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.auto_awesome,
-                  color: AppColors.primary, size: 18),
+              const Icon(
+                Icons.auto_awesome,
+                color: AppColors.primary,
+                size: 18,
+              ),
               const SizedBox(width: 8),
               Text(
                 'AI Response',
@@ -678,7 +695,9 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
                 ? const Padding(
                     padding: EdgeInsets.all(10),
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   )
                 : IconButton(
                     icon: const Icon(Icons.send, color: Colors.white, size: 18),

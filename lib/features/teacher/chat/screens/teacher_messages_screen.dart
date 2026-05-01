@@ -375,162 +375,84 @@ class _ActionChip extends StatelessWidget {
             ),
           ],
         ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadData,
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        itemCount: chats.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
-        itemBuilder: (_, index) => _buildChatTile(chats[index]),
       ),
     );
   }
+}
 
-  Widget _buildChatTile(Map<String, dynamic> conversation) {
-    final id = conversation['id'] as String? ?? '';
-    final title = conversation['title'] as String? ?? 'Unnamed';
-    final type = conversation['type'] as String? ?? 'direct';
-    final updatedAt = conversation['updatedAt'] as String?;
-    
-    // You can enhance this to show last message from the conversation
-    final subtitle = type == 'group' ? 'Group chat' : 'Tap to open';
+class _ThreadItem {
+  final String name;
+  final String message;
+  final String time;
+  final Color avatarColor;
+  final IconData icon;
 
-    IconData icon;
-    Color iconColor;
+  _ThreadItem({
+    required this.name,
+    required this.message,
+    required this.time,
+    required this.avatarColor,
+    required this.icon,
+  });
+}
 
-    if (type == 'group') {
-      icon = Icons.group;
-      iconColor = AppColors.accent;
-    } else {
-      icon = Icons.person;
-      iconColor = AppColors.primary;
-    }
+class _ThreadTile extends StatelessWidget {
+  final _ThreadItem thread;
+  final VoidCallback? onTap;
+  const _ThreadTile({required this.thread, this.onTap});
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: CircleAvatar(
-          radius: 26,
-          backgroundColor: iconColor.withValues(alpha: 0.12),
-          child: Icon(icon, color: iconColor, size: 24),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-            color: AppColors.textPrimary,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(
-            fontSize: 13,
-            color: Colors.grey.shade600,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
           children: [
-            Text(
-              _timeAgo(updatedAt),
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey.shade500,
-              ),
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: thread.avatarColor.withValues(alpha: 0.15),
+              child: Icon(thread.icon, color: thread.avatarColor, size: 22),
             ),
-            const SizedBox(height: 4),
-            Icon(
-              Icons.chevron_right,
-              color: Colors.grey.shade400,
-              size: 20,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          thread.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            color: AppColors.textPrimary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Text(
+                        thread.time,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    thread.message,
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ],
+              ),
             ),
           ],
-        ),
-        onTap: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => TeacherChatConversationScreen(
-                threadName: title,
-                conversationId: id,
-              ),
-            ),
-          );
-          _loadData();
-        },
-      ),
-    );
-  }
-
-  Widget _buildFAB() {
-    final currentTab = _tabController.index;
-    
-    return FloatingActionButton.extended(
-      onPressed: () async {
-        if (currentTab == 3) {
-          // Groups tab - show create group screen
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const CreateGroupScreen(),
-            ),
-          );
-        } else {
-          // Other tabs - show new chat screen with role filter
-          String role;
-          switch (currentTab) {
-            case 0:
-              role = 'student';
-              break;
-            case 1:
-              role = 'parent';
-              break;
-            case 2:
-              role = 'admin';
-              break;
-            default:
-              role = 'student';
-          }
-          
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => TeacherNewChatScreen(roleFilter: role),
-            ),
-          );
-        }
-        _loadData();
-      },
-      backgroundColor: AppColors.primary,
-      icon: Icon(
-        currentTab == 3 ? Icons.group_add : Icons.chat_bubble_outline,
-        color: Colors.white,
-      ),
-      label: Text(
-        currentTab == 3 ? 'New Group' : 'New Chat',
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w600,
         ),
       ),
     );
