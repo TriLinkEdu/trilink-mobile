@@ -159,3 +159,66 @@ class ChatContactModel {
     );
   }
 }
+
+enum ConnectionStatus { pending, accepted, rejected }
+
+class ConnectionModel {
+  final String id;
+  final String requesterId;
+  final String recipientId;
+  final ConnectionStatus status;
+  final DateTime createdAt;
+  final String? requesterName;
+  final String? recipientName;
+
+  const ConnectionModel({
+    required this.id,
+    required this.requesterId,
+    required this.recipientId,
+    required this.status,
+    required this.createdAt,
+    this.requesterName,
+    this.recipientName,
+  });
+
+  factory ConnectionModel.fromJson(Map<String, dynamic> json) {
+    return ConnectionModel(
+      id: json['id'] as String,
+      requesterId: json['requesterId'] as String,
+      recipientId: json['recipientId'] as String,
+      status: ConnectionStatus.values.firstWhere(
+        (s) => s.name == json['status'],
+        orElse: () => ConnectionStatus.pending,
+      ),
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      requesterName: json['requesterName'] as String?,
+      recipientName: json['recipientName'] as String?,
+    );
+  }
+}
+
+class BlockedUserModel {
+  final String id;
+  final String blockerId;
+  final String blockedId;
+  final DateTime createdAt;
+  final String? blockedName;
+
+  const BlockedUserModel({
+    required this.id,
+    required this.blockerId,
+    required this.blockedId,
+    required this.createdAt,
+    this.blockedName,
+  });
+
+  factory BlockedUserModel.fromJson(Map<String, dynamic> json) {
+    return BlockedUserModel(
+      id: json['id'] as String,
+      blockerId: json['blockerId'] as String,
+      blockedId: json['blockedId'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      blockedName: json['blockedName'] as String?,
+    );
+  }
+}

@@ -85,7 +85,7 @@ class _AnnouncementDetailView extends StatelessWidget {
             children: [
               ProfileAvatar(
                 radius: 16,
-                userId: 'system', // Prevent loading current user's image
+                
                 fallbackText: a.authorName,
               ),
               AppSpacing.hGapSm,

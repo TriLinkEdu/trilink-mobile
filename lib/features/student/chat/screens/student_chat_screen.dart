@@ -19,6 +19,9 @@ import '../../shared/widgets/student_page_background.dart';
 import '../cubit/chat_cubit.dart';
 import '../models/chat_models.dart';
 import '../repositories/student_chat_repository.dart';
+import 'connections_screen.dart';
+import 'blocked_users_screen.dart';
+import '../widgets/connection_request_dialog.dart';
 
 class StudentChatScreen extends StatelessWidget {
   const StudentChatScreen({super.key});
@@ -70,32 +73,8 @@ class _ChatViewState extends State<_ChatView> {
   }
 
   void _showComposeOptions() {
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.group_add_outlined),
-              title: const Text('New Group Conversation'),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                _showNewGroupDialog();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.person_add_alt_rounded),
-              title: const Text('New Direct Message'),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                _showNewDmDialog();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
+    // Students can only create DMs, not groups
+    _showNewDmDialog();
   }
 
   void _showNewGroupDialog() async {
@@ -208,52 +187,131 @@ class _ChatViewState extends State<_ChatView> {
     );
   }
 
-  void _showNewDmDialog() {
-    final mockContacts = <String, String>{
-      'student2': 'Alice Chen',
-      'student3': 'Carlos Rivera',
-      'student5': 'Bob Martinez',
-      'student6': 'Fatima Al-Rashid',
-      'student7': 'Sarah Johnson',
-      'student8': 'Emily Davis',
-      'prof1': 'Prof. Williams',
-    };
+  void _showNewDmDialog() async {
+    // Fetch real contacts from API
+    List<ChatContactModel> contacts = [];
+    try {
+      contacts = await sl<StudentChatRepository>().searchUsers('');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load contacts')),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+
+    // Categorize by role
+    final teachers = contacts.where((c) => c.role == 'teacher').toList();
+    final students = contacts.where((c) => c.role == 'student').toList();
 
     showDialog<void>(
       context: context,
-      builder: (dialogContext) => SimpleDialog(
-        title: const Text('Start Direct Message'),
-        children: mockContacts.entries.map((entry) {
-          return SimpleDialogOption(
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-              final conversation = await context
-                  .read<ChatCubit>()
-                  .createConversation(
-                    title: entry.value,
-                    participantIds: [
-                      if (_currentUserId.isNotEmpty) _currentUserId,
-                      entry.key,
-                    ],
-                    isGroup: false,
-                  );
-              if (!mounted || conversation == null) return;
-              _openConversation(conversation);
-            },
-            child: Row(
-              children: [
-                ProfileAvatar(
-                  radius: 16,
-                  fallbackText: entry.value,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('New Message'),
+        contentPadding: EdgeInsets.zero,
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              if (teachers.isNotEmpty) ...[
+                Padding(
+                  padding: EdgeInsets.fromLTRB(24, 16, 24, 8),
+                  child: Text(
+                    'TEACHERS',
+                    style: Theme.of(dialogContext).textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(dialogContext).colorScheme.primary,
+                    ),
+                  ),
                 ),
-                AppSpacing.hGapMd,
-                Text(entry.value),
+                ...teachers.map((contact) => ListTile(
+                  leading: CircleAvatar(
+                    child: Text(contact.firstName[0]),
+                  ),
+                  title: Text(contact.displayName),
+                  subtitle: contact.subject != null ? Text(contact.subject!) : null,
+                  onTap: () async {
+                    Navigator.pop(dialogContext);
+                    await _initiateDirectMessage(contact);
+                  },
+                )),
               ],
-            ),
-          );
-        }).toList(),
+              if (students.isNotEmpty) ...[
+                Padding(
+                  padding: EdgeInsets.fromLTRB(24, 16, 24, 8),
+                  child: Text(
+                    'CLASSMATES',
+                    style: Theme.of(dialogContext).textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(dialogContext).colorScheme.primary,
+                    ),
+                  ),
+                ),
+                ...students.map((contact) => ListTile(
+                  leading: CircleAvatar(
+                    child: Text(contact.firstName[0]),
+                  ),
+                  title: Text(contact.fullName),
+                  trailing: Icon(Icons.person_add_outlined, size: 20),
+                  onTap: () async {
+                    Navigator.pop(dialogContext);
+                    // Show connection request dialog for students
+                    final result = await showDialog<bool>(
+                      context: context,
+                      builder: (_) => ConnectionRequestDialog(
+                        contact: contact,
+                        repository: sl<StudentChatRepository>(),
+                      ),
+                    );
+                    if (result == true && mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Connection request sent to ${contact.fullName}')),
+                      );
+                    }
+                  },
+                )),
+              ],
+              if (teachers.isEmpty && students.isEmpty)
+                Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(
+                    child: Text('No contacts available'),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text('Cancel'),
+          ),
+        ],
       ),
     );
+  }
+
+  Future<void> _initiateDirectMessage(ChatContactModel contact) async {
+    try {
+      final conversation = await context.read<ChatCubit>().createConversation(
+        title: contact.displayName,
+        participantIds: [
+          if (_currentUserId.isNotEmpty) _currentUserId,
+          contact.id,
+        ],
+        isGroup: false,
+      );
+      if (!mounted || conversation == null) return;
+      _openConversation(conversation);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Cannot message this user: ${e.toString()}')),
+      );
+    }
   }
 
   @override
@@ -262,12 +320,61 @@ class _ChatViewState extends State<_ChatView> {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          toolbarHeight: 0,
           automaticallyImplyLeading: false,
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: 'Groups'),
-              Tab(text: 'Inbox'),
+          title: Row(
+            children: [
+              Expanded(
+                child: TabBar(
+                  isScrollable: false,
+                  indicatorSize: TabBarIndicatorSize.label,
+                  tabs: [
+                    Tab(text: 'Groups'),
+                    Tab(text: 'Inbox'),
+                  ],
+                ),
+              ),
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert),
+                onSelected: (value) {
+                  if (value == 'connections') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ConnectionsScreen(),
+                      ),
+                    );
+                  } else if (value == 'blocked') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const BlockedUsersScreen(),
+                      ),
+                    );
+                  }
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'connections',
+                    child: Row(
+                      children: [
+                        Icon(Icons.people_outline),
+                        SizedBox(width: 12),
+                        Text('Connections'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'blocked',
+                    child: Row(
+                      children: [
+                        Icon(Icons.block),
+                        SizedBox(width: 12),
+                        Text('Blocked Users'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -319,9 +426,9 @@ class _ChatViewState extends State<_ChatView> {
           ),
         ),
         floatingActionButton: FloatingActionButton(
-          tooltip: 'Start conversation',
+          tooltip: 'New message',
           onPressed: _showComposeOptions,
-          child: const Icon(Icons.edit),
+          child: const Icon(Icons.message),
         ),
       ),
     );
@@ -395,6 +502,7 @@ class _ChatList extends StatelessWidget {
                 child: Material(
                   type: MaterialType.transparency,
                   child: ProfileAvatar(
+                    
                     fallbackText: item.title,
                   ),
                 ),

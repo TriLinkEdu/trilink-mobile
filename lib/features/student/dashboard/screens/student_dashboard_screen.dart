@@ -928,6 +928,7 @@ class _AnnouncementCard extends StatelessWidget {
           children: [
             ProfileAvatar(
               radius: 18,
+              
               fallbackText: authorName,
             ),
             AppSpacing.hGapMd,

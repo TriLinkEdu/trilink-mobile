@@ -47,18 +47,19 @@ class RealStudentChatRepository implements StudentChatRepository {
   }
 
   Future<List<ChatConversationModel>> _fetchConversationsFresh() async {
-    final me = await _currentUserId();
-    final rows = await _api.getList(ApiConstants.conversations);
-    final conversations = <ChatConversationModel>[];
+    try {
+      final me = await _currentUserId();
+      final rows = await _api.getList(ApiConstants.conversations);
+      final conversations = <ChatConversationModel>[];
 
-    for (final raw in rows.whereType<Map<String, dynamic>>()) {
-      final id = (raw['id'] ?? '').toString();
-      if (id.isEmpty) continue;
-      final latest = await _latestMessage(id, me);
-      conversations.add(
-        ChatConversationModel(
-          id: id,
-          title: (raw['title'] ?? 'Conversation').toString(),
+      for (final raw in rows.whereType<Map<String, dynamic>>()) {
+        final id = (raw['id'] ?? '').toString();
+        if (id.isEmpty) continue;
+        final latest = await _latestMessage(id, me);
+        conversations.add(
+          ChatConversationModel(
+            id: id,
+            title: (raw['title'] ?? 'Conversation').toString(),
           isGroup: (raw['type'] ?? 'group').toString() != 'direct',
           participantIds: const [],
           lastMessage: latest,
@@ -68,6 +69,10 @@ class RealStudentChatRepository implements StudentChatRepository {
     }
 
     return conversations;
+    } catch (e) {
+      print('Error fetching conversations: $e');
+      rethrow;
+    }
   }
 
   @override
@@ -221,5 +226,63 @@ class RealStudentChatRepository implements StudentChatRepository {
     } catch (e) {
       return [];
     }
+  }
+
+  @override
+  Future<ConnectionModel> requestConnection(String recipientId) async {
+    final data = await _api.post(
+      '/connections/request',
+      data: {'recipientId': recipientId},
+    );
+    return ConnectionModel.fromJson(data);
+  }
+
+  @override
+  Future<ConnectionModel> acceptConnection(String connectionId) async {
+    final data = await _api.put('/connections/$connectionId/accept');
+    return ConnectionModel.fromJson(data);
+  }
+
+  @override
+  Future<ConnectionModel> rejectConnection(String connectionId) async {
+    final data = await _api.put('/connections/$connectionId/reject');
+    return ConnectionModel.fromJson(data);
+  }
+
+  @override
+  Future<Map<String, List<ConnectionModel>>> fetchConnections() async {
+    final data = await _api.get('/connections');
+    final sent = (data['sent'] as List?)
+            ?.map((json) => ConnectionModel.fromJson(json as Map<String, dynamic>))
+            .toList() ??
+        [];
+    final received = (data['received'] as List?)
+            ?.map((json) => ConnectionModel.fromJson(json as Map<String, dynamic>))
+            .toList() ??
+        [];
+    return {'sent': sent, 'received': received};
+  }
+
+  @override
+  Future<BlockedUserModel> blockUser(String blockedId) async {
+    final data = await _api.post(
+      '/blocked-users',
+      data: {'blockedId': blockedId},
+    );
+    return BlockedUserModel.fromJson(data);
+  }
+
+  @override
+  Future<void> unblockUser(String blockedId) async {
+    await _api.delete('/blocked-users/$blockedId');
+  }
+
+  @override
+  Future<List<BlockedUserModel>> fetchBlockedUsers() async {
+    final rows = await _api.getList('/blocked-users');
+    return rows
+        .whereType<Map<String, dynamic>>()
+        .map((json) => BlockedUserModel.fromJson(json))
+        .toList();
   }
 }

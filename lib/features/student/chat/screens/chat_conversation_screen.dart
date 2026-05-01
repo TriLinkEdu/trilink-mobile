@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/storage_service.dart';
@@ -123,6 +124,37 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
     }
   }
 
+  Future<void> _pickAndSendImage() async {
+    if (_isSending) return;
+
+    try {
+      final picker = ImagePicker();
+      final image = await picker.pickImage(source: ImageSource.gallery);
+      
+      if (image == null) return;
+
+      setState(() => _isSending = true);
+
+      // TODO: Upload image to backend and get URL
+      // For now, send image path as message
+      await context.read<ChatConversationCubit>().sendMessage('[Image: ${image.name}]');
+      
+      if (!mounted) return;
+      setState(() => _isSending = false);
+      _scrollToBottom();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Image sent!')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSending = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to send image')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -137,7 +169,7 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
                 type: MaterialType.transparency,
                 child: ProfileAvatar(
                   radius: 18,
-                  userId: 'other', // Prevent loading current user's image
+                  
                   fallbackText: widget.title,
                 ),
               ),
@@ -197,6 +229,11 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
                 padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
                 child: Row(
                   children: [
+                    IconButton(
+                      icon: Icon(Icons.image_outlined),
+                      onPressed: _pickAndSendImage,
+                      tooltip: 'Send image',
+                    ),
                     Expanded(
                       child: TextField(
                         controller: _controller,

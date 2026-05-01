@@ -342,4 +342,37 @@ class MockStudentChatRepository implements StudentChatRepository {
       ),
     ];
   }
+
+  @override
+  Future<ConnectionModel> requestConnection(String recipientId) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<ConnectionModel> acceptConnection(String connectionId) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<ConnectionModel> rejectConnection(String connectionId) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Map<String, List<ConnectionModel>>> fetchConnections() async {
+    return {'sent': [], 'received': []};
+  }
+
+  @override
+  Future<BlockedUserModel> blockUser(String blockedId) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> unblockUser(String blockedId) async {}
+
+  @override
+  Future<List<BlockedUserModel>> fetchBlockedUsers() async {
+    return [];
+  }
 }

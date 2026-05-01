@@ -55,27 +55,37 @@ class TextbookFileCacheService {
     ProgressCallback? onProgress,
     CancelCallback? shouldCancel,
   }) async {
-    final root = await getApplicationDocumentsDirectory();
-    final dir = Directory('${root.path}/textbook_cache');
-    if (!await dir.exists()) {
-      await dir.create(recursive: true);
-    }
-
-    final safeId = textbook.fileRecordId.isEmpty
-        ? textbook.id
-        : textbook.fileRecordId;
-    final file = File('${dir.path}/$safeId.pdf');
-
-    final index = _readIndex();
-    final entry = index[safeId];
-    if (entry is Map<String, dynamic> && await file.exists()) {
-      final cachedKey = (entry['cacheKey'] ?? '').toString();
-      if (cachedKey == textbook.cacheKey) {
-        entry['lastAccessedAt'] = DateTime.now().toIso8601String();
-        index[safeId] = entry;
-        await _writeIndex(index);
-        return TextbookOpenResult(localPath: file.path, fromCache: true);
+    late final Directory dir;
+    late final String safeId;
+    late final File file;
+    late final Map<String, dynamic> index;
+    
+    try {
+      final root = await getApplicationDocumentsDirectory();
+      dir = Directory('${root.path}/textbook_cache');
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
       }
+
+      safeId = textbook.fileRecordId.isEmpty
+          ? textbook.id
+          : textbook.fileRecordId;
+      file = File('${dir.path}/$safeId.pdf');
+
+      index = _readIndex();
+      final entry = index[safeId];
+      if (entry is Map<String, dynamic> && await file.exists()) {
+        final cachedKey = (entry['cacheKey'] ?? '').toString();
+        if (cachedKey == textbook.cacheKey) {
+          entry['lastAccessedAt'] = DateTime.now().toIso8601String();
+          index[safeId] = entry;
+          await _writeIndex(index);
+          return TextbookOpenResult(localPath: file.path, fromCache: true);
+        }
+      }
+    } catch (e) {
+      print('Error accessing storage: $e');
+      throw Exception('Failed to access device storage. Please restart the app.');
     }
 
     // The textbook model already carries the Cloudinary CDN URL — no extra

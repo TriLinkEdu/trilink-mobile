@@ -49,10 +49,9 @@ class _ProfileAvatarState extends State<ProfileAvatar> {
       return;
     }
 
-    // ONLY load current user's image if BOTH userId and profileImagePath are null
-    // This means it's explicitly for the current user's profile
-    // If userId is provided (even if it's someone else), don't load current user's image
-    if (widget.userId == null && widget.profileImagePath == null) {
+    // ONLY load current user's image if userId is explicitly 'me' or 'current'
+    // If userId is null or any other value, just show initials fallback
+    if (widget.userId == 'me' || widget.userId == 'current') {
       try {
         final user = await _storage.getUser();
         final path = user?['profileImagePath'] as String?;
