@@ -211,6 +211,10 @@ class ApiService {
     {'id': id, ...data},
   );
 
+  Future<void> deleteCalendarEvent(String id) async {
+    await _api.delete('${ApiConstants.calendarEvents}/$id');
+  }
+
   // ─── Announcements ─────────────────────────────────────
   Future<List<dynamic>> getAnnouncements({Map<String, dynamic>? filters}) =>
       _tryOr(
