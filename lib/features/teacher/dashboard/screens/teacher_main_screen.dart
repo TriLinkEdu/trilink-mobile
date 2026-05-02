@@ -28,6 +28,13 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
     TeacherAttendanceScreen(),
     TeacherProfileScreen(),
   ];
+  
+  final List<String> _screenTitles = const [
+    'Dashboard',
+    'My Classes',
+    'Attendance',
+    'Profile',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +43,14 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
     return Scaffold(
       key: _scaffoldKey,
       drawer: _buildDrawer(context, user),
+      appBar: AppBar(
+        title: Text(_screenTitles[_currentIndex]),
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+          tooltip: 'Menu',
+        ),
+      ),
       body: RolePageBackground(
         flavor: RoleThemeFlavor.teacher,
         child: IndexedStack(index: _currentIndex, children: _screens),
@@ -190,8 +205,8 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                   icon: Icons.fact_check_outlined,
                   label: 'Attendance',
                   onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushNamed(context, RouteNames.teacherAttendance);
+                    Navigator.pop(context); // Close drawer
+                    setState(() => _currentIndex = 2); // Switch to attendance tab
                   },
                 ),
                 _DrawerItem(

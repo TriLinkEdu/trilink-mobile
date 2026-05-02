@@ -88,28 +88,10 @@ class _ClassListScreenState extends State<ClassListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Check if we're in a navigation stack (pushed) or in IndexedStack (bottom nav)
-    final canPop = Navigator.of(context).canPop();
-
-    return PopScope(
-      canPop: canPop,
-      onPopInvoked: (didPop) {
-        // If we're in IndexedStack and user pressed back, do nothing
-        // The system will handle it (minimize app)
-        if (!canPop && !didPop) {
-          // Prevent any navigation attempts
-          return;
-        }
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('My Classes'),
-          // Only show back button if we can actually pop
-          automaticallyImplyLeading: canPop,
-        ),
-        body: _buildBody(),
-      ),
-    );
+    // This screen is embedded in TeacherMainScreen's IndexedStack
+    // So it should NOT have its own AppBar or Scaffold
+    // The parent TeacherMainScreen handles the Scaffold and drawer
+    return _buildBody();
   }
 
   Widget _buildBody() {

@@ -366,6 +366,18 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: const Text(
+          'Calendar',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+          tooltip: 'Back',
+        ),
+      ),
       body: SafeArea(
         child: _loading
             ? const Center(child: CircularProgressIndicator())
@@ -395,7 +407,6 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
               )
             : Column(
                 children: [
-                  _buildHeader(),
                   const SizedBox(height: 16),
                   _buildMonthNavigation(),
                   const SizedBox(height: 12),

@@ -79,31 +79,31 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
-      body: OfflineBanner(
-        child: SafeArea(
-          child: _loading
-              ? const Center(child: CircularProgressIndicator())
-              : _error != null
-              ? _buildErrorState(theme)
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildGreetingHeader(),
-                      const SizedBox(height: 24),
-                      _buildUpNextCard(context),
-                      const SizedBox(height: 20),
-                      _buildStatsRow(),
-                      const SizedBox(height: 28),
-                      _buildQuickActions(context),
-                      const SizedBox(height: 28),
-                      _buildRecentActivity(),
-                    ],
-                  ),
+    // Note: This screen is embedded in TeacherMainScreen which provides the AppBar
+    // So we don't need our own Scaffold here
+    return OfflineBanner(
+      child: SafeArea(
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+            ? _buildErrorState(theme)
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildGreetingHeader(),
+                    const SizedBox(height: 24),
+                    _buildUpNextCard(context),
+                    const SizedBox(height: 20),
+                    _buildStatsRow(),
+                    const SizedBox(height: 28),
+                    _buildQuickActions(context),
+                    const SizedBox(height: 28),
+                    _buildRecentActivity(),
+                  ],
                 ),
-        ),
+              ),
       ),
     );
   }
@@ -157,22 +157,6 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
 
     return Row(
       children: [
-        GestureDetector(
-          onTap: () => Scaffold.of(context).openDrawer(),
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              Icons.menu,
-              color: theme.colorScheme.onSurfaceVariant,
-              size: 22,
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
