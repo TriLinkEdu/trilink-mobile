@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/offline_banner.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/routes/route_names.dart';
 import '../../../auth/services/auth_service.dart';
 import '../../attendance/screens/teacher_attendance_screen.dart';
 import '../../announcements/screens/create_announcement_screen.dart';
@@ -364,45 +365,46 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           ),
         ),
         const SizedBox(height: 16),
+        // 2×2 grid of quick actions
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _QuickActionButton(
-              icon: Icons.fact_check_outlined,
-              label: 'Take\nAttendance',
-              color: AppColors.primary,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const TeacherAttendanceScreen(),
-                  ),
-                );
-              },
+            Expanded(
+              child: _QuickActionButton(
+                icon: Icons.fact_check_outlined,
+                label: 'Take\nAttendance',
+                color: AppColors.primary,
+                onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const TeacherAttendanceScreen())),
+              ),
             ),
-            _QuickActionButton(
-              icon: Icons.class_outlined,
-              label: 'My\nClasses',
-              color: AppColors.secondary,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ClassListScreen()),
-                );
-              },
+            const SizedBox(width: 12),
+            Expanded(
+              child: _QuickActionButton(
+                icon: Icons.class_outlined,
+                label: 'My\nClasses',
+                color: AppColors.secondary,
+                onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const ClassListScreen())),
+              ),
             ),
-            _QuickActionButton(
-              icon: Icons.campaign_outlined,
-              label: 'New\nPost',
-              color: Colors.purple,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const CreateAnnouncementScreen(),
-                  ),
-                );
-              },
+            const SizedBox(width: 12),
+            Expanded(
+              child: _QuickActionButton(
+                icon: Icons.campaign_outlined,
+                label: 'New\nPost',
+                color: Colors.purple,
+                onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const CreateAnnouncementScreen())),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _QuickActionButton(
+                icon: Icons.feedback_outlined,
+                label: 'Feedback',
+                color: const Color(0xFFFF6D00),
+                onTap: () => Navigator.pushNamed(context, RouteNames.teacherFeedback),
+              ),
             ),
           ],
         ),

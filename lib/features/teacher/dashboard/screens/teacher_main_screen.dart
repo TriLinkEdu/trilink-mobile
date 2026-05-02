@@ -9,6 +9,7 @@ import '../../student_analytics/screens/student_list_screen.dart';
 import '../../calendar/screens/teacher_calendar_screen.dart';
 import '../../settings/screens/teacher_settings_screen.dart';
 import '../../profile/screens/teacher_profile_screen.dart';
+import '../../attendance/screens/teacher_attendance_screen.dart';
 
 class TeacherMainScreen extends StatefulWidget {
   const TeacherMainScreen({super.key});
@@ -24,8 +25,7 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
   final List<Widget> _screens = const [
     TeacherDashboardScreen(),
     ClassListScreen(),
-    StudentListScreen(),
-    TeacherCalendarScreen(),
+    TeacherAttendanceScreen(),
     TeacherProfileScreen(),
   ];
 
@@ -73,14 +73,9 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
               label: 'Classes',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.people_outline),
-              activeIcon: Icon(Icons.people),
-              label: 'Students',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_today_outlined),
-              activeIcon: Icon(Icons.calendar_today),
-              label: 'Calendar',
+              icon: Icon(Icons.fact_check_outlined),
+              activeIcon: Icon(Icons.fact_check),
+              label: 'Attendance',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline),
@@ -186,7 +181,7 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                   label: 'Calendar',
                   onTap: () {
                     Navigator.pop(context);
-                    setState(() => _currentIndex = 3);
+                    Navigator.pushNamed(context, RouteNames.teacherCalendar);
                   },
                 ),
                 const Divider(height: 1),
@@ -257,7 +252,7 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                   label: 'Student Analytics',
                   onTap: () {
                     Navigator.pop(context);
-                    setState(() => _currentIndex = 2);
+                    Navigator.pushNamed(context, RouteNames.teacherStudentList);
                   },
                 ),
                 _DrawerItem(
