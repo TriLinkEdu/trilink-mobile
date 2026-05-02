@@ -139,7 +139,11 @@ class _TeacherSettingsScreenState extends State<TeacherSettingsScreen> {
       appBar: AppBar(
         title: const Text('Settings'),
         centerTitle: true,
-        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+          tooltip: 'Back',
+        ),
       ),
       body: RolePageBackground(
         flavor: RoleThemeFlavor.teacher,

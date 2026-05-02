@@ -89,10 +89,33 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
   }
 
   void _showAddEventDialog() {
-    final titleController = TextEditingController();
-    final locationController = TextEditingController();
-    String selectedType = 'Lecture';
+    _showEventDialog();
+  }
+
+  void _showEventDialog({_CalendarEvent? existing}) {
+    final isEdit = existing != null;
+    final titleController = TextEditingController(text: existing?.title ?? '');
+    final locationController = TextEditingController(text: existing?.location ?? '');
+    final types = ['Lecture', 'Meeting', 'Availability', 'Exam', 'Other'];
+    String selectedType = isEdit
+        ? (types.firstWhere(
+            (t) => t.toLowerCase() == existing.type.toLowerCase(),
+            orElse: () => 'Other',
+          ))
+        : 'Lecture';
+
+    // Parse existing time or default to 09:00
     TimeOfDay startTime = const TimeOfDay(hour: 9, minute: 0);
+    if (isEdit && existing.rawTime.isNotEmpty) {
+      final parts = existing.rawTime.split(':');
+      if (parts.length >= 2) {
+        startTime = TimeOfDay(
+          hour: int.tryParse(parts[0]) ?? 9,
+          minute: int.tryParse(parts[1]) ?? 0,
+        );
+      }
+    }
+
     bool submitting = false;
 
     showModalBottomSheet(
@@ -127,9 +150,9 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Add Event',
-                      style: TextStyle(
+                    Text(
+                      isEdit ? 'Edit Event' : 'Add Event',
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
@@ -153,9 +176,7 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(
-                            color: AppColors.primary,
-                          ),
+                          borderSide: const BorderSide(color: AppColors.primary),
                         ),
                       ),
                     ),
@@ -163,7 +184,7 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                     TextField(
                       controller: locationController,
                       decoration: InputDecoration(
-                        hintText: 'Location',
+                        hintText: 'Location / description',
                         hintStyle: TextStyle(color: Colors.grey.shade400),
                         filled: true,
                         fillColor: Colors.grey.shade50,
@@ -177,9 +198,7 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(
-                            color: AppColors.primary,
-                          ),
+                          borderSide: const BorderSide(color: AppColors.primary),
                         ),
                       ),
                     ),
@@ -199,35 +218,22 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                               ),
                               const SizedBox(height: 6),
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
                                 decoration: BoxDecoration(
                                   color: Colors.grey.shade50,
                                   borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                    color: Colors.grey.shade300,
-                                  ),
+                                  border: Border.all(color: Colors.grey.shade300),
                                 ),
                                 child: DropdownButtonHideUnderline(
                                   child: DropdownButton<String>(
                                     value: selectedType,
                                     isExpanded: true,
-                                    items:
-                                        [
-                                              'Lecture',
-                                              'Meeting',
-                                              'Availability',
-                                              'Exam',
-                                              'Other',
-                                            ]
-                                            .map(
-                                              (e) => DropdownMenuItem(
-                                                value: e,
-                                                child: Text(e),
-                                              ),
-                                            )
-                                            .toList(),
+                                    items: types
+                                        .map((e) => DropdownMenuItem(
+                                              value: e,
+                                              child: Text(e),
+                                            ))
+                                        .toList(),
                                     onChanged: (v) {
                                       setSheetState(() => selectedType = v!);
                                     },
@@ -268,9 +274,7 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                                   decoration: BoxDecoration(
                                     color: Colors.grey.shade50,
                                     borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: Colors.grey.shade300,
-                                    ),
+                                    border: Border.all(color: Colors.grey.shade300),
                                   ),
                                   child: Text(
                                     startTime.format(ctx),
@@ -290,9 +294,7 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                         onPressed: submitting
                             ? null
                             : () async {
-                                if (titleController.text.trim().isEmpty) {
-                                  return;
-                                }
+                                if (titleController.text.trim().isEmpty) return;
                                 setSheetState(() => submitting = true);
                                 try {
                                   final eventDate = DateTime(
@@ -300,20 +302,31 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                                     _currentMonth.month,
                                     _selectedDay,
                                   );
-                                  
-                                  // Format date as YYYY-MM-DD
-                                  final dateStr = '${eventDate.year}-${eventDate.month.toString().padLeft(2, '0')}-${eventDate.day.toString().padLeft(2, '0')}';
-                                  
-                                  // Format time as HH:MM
-                                  final timeStr = '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
-                                  
-                                  await ApiService().createCalendarEvent({
-                                    'title': titleController.text.trim(),
-                                    'date': dateStr,
-                                    'time': timeStr,
-                                    'type': selectedType.toLowerCase(),
-                                    'description': locationController.text.trim(),
-                                  });
+                                  final dateStr =
+                                      '${eventDate.year}-${eventDate.month.toString().padLeft(2, '0')}-${eventDate.day.toString().padLeft(2, '0')}';
+                                  final timeStr =
+                                      '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
+
+                                  if (isEdit) {
+                                    await ApiService().updateCalendarEvent(
+                                      existing.id,
+                                      {
+                                        'title': titleController.text.trim(),
+                                        'date': dateStr,
+                                        'time': timeStr,
+                                        'type': selectedType.toLowerCase(),
+                                        'description': locationController.text.trim(),
+                                      },
+                                    );
+                                  } else {
+                                    await ApiService().createCalendarEvent({
+                                      'title': titleController.text.trim(),
+                                      'date': dateStr,
+                                      'time': timeStr,
+                                      'type': selectedType.toLowerCase(),
+                                      'description': locationController.text.trim(),
+                                    });
+                                  }
                                   if (!ctx.mounted) return;
                                   Navigator.pop(ctx);
                                   _loadData();
@@ -342,9 +355,9 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text(
-                                'Add Event',
-                                style: TextStyle(
+                            : Text(
+                                isEdit ? 'Save Changes' : 'Add Event',
+                                style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -361,11 +374,54 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
     );
   }
 
+  Future<void> _deleteEvent(_CalendarEvent event) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Event'),
+        content: Text('Delete "${event.title}"? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ApiService().deleteCalendarEvent(event.id);
+      _loadData();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error deleting event: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: const Text(
+          'Calendar',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+          tooltip: 'Back',
+        ),
+      ),
       body: SafeArea(
         child: _loading
             ? const Center(child: CircularProgressIndicator())
@@ -395,7 +451,6 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
               )
             : Column(
                 children: [
-                  _buildHeader(),
                   const SizedBox(height: 16),
                   _buildMonthNavigation(),
                   const SizedBox(height: 12),
@@ -706,7 +761,11 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
               ),
             )
           else
-            ...events.map((e) => _EventCard(event: e)),
+            ...events.map((e) => _EventCard(
+                  event: e,
+                  onEdit: () => _showEventDialog(existing: e),
+                  onDelete: () => _deleteEvent(e),
+                )),
         ],
       ),
     );
@@ -714,6 +773,7 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
 }
 
 class _CalendarEvent {
+  final String id;
   final String time;
   final String title;
   final String type;
@@ -721,8 +781,11 @@ class _CalendarEvent {
   final String duration;
   final String location;
   final DateTime? date;
+  final String rawDate;
+  final String rawTime;
 
   _CalendarEvent({
+    required this.id,
     required this.time,
     required this.title,
     required this.type,
@@ -730,6 +793,8 @@ class _CalendarEvent {
     required this.duration,
     required this.location,
     this.date,
+    required this.rawDate,
+    required this.rawTime,
   });
 
   factory _CalendarEvent.fromJson(Map<String, dynamic> json) {
@@ -777,6 +842,7 @@ class _CalendarEvent {
     }
 
     return _CalendarEvent(
+      id: (json['id'] as String?) ?? '',
       time: displayTime,
       title: json['title'] ?? '',
       type: type[0].toUpperCase() + type.substring(1),
@@ -784,13 +850,22 @@ class _CalendarEvent {
       duration: '', // Backend doesn't provide duration
       location: json['description'] ?? '',
       date: parsedDate,
+      rawDate: dateStr ?? '',
+      rawTime: timeStr ?? '',
     );
   }
 }
 
 class _EventCard extends StatelessWidget {
   final _CalendarEvent event;
-  const _EventCard({required this.event});
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+
+  const _EventCard({
+    required this.event,
+    this.onEdit,
+    this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -831,23 +906,65 @@ class _EventCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: event.typeColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      event.type,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: event.typeColor,
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: event.typeColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          event.type,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: event.typeColor,
+                          ),
+                        ),
                       ),
-                    ),
+                      const Spacer(),
+                      if (onEdit != null || onDelete != null)
+                        PopupMenuButton<String>(
+                          icon: Icon(
+                            Icons.more_vert,
+                            size: 18,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          padding: EdgeInsets.zero,
+                          itemBuilder: (_) => [
+                            if (onEdit != null)
+                              const PopupMenuItem(
+                                value: 'edit',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.edit_outlined, size: 18),
+                                    SizedBox(width: 8),
+                                    Text('Edit'),
+                                  ],
+                                ),
+                              ),
+                            if (onDelete != null)
+                              const PopupMenuItem(
+                                value: 'delete',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                                    SizedBox(width: 8),
+                                    Text('Delete', style: TextStyle(color: Colors.red)),
+                                  ],
+                                ),
+                              ),
+                          ],
+                          onSelected: (value) {
+                            if (value == 'edit') onEdit?.call();
+                            if (value == 'delete') onDelete?.call();
+                          },
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -884,11 +1001,14 @@ class _EventCard extends StatelessWidget {
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 4),
-                        Text(
-                          event.location,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: theme.colorScheme.onSurfaceVariant,
+                        Expanded(
+                          child: Text(
+                            event.location,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],

@@ -212,48 +212,41 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final canPop = Navigator.of(context).canPop();
-
-    return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        leading: _isEditing
-            ? IconButton(
-                onPressed: _cancelEdit,
-                icon: const Icon(Icons.arrow_back),
-              )
-            : canPop
-                ? IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-                  )
-                : null,
-        title: Text(
-          _isEditing ? 'Edit Profile' : 'My Profile',
-          style: TextStyle(
-            color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
+    
+    // When editing, show a full screen with its own AppBar
+    if (_isEditing) {
+      return Scaffold(
+        appBar: AppBar(
+          elevation: 0,
+          leading: IconButton(
+            onPressed: _cancelEdit,
+            icon: const Icon(Icons.arrow_back),
+          ),
+          title: Text(
+            'Edit Profile',
+            style: TextStyle(
+              color: theme.colorScheme.onSurface,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          centerTitle: true,
+        ),
+        body: RolePageBackground(
+          flavor: RoleThemeFlavor.teacher,
+          child: Form(
+            key: _formKey,
+            child: _buildBody(theme),
           ),
         ),
-        centerTitle: true,
-        actions: [
-          if (!_isEditing)
-            IconButton(
-              onPressed: () => setState(() {
-                _isEditing = true;
-                _error = null;
-                _successMessage = null;
-              }),
-              icon: const Icon(Icons.edit_outlined),
-            ),
-        ],
-      ),
-      body: RolePageBackground(
-        flavor: RoleThemeFlavor.teacher,
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
+      );
+    }
+    
+    // When not editing, just show the body (parent provides AppBar)
+    return RolePageBackground(
+      flavor: RoleThemeFlavor.teacher,
+      child: Stack(
+        children: [
+          SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -271,37 +264,72 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
                 _buildAvatar(theme),
                 const SizedBox(height: 24),
 
-                if (_isEditing) ...[
-                  _buildEditForm(theme),
-                ] else ...[
-                  _buildSectionTitle('Professional Information', theme),
-                  const SizedBox(height: 12),
-                  _buildInfoCard(theme, [
-                    _InfoRow(icon: Icons.person_outline, label: 'Full Name', value: AuthService().currentUser?.fullName ?? ''),
-                    _InfoRow(icon: Icons.email_outlined, label: 'Email', value: AuthService().currentUser?.email ?? ''),
-                    _InfoRow(icon: Icons.phone_outlined, label: 'Phone', value: AuthService().currentUser?.phone ?? 'Not provided'),
-                    _InfoRow(icon: Icons.book_outlined, label: 'Subject', value: AuthService().currentUser?.subject ?? 'Not provided'),
-                    _InfoRow(icon: Icons.business_outlined, label: 'Department', value: AuthService().currentUser?.department ?? 'Not provided'),
-                    _InfoRow(icon: Icons.workspace_premium_outlined, label: 'Experience', value: AuthService().currentUser?.experience ?? 'Not provided'),
-                    _InfoRow(icon: Icons.class_outlined, label: 'Homeroom Class', value: AuthService().currentUser?.homeroomClass ?? 'Not provided'),
-                    _InfoRow(icon: Icons.meeting_room_outlined, label: 'Office Room', value: AuthService().currentUser?.officeRoom ?? 'Not provided'),
-                  ]),
-                  const SizedBox(height: 24),
-                  _buildSectionTitle('Address', theme),
-                  const SizedBox(height: 12),
-                  _buildInfoCard(theme, [
-                    _InfoRow(icon: Icons.public, label: 'Country', value: AuthService().currentUser?.country ?? 'Not provided'),
-                    _InfoRow(icon: Icons.location_city, label: 'City / State', value: AuthService().currentUser?.cityState ?? 'Not provided'),
-                    _InfoRow(icon: Icons.markunread_mailbox_outlined, label: 'Postal Code', value: AuthService().currentUser?.postalCode ?? 'Not provided'),
-                  ]),
-                  const SizedBox(height: 24),
-                  _buildLogoutButton(theme),
-                ],
+                _buildSectionTitle('Professional Information', theme),
+                const SizedBox(height: 12),
+                _buildInfoCard(theme, [
+                  _InfoRow(icon: Icons.person_outline, label: 'Full Name', value: AuthService().currentUser?.fullName ?? ''),
+                  _InfoRow(icon: Icons.email_outlined, label: 'Email', value: AuthService().currentUser?.email ?? ''),
+                  _InfoRow(icon: Icons.phone_outlined, label: 'Phone', value: AuthService().currentUser?.phone ?? 'Not provided'),
+                  _InfoRow(icon: Icons.book_outlined, label: 'Subject', value: AuthService().currentUser?.subject ?? 'Not provided'),
+                  _InfoRow(icon: Icons.business_outlined, label: 'Department', value: AuthService().currentUser?.department ?? 'Not provided'),
+                  _InfoRow(icon: Icons.workspace_premium_outlined, label: 'Experience', value: AuthService().currentUser?.experience ?? 'Not provided'),
+                  _InfoRow(icon: Icons.class_outlined, label: 'Homeroom Class', value: AuthService().currentUser?.homeroomClass ?? 'Not provided'),
+                  _InfoRow(icon: Icons.meeting_room_outlined, label: 'Office Room', value: AuthService().currentUser?.officeRoom ?? 'Not provided'),
+                ]),
+                const SizedBox(height: 24),
+                _buildSectionTitle('Address', theme),
+                const SizedBox(height: 12),
+                _buildInfoCard(theme, [
+                  _InfoRow(icon: Icons.public, label: 'Country', value: AuthService().currentUser?.country ?? 'Not provided'),
+                  _InfoRow(icon: Icons.location_city, label: 'City / State', value: AuthService().currentUser?.cityState ?? 'Not provided'),
+                  _InfoRow(icon: Icons.markunread_mailbox_outlined, label: 'Postal Code', value: AuthService().currentUser?.postalCode ?? 'Not provided'),
+                ]),
+                const SizedBox(height: 24),
+                _buildLogoutButton(theme),
                 const SizedBox(height: 20),
               ],
             ),
           ),
-        ),
+          // Edit button overlay
+          Positioned(
+            top: 8,
+            right: 8,
+            child: IconButton(
+              onPressed: () => setState(() {
+                _isEditing = true;
+                _error = null;
+                _successMessage = null;
+              }),
+              icon: Icon(
+                Icons.edit_outlined,
+                color: theme.colorScheme.primary,
+              ),
+              tooltip: 'Edit Profile',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildBody(ThemeData theme) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_error != null) ...[
+            _MessageBanner(message: _error!, isError: true),
+            const SizedBox(height: 16),
+          ],
+          if (_successMessage != null) ...[
+            _MessageBanner(message: _successMessage!, isError: false),
+            const SizedBox(height: 16),
+          ],
+          _buildAvatar(theme),
+          const SizedBox(height: 24),
+          _buildEditForm(theme),
+        ],
       ),
     );
   }

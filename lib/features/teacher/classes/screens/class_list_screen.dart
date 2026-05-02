@@ -15,11 +15,22 @@ class _ClassListScreenState extends State<ClassListScreen> {
   bool _loading = true;
   String? _error;
   List<Map<String, dynamic>> _classes = [];
+  
+  // Search & Sort
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  bool _sortAscending = true; // true = A→Z, false = Z→A
 
   @override
   void initState() {
     super.initState();
     _loadData();
+  }
+  
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -49,6 +60,37 @@ class _ClassListScreenState extends State<ClassListScreen> {
         _loading = false;
       });
     }
+  }
+  
+  List<Map<String, dynamic>> get _filteredAndSortedClasses {
+    var result = _classes;
+    
+    // Apply search filter
+    if (_searchQuery.isNotEmpty) {
+      final query = _searchQuery.toLowerCase();
+      result = result.where((c) {
+        final className = _className(c).toLowerCase();
+        final classPeriod = _classPeriod(c).toLowerCase();
+        final subjectName = (c['subjectName'] as String? ?? '').toLowerCase();
+        final gradeName = (c['gradeName'] as String? ?? '').toLowerCase();
+        final sectionName = (c['sectionName'] as String? ?? '').toLowerCase();
+        
+        return className.contains(query) ||
+               classPeriod.contains(query) ||
+               subjectName.contains(query) ||
+               gradeName.contains(query) ||
+               sectionName.contains(query);
+      }).toList();
+    }
+    
+    // Apply sorting
+    result.sort((a, b) {
+      final aName = _className(a).toLowerCase();
+      final bName = _className(b).toLowerCase();
+      return _sortAscending ? aName.compareTo(bName) : bName.compareTo(aName);
+    });
+    
+    return result;
   }
 
   String _className(Map<String, dynamic> offering) {
@@ -88,28 +130,10 @@ class _ClassListScreenState extends State<ClassListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Check if we're in a navigation stack (pushed) or in IndexedStack (bottom nav)
-    final canPop = Navigator.of(context).canPop();
-
-    return PopScope(
-      canPop: canPop,
-      onPopInvoked: (didPop) {
-        // If we're in IndexedStack and user pressed back, do nothing
-        // The system will handle it (minimize app)
-        if (!canPop && !didPop) {
-          // Prevent any navigation attempts
-          return;
-        }
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('My Classes'),
-          // Only show back button if we can actually pop
-          automaticallyImplyLeading: canPop,
-        ),
-        body: _buildBody(),
-      ),
-    );
+    // This screen is embedded in TeacherMainScreen's IndexedStack
+    // So it should NOT have its own AppBar or Scaffold
+    // The parent TeacherMainScreen handles the Scaffold and drawer
+    return _buildBody();
   }
 
   Widget _buildBody() {
@@ -164,7 +188,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.class_outlined, size: 48, color: Colors.grey.shade300),
+            Icon(Icons.class_outlined, size: 64, color: Colors.grey.shade300),
             const SizedBox(height: 16),
             Text(
               'No classes found',
@@ -185,47 +209,172 @@ class _ClassListScreenState extends State<ClassListScreen> {
       );
     }
 
+    final displayedClasses = _filteredAndSortedClasses;
+
     return RefreshIndicator(
       onRefresh: _loadData,
-      child: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: _classes.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (_, i) {
-          final c = _classes[i];
-          final color = _classColor(i);
-          final teacher = c['teacher'];
-          final teacherName = teacher is Map
-              ? '${teacher['firstName'] ?? ''} ${teacher['lastName'] ?? ''}'
-                    .trim()
-              : '';
-
-          return Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.grey.shade200),
+      child: Column(
+        children: [
+          // Search bar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Container(
+              height: 44,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (val) => setState(() => _searchQuery = val),
+                decoration: InputDecoration(
+                  hintText: 'Search classes...',
+                  hintStyle: TextStyle(
+                    color: Colors.grey.shade500,
+                    fontSize: 14,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: Colors.grey.shade600,
+                    size: 20,
+                  ),
+                  suffixIcon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_searchQuery.isNotEmpty)
+                        IconButton(
+                          icon: Icon(Icons.clear,
+                              color: Colors.grey.shade600, size: 18),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                        ),
+                      // Sort button
+                      IconButton(
+                        icon: Icon(
+                          _sortAscending
+                              ? Icons.sort_by_alpha
+                              : Icons.sort_by_alpha,
+                          color: AppColors.primary,
+                          size: 22,
+                        ),
+                        tooltip: _sortAscending ? 'A → Z' : 'Z → A',
+                        onPressed: () {
+                          setState(() => _sortAscending = !_sortAscending);
+                        },
+                      ),
+                    ],
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
             ),
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 8,
-              ),
-              leading: CircleAvatar(
-                backgroundColor: color.withValues(alpha: 0.15),
-                child: Icon(Icons.class_outlined, color: color),
-              ),
-              title: Text(
-                _className(c),
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-              subtitle: Text(_classPeriod(c)),
-              trailing: Icon(Icons.chevron_right, color: Colors.grey.shade400),
-              onTap: () {
-                final classId = c['id'] as String? ?? '';
-                final subjectId = c['subjectId'] as String? ?? '';
-                final subjectName = c['subjectName'] as String? ?? _className(c);
-                if (classId.isNotEmpty) {
+          ),
+          // Count and sort indicator
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Row(
+              children: [
+                Text(
+                  '${displayedClasses.length} class${displayedClasses.length == 1 ? '' : 'es'}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                        size: 12,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _sortAscending ? 'A → Z' : 'Z → A',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Classes list
+          Expanded(
+            child: displayedClasses.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.search_off,
+                            size: 64, color: Colors.grey.shade300),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No classes match "$_searchQuery"',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: displayedClasses.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (_, i) {
+                      final c = displayedClasses[i];
+                      final color = _classColor(i);
+                      return _buildClassCard(c, color);
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildClassCard(Map<String, dynamic> c, Color color) {
+    final classId = c['id'] as String? ?? '';
+    final subjectId = c['subjectId'] as String? ?? '';
+    final subjectName = c['subjectName'] as String? ?? _className(c);
+    final className = _className(c);
+    final classPeriod = _classPeriod(c);
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: classId.isNotEmpty
+              ? () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -233,16 +382,69 @@ class _ClassListScreenState extends State<ClassListScreen> {
                         classId: classId,
                         subjectId: subjectId,
                         subjectName: subjectName,
-                        className: _className(c),
-                        classPeriod: _classPeriod(c),
+                        className: className,
+                        classPeriod: classPeriod,
                       ),
                     ),
                   );
                 }
-              },
+              : null,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // Icon
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.class_outlined,
+                    color: color,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                // Content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        className,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      if (classPeriod.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          classPeriod,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                // Arrow
+                Icon(
+                  Icons.chevron_right,
+                  color: Colors.grey.shade400,
+                  size: 20,
+                ),
+              ],
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }

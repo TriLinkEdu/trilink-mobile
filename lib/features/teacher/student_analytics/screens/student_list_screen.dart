@@ -14,6 +14,7 @@ class StudentListScreen extends StatefulWidget {
 class _StudentListScreenState extends State<StudentListScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  bool _sortAscending = true; // true = A→Z, false = Z→A
 
   bool _loadingClasses = true;
   bool _loadingStudents = false;
@@ -110,14 +111,35 @@ class _StudentListScreenState extends State<StudentListScreen> {
   }
 
   List<Map<String, dynamic>> get _filtered {
-    if (_searchQuery.isEmpty) return _students;
-    final q = _searchQuery.toLowerCase();
-    return _students.where((s) {
-      final name =
-          '${s['firstName'] ?? ''} ${s['lastName'] ?? ''}'.toLowerCase();
-      final email = (s['email'] as String? ?? '').toLowerCase();
-      return name.contains(q) || email.contains(q);
-    }).toList();
+    var result = _students;
+    
+    // Apply search filter
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      result = result.where((s) {
+        final name =
+            '${s['firstName'] ?? ''} ${s['lastName'] ?? ''}'.toLowerCase();
+        final email = (s['email'] as String? ?? '').toLowerCase();
+        return name.contains(q) || email.contains(q);
+      }).toList();
+    }
+    
+    // Apply sorting
+    result.sort((a, b) {
+      final aFirst = (a['firstName'] as String? ?? '').toLowerCase();
+      final aLast = (a['lastName'] as String? ?? '').toLowerCase();
+      final bFirst = (b['firstName'] as String? ?? '').toLowerCase();
+      final bLast = (b['lastName'] as String? ?? '').toLowerCase();
+      
+      final aName = '$aFirst $aLast'.trim();
+      final bName = '$bFirst $bLast'.trim();
+      
+      return _sortAscending 
+          ? aName.compareTo(bName) 
+          : bName.compareTo(aName);
+    });
+    
+    return result;
   }
 
   @override
@@ -224,8 +246,11 @@ class _StudentListScreenState extends State<StudentListScreen> {
                             color: theme.colorScheme.onSurfaceVariant,
                             size: 20,
                           ),
-                          suffixIcon: _searchQuery.isNotEmpty
-                              ? IconButton(
+                          suffixIcon: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (_searchQuery.isNotEmpty)
+                                IconButton(
                                   icon: Icon(Icons.clear,
                                       color:
                                           theme.colorScheme.onSurfaceVariant,
@@ -234,8 +259,23 @@ class _StudentListScreenState extends State<StudentListScreen> {
                                     _searchController.clear();
                                     setState(() => _searchQuery = '');
                                   },
-                                )
-                              : null,
+                                ),
+                              // Sort button
+                              IconButton(
+                                icon: Icon(
+                                  _sortAscending
+                                      ? Icons.sort_by_alpha
+                                      : Icons.sort_by_alpha,
+                                  color: AppColors.primary,
+                                  size: 22,
+                                ),
+                                tooltip: _sortAscending ? 'A → Z' : 'Z → A',
+                                onPressed: () {
+                                  setState(() => _sortAscending = !_sortAscending);
+                                },
+                              ),
+                            ],
+                          ),
                           border: InputBorder.none,
                           contentPadding:
                               const EdgeInsets.symmetric(vertical: 12),
@@ -243,7 +283,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
                       ),
                     ),
                   ),
-                  // Count label
+                  // Count label with sort indicator
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
                     child: Row(
@@ -255,6 +295,33 @@ class _StudentListScreenState extends State<StudentListScreen> {
                           style: TextStyle(
                             fontSize: 12,
                             color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                                size: 12,
+                                color: AppColors.primary,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _sortAscending ? 'A → Z' : 'Z → A',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],

@@ -358,39 +358,42 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
 
   @override
   Widget build(BuildContext context) {
-    return OfflineBanner(
-      child: Scaffold(
-        backgroundColor: AppColors.lightBackground,
-        appBar: AppBar(
-          title: const Text(
-            'Attendance',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          bottom: TabBar(
-            controller: _tabController,
-            indicatorColor: Colors.white,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
-            tabs: const [
-              Tab(text: 'Today', icon: Icon(Icons.today_outlined)),
-              Tab(text: 'History', icon: Icon(Icons.history_outlined)),
-            ],
-          ),
-        ),
-        body: _loadingClasses
+    // Note: This screen is embedded in TeacherMainScreen which provides the AppBar
+    // We wrap in Material to provide Material context for DropdownButton
+    return Material(
+      color: AppColors.lightBackground,
+      child: OfflineBanner(
+        child: _loadingClasses
             ? const Center(child: CircularProgressIndicator())
             : _classError != null
                 ? _buildError(_classError!, _loadClasses)
                 : _classOfferings.isEmpty
                     ? _buildEmptyClasses()
-                    : TabBarView(
-                        controller: _tabController,
+                    : Column(
                         children: [
-                          _buildTodayTab(),
-                          _buildHistoryTab(),
+                          // TabBar with blue background
+                          Material(
+                            color: AppColors.primary,
+                            child: TabBar(
+                              controller: _tabController,
+                              indicatorColor: Colors.white,
+                              labelColor: Colors.white,
+                              unselectedLabelColor: Colors.white70,
+                              tabs: const [
+                                Tab(text: 'Today', icon: Icon(Icons.today_outlined)),
+                                Tab(text: 'History', icon: Icon(Icons.history_outlined)),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            child: TabBarView(
+                              controller: _tabController,
+                              children: [
+                                _buildTodayTab(),
+                                _buildHistoryTab(),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
       ),

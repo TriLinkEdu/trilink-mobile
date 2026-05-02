@@ -32,6 +32,47 @@ class _TeacherClassDetailScreenState extends State<TeacherClassDetailScreen>
   String? _error;
   List<Map<String, dynamic>> _students = [];
 
+  // Search & sort
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  bool _sortAscending = true; // true = A→Z, false = Z→A
+  
+  List<Map<String, dynamic>> get _filteredAndSortedStudents {
+    var result = _students;
+    
+    // Apply search filter
+    if (_searchQuery.isNotEmpty) {
+      final query = _searchQuery.toLowerCase();
+      result = result.where((s) {
+        final firstName = (s['firstName'] as String? ?? '').toLowerCase();
+        final lastName = (s['lastName'] as String? ?? '').toLowerCase();
+        final email = (s['email'] as String? ?? '').toLowerCase();
+        final fullName = '$firstName $lastName';
+        return fullName.contains(query) || 
+               firstName.contains(query) || 
+               lastName.contains(query) || 
+               email.contains(query);
+      }).toList();
+    }
+    
+    // Apply sorting
+    result.sort((a, b) {
+      final aFirst = (a['firstName'] as String? ?? '').toLowerCase();
+      final aLast = (a['lastName'] as String? ?? '').toLowerCase();
+      final bFirst = (b['firstName'] as String? ?? '').toLowerCase();
+      final bLast = (b['lastName'] as String? ?? '').toLowerCase();
+      
+      final aName = '$aFirst $aLast'.trim();
+      final bName = '$bFirst $bLast'.trim();
+      
+      return _sortAscending 
+          ? aName.compareTo(bName) 
+          : bName.compareTo(aName);
+    });
+    
+    return result;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -42,6 +83,7 @@ class _TeacherClassDetailScreenState extends State<TeacherClassDetailScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -200,6 +242,8 @@ class _TeacherClassDetailScreenState extends State<TeacherClassDetailScreen>
       );
     }
 
+    final displayedStudents = _filteredAndSortedStudents;
+    
     return RefreshIndicator(
       onRefresh: _loadStudents,
       child: Column(
@@ -249,8 +293,107 @@ class _TeacherClassDetailScreenState extends State<TeacherClassDetailScreen>
               ),
             ),
           ),
+          // Search bar
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Container(
+              height: 44,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (val) => setState(() => _searchQuery = val),
+                decoration: InputDecoration(
+                  hintText: 'Search students...',
+                  hintStyle: TextStyle(
+                    color: Colors.grey.shade500,
+                    fontSize: 14,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: Colors.grey.shade600,
+                    size: 20,
+                  ),
+                  suffixIcon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_searchQuery.isNotEmpty)
+                        IconButton(
+                          icon: Icon(Icons.clear,
+                              color: Colors.grey.shade600, size: 18),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                        ),
+                      // Sort button
+                      IconButton(
+                        icon: Icon(
+                          _sortAscending
+                              ? Icons.sort_by_alpha
+                              : Icons.sort_by_alpha,
+                          color: AppColors.primary,
+                          size: 22,
+                        ),
+                        tooltip: _sortAscending ? 'A → Z' : 'Z → A',
+                        onPressed: () {
+                          setState(() => _sortAscending = !_sortAscending);
+                        },
+                      ),
+                    ],
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ),
+          // Sort indicator
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Row(
+              children: [
+                Text(
+                  '${displayedStudents.length} student${displayedStudents.length == 1 ? '' : 's'}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                        size: 12,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _sortAscending ? 'A → Z' : 'Z → A',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: Text(
               'STUDENTS',
               style: TextStyle(
@@ -262,13 +405,34 @@ class _TeacherClassDetailScreenState extends State<TeacherClassDetailScreen>
             ),
           ),
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _students.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (_, index) =>
-                  _buildStudentCard(_students[index], index),
-            ),
+            child: displayedStudents.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.search_off,
+                            size: 64, color: Colors.grey.shade300),
+                        const SizedBox(height: 16),
+                        Text(
+                          _searchQuery.isNotEmpty
+                              ? 'No students match "$_searchQuery"'
+                              : 'No students found',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: displayedStudents.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (_, index) =>
+                        _buildStudentCard(displayedStudents[index], index),
+                  ),
           ),
         ],
       ),
