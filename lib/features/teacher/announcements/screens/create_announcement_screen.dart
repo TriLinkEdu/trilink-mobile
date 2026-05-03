@@ -137,8 +137,9 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
         setState(() {
           _classOfferings = offerings.cast<Map<String, dynamic>>();
           // Default: all selected (but _allSelected = true means broad audience)
-          _selectedClassIds =
-              _classOfferings.map((c) => c['id'] as String? ?? '').toSet();
+          _selectedClassIds = _classOfferings
+              .map((c) => c['id'] as String? ?? '')
+              .toSet();
         });
       }
     } catch (_) {
@@ -159,22 +160,35 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
     final time = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(
-          _scheduledDateTime ?? now.add(const Duration(hours: 1))),
+        _scheduledDateTime ?? now.add(const Duration(hours: 1)),
+      ),
     );
     if (time == null || !mounted) return;
     setState(() {
-      _scheduledDateTime =
-          DateTime(date.year, date.month, date.day, time.hour, time.minute);
+      _scheduledDateTime = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
     });
   }
 
   Future<void> _submit() async {
     final title = _titleController.text.trim();
     final body = _bodyController.text.trim();
-    if (title.isEmpty) { _snack('Please enter a title'); return; }
-    if (body.isEmpty) { _snack('Please enter a message'); return; }
+    if (title.isEmpty) {
+      _snack('Please enter a title');
+      return;
+    }
+    if (body.isEmpty) {
+      _snack('Please enter a message');
+      return;
+    }
     if (_scheduleForLater && _scheduledDateTime == null) {
-      _snack('Please pick a schedule date/time'); return;
+      _snack('Please pick a schedule date/time');
+      return;
     }
 
     setState(() => _submitting = true);
@@ -193,12 +207,12 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
       if (_isEdit) {
         final audience =
             _showClassStep && !_allSelected && _selectedClassIds.isNotEmpty
-                ? _singleAudience
-                : _broadAudience;
+            ? _singleAudience
+            : _broadAudience;
         final classId =
             _showClassStep && !_allSelected && _selectedClassIds.isNotEmpty
-                ? _selectedClassIds.first
-                : null;
+            ? _selectedClassIds.first
+            : null;
         await ApiService().updateAnnouncement(_existingId, {
           'title': title,
           'body': body,
@@ -206,7 +220,8 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
           if (classId != null) 'classOfferingId': classId,
           ...schedulePayload,
         });
-      } else if (_showClassStep && !_allSelected &&
+      } else if (_showClassStep &&
+          !_allSelected &&
           _selectedClassIds.isNotEmpty) {
         // Create one announcement per selected class
         for (final classId in _selectedClassIds) {
@@ -232,17 +247,21 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
 
       if (!mounted) return;
       final classCount = _selectedClassIds.length;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(_isEdit
-            ? 'Announcement updated'
-            : _scheduleForLater
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _isEdit
+                ? 'Announcement updated'
+                : _scheduleForLater
                 ? 'Scheduled for ${DateFormat('MMM d, h:mm a').format(_scheduledDateTime!)}'
                 : (!_allSelected && classCount > 1)
-                    ? 'Sent to $classCount classes'
-                    : 'Announcement sent!'),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-      ));
+                ? 'Sent to $classCount classes'
+                : 'Announcement sent!',
+          ),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
@@ -253,11 +272,13 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
   }
 
   void _snack(String msg, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg),
-      backgroundColor: isError ? AppColors.error : null,
-      behavior: SnackBarBehavior.floating,
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? AppColors.error : null,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   String _classLabel(Map<String, dynamic> c) {
@@ -267,7 +288,8 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
     final section = c['sectionName'] as String? ?? '';
     final subject = c['subjectName'] as String? ?? '';
     final classPart = [grade, section].where((s) => s.isNotEmpty).join(' ');
-    if (classPart.isNotEmpty && subject.isNotEmpty) return '$classPart | $subject';
+    if (classPart.isNotEmpty && subject.isNotEmpty)
+      return '$classPart | $subject';
     if (classPart.isNotEmpty) return classPart;
     return subject.isNotEmpty ? subject : 'Unnamed Class';
   }
@@ -305,8 +327,8 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
                       _isEdit
                           ? 'Save'
                           : _scheduleForLater
-                              ? 'Schedule'
-                              : 'Send',
+                          ? 'Schedule'
+                          : 'Send',
                       style: const TextStyle(
                         color: AppColors.primary,
                         fontWeight: FontWeight.bold,
@@ -353,8 +375,10 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
                 hintText: 'Write your message here...',
-                hintStyle:
-                    TextStyle(fontSize: 15, color: theme.colorScheme.onSurfaceVariant),
+                hintStyle: TextStyle(
+                  fontSize: 15,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.zero,
                 counterText: '',
@@ -435,27 +459,35 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
                 duration: const Duration(milliseconds: 150),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: selected ? AppColors.primary : theme.colorScheme.surface,
+                  color: selected
+                      ? AppColors.primary
+                      : theme.colorScheme.surface,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: selected ? AppColors.primary : theme.colorScheme.outlineVariant,
+                    color: selected
+                        ? AppColors.primary
+                        : theme.colorScheme.outlineVariant,
                   ),
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(icon,
-                        size: 22,
-                        color:
-                            selected ? Colors.white : theme.colorScheme.onSurfaceVariant),
+                    Icon(
+                      icon,
+                      size: 22,
+                      color: selected
+                          ? Colors.white
+                          : theme.colorScheme.onSurfaceVariant,
+                    ),
                     const SizedBox(height: 5),
                     Text(
                       label,
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color:
-                            selected ? Colors.white : theme.colorScheme.onSurface,
+                        color: selected
+                            ? Colors.white
+                            : theme.colorScheme.onSurface,
                       ),
                     ),
                   ],
@@ -472,9 +504,11 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
     final theme = Theme.of(context);
     if (_loadingClasses) {
       return const Center(
-          child: Padding(
-              padding: EdgeInsets.all(12),
-              child: CircularProgressIndicator()));
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: CircularProgressIndicator(),
+        ),
+      );
     }
     if (_classOfferings.isEmpty) {
       return Container(
@@ -486,15 +520,19 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
         ),
         child: Text(
           'No classes found for the current academic year.',
-          style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 13),
+          style: TextStyle(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontSize: 13,
+          ),
         ),
       );
     }
 
     final grades = _gradeNames;
     final visible = _visibleClasses;
-    final allVisibleSelected =
-        visible.every((c) => _selectedClassIds.contains(c['id'] as String? ?? ''));
+    final allVisibleSelected = visible.every(
+      (c) => _selectedClassIds.contains(c['id'] as String? ?? ''),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -510,14 +548,16 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
                   selected: _gradeFilter.isEmpty,
                   onTap: () => setState(() => _gradeFilter = ''),
                 ),
-                ...grades.map((g) => Padding(
-                      padding: const EdgeInsets.only(left: 8),
-                      child: _GradeChip(
-                        label: g,
-                        selected: _gradeFilter == g,
-                        onTap: () => setState(() => _gradeFilter = g),
-                      ),
-                    )),
+                ...grades.map(
+                  (g) => Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: _GradeChip(
+                      label: g,
+                      selected: _gradeFilter == g,
+                      onTap: () => setState(() => _gradeFilter = g),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -562,7 +602,10 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
                   }
                 }),
               ),
-              Divider(height: 1, color: theme.colorScheme.surfaceContainerLowest),
+              Divider(
+                height: 1,
+                color: theme.colorScheme.surfaceContainerLowest,
+              ),
               // Individual classes
               ...visible.asMap().entries.map((entry) {
                 final idx = entry.key;
@@ -597,7 +640,10 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
                       }),
                     ),
                     if (!isLast)
-                      Divider(height: 1, color: theme.colorScheme.surfaceContainerLowest),
+                      Divider(
+                        height: 1,
+                        color: theme.colorScheme.surfaceContainerLowest,
+                      ),
                   ],
                 );
               }),
@@ -701,11 +747,13 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
                   visualDensity: VisualDensity.compact,
                 ),
                 const SizedBox(width: 8),
-                Icon(Icons.send_rounded,
-                    size: 18,
-                    color: !_scheduleForLater
-                        ? AppColors.primary
-                        : theme.colorScheme.onSurfaceVariant),
+                Icon(
+                  Icons.send_rounded,
+                  size: 18,
+                  color: !_scheduleForLater
+                      ? AppColors.primary
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -724,7 +772,9 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
                       Text(
                         'Deliver immediately to recipients',
                         style: TextStyle(
-                            fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+                          fontSize: 12,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),
@@ -763,11 +813,13 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
                   visualDensity: VisualDensity.compact,
                 ),
                 const SizedBox(width: 8),
-                Icon(Icons.schedule,
-                    size: 18,
-                    color: _scheduleForLater
-                        ? AppColors.primary
-                        : theme.colorScheme.onSurfaceVariant),
+                Icon(
+                  Icons.schedule,
+                  size: 18,
+                  color: _scheduleForLater
+                      ? AppColors.primary
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -786,7 +838,9 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
                       Text(
                         'Pick a date & time to send',
                         style: TextStyle(
-                            fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+                          fontSize: 12,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),
@@ -815,17 +869,20 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
         ),
         child: Row(
           children: [
-            Icon(Icons.calendar_today,
-                size: 18,
-                color: _scheduledDateTime != null
-                    ? AppColors.primary
-                    : Theme.of(context).colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.calendar_today,
+              size: 18,
+              color: _scheduledDateTime != null
+                  ? AppColors.primary
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 _scheduledDateTime != null
-                    ? DateFormat('EEE, MMM d, yyyy  •  h:mm a')
-                        .format(_scheduledDateTime!)
+                    ? DateFormat(
+                        'EEE, MMM d, yyyy  •  h:mm a',
+                      ).format(_scheduledDateTime!)
                     : 'Tap to pick date & time',
                 style: TextStyle(
                   fontSize: 14,
@@ -838,7 +895,11 @@ class _CreateAnnouncementScreenState extends State<CreateAnnouncementScreen> {
                 ),
               ),
             ),
-            Icon(Icons.chevron_right, color: theme.colorScheme.onSurfaceVariant, size: 18),
+            Icon(
+              Icons.chevron_right,
+              color: theme.colorScheme.onSurfaceVariant,
+              size: 18,
+            ),
           ],
         ),
       ),
@@ -873,9 +934,13 @@ class _ChecklistTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Row(
           children: [
-            Icon(icon,
-                size: 20,
-                color: checked ? AppColors.primary : theme.colorScheme.onSurfaceVariant),
+            Icon(
+              icon,
+              size: 20,
+              color: checked
+                  ? AppColors.primary
+                  : theme.colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -885,8 +950,7 @@ class _ChecklistTile extends StatelessWidget {
                     label,
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight:
-                          checked ? FontWeight.w600 : FontWeight.normal,
+                      fontWeight: checked ? FontWeight.w600 : FontWeight.normal,
                       color: checked
                           ? AppColors.primary
                           : theme.colorScheme.onSurface,
@@ -896,7 +960,9 @@ class _ChecklistTile extends StatelessWidget {
                     Text(
                       subtitle!,
                       style: TextStyle(
-                          fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+                        fontSize: 12,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                 ],
               ),
@@ -909,7 +975,9 @@ class _ChecklistTile extends StatelessWidget {
                 color: checked ? AppColors.primary : Colors.transparent,
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
-                  color: checked ? AppColors.primary : theme.colorScheme.onSurfaceVariant,
+                  color: checked
+                      ? AppColors.primary
+                      : theme.colorScheme.onSurfaceVariant,
                   width: 1.5,
                 ),
               ),
@@ -949,7 +1017,9 @@ class _GradeChip extends StatelessWidget {
               : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected ? AppColors.primary : theme.colorScheme.outlineVariant,
+            color: selected
+                ? AppColors.primary
+                : theme.colorScheme.outlineVariant,
           ),
         ),
         child: Text(
@@ -957,7 +1027,9 @@ class _GradeChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-            color: selected ? AppColors.primary : theme.colorScheme.onSurfaceVariant,
+            color: selected
+                ? AppColors.primary
+                : theme.colorScheme.onSurfaceVariant,
           ),
         ),
       ),
@@ -983,5 +1055,3 @@ class _SectionLabel extends StatelessWidget {
     );
   }
 }
-
-
