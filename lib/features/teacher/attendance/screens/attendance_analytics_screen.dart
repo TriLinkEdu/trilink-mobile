@@ -153,6 +153,7 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
   }
 
   Widget _buildBody() {
+    final theme = Theme.of(context);
     if (_loadingClasses) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -164,21 +165,21 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, size: 48, color: Colors.grey.shade400),
+              Icon(Icons.error_outline, size: 48, color: theme.colorScheme.onSurfaceVariant),
               const SizedBox(height: 16),
               Text(
                 'Failed to load data',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade700,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 _error ?? '',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurfaceVariant),
               ),
               const SizedBox(height: 20),
               ElevatedButton.icon(
@@ -203,7 +204,7 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
       return Center(
         child: Text(
           'No classes found.',
-          style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+          style: TextStyle(fontSize: 14, color: theme.colorScheme.onSurfaceVariant),
         ),
       );
     }
@@ -242,10 +243,11 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
   }
 
   Widget _buildClassDropdown() {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
         borderRadius: BorderRadius.circular(12),
       ),
       child: DropdownButtonHideUnderline(
@@ -253,10 +255,10 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
           value: _selectedClassId,
           isExpanded: true,
           icon: const Icon(Icons.keyboard_arrow_down),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
           ),
           items: _classOfferings.map((c) {
             final id = c['id'] as String;
@@ -307,6 +309,7 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
   }
 
   Widget _buildTrendsSection() {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -315,7 +318,7 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: Colors.grey.shade500,
+            color: theme.colorScheme.onSurfaceVariant,
             letterSpacing: 0.8,
           ),
         ),
@@ -323,9 +326,9 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
           ),
           child: Column(
             children: [
@@ -333,7 +336,10 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
                 height: 180,
                 child: CustomPaint(
                   size: const Size(double.infinity, 180),
-                  painter: _TrendChartPainter(data: _weeklyData),
+                  painter: _TrendChartPainter(
+                    data: _weeklyData,
+                    labelColor: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -345,7 +351,7 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
                         w.label,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade500,
+                          color: theme.colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -360,6 +366,7 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
   }
 
   Widget _buildMostAbsentSection() {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -368,7 +375,7 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: Colors.grey.shade500,
+            color: theme.colorScheme.onSurfaceVariant,
             letterSpacing: 0.8,
           ),
         ),
@@ -382,9 +389,9 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
             ),
             child: Row(
               children: [
@@ -413,10 +420,10 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
                     children: [
                       Text(
                         student.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
-                          color: AppColors.textPrimary,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -425,7 +432,7 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
                         child: LinearProgressIndicator(
                           value: ratio,
                           minHeight: 6,
-                          backgroundColor: Colors.grey.shade200,
+                          backgroundColor: theme.colorScheme.outlineVariant,
                           valueColor: AlwaysStoppedAnimation<Color>(
                             ratio > 0.15 ? AppColors.error : AppColors.accent,
                           ),
@@ -450,7 +457,7 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
                       'absences',
                       style: TextStyle(
                         fontSize: 11,
-                        color: Colors.grey.shade500,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -464,6 +471,7 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
   }
 
   Widget _buildDailyBreakdownSection() {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -472,7 +480,7 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: Colors.grey.shade500,
+            color: theme.colorScheme.onSurfaceVariant,
             letterSpacing: 0.8,
           ),
         ),
@@ -480,9 +488,9 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
           ),
           child: Column(
             children: _dailyBreakdown.map((day) {
@@ -494,10 +502,10 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
                       width: 36,
                       child: Text(
                         day.day,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                     ),
@@ -508,7 +516,7 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
                         child: LinearProgressIndicator(
                           value: day.percentage / 100,
                           minHeight: 14,
-                          backgroundColor: Colors.grey.shade100,
+                          backgroundColor: theme.colorScheme.surfaceContainerLowest,
                           valueColor: AlwaysStoppedAnimation<Color>(
                             day.percentage >= 95
                                 ? AppColors.secondary
@@ -525,10 +533,10 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
                       child: Text(
                         '${day.percentage}%',
                         textAlign: TextAlign.end,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                     ),
@@ -558,6 +566,7 @@ class _OverviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -583,7 +592,7 @@ class _OverviewCard extends StatelessWidget {
             title,
             style: TextStyle(
               fontSize: 11,
-              color: Colors.grey.shade600,
+              color: theme.colorScheme.onSurfaceVariant,
               height: 1.3,
             ),
           ),
@@ -595,8 +604,9 @@ class _OverviewCard extends StatelessWidget {
 
 class _TrendChartPainter extends CustomPainter {
   final List<_WeekData> data;
+  final Color labelColor;
 
-  _TrendChartPainter({required this.data});
+  _TrendChartPainter({required this.data, required this.labelColor});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -687,7 +697,7 @@ class _TrendChartPainter extends CustomPainter {
 
     final textPainterStyle = TextStyle(
       fontSize: 10,
-      color: Colors.grey.shade500,
+      color: labelColor,
       fontWeight: FontWeight.w500,
     );
     for (int i = 0; i <= 4; i++) {
@@ -703,7 +713,7 @@ class _TrendChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _TrendChartPainter oldDelegate) =>
-      oldDelegate.data != data;
+      oldDelegate.data != data || oldDelegate.labelColor != labelColor;
 }
 
 class _WeekData {

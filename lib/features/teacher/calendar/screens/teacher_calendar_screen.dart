@@ -127,6 +127,7 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setSheetState) {
+            final sheetTheme = Theme.of(ctx);
             return Padding(
               padding: EdgeInsets.fromLTRB(
                 20,
@@ -144,7 +145,7 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                         width: 40,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade300,
+                          color: sheetTheme.colorScheme.outlineVariant,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -152,10 +153,10 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                     const SizedBox(height: 16),
                     Text(
                       isEdit ? 'Edit Event' : 'Add Event',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                        color: sheetTheme.colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -163,16 +164,16 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                       controller: titleController,
                       decoration: InputDecoration(
                         hintText: 'Event title',
-                        hintStyle: TextStyle(color: Colors.grey.shade400),
+                        hintStyle: TextStyle(color: sheetTheme.colorScheme.onSurfaceVariant),
                         filled: true,
-                        fillColor: Colors.grey.shade50,
+                        fillColor: sheetTheme.colorScheme.surfaceContainerLowest,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
+                          borderSide: BorderSide(color: sheetTheme.colorScheme.outlineVariant),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
+                          borderSide: BorderSide(color: sheetTheme.colorScheme.outlineVariant),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -185,16 +186,16 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                       controller: locationController,
                       decoration: InputDecoration(
                         hintText: 'Location / description',
-                        hintStyle: TextStyle(color: Colors.grey.shade400),
+                        hintStyle: TextStyle(color: sheetTheme.colorScheme.onSurfaceVariant),
                         filled: true,
-                        fillColor: Colors.grey.shade50,
+                        fillColor: sheetTheme.colorScheme.surfaceContainerLowest,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
+                          borderSide: BorderSide(color: sheetTheme.colorScheme.outlineVariant),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
+                          borderSide: BorderSide(color: sheetTheme.colorScheme.outlineVariant),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -220,9 +221,9 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12),
                                 decoration: BoxDecoration(
-                                  color: Colors.grey.shade50,
+                                  color: sheetTheme.colorScheme.surfaceContainerLowest,
                                   borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: Colors.grey.shade300),
+                                  border: Border.all(color: sheetTheme.colorScheme.outlineVariant),
                                 ),
                                 child: DropdownButtonHideUnderline(
                                   child: DropdownButton<String>(
@@ -272,9 +273,9 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                                     vertical: 14,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.grey.shade50,
+                                    color: sheetTheme.colorScheme.surfaceContainerLowest,
                                     borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: Colors.grey.shade300),
+                                    border: Border.all(color: sheetTheme.colorScheme.outlineVariant),
                                   ),
                                   child: Text(
                                     startTime.format(ctx),
@@ -433,13 +434,13 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                     Icon(
                       Icons.error_outline,
                       size: 48,
-                      color: Colors.grey.shade400,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(height: 12),
                     Text(
                       _error!,
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey.shade600),
+                      style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
                     ),
                     const SizedBox(height: 16),
                     OutlinedButton(
@@ -746,7 +747,7 @@ class _TeacherCalendarScreenState extends State<TeacherCalendarScreen> {
                     Icon(
                       Icons.event_available,
                       size: 48,
-                      color: Colors.grey.shade300,
+                      color: theme.colorScheme.outlineVariant,
                     ),
                     const SizedBox(height: 12),
                     Text(

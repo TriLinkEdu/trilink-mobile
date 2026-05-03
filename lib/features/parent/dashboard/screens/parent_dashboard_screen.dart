@@ -31,6 +31,7 @@ class ParentDashboardScreen extends StatefulWidget {
 }
 
 class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
   bool _loading = true;
   String? _error;
   int _selectedChildIndex = 0;
@@ -141,10 +142,46 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     return _children[_selectedChildIndex]['avatar'] as String? ?? '';
   }
 
+  Future<bool> _onWillPop() async {
+    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+      Navigator.of(context).pop();
+      return false;
+    }
+    final shouldExit = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Exit App'),
+        content: const Text('Are you sure you want to exit?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Exit'),
+          ),
+        ],
+      ),
+    );
+    return shouldExit ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final shouldPop = await _onWillPop();
+        if (shouldPop && context.mounted) {
+          Navigator.of(context).maybePop();
+        }
+      },
+      child: Scaffold(
+      key: _scaffoldKey,
       drawer: _buildDrawer(context),
       body: RolePageBackground(
         flavor: RoleThemeFlavor.parent,
@@ -202,6 +239,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         ),
       ),
       bottomNavigationBar: _buildBottomNav(),
+    ),
     );
   }
 

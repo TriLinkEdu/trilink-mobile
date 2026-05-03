@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
+// import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
 
 class TeacherStudentDetailScreen extends StatefulWidget {
@@ -21,8 +21,7 @@ class TeacherStudentDetailScreen extends StatefulWidget {
       _TeacherStudentDetailScreenState();
 }
 
-class _TeacherStudentDetailScreenState
-    extends State<TeacherStudentDetailScreen>
+class _TeacherStudentDetailScreenState extends State<TeacherStudentDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
@@ -101,14 +100,18 @@ class _TeacherStudentDetailScreenState
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              color: AppColors.textPrimary, size: 20),
+          icon: Icon(
+            Icons.arrow_back_ios_new,
+            color: theme.colorScheme.onSurface,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
@@ -116,8 +119,8 @@ class _TeacherStudentDetailScreenState
           children: [
             Text(
               widget.studentName,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
                 fontSize: 17,
               ),
@@ -125,7 +128,7 @@ class _TeacherStudentDetailScreenState
             Text(
               widget.subjectName,
               style: TextStyle(
-                color: Colors.grey.shade600,
+                color: theme.colorScheme.onSurfaceVariant,
                 fontSize: 12,
                 fontWeight: FontWeight.normal,
               ),
@@ -134,9 +137,9 @@ class _TeacherStudentDetailScreenState
         ),
         bottom: TabBar(
           controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: Colors.grey.shade600,
-          indicatorColor: AppColors.primary,
+          labelColor: theme.colorScheme.primary,
+          unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+          indicatorColor: theme.colorScheme.primary,
           indicatorWeight: 3,
           labelStyle: const TextStyle(
             fontSize: 14,
@@ -150,10 +153,7 @@ class _TeacherStudentDetailScreenState
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          _buildGradesTab(),
-          _buildAttendanceTab(),
-        ],
+        children: [_buildGradesTab(), _buildAttendanceTab()],
       ),
     );
   }
@@ -161,6 +161,7 @@ class _TeacherStudentDetailScreenState
   // ─── Grades Tab ────────────────────────────────────────────────────────────
 
   Widget _buildGradesTab() {
+    final theme = Theme.of(context);
     if (_loadingGrades) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -175,9 +176,12 @@ class _TeacherStudentDetailScreenState
     final entries = _gradeTypeFilter == 'all'
         ? allEntries
         : allEntries
-            .where((e) =>
-                (e['type'] as String? ?? '').toLowerCase() == _gradeTypeFilter)
-            .toList();
+              .where(
+                (e) =>
+                    (e['type'] as String? ?? '').toLowerCase() ==
+                    _gradeTypeFilter,
+              )
+              .toList();
 
     final total = summary['total'] as int? ?? 0;
     final withScore = summary['withScore'] as int? ?? 0;
@@ -191,7 +195,8 @@ class _TeacherStudentDetailScreenState
         .length;
     final assignCount = allEntries
         .where(
-            (e) => (e['type'] as String? ?? '').toLowerCase() == 'assignment')
+          (e) => (e['type'] as String? ?? '').toLowerCase() == 'assignment',
+        )
         .length;
 
     return RefreshIndicator(
@@ -208,21 +213,41 @@ class _TeacherStudentDetailScreenState
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _filterChip('All', 'all', _gradeTypeFilter, allEntries.length,
-                      AppColors.primary,
-                      () => setState(() => _gradeTypeFilter = 'all')),
+                  _filterChip(
+                    'All',
+                    'all',
+                    _gradeTypeFilter,
+                    allEntries.length,
+                    theme.colorScheme.primary,
+                    () => setState(() => _gradeTypeFilter = 'all'),
+                  ),
                   const SizedBox(width: 8),
-                  _filterChip('Exams', 'exam', _gradeTypeFilter, examCount,
-                      AppColors.error,
-                      () => setState(() => _gradeTypeFilter = 'exam')),
+                  _filterChip(
+                    'Exams',
+                    'exam',
+                    _gradeTypeFilter,
+                    examCount,
+                    theme.colorScheme.error,
+                    () => setState(() => _gradeTypeFilter = 'exam'),
+                  ),
                   const SizedBox(width: 8),
-                  _filterChip('Quizzes', 'quiz', _gradeTypeFilter, quizCount,
-                      Colors.orange,
-                      () => setState(() => _gradeTypeFilter = 'quiz')),
+                  _filterChip(
+                    'Quizzes',
+                    'quiz',
+                    _gradeTypeFilter,
+                    quizCount,
+                    Colors.orange,
+                    () => setState(() => _gradeTypeFilter = 'quiz'),
+                  ),
                   const SizedBox(width: 8),
-                  _filterChip('Assignments', 'assignment', _gradeTypeFilter,
-                      assignCount, AppColors.primary,
-                      () => setState(() => _gradeTypeFilter = 'assignment')),
+                  _filterChip(
+                    'Assignments',
+                    'assignment',
+                    _gradeTypeFilter,
+                    assignCount,
+                    theme.colorScheme.primary,
+                    () => setState(() => _gradeTypeFilter = 'assignment'),
+                  ),
                 ],
               ),
             ),
@@ -246,18 +271,22 @@ class _TeacherStudentDetailScreenState
   }
 
   Widget _buildGradesSummaryCard(int total, int withScore, num avgPercent) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.8)],
+          colors: [
+            theme.colorScheme.primaryContainer,
+            theme.colorScheme.secondaryContainer,
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
+            color: theme.shadowColor.withOpacity(0.12),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -269,23 +298,31 @@ class _TeacherStudentDetailScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Average',
-                    style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: 14)),
+                Text(
+                  'Average',
+                  style: TextStyle(
+                    color: theme.colorScheme.onPrimaryContainer,
+                    fontSize: 14,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Text(
                   '${avgPercent.toStringAsFixed(1)}%',
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: theme.colorScheme.onPrimaryContainer,
+                    fontSize: 36,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   '$withScore of $total graded',
                   style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.8), fontSize: 13),
+                    color: theme.colorScheme.onPrimaryContainer.withOpacity(
+                      0.8,
+                    ),
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),
@@ -293,10 +330,14 @@ class _TeacherStudentDetailScreenState
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: theme.colorScheme.onPrimaryContainer.withOpacity(0.12),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.grade, color: Colors.white, size: 32),
+            child: Icon(
+              Icons.grade,
+              color: theme.colorScheme.onPrimaryContainer,
+              size: 32,
+            ),
           ),
         ],
       ),
@@ -304,6 +345,7 @@ class _TeacherStudentDetailScreenState
   }
 
   Widget _gradeCard(Map<String, dynamic> entry) {
+    final theme = Theme.of(context);
     final title = entry['title'] as String? ?? 'Untitled';
     final type = entry['type'] as String? ?? 'assignment';
     final score = entry['score'] as num?;
@@ -318,7 +360,7 @@ class _TeacherStudentDetailScreenState
     IconData typeIcon;
     switch (type.toLowerCase()) {
       case 'exam':
-        typeColor = AppColors.error;
+        typeColor = theme.colorScheme.error;
         typeIcon = Icons.assignment;
         break;
       case 'quiz':
@@ -326,7 +368,7 @@ class _TeacherStudentDetailScreenState
         typeIcon = Icons.quiz;
         break;
       default:
-        typeColor = AppColors.primary;
+        typeColor = theme.colorScheme.primary;
         typeIcon = Icons.assignment_turned_in;
     }
 
@@ -334,13 +376,14 @@ class _TeacherStudentDetailScreenState
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2)),
+            color: theme.shadowColor.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -351,7 +394,7 @@ class _TeacherStudentDetailScreenState
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: typeColor.withValues(alpha: 0.12),
+                  color: typeColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(typeIcon, color: typeColor, size: 20),
@@ -361,15 +404,20 @@ class _TeacherStudentDetailScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title,
-                        style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary)),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
                     Text(
                       type[0].toUpperCase() + type.substring(1),
                       style: TextStyle(
-                          fontSize: 12, color: Colors.grey.shade600),
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -379,24 +427,28 @@ class _TeacherStudentDetailScreenState
                 children: [
                   Text(
                     score != null ? '$score / $maxScore' : '— / $maxScore',
-                    style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                   if (percent != null)
                     Text(
                       '${percent.toStringAsFixed(1)}%',
                       style: TextStyle(
-                          fontSize: 12, color: Colors.grey.shade600),
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   if (releasedAt == null)
                     Text(
                       'Not released',
                       style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.orange.shade600,
-                          fontStyle: FontStyle.italic),
+                        fontSize: 11,
+                        color: Colors.orange.shade600,
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
                 ],
               ),
@@ -407,19 +459,26 @@ class _TeacherStudentDetailScreenState
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: Theme.of(context).colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.note_outlined,
-                      size: 16, color: Colors.grey.shade600),
+                  Icon(
+                    Icons.note_outlined,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(note,
-                        style: TextStyle(
-                            fontSize: 12, color: Colors.grey.shade700)),
+                    child: Text(
+                      note,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -433,6 +492,7 @@ class _TeacherStudentDetailScreenState
   // ─── Attendance Tab ────────────────────────────────────────────────────────
 
   Widget _buildAttendanceTab() {
+    final theme = Theme.of(context);
     if (_loadingAttendance) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -440,19 +500,19 @@ class _TeacherStudentDetailScreenState
       return _buildError(_attendanceError!, _loadAttendance);
     }
 
-    final summary =
-        _attendanceData?['summary'] as Map<String, dynamic>? ?? {};
-    final allSessions =
-        (_attendanceData?['sessions'] as List<dynamic>? ?? [])
-            .cast<Map<String, dynamic>>();
+    final summary = _attendanceData?['summary'] as Map<String, dynamic>? ?? {};
+    final allSessions = (_attendanceData?['sessions'] as List<dynamic>? ?? [])
+        .cast<Map<String, dynamic>>();
 
     final sessions = _attendanceStatusFilter == 'all'
         ? allSessions
         : allSessions
-            .where((s) =>
-                (s['status'] as String? ?? '').toLowerCase() ==
-                _attendanceStatusFilter)
-            .toList();
+              .where(
+                (s) =>
+                    (s['status'] as String? ?? '').toLowerCase() ==
+                    _attendanceStatusFilter,
+              )
+              .toList();
 
     final totalSessions = summary['total'] as int? ?? 0;
     final present = summary['present'] as int? ?? 0;
@@ -470,36 +530,62 @@ class _TeacherStudentDetailScreenState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildAttendanceSummaryCard(
-                totalSessions, present, absent, late, excused,
-                attendancePercent),
+              totalSessions,
+              present,
+              absent,
+              late,
+              excused,
+              attendancePercent,
+            ),
             const SizedBox(height: 16),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _filterChip('All', 'all', _attendanceStatusFilter,
-                      allSessions.length, AppColors.secondary,
-                      () => setState(() => _attendanceStatusFilter = 'all')),
+                  _filterChip(
+                    'All',
+                    'all',
+                    _attendanceStatusFilter,
+                    allSessions.length,
+                    theme.colorScheme.secondary,
+                    () => setState(() => _attendanceStatusFilter = 'all'),
+                  ),
                   const SizedBox(width: 8),
-                  _filterChip('Present', 'present', _attendanceStatusFilter,
-                      present, Colors.green,
-                      () => setState(
-                          () => _attendanceStatusFilter = 'present')),
+                  _filterChip(
+                    'Present',
+                    'present',
+                    _attendanceStatusFilter,
+                    present,
+                    Colors.green,
+                    () => setState(() => _attendanceStatusFilter = 'present'),
+                  ),
                   const SizedBox(width: 8),
-                  _filterChip('Absent', 'absent', _attendanceStatusFilter,
-                      absent, AppColors.error,
-                      () => setState(
-                          () => _attendanceStatusFilter = 'absent')),
+                  _filterChip(
+                    'Absent',
+                    'absent',
+                    _attendanceStatusFilter,
+                    absent,
+                    theme.colorScheme.error,
+                    () => setState(() => _attendanceStatusFilter = 'absent'),
+                  ),
                   const SizedBox(width: 8),
-                  _filterChip('Late', 'late', _attendanceStatusFilter, late,
-                      Colors.orange,
-                      () =>
-                          setState(() => _attendanceStatusFilter = 'late')),
+                  _filterChip(
+                    'Late',
+                    'late',
+                    _attendanceStatusFilter,
+                    late,
+                    Colors.orange,
+                    () => setState(() => _attendanceStatusFilter = 'late'),
+                  ),
                   const SizedBox(width: 8),
-                  _filterChip('Excused', 'excused', _attendanceStatusFilter,
-                      excused, Colors.blue,
-                      () => setState(
-                          () => _attendanceStatusFilter = 'excused')),
+                  _filterChip(
+                    'Excused',
+                    'excused',
+                    _attendanceStatusFilter,
+                    excused,
+                    Colors.blue,
+                    () => setState(() => _attendanceStatusFilter = 'excused'),
+                  ),
                 ],
               ),
             ),
@@ -522,15 +608,22 @@ class _TeacherStudentDetailScreenState
     );
   }
 
-  Widget _buildAttendanceSummaryCard(int total, int present, int absent,
-      int late, int excused, num attendancePercent) {
+  Widget _buildAttendanceSummaryCard(
+    int total,
+    int present,
+    int absent,
+    int late,
+    int excused,
+    num attendancePercent,
+  ) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.secondary,
-            AppColors.secondary.withValues(alpha: 0.8)
+            theme.colorScheme.secondaryContainer,
+            theme.colorScheme.primaryContainer,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -538,9 +631,10 @@ class _TeacherStudentDetailScreenState
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-              color: AppColors.secondary.withValues(alpha: 0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 4)),
+            color: theme.shadowColor.withOpacity(0.12),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -551,24 +645,30 @@ class _TeacherStudentDetailScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Attendance Rate',
-                        style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            fontSize: 14)),
+                    Text(
+                      'Attendance Rate',
+                      style: TextStyle(
+                        color: theme.colorScheme.onSecondaryContainer,
+                        fontSize: 14,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     Text(
                       '${attendancePercent.toStringAsFixed(1)}%',
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: theme.colorScheme.onSecondaryContainer,
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       '$present of $total sessions',
                       style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 13),
+                        color: theme.colorScheme.onSecondaryContainer
+                            .withOpacity(0.8),
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),
@@ -576,16 +676,24 @@ class _TeacherStudentDetailScreenState
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: theme.colorScheme.onSecondaryContainer.withOpacity(
+                    0.12,
+                  ),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.event_available,
-                    color: Colors.white, size: 32),
+                child: Icon(
+                  Icons.event_available,
+                  color: theme.colorScheme.onSecondaryContainer,
+                  size: 32,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          Divider(color: Colors.white.withValues(alpha: 0.3), height: 1),
+          Divider(
+            color: theme.colorScheme.onSecondaryContainer.withOpacity(0.2),
+            height: 1,
+          ),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -604,21 +712,26 @@ class _TeacherStudentDetailScreenState
   Widget _attStat(String label, int count, IconData icon) {
     return Column(
       children: [
-        Icon(icon, color: Colors.white.withValues(alpha: 0.9), size: 20),
+        Icon(icon, color: Colors.white.withOpacity(0.9), size: 20),
         const SizedBox(height: 4),
-        Text('$count',
-            style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold)),
-        Text(label,
-            style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.8), fontSize: 11)),
+        Text(
+          '$count',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 11),
+        ),
       ],
     );
   }
 
   Widget _attendanceCard(Map<String, dynamic> session) {
+    final theme = Theme.of(context);
     final date = session['date'] as String? ?? '';
     final status = session['status'] as String? ?? 'unknown';
     final note = session['note'] as String?;
@@ -628,12 +741,12 @@ class _TeacherStudentDetailScreenState
     String statusLabel;
     switch (status.toLowerCase()) {
       case 'present':
-        statusColor = AppColors.success;
+        statusColor = Colors.green;
         statusIcon = Icons.check_circle;
         statusLabel = 'Present';
         break;
       case 'absent':
-        statusColor = AppColors.error;
+        statusColor = theme.colorScheme.error;
         statusIcon = Icons.cancel;
         statusLabel = 'Absent';
         break;
@@ -657,14 +770,15 @@ class _TeacherStudentDetailScreenState
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: statusColor.withValues(alpha: 0.2), width: 1.5),
+        border: Border.all(color: statusColor.withOpacity(0.2), width: 1.5),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2)),
+            color: theme.shadowColor.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -675,7 +789,7 @@ class _TeacherStudentDetailScreenState
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.12),
+                  color: statusColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(statusIcon, color: statusColor, size: 22),
@@ -685,33 +799,42 @@ class _TeacherStudentDetailScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(_formatDate(date),
-                        style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary)),
-                    Text(statusLabel,
-                        style: TextStyle(
-                            fontSize: 13,
-                            color: statusColor,
-                            fontWeight: FontWeight.w500)),
+                    Text(
+                      _formatDate(date),
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    Text(
+                      statusLabel,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: statusColor,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ],
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 5),
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
+                  color: statusColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   statusLabel.toUpperCase(),
                   style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: statusColor,
-                      letterSpacing: 0.5),
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: statusColor,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
             ],
@@ -721,19 +844,26 @@ class _TeacherStudentDetailScreenState
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: Theme.of(context).colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.note_outlined,
-                      size: 16, color: Colors.grey.shade600),
+                  Icon(
+                    Icons.note_outlined,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(note,
-                        style: TextStyle(
-                            fontSize: 12, color: Colors.grey.shade700)),
+                    child: Text(
+                      note,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -746,8 +876,15 @@ class _TeacherStudentDetailScreenState
 
   // ─── Shared helpers ────────────────────────────────────────────────────────
 
-  Widget _filterChip(String label, String value, String current, int count,
-      Color color, VoidCallback onTap) {
+  Widget _filterChip(
+    String label,
+    String value,
+    String current,
+    int count,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    final theme = Theme.of(context);
     final selected = current == value;
     return GestureDetector(
       onTap: onTap,
@@ -756,11 +893,13 @@ class _TeacherStudentDetailScreenState
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
           color: selected
-              ? color.withValues(alpha: 0.12)
-              : Colors.grey.shade100,
+              ? color.withOpacity(0.9)
+              : theme.colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-              color: selected ? color : Colors.transparent, width: 1.5),
+            color: selected ? color : theme.colorScheme.outlineVariant,
+            width: 1.5,
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -769,25 +908,32 @@ class _TeacherStudentDetailScreenState
               label,
               style: TextStyle(
                 fontSize: 13,
-                fontWeight:
-                    selected ? FontWeight.w600 : FontWeight.w500,
-                color: selected ? color : Colors.grey.shade600,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                color: selected
+                    ? theme.colorScheme.onPrimary
+                    : theme.colorScheme.onSurfaceVariant,
               ),
             ),
             if (count > 0) ...[
               const SizedBox(width: 5),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 5, vertical: 1),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                 decoration: BoxDecoration(
-                  color: selected ? color : Colors.grey.shade400,
+                  color: selected
+                      ? theme.colorScheme.onPrimary
+                      : theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text('$count',
-                    style: const TextStyle(
-                        fontSize: 11,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold)),
+                child: Text(
+                  '$count',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: selected
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurface,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ],
@@ -802,41 +948,54 @@ class _TeacherStudentDetailScreenState
       style: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w600,
-        color: Colors.grey.shade500,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
         letterSpacing: 0.8,
       ),
     );
   }
 
   Widget _buildError(String error, VoidCallback onRetry) {
+    final theme = Theme.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.grey.shade300),
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 16),
-            Text('Failed to load data',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade700)),
+            Text(
+              'Failed to load data',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
             const SizedBox(height: 8),
-            Text(error,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    fontSize: 13, color: Colors.grey.shade500)),
+            Text(
+              error,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh, size: 18),
               label: const Text('Retry'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: theme.colorScheme.primary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
             ),
           ],
@@ -846,23 +1005,31 @@ class _TeacherStudentDetailScreenState
   }
 
   Widget _emptyState(IconData icon, String title, String subtitle) {
+    final theme = Theme.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 48),
       child: Column(
         children: [
-          Icon(icon, size: 64, color: Colors.grey.shade300),
+          Icon(icon, size: 64, color: theme.colorScheme.onSurfaceVariant),
           const SizedBox(height: 16),
-          Text(title,
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade600)),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
           const SizedBox(height: 8),
-          Text(subtitle,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 13, color: Colors.grey.shade500)),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
         ],
       ),
     );
@@ -872,8 +1039,18 @@ class _TeacherStudentDetailScreenState
     try {
       final d = DateTime.parse(iso);
       const months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
       ];
       return '${months[d.month - 1]} ${d.day}, ${d.year}';
     } catch (_) {

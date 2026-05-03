@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/offline_banner.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/routes/route_names.dart';
@@ -115,7 +115,11 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.grey.shade400),
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 16),
             Text(
               'Failed to load dashboard',
@@ -129,7 +133,10 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             Text(
               _error ?? '',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+              style: TextStyle(
+                fontSize: 13,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
@@ -197,7 +204,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
+                  color: theme.shadowColor.withOpacity(0.16),
                   blurRadius: 8,
                 ),
               ],
@@ -238,11 +245,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           width: double.infinity,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF1A73E8), Color(0xFF4A9AF5)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            gradient: theme.ext.heroGradient,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
@@ -257,23 +260,26 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
+                      color: theme.colorScheme.onPrimary.withOpacity(0.18),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       '$_myClasses classes today',
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                      style: TextStyle(
+                        color: theme.colorScheme.onPrimary,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
+                      color: theme.colorScheme.onPrimary.withOpacity(0.18),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.school,
-                      color: Colors.white,
+                      color: theme.colorScheme.onPrimary,
                       size: 20,
                     ),
                   ),
@@ -282,8 +288,8 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               const SizedBox(height: 16),
               Text(
                 AuthService().currentUser?.subject ?? 'My Subject',
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: theme.colorScheme.onPrimary,
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
@@ -291,11 +297,18 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               const SizedBox(height: 6),
               Row(
                 children: [
-                  const Icon(Icons.person, color: Colors.white70, size: 16),
+                  Icon(
+                    Icons.person,
+                    color: theme.colorScheme.onPrimary.withOpacity(0.8),
+                    size: 16,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     AuthService().currentUser?.fullName ?? '',
-                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+                    style: TextStyle(
+                      color: theme.colorScheme.onPrimary.withOpacity(0.8),
+                      fontSize: 13,
+                    ),
                   ),
                 ],
               ),
@@ -313,11 +326,11 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         Expanded(
           child: _StatCard(
             icon: Icons.class_outlined,
-            iconColor: AppColors.secondary,
+            iconColor: theme.colorScheme.secondary,
             label: 'My Classes',
             value: '$_myClasses',
             subtitle: 'active',
-            subtitleColor: AppColors.secondary,
+            subtitleColor: theme.colorScheme.secondary,
           ),
         ),
         const SizedBox(width: 12),
@@ -356,9 +369,13 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               child: _QuickActionButton(
                 icon: Icons.fact_check_outlined,
                 label: 'Take\nAttendance',
-                color: AppColors.primary,
-                onTap: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const TeacherAttendanceScreen())),
+                color: theme.colorScheme.primary,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const TeacherAttendanceScreen(),
+                  ),
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -366,9 +383,11 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               child: _QuickActionButton(
                 icon: Icons.class_outlined,
                 label: 'My\nClasses',
-                color: AppColors.secondary,
-                onTap: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const ClassListScreen())),
+                color: theme.colorScheme.secondary,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ClassListScreen()),
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -377,17 +396,22 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 icon: Icons.campaign_outlined,
                 label: 'New\nPost',
                 color: Colors.purple,
-                onTap: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const CreateAnnouncementScreen())),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const CreateAnnouncementScreen(),
+                  ),
+                ),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: _QuickActionButton(
                 icon: Icons.feedback_outlined,
-                label: 'Feedback',
+                label: 'My\nFeedback',
                 color: const Color(0xFFFF6D00),
-                onTap: () => Navigator.pushNamed(context, RouteNames.teacherFeedback),
+                onTap: () =>
+                    Navigator.pushNamed(context, RouteNames.teacherFeedback),
               ),
             ),
           ],
@@ -442,14 +466,18 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             ),
             child: Column(
               children: [
-                Icon(Icons.notifications_none,
-                    size: 36, color: Colors.grey.shade300),
+                Icon(
+                  Icons.notifications_none,
+                  size: 36,
+                  color: theme.colorScheme.outlineVariant,
+                ),
                 const SizedBox(height: 8),
                 Text(
                   'No recent activity',
                   style: TextStyle(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontSize: 13),
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),
@@ -465,13 +493,13 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             final isRead = n['readAt'] != null;
 
             final iconData = _iconForType(type);
-            final iconColor = _colorForType(type);
+            final iconColor = _colorForType(context, type);
 
             return Padding(
               padding: EdgeInsets.only(bottom: i < top3.length - 1 ? 12 : 0),
               child: _ActivityTile(
                 icon: iconData,
-                iconBgColor: iconColor.withValues(alpha: 0.1),
+                iconBgColor: iconColor.withOpacity(0.1),
                 iconColor: iconColor,
                 title: title,
                 subtitle: body,
@@ -511,30 +539,31 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
     }
   }
 
-  Color _colorForType(String type) {
+  Color _colorForType(BuildContext context, String type) {
+    final theme = Theme.of(context);
     switch (type.toLowerCase()) {
       case 'badge':
         return Colors.amber;
       case 'broadcast':
-        return AppColors.primary;
+        return theme.colorScheme.primary;
       case 'weekly_digest':
         return Colors.blue;
       case 'attendance':
-        return AppColors.secondary;
+        return theme.colorScheme.secondary;
       case 'announcement':
-        return AppColors.accent;
+        return theme.colorScheme.tertiary;
       case 'exam_result':
       case 'grade':
         return Colors.green;
       case 'exam_submission':
         return Colors.purple;
       case 'assignment':
-        return AppColors.primary;
+        return theme.colorScheme.primary;
       case 'alert':
       case 'system':
-        return AppColors.error;
+        return theme.colorScheme.error;
       default:
-        return Colors.grey;
+        return theme.colorScheme.onSurfaceVariant;
     }
   }
 
@@ -580,10 +609,7 @@ class _StatCard extends StatelessWidget {
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-          ),
+          BoxShadow(color: theme.shadowColor.withOpacity(0.12), blurRadius: 10),
         ],
       ),
       child: Column(
@@ -660,7 +686,7 @@ class _QuickActionButton extends StatelessWidget {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
+              color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(icon, color: color, size: 28),
@@ -709,7 +735,7 @@ class _ActivityTile extends StatelessWidget {
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8),
+          BoxShadow(color: theme.shadowColor.withOpacity(0.1), blurRadius: 8),
         ],
       ),
       child: Row(
@@ -774,8 +800,8 @@ class _ActivityTile extends StatelessWidget {
               width: 8,
               height: 8,
               margin: const EdgeInsets.only(top: 4),
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary,
                 shape: BoxShape.circle,
               ),
             ),

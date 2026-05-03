@@ -5,8 +5,6 @@ import '../../../../features/auth/services/auth_service.dart';
 import '../../../shared/widgets/role_page_background.dart';
 import 'teacher_dashboard_screen.dart';
 import '../../classes/screens/class_list_screen.dart';
-import '../../student_analytics/screens/student_list_screen.dart';
-import '../../calendar/screens/teacher_calendar_screen.dart';
 import '../../settings/screens/teacher_settings_screen.dart';
 import '../../profile/screens/teacher_profile_screen.dart';
 import '../../attendance/screens/teacher_attendance_screen.dart';
@@ -28,7 +26,7 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
     TeacherAttendanceScreen(),
     TeacherProfileScreen(),
   ];
-  
+
   final List<String> _screenTitles = const [
     'Dashboard',
     'My Classes',
@@ -36,68 +34,112 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
     'Profile',
   ];
 
+  Future<bool> _onWillPop() async {
+    // Close drawer if open
+    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+      Navigator.of(context).pop();
+      return false;
+    }
+    // Go back to first tab instead of popping
+    if (_currentIndex != 0) {
+      setState(() => _currentIndex = 0);
+      return false;
+    }
+    // On root tab — ask for exit confirmation
+    final shouldExit = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Exit App'),
+        content: const Text('Are you sure you want to exit?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Exit'),
+          ),
+        ],
+      ),
+    );
+    return shouldExit ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = AuthService().currentUser;
+    final theme = Theme.of(context);
 
-    return Scaffold(
-      key: _scaffoldKey,
-      drawer: _buildDrawer(context, user),
-      appBar: AppBar(
-        title: Text(_screenTitles[_currentIndex]),
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-          tooltip: 'Menu',
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final shouldPop = await _onWillPop();
+        if (shouldPop && context.mounted) {
+          Navigator.of(context).maybePop();
+        }
+      },
+      child: Scaffold(
+        key: _scaffoldKey,
+        drawer: _buildDrawer(context, user),
+        appBar: AppBar(
+          title: Text(_screenTitles[_currentIndex]),
+          leading: IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+            tooltip: 'Menu',
+          ),
         ),
-      ),
-      body: RolePageBackground(
-        flavor: RoleThemeFlavor.teacher,
-        child: IndexedStack(index: _currentIndex, children: _screens),
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
+        body: RolePageBackground(
+          flavor: RoleThemeFlavor.teacher,
+          child: IndexedStack(index: _currentIndex, children: _screens),
         ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) => setState(() => _currentIndex = index),
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          selectedItemColor: Theme.of(context).colorScheme.primary,
-          unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
-          selectedFontSize: 12,
-          unselectedFontSize: 12,
-          elevation: 0,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_outlined),
-              activeIcon: Icon(Icons.dashboard),
-              label: 'Dashboard',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.class_outlined),
-              activeIcon: Icon(Icons.class_),
-              label: 'Classes',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.fact_check_outlined),
-              activeIcon: Icon(Icons.fact_check),
-              label: 'Attendance',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profile',
-            ),
-          ],
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            boxShadow: [
+              BoxShadow(
+                color: theme.shadowColor.withOpacity(0.18),
+                blurRadius: 10,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+          child: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (index) => setState(() => _currentIndex = index),
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            selectedItemColor: Theme.of(context).colorScheme.primary,
+            unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
+            selectedFontSize: 12,
+            unselectedFontSize: 12,
+            elevation: 0,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.dashboard_outlined),
+                activeIcon: Icon(Icons.dashboard),
+                label: 'Dashboard',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.class_outlined),
+                activeIcon: Icon(Icons.class_),
+                label: 'Classes',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.fact_check_outlined),
+                activeIcon: Icon(Icons.fact_check),
+                label: 'Attendance',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline),
+                activeIcon: Icon(Icons.person),
+                label: 'Profile',
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -121,15 +163,17 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
               children: [
                 CircleAvatar(
                   radius: 30,
-                  backgroundColor: Colors.white.withValues(alpha: 0.2),
+                  backgroundColor: theme.colorScheme.onPrimary.withOpacity(
+                    0.18,
+                  ),
                   child: Text(
                     user?.firstName?.isNotEmpty == true
                         ? user!.firstName[0].toUpperCase()
                         : 'T',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: theme.colorScheme.onPrimary,
                     ),
                   ),
                 ),
@@ -141,8 +185,8 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                     children: [
                       Text(
                         user?.fullName ?? 'Teacher',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: theme.colorScheme.onPrimary,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -152,14 +196,14 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                       Text(
                         user?.subject ?? 'Teacher',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
+                          color: theme.colorScheme.onPrimary.withOpacity(0.82),
                           fontSize: 13,
                         ),
                       ),
                       Text(
                         user?.email ?? '',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.6),
+                          color: theme.colorScheme.onPrimary.withOpacity(0.64),
                           fontSize: 12,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -206,7 +250,9 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                   label: 'Attendance',
                   onTap: () {
                     Navigator.pop(context); // Close drawer
-                    setState(() => _currentIndex = 2); // Switch to attendance tab
+                    setState(
+                      () => _currentIndex = 2,
+                    ); // Switch to attendance tab
                   },
                 ),
                 _DrawerItem(
@@ -287,7 +333,8 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => const TeacherSettingsScreen()),
+                        builder: (_) => const TeacherSettingsScreen(),
+                      ),
                     );
                   },
                 ),
@@ -309,9 +356,9 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                           ),
                           TextButton(
                             onPressed: () => Navigator.pop(context, true),
-                            child: const Text(
+                            child: Text(
                               'Logout',
-                              style: TextStyle(color: Colors.red),
+                              style: TextStyle(color: theme.colorScheme.error),
                             ),
                           ),
                         ],

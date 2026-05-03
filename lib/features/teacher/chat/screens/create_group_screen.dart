@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
 import 'teacher_chat_conversation_screen.dart';
 
@@ -61,8 +60,8 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     if (_searchQuery.isEmpty) return _users;
     final q = _searchQuery.toLowerCase();
     return _users.where((u) {
-      final name =
-          '${u['firstName'] ?? ''} ${u['lastName'] ?? ''}'.toLowerCase();
+      final name = '${u['firstName'] ?? ''} ${u['lastName'] ?? ''}'
+          .toLowerCase();
       return name.contains(q);
     }).toList();
   }
@@ -120,9 +119,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _creating = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to create group: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to create group: $e')));
     }
   }
 
@@ -133,16 +132,16 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
         .toUpperCase();
   }
 
-  Color _roleColor(String role) {
+  Color _roleColor(ThemeData theme, String role) {
     switch (role.toLowerCase()) {
       case 'student':
-        return AppColors.primary;
+        return theme.colorScheme.primary;
       case 'parent':
-        return AppColors.secondary;
+        return theme.colorScheme.secondary;
       case 'admin':
-        return Colors.purple;
+        return theme.colorScheme.tertiary;
       default:
-        return Colors.grey;
+        return theme.colorScheme.onSurfaceVariant;
     }
   }
 
@@ -172,30 +171,36 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Group name field
-                  const Text(
+                  Text(
                     'Group Name',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Container(
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: theme.colorScheme.surfaceContainerLow,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.divider),
+                      border: Border.all(
+                        color: theme.colorScheme.outlineVariant,
+                      ),
                     ),
                     child: TextField(
                       controller: _nameController,
                       decoration: InputDecoration(
                         hintText: 'e.g. Biology 101 – Period 2',
                         hintStyle: TextStyle(
-                            color: Colors.grey.shade400, fontSize: 14),
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontSize: 14,
+                        ),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 12),
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
                       ),
                     ),
                   ),
@@ -205,28 +210,30 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Add Members',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       if (_selectedIds.isNotEmpty)
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
+                            color: theme.colorScheme.primaryContainer,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             '${_selectedIds.length} selected',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.primary,
+                              color: theme.colorScheme.onPrimaryContainer,
                             ),
                           ),
                         ),
@@ -238,7 +245,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                   Container(
                     height: 44,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
+                      color: theme.colorScheme.surfaceContainerLow,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: TextField(
@@ -250,13 +257,21 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                       decoration: InputDecoration(
                         hintText: 'Search by name...',
                         hintStyle: TextStyle(
-                            color: Colors.grey.shade500, fontSize: 14),
-                        prefixIcon: Icon(Icons.search,
-                            color: Colors.grey.shade500, size: 20),
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontSize: 14,
+                        ),
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: theme.colorScheme.onSurfaceVariant,
+                          size: 20,
+                        ),
                         suffixIcon: _searchQuery.isNotEmpty
                             ? IconButton(
-                                icon: Icon(Icons.clear,
-                                    color: Colors.grey.shade400, size: 18),
+                                icon: Icon(
+                                  Icons.clear,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  size: 18,
+                                ),
                                 onPressed: () {
                                   _searchController.clear();
                                   setState(() => _searchQuery = '');
@@ -265,8 +280,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                               )
                             : null,
                         border: InputBorder.none,
-                        contentPadding:
-                            const EdgeInsets.symmetric(vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                        ),
                       ),
                     ),
                   ),
@@ -275,18 +291,23 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                   // User list
                   if (_loadingUsers)
                     const Center(
-                        child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: CircularProgressIndicator(),
-                    ))
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
                   else if (_loadError != null)
                     Center(
                       child: Padding(
                         padding: const EdgeInsets.all(24),
                         child: Column(
                           children: [
-                            Text('Failed to load users',
-                                style: TextStyle(color: Colors.grey.shade600)),
+                            Text(
+                              'Failed to load users',
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
                             const SizedBox(height: 8),
                             TextButton.icon(
                               onPressed: _loadUsers,
@@ -303,7 +324,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                         padding: const EdgeInsets.all(24),
                         child: Text(
                           'No users found',
-                          style: TextStyle(color: Colors.grey.shade500),
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
                     )
@@ -320,6 +343,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
   }
 
   Widget _buildUserTile(Map<String, dynamic> user) {
+    final theme = Theme.of(context);
     final id = user['id'] as String? ?? '';
     final firstName = user['firstName'] as String? ?? '';
     final lastName = user['lastName'] as String? ?? '';
@@ -329,7 +353,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     final grade = user['grade'] as String?;
     final section = user['section'] as String?;
     final selected = _selectedIds.contains(id);
-    final color = _roleColor(role);
+    final color = _roleColor(theme, role);
 
     String subtitle = role.isNotEmpty
         ? role[0].toUpperCase() + role.substring(1)
@@ -356,18 +380,20 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: selected
-              ? AppColors.primary.withValues(alpha: 0.05)
-              : AppColors.surface,
+              ? theme.colorScheme.primaryContainer
+              : Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: selected ? AppColors.primary : AppColors.divider,
+            color: selected
+                ? theme.colorScheme.primary
+                : Theme.of(context).colorScheme.outlineVariant,
           ),
         ),
         child: Row(
           children: [
             CircleAvatar(
               radius: 20,
-              backgroundColor: color.withValues(alpha: 0.15),
+              backgroundColor: color.withOpacity(0.16),
               child: Text(
                 _initials(user),
                 style: TextStyle(
@@ -384,19 +410,19 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                 children: [
                   Text(
                     name.isNotEmpty ? name : 'Unnamed',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
-                      color: AppColors.textPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   if (subtitle.isNotEmpty) ...[
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textSecondary,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -418,7 +444,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                         }
                       });
                     },
-              activeColor: AppColors.primary,
+              activeColor: theme.colorScheme.primary,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(4),
               ),
@@ -430,13 +456,14 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
   }
 
   Widget _buildBottomButton() {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: theme.shadowColor.withOpacity(0.14),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),
@@ -448,20 +475,20 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
         child: ElevatedButton(
           onPressed: _creating ? null : _createGroup,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
+            backgroundColor: theme.colorScheme.primary,
+            foregroundColor: theme.colorScheme.onPrimary,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
             elevation: 0,
           ),
           child: _creating
-              ? const SizedBox(
+              ? SizedBox(
                   width: 22,
                   height: 22,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Colors.white,
+                    color: theme.colorScheme.onPrimary,
                   ),
                 )
               : const Text(

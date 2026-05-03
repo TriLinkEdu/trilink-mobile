@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
 import 'create_group_screen.dart';
 import 'teacher_chat_conversation_screen.dart';
@@ -32,8 +31,9 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
       final conversations = await ApiService().getConversations();
       if (!mounted) return;
       setState(() {
-        _conversations =
-            conversations.map((c) => c as Map<String, dynamic>).toList();
+        _conversations = conversations
+            .map((c) => c as Map<String, dynamic>)
+            .toList();
         _loading = false;
       });
     } catch (e) {
@@ -97,40 +97,43 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
         onPressed: () async {
           await Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => const CreateGroupScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => const CreateGroupScreen()),
           );
           _loadData();
         },
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.edit, color: Colors.white),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        child: Icon(Icons.edit, color: Theme.of(context).colorScheme.onPrimary),
       ),
     );
   }
 
   Widget _buildHeader() {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 16, 20, 8),
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
+            icon: Icon(
+              Icons.arrow_back_ios_new,
+              color: theme.colorScheme.onSurface,
+              size: 20,
+            ),
             onPressed: () => Navigator.pop(context),
           ),
-          const Expanded(
+          Expanded(
             child: Text(
               'Messages',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+                color: theme.colorScheme.onSurface,
               ),
             ),
           ),
           CircleAvatar(
             radius: 20,
-            backgroundColor: Colors.grey.shade200,
+            backgroundColor: theme.colorScheme.outlineVariant,
             backgroundImage: const NetworkImage(
               'https://i.pravatar.cc/80?img=32',
             ),
@@ -141,30 +144,31 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
   }
 
   Widget _buildTabBar() {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         height: 44,
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
+          color: theme.colorScheme.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(10),
         ),
         child: TabBar(
           controller: _tabController,
           indicator: BoxDecoration(
-            color: Colors.white,
+            color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(8),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
+                color: theme.shadowColor.withOpacity(0.16),
                 blurRadius: 4,
               ),
             ],
           ),
           indicatorSize: TabBarIndicatorSize.tab,
           dividerColor: Colors.transparent,
-          labelColor: AppColors.textPrimary,
-          unselectedLabelColor: Colors.grey.shade500,
+          labelColor: theme.colorScheme.onSurface,
+          unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
           labelStyle: const TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 14,
@@ -184,22 +188,26 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
   }
 
   Widget _buildSearchBar() {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         height: 44,
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
+          color: theme.colorScheme.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(10),
         ),
         child: TextField(
           controller: _searchController,
           decoration: InputDecoration(
             hintText: 'Search students, parents, or groups...',
-            hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+            hintStyle: TextStyle(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: 14,
+            ),
             prefixIcon: Icon(
               Icons.search,
-              color: Colors.grey.shade500,
+              color: theme.colorScheme.onSurfaceVariant,
               size: 20,
             ),
             border: InputBorder.none,
@@ -246,7 +254,10 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_error!, style: const TextStyle(color: AppColors.error)),
+            Text(
+              _error!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
             const SizedBox(height: 12),
             ElevatedButton(onPressed: _loadData, child: const Text('Retry')),
           ],
@@ -257,7 +268,10 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
       return Center(
         child: Text(
           'No conversations yet',
-          style: TextStyle(color: Colors.grey.shade500, fontSize: 15),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontSize: 15,
+          ),
         ),
       );
     }
@@ -279,9 +293,10 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
             return _ThreadTile(
               thread: _ThreadItem(
                 name: name,
-                message: '$participantCount participant${participantCount == 1 ? '' : 's'}',
+                message:
+                    '$participantCount participant${participantCount == 1 ? '' : 's'}',
                 time: _timeAgo(createdAt),
-                avatarColor: AppColors.primary,
+                avatarColor: Theme.of(context).colorScheme.primary,
                 icon: Icons.group,
               ),
               onTap: () async {
@@ -303,40 +318,36 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
   }
 
   Widget _buildStudentGroupsTab() {
-    final groups = _conversations
-        .where((c) => c['isGroup'] == true)
-        .toList();
+    final groups = _conversations.where((c) => c['isGroup'] == true).toList();
     return _buildConversationBody(groups);
   }
 
   Widget _buildStudentChatsTab() {
-    final studentChats = _conversations
-        .where((c) {
-          final subject = (c['subject'] as String? ?? '').toLowerCase();
-          return c['isGroup'] != true && subject.contains('student');
-        })
-        .toList();
+    final studentChats = _conversations.where((c) {
+      final subject = (c['subject'] as String? ?? '').toLowerCase();
+      return c['isGroup'] != true && subject.contains('student');
+    }).toList();
     return _buildConversationBody(studentChats);
   }
 
   Widget _buildParentInboxTab() {
-    final parentChats = _conversations
-        .where((c) {
-          final role = (c['participantRole'] as String? ??
-              c['subject'] as String? ?? '').toLowerCase();
-          return c['isGroup'] != true && role.contains('parent');
-        })
-        .toList();
+    final parentChats = _conversations.where((c) {
+      final role =
+          (c['participantRole'] as String? ?? c['subject'] as String? ?? '')
+              .toLowerCase();
+      return c['isGroup'] != true && role.contains('parent');
+    }).toList();
     return _buildConversationBody(parentChats);
   }
 
   Widget _buildSectionLabel(String label) {
+    final theme = Theme.of(context);
     return Text(
       label,
       style: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w600,
-        color: Colors.grey.shade500,
+        color: theme.colorScheme.onSurfaceVariant,
         letterSpacing: 0.8,
       ),
     );
@@ -356,22 +367,26 @@ class _ActionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
+          color: theme.colorScheme.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: Colors.grey.shade600),
+            Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
             const SizedBox(width: 4),
             Text(
               label,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -403,6 +418,7 @@ class _ThreadTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Padding(
@@ -411,7 +427,7 @@ class _ThreadTile extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 24,
-              backgroundColor: thread.avatarColor.withValues(alpha: 0.15),
+              backgroundColor: thread.avatarColor.withOpacity(0.15),
               child: Icon(thread.icon, color: thread.avatarColor, size: 22),
             ),
             const SizedBox(width: 12),
@@ -425,10 +441,10 @@ class _ThreadTile extends StatelessWidget {
                       Expanded(
                         child: Text(
                           thread.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 15,
-                            color: AppColors.textPrimary,
+                            color: theme.colorScheme.onSurface,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -437,7 +453,7 @@ class _ThreadTile extends StatelessWidget {
                         thread.time,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade500,
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -445,7 +461,10 @@ class _ThreadTile extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     thread.message,
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                   ),
