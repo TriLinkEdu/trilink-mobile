@@ -181,65 +181,65 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         }
       },
       child: Scaffold(
-      key: _scaffoldKey,
-      drawer: _buildDrawer(context),
-      body: RolePageBackground(
-        flavor: RoleThemeFlavor.parent,
-        child: OfflineBanner(
-          child: SafeArea(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : _error != null
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _error!,
-                          style: TextStyle(color: theme.colorScheme.error),
-                        ),
-                        const SizedBox(height: 12),
-                        ElevatedButton(
-                          onPressed: _loadData,
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  )
-                : SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildHeader(context),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 20),
-                              _buildOverviewSection(),
-                              const SizedBox(height: 24),
-                              _buildGradesBySubject(),
-                              const SizedBox(height: 24),
-                              _buildUpcomingTasks(),
-                              const SizedBox(height: 24),
-                              _buildFeatureGrid(context),
-                              const SizedBox(height: 24),
-                              _buildContactTeacher(),
-                              const SizedBox(height: 24),
-                              _buildRecentActivity(),
-                              const SizedBox(height: 24),
-                            ],
+        key: _scaffoldKey,
+        drawer: _buildDrawer(context),
+        body: RolePageBackground(
+          flavor: RoleThemeFlavor.parent,
+          child: OfflineBanner(
+            child: SafeArea(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _error!,
+                            style: TextStyle(color: theme.colorScheme.error),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                            onPressed: _loadData,
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildHeader(context),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 20),
+                                _buildOverviewSection(),
+                                const SizedBox(height: 24),
+                                _buildGradesBySubject(),
+                                const SizedBox(height: 24),
+                                _buildUpcomingTasks(),
+                                const SizedBox(height: 24),
+                                _buildFeatureGrid(context),
+                                const SizedBox(height: 24),
+                                _buildContactTeacher(),
+                                const SizedBox(height: 24),
+                                _buildRecentActivity(),
+                                const SizedBox(height: 24),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+            ),
           ),
         ),
+        bottomNavigationBar: _buildBottomNav(),
       ),
-      bottomNavigationBar: _buildBottomNav(),
-    ),
     );
   }
 
@@ -363,7 +363,9 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
               children: [
                 CircleAvatar(
                   radius: 30,
-                  backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.2),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.surface.withValues(alpha: 0.2),
                   child: Text(
                     (user?.firstName ?? '').isNotEmpty
                         ? user!.firstName[0].toUpperCase()
@@ -702,14 +704,16 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   Widget _buildOverviewSection() {
     final theme = Theme.of(context);
     final grades = _childDashboard['grades'] as Map<String, dynamic>? ?? {};
-    final attendance = _childDashboard['attendance'] as Map<String, dynamic>? ?? {};
+    final attendance =
+        _childDashboard['attendance'] as Map<String, dynamic>? ?? {};
     final upcoming = _childDashboard['upcoming'] as Map<String, dynamic>? ?? {};
     final upcomingSummary = upcoming['summary'] as Map<String, dynamic>? ?? {};
 
     final overallAvg = grades['overallAveragePercent'] as num?;
     final attOverall = attendance['overall'] as Map<String, dynamic>? ?? {};
     final attPercent = attOverall['attendancePercent'] as num?;
-    final pendingAssignments = upcomingSummary['assignmentsPending'] as int? ?? 0;
+    final pendingAssignments =
+        upcomingSummary['assignmentsPending'] as int? ?? 0;
     final availableExams = upcomingSummary['examsAvailable'] as int? ?? 0;
     final pendingTasks = pendingAssignments + availableExams;
 
@@ -820,7 +824,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
               onTap: () {
                 final childId = _children.isNotEmpty
                     ? (_children[_selectedChildIndex]['studentId'] as String? ??
-                        _children[_selectedChildIndex]['id'] as String? ?? '')
+                          _children[_selectedChildIndex]['id'] as String? ??
+                          '')
                     : '';
                 Navigator.push(
                   context,
@@ -875,7 +880,9 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                     Divider(height: 1, color: theme.colorScheme.outlineVariant),
                   Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     child: Row(
                       children: [
                         Container(
@@ -922,10 +929,10 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                                       fontWeight: FontWeight.bold,
                                       color: avg != null
                                           ? (avg >= 80
-                                              ? Colors.green
-                                              : avg >= 60
-                                                  ? Colors.orange
-                                                  : AppColors.error)
+                                                ? Colors.green
+                                                : avg >= 60
+                                                ? Colors.orange
+                                                : AppColors.error)
                                           : theme.colorScheme.onSurfaceVariant,
                                     ),
                                   ),
@@ -936,10 +943,12 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                                 borderRadius: BorderRadius.circular(4),
                                 child: LinearProgressIndicator(
                                   value: barWidth,
-                                  backgroundColor:
-                                      color.withValues(alpha: 0.12),
-                                  valueColor:
-                                      AlwaysStoppedAnimation<Color>(color),
+                                  backgroundColor: color.withValues(
+                                    alpha: 0.12,
+                                  ),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    color,
+                                  ),
                                   minHeight: 6,
                                 ),
                               ),
@@ -968,8 +977,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
 
   Widget _buildUpcomingTasks() {
     final theme = Theme.of(context);
-    final upcoming =
-        _childDashboard['upcoming'] as Map<String, dynamic>? ?? {};
+    final upcoming = _childDashboard['upcoming'] as Map<String, dynamic>? ?? {};
     final exams = (upcoming['exams'] as List<dynamic>? ?? [])
         .cast<Map<String, dynamic>>();
     final assignments = (upcoming['assignments'] as List<dynamic>? ?? [])
@@ -1756,8 +1764,7 @@ class _UpcomingTaskCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: tagColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),

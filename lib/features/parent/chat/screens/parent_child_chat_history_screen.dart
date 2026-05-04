@@ -39,8 +39,7 @@ class _ParentChildChatHistoryScreenState
     });
 
     try {
-      final data =
-          await ApiService().getChildConversations(widget.studentId);
+      final data = await ApiService().getChildConversations(widget.studentId);
 
       if (!mounted) return;
       setState(() {
@@ -64,8 +63,11 @@ class _ParentChildChatHistoryScreenState
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new,
-              color: theme.colorScheme.onSurface, size: 20),
+          icon: Icon(
+            Icons.arrow_back_ios_new,
+            color: theme.colorScheme.onSurface,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
@@ -113,9 +115,11 @@ class _ParentChildChatHistoryScreenState
     final filtered = _typeFilter == 'all'
         ? _conversations
         : _conversations
-            .where((c) =>
-                (c['type'] as String? ?? '').toLowerCase() == _typeFilter)
-            .toList();
+              .where(
+                (c) =>
+                    (c['type'] as String? ?? '').toLowerCase() == _typeFilter,
+              )
+              .toList();
 
     final directCount = _conversations
         .where((c) => (c['type'] as String? ?? '') == 'direct')
@@ -161,8 +165,11 @@ class _ParentChildChatHistoryScreenState
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.chat_bubble_outline,
-                          size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      Icon(
+                        Icons.chat_bubble_outline,
+                        size: 48,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                       const SizedBox(height: 12),
                       Text(
                         'No ${_typeFilter == 'all' ? '' : _typeFilter} conversations',
@@ -190,8 +197,7 @@ class _ParentChildChatHistoryScreenState
     );
   }
 
-  Widget _buildFilterChip(
-      String label, String value, int count, Color color) {
+  Widget _buildFilterChip(String label, String value, int count, Color color) {
     final selected = _typeFilter == value;
     return GestureDetector(
       onTap: () => setState(() => _typeFilter = value),
@@ -199,8 +205,9 @@ class _ParentChildChatHistoryScreenState
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color:
-              selected ? color.withValues(alpha: 0.12) : Theme.of(context).colorScheme.surfaceContainerLow,
+          color: selected
+              ? color.withValues(alpha: 0.12)
+              : Theme.of(context).colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: selected ? color : Colors.transparent,
@@ -214,18 +221,20 @@ class _ParentChildChatHistoryScreenState
               label,
               style: TextStyle(
                 fontSize: 13,
-                fontWeight:
-                    selected ? FontWeight.w600 : FontWeight.w500,
-                color: selected ? color : Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                color: selected
+                    ? color
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             if (count > 0) ...[
               const SizedBox(width: 5),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                 decoration: BoxDecoration(
-                  color: selected ? color : Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: selected
+                      ? color
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -345,7 +354,9 @@ class _ParentChildChatHistoryScreenState
                           _formatDate(updatedAt),
                           style: TextStyle(
                             fontSize: 12,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -354,8 +365,11 @@ class _ParentChildChatHistoryScreenState
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios,
-                size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ],
         ),
       ),
@@ -369,7 +383,11 @@ class _ParentChildChatHistoryScreenState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 16),
             Text(
               'Failed to load conversations',
@@ -383,7 +401,10 @@ class _ParentChildChatHistoryScreenState
             Text(
               _error!,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                fontSize: 13,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
@@ -409,8 +430,11 @@ class _ParentChildChatHistoryScreenState
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.chat_bubble_outline,
-              size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
+          Icon(
+            Icons.chat_bubble_outline,
+            size: 64,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(height: 16),
           Text(
             'No conversations',
@@ -424,7 +448,10 @@ class _ParentChildChatHistoryScreenState
           Text(
             'Your child has no conversations yet.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            style: TextStyle(
+              fontSize: 13,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -456,7 +483,7 @@ class _ParentChildChatHistoryScreenState
           'Sep',
           'Oct',
           'Nov',
-          'Dec'
+          'Dec',
         ];
         return '${months[d.month - 1]} ${d.day}';
       }

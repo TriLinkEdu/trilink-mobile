@@ -194,7 +194,10 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
                   Text(
                     '$_grade ${_section.isNotEmpty ? '- $_section' : ''}'
                         .trim(),
-                    style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
               ],
             ),
@@ -389,7 +392,11 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
   Widget _buildSelectedDateHeader() {
     return Row(
       children: [
-        Icon(Icons.calendar_today, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+        Icon(
+          Icons.calendar_today,
+          size: 18,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
         const SizedBox(width: 8),
         Text(
           DateFormat('EEEE, MMMM d, yyyy').format(_selectedDate),
@@ -424,7 +431,11 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
         ),
         child: Column(
           children: [
-            Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 12),
             Text(
               'Failed to load attendance',
@@ -438,7 +449,10 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
             Text(
               _error!,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
@@ -485,7 +499,10 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
             const SizedBox(height: 4),
             Text(
               'Select another date to view attendance',
-              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -638,7 +655,10 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
                 const SizedBox(width: 6),
                 Text(
                   teacherName,
-                  style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -650,7 +670,9 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,

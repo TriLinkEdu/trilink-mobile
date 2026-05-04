@@ -62,8 +62,11 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new,
-              color: theme.colorScheme.onSurface, size: 20),
+          icon: Icon(
+            Icons.arrow_back_ios_new,
+            color: theme.colorScheme.onSurface,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
@@ -199,7 +202,9 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
                             subjects.join(', '),
                             style: TextStyle(
                               fontSize: 12,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -209,7 +214,9 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
                           const SizedBox(height: 2),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 7, vertical: 2),
+                              horizontal: 7,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: color.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(6),
@@ -251,7 +258,10 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
               firstChild: const SizedBox.shrink(),
               secondChild: Column(
                 children: [
-                  Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
+                  Divider(
+                    height: 1,
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                     child: Column(
@@ -262,53 +272,75 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(Icons.book_outlined,
-                                  size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                              Icon(
+                                Icons.book_outlined,
+                                size: 16,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Wrap(
                                   spacing: 6,
                                   runSpacing: 6,
                                   children: subjects
-                                      .map((s) => Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 8, vertical: 4),
-                                            decoration: BoxDecoration(
-                                              color: color.withValues(alpha: 0.08),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
+                                      .map(
+                                        (s) => Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: color.withValues(
+                                              alpha: 0.08,
                                             ),
-                                            child: Text(
-                                              s,
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: color,
-                                                fontWeight: FontWeight.w500,
-                                              ),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
                                             ),
-                                          ))
+                                          ),
+                                          child: Text(
+                                            s,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: color,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                      )
                                       .toList(),
                                 ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 10),
-                          Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
+                          Divider(
+                            height: 1,
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                          ),
                           const SizedBox(height: 10),
                         ],
                         // Email
                         if (email.isNotEmpty) ...[
                           Row(
                             children: [
-                              Icon(Icons.email_outlined,
-                                  size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                              Icon(
+                                Icons.email_outlined,
+                                size: 16,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   email,
                                   style: TextStyle(
                                     fontSize: 13,
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                               ),
@@ -320,14 +352,21 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
                         if (phone.isNotEmpty) ...[
                           Row(
                             children: [
-                              Icon(Icons.phone_outlined,
-                                  size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                              Icon(
+                                Icons.phone_outlined,
+                                size: 16,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 phone,
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ],
@@ -341,8 +380,9 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
                             onPressed: () => _openTeacherChat(
                               teacherId: teacherId,
                               teacherName: fullName,
-                              subject:
-                                  subjects.isNotEmpty ? subjects.first : '',
+                              subject: subjects.isNotEmpty
+                                  ? subjects.first
+                                  : '',
                             ),
                             icon: const Icon(Icons.send_rounded, size: 16),
                             label: const Text('Send Message'),
@@ -352,8 +392,7 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 12),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                             ),
                           ),
                         ),
@@ -380,7 +419,11 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 16),
             Text(
               'Failed to load teachers',
@@ -394,7 +437,10 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
             Text(
               _error!,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                fontSize: 13,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
@@ -420,7 +466,11 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.people_outline, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
+          Icon(
+            Icons.people_outline,
+            size: 64,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(height: 16),
           Text(
             'No teachers found',
@@ -434,7 +484,10 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
           Text(
             'No teachers are assigned to this student.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            style: TextStyle(
+              fontSize: 13,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),

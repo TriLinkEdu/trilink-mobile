@@ -180,12 +180,19 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.wifi_off_rounded, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.wifi_off_rounded,
+              size: 48,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 16),
             Text(
               _error!,
               textAlign: TextAlign.center,
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 13,
+              ),
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
@@ -273,7 +280,10 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                   (_detail['student'] as Map<String, dynamic>?)?['email']
                           as String? ??
                       '',
-                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -359,7 +369,10 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
             const SizedBox(height: 2),
             Text(
               label,
-              style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -528,7 +541,9 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: Theme.of(context).shadowColor.withValues(alpha: 0.03),
+                    color: Theme.of(
+                      context,
+                    ).shadowColor.withValues(alpha: 0.03),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -585,7 +600,9 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                               Icon(
                                 Icons.person_outline,
                                 size: 13,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                               const SizedBox(width: 4),
                               Expanded(
@@ -593,7 +610,9 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                                   teacherName,
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -696,7 +715,9 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: Theme.of(context).shadowColor.withValues(alpha: 0.03),
+                    color: Theme.of(
+                      context,
+                    ).shadowColor.withValues(alpha: 0.03),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -731,7 +752,9 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                                 style: TextStyle(
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14,
-                                  color: Theme.of(context).colorScheme.onSurface,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                 ),
                               ),
                               if (subjects.isNotEmpty) ...[
@@ -740,7 +763,9 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                                   subjects.join(', '),
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -773,7 +798,10 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                     firstChild: const SizedBox.shrink(),
                     secondChild: Column(
                       children: [
-                        Divider(height: 1, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        Divider(
+                          height: 1,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                         Padding(
                           padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
                           child: Column(
@@ -787,7 +815,9 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                                     Icon(
                                       Icons.book_outlined,
                                       size: 16,
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
                                     ),
                                     const SizedBox(width: 8),
                                     Expanded(
@@ -825,7 +855,12 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                                   ],
                                 ),
                                 const SizedBox(height: 10),
-                                Divider(height: 1, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                Divider(
+                                  height: 1,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                                 const SizedBox(height: 10),
                               ],
                               // Email
@@ -835,7 +870,9 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                                     Icon(
                                       Icons.email_outlined,
                                       size: 16,
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
                                     ),
                                     const SizedBox(width: 8),
                                     Expanded(
@@ -843,7 +880,9 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                                         email,
                                         style: TextStyle(
                                           fontSize: 13,
-                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
                                         ),
                                       ),
                                     ),
@@ -858,14 +897,18 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
                                     Icon(
                                       Icons.phone_outlined,
                                       size: 16,
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
                                       phone,
                                       style: TextStyle(
                                         fontSize: 13,
-                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
                                       ),
                                     ),
                                   ],
@@ -959,11 +1002,18 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
       ),
       child: Column(
         children: [
-          Icon(icon, size: 36, color: Theme.of(context).colorScheme.onSurfaceVariant),
+          Icon(
+            icon,
+            size: 36,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(height: 10),
           Text(
             message,
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 13,
+            ),
           ),
         ],
       ),
@@ -1117,7 +1167,9 @@ class _SubjectCardState extends State<_SubjectCard> {
                           widget.teacherName,
                           style: TextStyle(
                             fontSize: 12,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -1172,7 +1224,10 @@ class _SubjectCardState extends State<_SubjectCard> {
 
           // Expanded details
           if (_expanded) ...[
-            Divider(height: 1, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            Divider(
+              height: 1,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
               child: Column(
@@ -1223,7 +1278,9 @@ class _SubjectCardState extends State<_SubjectCard> {
                                 title,
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Theme.of(context).colorScheme.onSurface,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -1294,7 +1351,10 @@ class _SubjectCardState extends State<_SubjectCard> {
         const SizedBox(width: 6),
         Text(
           label,
-          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         const Spacer(),
         Text(
