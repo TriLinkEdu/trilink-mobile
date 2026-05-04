@@ -262,7 +262,7 @@ class _TeacherFeedbackScreenState extends State<TeacherFeedbackScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: theme.colorScheme.surfaceContainerLowest,
+      backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
@@ -569,7 +569,7 @@ class _FilterChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected
               ? activeColor.withOpacity(0.9)
-              : theme.colorScheme.surfaceContainerLowest,
+              : theme.colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: selected ? activeColor : theme.colorScheme.outlineVariant,
@@ -596,7 +596,7 @@ class _FilterChip extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: selected
                       ? theme.colorScheme.onPrimary
-                      : theme.colorScheme.surfaceContainerHighest,
+                      : theme.colorScheme.surfaceContainerLow,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -778,7 +778,7 @@ class _FeedbackCard extends StatelessWidget {
           const SizedBox(height: 12),
           Divider(
             height: 1,
-            color: Theme.of(context).colorScheme.surfaceContainerLowest,
+            color: Theme.of(context).colorScheme.outlineVariant,
           ),
           const SizedBox(height: 12),
           Text(

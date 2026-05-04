@@ -4,6 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../features/auth/services/auth_service.dart';
 import 'create_announcement_screen.dart';
+import 'teacher_announcement_detail_screen.dart';
 
 // ─── Model ────────────────────────────────────────────────────────────────────
 
@@ -517,7 +518,25 @@ class _AnnCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => TeacherAnnouncementDetailScreen(
+              announcement: ann.toEditMap()
+                ..addAll({
+                  'createdAt': ann.createdAt.toIso8601String(),
+                  'body': ann.body,
+                }),
+              isOwn: isOwn,
+              onEdit: isOwn ? onEdit : null,
+              onDelete: isOwn ? onDelete : null,
+            ),
+          ),
+        );
+      },
+      child: Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
@@ -692,6 +711,7 @@ class _AnnCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }
