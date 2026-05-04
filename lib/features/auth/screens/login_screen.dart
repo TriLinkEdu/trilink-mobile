@@ -253,8 +253,9 @@ class _LoginScreenState extends State<LoginScreen>
         prefixIcon: Icon(Icons.email_outlined),
       ),
       validator: (value) {
-        if (value == null || value.trim().isEmpty)
+        if (value == null || value.trim().isEmpty) {
           return 'Please enter your email';
+        }
         return null;
       },
     );

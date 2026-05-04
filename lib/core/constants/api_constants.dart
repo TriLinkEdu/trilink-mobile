@@ -1,15 +1,17 @@
+import 'package:flutter/foundation.dart';
+
 enum ApiEnvironment { local, production }
 
 class ApiConstants {
   ApiConstants._();
 
-  // API environment is selected at build time using:
-  // --dart-define=API_ENV=production
   static ApiEnvironment get environment {
-    const env = String.fromEnvironment('API_ENV', defaultValue: 'local');
-    return env.toLowerCase() == 'production'
-        ? ApiEnvironment.production
-        : ApiEnvironment.local;
+        // API environment is selected at build time using:
+        // --dart-define=API_ENV=production
+        const env = String.fromEnvironment('API_ENV', defaultValue: 'local');
+        return env.toLowerCase() == 'production'
+                ? ApiEnvironment.production
+                : ApiEnvironment.local;
   }
 
   // Single switch point for data source mode.
@@ -17,7 +19,22 @@ class ApiConstants {
   // Set false to force mock repositories.
   static const bool useRealApi = true;
 
-  static const String localBaseUrl = 'http://localhost:4000/api';
+  static String get localBaseUrl {
+    const explicitLocalHost = String.fromEnvironment(
+      'API_LOCAL_HOST',
+      defaultValue: '',
+    );
+    if (explicitLocalHost.isNotEmpty) {
+      return 'http://$explicitLocalHost:4000/api';
+    }
+
+    if (kIsWeb) return 'http://localhost:4000/api';
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.0.2.2:4000/api';
+    }
+    return 'http://localhost:4000/api';
+  }
+
   static const String productionBaseUrl =
       'https://trilink-backend-ms68.onrender.com/api';
   static const String productionDocsUrl =
@@ -50,9 +67,12 @@ class ApiConstants {
           : overrideUrl;
     }
 
-    return environment == ApiEnvironment.production
-        ? 'https://trilink-backend-ms68.onrender.com'
-        : 'http://localhost:4000';
+    if (environment == ApiEnvironment.production) {
+      return 'https://trilink-backend-ms68.onrender.com';
+    }
+    return localBaseUrl.endsWith('/api')
+        ? localBaseUrl.substring(0, localBaseUrl.length - 4)
+        : localBaseUrl;
   }
 
   // Auth
@@ -110,6 +130,12 @@ class ApiConstants {
   // Questions bank
   static const String questions = '/questions';
 
+  // Assignments
+  static const String assignmentsMe = '/assignments/me';
+  static String assignmentById(String id) => '/assignments/$id';
+  static String assignmentSubmission(String id) =>
+      '/assignments/$id/submissions';
+
   // Attempts
   static String attemptGrade(String id) => '/attempts/$id/grade';
   static String attemptRelease(String id) => '/attempts/$id/release';
@@ -132,6 +158,7 @@ class ApiConstants {
   static String conversationMessages(String id) =>
       '/conversations/$id/messages';
   static String messageReadReceipts(String id) => '/messages/$id/read-receipts';
+  static const String usersSearch = '/users/search';
 
   // Settings
   static const String userSettings = '/me/settings';
@@ -151,6 +178,8 @@ class ApiConstants {
       '/reports/students/$studentId/performance';
   static String studentCompare(String studentId) =>
       '/reports/students/$studentId/compare';
+  static String studentMastery(String studentId) =>
+      '/reports/students/$studentId/mastery';
   static String studentReport(String studentId) =>
       '/reports/students/$studentId/report';
   static String studentTeachers(String studentId) =>
@@ -160,14 +189,26 @@ class ApiConstants {
   // Files
   static const String filesUpload = '/files/upload';
   static String file(String id) => '/files/$id';
+  static String fileAccess(String id) => '/files/$id/access';
 
   // Gamification
   static const String gamificationBadges = '/gamification/badges';
   static const String gamificationMyBadges = '/gamification/me/badges';
   static const String gamificationMyPoints = '/gamification/me/badge-points';
   static const String gamificationMyProgress = '/gamification/me/progress';
+  static const String gamificationMissions = '/gamification/me/missions';
+  static String gamificationMissionComplete(String missionId) =>
+      '/gamification/me/missions/$missionId/complete';
+  static const String gamificationTeamChallenge =
+      '/gamification/me/team-challenge';
+  static const String gamificationQuizzes = '/gamification/quizzes';
+  static String gamificationQuizById(String id) => '/gamification/quizzes/$id';
+  static String gamificationQuizSubmit(String id) =>
+      '/gamification/quizzes/$id/submit';
   static const String gamificationLeaderboard =
       '/gamification/leaderboard/exam-average';
+  static const String gamificationStreakLeaderboard =
+      '/gamification/leaderboard/streaks';
   static String studentBadges(String studentId) =>
       '/gamification/students/$studentId/badges';
 
@@ -187,6 +228,39 @@ class ApiConstants {
       '/ai/analytics/subject/$subjectId/at-risk';
   static String aiClassPerformance(String subjectId) =>
       '/ai/analytics/subject/$subjectId/class-performance';
+
+  // Curriculum
+  static const String curriculumSubjects = '/curriculum/me/subjects';
+  static String curriculumTopics(String subjectId) =>
+      '/curriculum/me/subjects/$subjectId/topics';
+
+  // Course Resources
+  static const String courseResources = '/resources/me';
+  static String courseResource(String id) => '/resources/$id';
+
+  // Textbooks
+  static const String textbooks = '/textbooks';
+  static String textbook(String id) => '/textbooks/$id';
+
+  // Learning Materials (teacher resources)
+  static const String learningMaterialsMe = '/learning-materials/student/me';
+  static String learningMaterial(String id) => '/learning-materials/$id';
+
+  // AI/ML Endpoints
+  static const String aiChat = '/ai/chat';
+  static String aiChatHistory(String studentId) =>
+      '/ai/chat/history/$studentId';
+  static const String aiMasteryUpdate = '/ai/mastery/update';
+  static String aiMastery(String studentId, String topicId) =>
+      '/ai/mastery/$studentId/$topicId';
+  static String aiWeakTopics(String studentId, String subjectId) =>
+      '/ai/mastery/$studentId/weak/$subjectId';
+  static String aiNextQuestion(String studentId, String topicId) =>
+      '/ai/content/next-question/$studentId/$topicId';
+  static String aiWeeklySummary(String studentId) =>
+      '/ai/analytics/student/$studentId/weekly-summary';
+  static String aiEvaluate(String studentId) =>
+      '/ai/students/$studentId/evaluate';
 
   // ═══════════════════════════════════════════════════════
   // ─── PARENT-SPECIFIC ENDPOINTS ─────────────────────────
@@ -223,7 +297,4 @@ class ApiConstants {
       '/chat/children/$studentId/conversations';
   static String childConversationMessages(String studentId, String convId) =>
       '/chat/children/$studentId/conversations/$convId/messages';
-
-  // User Search
-  static const String usersSearch = '/users/search';
 }

@@ -51,6 +51,7 @@ class RouteNames {
   static const String studentPerformanceTrends = '/student/performance-trends';
   static const String studentAttendanceInsights =
       '/student/attendance-insights';
+  static const String studentTextbooks = '/student/textbooks';
 
   // Teacher
   static const String teacherDashboard = '/teacher/dashboard';

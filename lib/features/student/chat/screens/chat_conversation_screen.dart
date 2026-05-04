@@ -9,6 +9,7 @@ import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/error_widget.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../shared/widgets/profile_avatar.dart';
 import '../../shared/widgets/student_page_background.dart';
 import '../cubit/chat_conversation_cubit.dart';
 import '../repositories/student_chat_repository.dart';
@@ -134,9 +135,9 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
               tag: 'chat-avatar-${widget.conversationId}',
               child: Material(
                 type: MaterialType.transparency,
-                child: CircleAvatar(
+                child: ProfileAvatar(
                   radius: 18,
-                  child: Text(widget.title.characters.first.toUpperCase()),
+                  fallbackText: widget.title,
                 ),
               ),
             ),

@@ -58,6 +58,7 @@ import '../../features/student/sync/repositories/mock_student_sync_repository.da
 import '../../features/student/sync/repositories/real_student_sync_repository.dart';
 import '../../features/student/ai_assistant/repositories/student_ai_assistant_repository.dart';
 import '../../features/student/ai_assistant/repositories/mock_student_ai_assistant_repository.dart';
+import '../../features/student/ai_assistant/repositories/real_student_ai_assistant_repository.dart';
 import '../../features/student/settings/repositories/student_settings_repository.dart';
 import '../../features/student/settings/repositories/mock_student_settings_repository.dart';
 import '../../features/student/settings/repositories/real_student_settings_repository.dart';
@@ -67,6 +68,10 @@ import '../../features/student/analytics/repositories/real_student_analytics_rep
 import '../../features/student/shared/repositories/student_progress_repository.dart';
 import '../../features/student/shared/repositories/mock_student_progress_repository.dart';
 import '../../features/student/shared/repositories/real_student_progress_repository.dart';
+import '../../features/student/textbooks/repositories/textbook_repository.dart';
+import '../../features/student/textbooks/repositories/mock_textbook_repository.dart';
+import '../../features/student/textbooks/repositories/real_textbook_repository.dart';
+import '../../features/student/textbooks/repositories/textbook_file_cache_service.dart';
 
 final sl = GetIt.instance;
 
@@ -164,7 +169,9 @@ Future<void> initDependencies() async {
   );
   sl.registerLazySingleton<StudentCoursesRepository>(
     () => useRealStudentData
-        ? RealStudentCoursesRepository(fallback: MockStudentCoursesRepository())
+        ? RealStudentCoursesRepository(
+            fallback: MockStudentCoursesRepository(),
+          )
         : MockStudentCoursesRepository(),
   );
   sl.registerLazySingleton<StudentCurriculumRepository>(
@@ -185,7 +192,15 @@ Future<void> initDependencies() async {
         : MockStudentSyncRepository(),
   );
   sl.registerLazySingleton<StudentAiAssistantRepository>(
-    () => MockStudentAiAssistantRepository(),
+    () {
+      if (!useRealStudentData) return MockStudentAiAssistantRepository();
+      
+      // Get current user ID from AuthCubit
+      final authCubit = sl<AuthCubit>();
+      final userId = authCubit.state.user?.id ?? '';
+      
+      return RealStudentAiAssistantRepository(studentId: userId);
+    },
   );
   sl.registerLazySingleton<StudentSettingsRepository>(
     () => useRealStudentData
@@ -201,5 +216,13 @@ Future<void> initDependencies() async {
     () => useRealStudentData
         ? RealStudentProgressRepository()
         : MockStudentProgressRepository(),
+  );
+  sl.registerLazySingleton<TextbookRepository>(
+    () => useRealStudentData
+        ? RealTextbookRepository()
+        : MockTextbookRepository(),
+  );
+  sl.registerLazySingleton<TextbookFileCacheService>(
+    () => TextbookFileCacheService(storageService: sl<StorageService>()),
   );
 }

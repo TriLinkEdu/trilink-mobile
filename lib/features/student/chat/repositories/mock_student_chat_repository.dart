@@ -321,4 +321,25 @@ class MockStudentChatRepository implements StudentChatRepository {
       ),
     ];
   }
+
+  @override
+  Future<List<ChatContactModel>> searchUsers(String query) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    return [
+      const ChatContactModel(
+        id: 'teacher1',
+        firstName: 'Dr. Abebe',
+        lastName: 'Tadesse',
+        role: 'teacher',
+        subject: 'Mathematics',
+      ),
+      const ChatContactModel(
+        id: 'student2',
+        firstName: 'Alice',
+        lastName: 'Chen',
+        role: 'student',
+        grade: '9',
+      ),
+    ];
+  }
 }

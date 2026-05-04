@@ -373,6 +373,24 @@ class ApiService {
         'createdAt': DateTime.now().toIso8601String(),
       });
 
+  Future<Map<String, dynamic>> initiateDirectChat(String targetUserId) =>
+      _tryOr(
+        () => _api.post(
+          ApiConstants.conversationsInitiate,
+          data: {'targetUserId': targetUserId},
+        ),
+        {
+          'conversation': {
+            'id': 'conv-${DateTime.now().millisecondsSinceEpoch}',
+            'type': 'direct',
+            'title': 'Direct Chat',
+            'createdAt': DateTime.now().toIso8601String(),
+            'updatedAt': DateTime.now().toIso8601String(),
+          },
+          'isNew': true,
+        },
+      );
+
   Future<Map<String, dynamic>> getConversation(String id) => _tryOr(
     () => _api.get(ApiConstants.conversation(id)),
     DummyData.conversations.firstWhere(
