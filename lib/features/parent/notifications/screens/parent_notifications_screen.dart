@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../shared/widgets/role_page_background.dart';
 
 class ParentNotificationsScreen extends StatefulWidget {
   const ParentNotificationsScreen({super.key});
@@ -90,7 +91,7 @@ class _ParentNotificationsScreenState extends State<ParentNotificationsScreen> {
       SnackBar(
         content: Row(
           children: [
-            Icon(icon, color: Colors.white, size: 20),
+            Icon(icon, color: Theme.of(context).colorScheme.surface, size: 20),
             const SizedBox(width: 12),
             Expanded(child: Text(message)),
           ],
@@ -107,9 +108,8 @@ class _ParentNotificationsScreenState extends State<ParentNotificationsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final unreadCount = _notifications.where((n) => n['readAt'] == null).length;
-    
+
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,7 +121,7 @@ class _ParentNotificationsScreenState extends State<ParentNotificationsScreen> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.normal,
-                  color: Colors.grey.shade600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
           ],
@@ -132,176 +132,193 @@ class _ParentNotificationsScreenState extends State<ParentNotificationsScreen> {
               onPressed: _markAllRead,
               icon: const Icon(Icons.done_all, size: 18),
               label: const Text('Mark all read'),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.primary,
-              ),
+              style: TextButton.styleFrom(foregroundColor: AppColors.primary),
             ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
+      body: RolePageBackground(
+        flavor: RoleThemeFlavor.parent,
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Failed to load notifications',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _error!,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton.icon(
+                        onPressed: _loadData,
+                        icon: const Icon(Icons.refresh, size: 18),
+                        label: const Text('Retry'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : _notifications.isEmpty
+            ? Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.error_outline, size: 48, color: Colors.grey.shade300),
+                    Icon(
+                      Icons.notifications_none,
+                      size: 64,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                     const SizedBox(height: 16),
                     Text(
-                      'Failed to load notifications',
+                      'No notifications yet',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade700,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      _error!,
+                      "You'll be notified about your child's updates here.",
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton.icon(
-                      onPressed: _loadData,
-                      icon: const Icon(Icons.refresh, size: 18),
-                      label: const Text('Retry'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
                 ),
-              ),
-            )
-          : _notifications.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.notifications_none,
-                    size: 64,
-                    color: Colors.grey.shade300,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No notifications yet',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "You'll be notified about your child's updates here.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
-                  ),
-                ],
-              ),
-            )
-          : RefreshIndicator(
-              onRefresh: _loadData,
-              child: ListView.separated(
-                padding: const EdgeInsets.all(16),
-                itemCount: _notifications.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final n = _notifications[index];
-                  final isRead = n['readAt'] != null;
-                  final id = n['id'] as String? ?? '';
-                  
-                  return Dismissible(
-                    key: Key(id),
-                    background: Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.success,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      alignment: Alignment.centerLeft,
-                      padding: const EdgeInsets.only(left: 20),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.check_circle, color: Colors.white),
-                          SizedBox(width: 8),
-                          Text(
-                            'Mark as read',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
+              )
+            : RefreshIndicator(
+                onRefresh: _loadData,
+                child: ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _notifications.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final n = _notifications[index];
+                    final isRead = n['readAt'] != null;
+                    final id = n['id'] as String? ?? '';
+
+                    return Dismissible(
+                      key: Key(id),
+                      background: Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.success,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        alignment: Alignment.centerLeft,
+                        padding: const EdgeInsets.only(left: 20),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.check_circle, color: Colors.white),
+                            SizedBox(width: 8),
+                            Text(
+                              'Mark as read',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    secondaryBackground: Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      alignment: Alignment.centerRight,
-                      padding: const EdgeInsets.only(right: 20),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Text(
-                            'Mark as unread',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
+                      secondaryBackground: Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.only(right: 20),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(
+                              'Mark as unread',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                          ),
-                          SizedBox(width: 8),
-                          Icon(Icons.mark_email_unread, color: Colors.white),
-                        ],
+                            SizedBox(width: 8),
+                            Icon(Icons.mark_email_unread, color: Colors.white),
+                          ],
+                        ),
                       ),
-                    ),
-                    confirmDismiss: (direction) async {
-                      if (direction == DismissDirection.startToEnd) {
-                        if (!isRead) {
-                          await _markAsRead(id, index);
+                      confirmDismiss: (direction) async {
+                        if (direction == DismissDirection.startToEnd) {
+                          if (!isRead) {
+                            await _markAsRead(id, index);
+                          }
+                        } else {
+                          if (isRead) {
+                            await _markAsUnread(id, index);
+                          }
                         }
-                      } else {
-                        if (isRead) {
-                          await _markAsUnread(id, index);
-                        }
-                      }
-                      return false; // Don't actually dismiss
-                    },
-                    child: _buildNotificationCard(n, index, isRead),
-                  );
-                },
+                        return false; // Don't actually dismiss
+                      },
+                      child: _buildNotificationCard(n, index, isRead),
+                    );
+                  },
+                ),
               ),
-            ),
+      ),
     );
   }
 
-  Widget _buildNotificationCard(Map<String, dynamic> n, int index, bool isRead) {
+  Widget _buildNotificationCard(
+    Map<String, dynamic> n,
+    int index,
+    bool isRead,
+  ) {
     final id = n['id'] as String? ?? '';
     final type = n['type'] as String? ?? '';
     final title = n['title'] as String? ?? '';
     final body = n['body'] as String? ?? n['message'] as String? ?? '';
     final createdAt = n['createdAt'] as String? ?? '';
-    
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isRead ? Colors.grey.shade200 : AppColors.primary.withValues(alpha: 0.3),
+          color: isRead
+              ? Theme.of(context).colorScheme.outlineVariant
+              : AppColors.primary.withValues(alpha: 0.3),
           width: isRead ? 1 : 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Theme.of(context).shadowColor.withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -326,13 +343,15 @@ class _ParentNotificationsScreenState extends State<ParentNotificationsScreen> {
                   height: 44,
                   decoration: BoxDecoration(
                     color: isRead
-                        ? Colors.grey.shade100
+                        ? Theme.of(context).colorScheme.surfaceContainerLow
                         : AppColors.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     _getNotificationIcon(type),
-                    color: isRead ? Colors.grey.shade500 : AppColors.primary,
+                    color: isRead
+                        ? Theme.of(context).colorScheme.onSurfaceVariant
+                        : AppColors.primary,
                     size: 22,
                   ),
                 ),
@@ -347,9 +366,11 @@ class _ParentNotificationsScreenState extends State<ParentNotificationsScreen> {
                             child: Text(
                               title,
                               style: TextStyle(
-                                fontWeight: isRead ? FontWeight.w500 : FontWeight.bold,
+                                fontWeight: isRead
+                                    ? FontWeight.w500
+                                    : FontWeight.bold,
                                 fontSize: 15,
-                                color: AppColors.textPrimary,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                           ),
@@ -369,7 +390,7 @@ class _ParentNotificationsScreenState extends State<ParentNotificationsScreen> {
                         body,
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.grey.shade700,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           height: 1.4,
                         ),
                         maxLines: 3,
@@ -381,14 +402,18 @@ class _ParentNotificationsScreenState extends State<ParentNotificationsScreen> {
                           Icon(
                             Icons.access_time,
                             size: 12,
-                            color: Colors.grey.shade400,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             _formatTime(createdAt),
                             style: TextStyle(
                               fontSize: 11,
-                              color: Colors.grey.shade500,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -432,8 +457,21 @@ class _ParentNotificationsScreenState extends State<ParentNotificationsScreen> {
       if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
       if (diff.inHours < 24) return '${diff.inHours}h ago';
       if (diff.inDays < 7) return '${diff.inDays}d ago';
-      
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+      const months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
       return '${months[dt.month - 1]} ${dt.day}';
     } catch (_) {
       return iso;

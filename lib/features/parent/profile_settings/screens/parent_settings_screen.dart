@@ -179,6 +179,12 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
         title: const Text('Settings'),
         centerTitle: true,
         automaticallyImplyLeading: false,
+        leading: Navigator.of(context).canPop()
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
       ),
       body: RolePageBackground(
         flavor: _roleFlavor,

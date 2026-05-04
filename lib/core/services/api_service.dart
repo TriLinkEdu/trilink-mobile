@@ -243,6 +243,13 @@ class ApiService {
     {'id': id, ...data},
   );
 
+  Future<void> deleteAnnouncement(String id) async {
+    await _tryOr(() async {
+      await _api.delete('${ApiConstants.announcements}/$id');
+      return true;
+    }, true);
+  }
+
   // ─── Exams ──────────────────────────────────────────────
   Future<List<dynamic>> getExams({Map<String, dynamic>? filters}) => _tryOr(
     () => _api.getList(ApiConstants.exams, queryParameters: filters),

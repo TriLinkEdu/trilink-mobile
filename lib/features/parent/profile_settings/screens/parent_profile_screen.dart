@@ -565,9 +565,9 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
                           width: 2,
                         ),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.camera_alt,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         size: 16,
                       ),
                     ),

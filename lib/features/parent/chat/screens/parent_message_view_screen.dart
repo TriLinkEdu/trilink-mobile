@@ -148,10 +148,9 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
     setState(() => _sending = true);
 
     try {
-      final sent = await ApiService().sendMessage(
-        widget.conversationId,
-        {'text': text},
-      );
+      final sent = await ApiService().sendMessage(widget.conversationId, {
+        'text': text,
+      });
 
       if (!mounted) return;
 
@@ -171,7 +170,9 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
           content: const Text('Failed to send message'),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
     } finally {
@@ -183,9 +184,7 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         if (jump) {
-          _scrollController.jumpTo(
-            _scrollController.position.maxScrollExtent,
-          );
+          _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
         } else {
           _scrollController.animateTo(
             _scrollController.position.maxScrollExtent,
@@ -199,8 +198,9 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4F8),
+      backgroundColor: theme.colorScheme.surface,
       appBar: _buildAppBar(),
       body: Column(
         children: [
@@ -212,14 +212,30 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
   }
 
   PreferredSizeWidget _buildAppBar() {
+    final theme = Theme.of(context);
+    final appBarColor = Color.alphaBlend(
+      AppColors.primary.withValues(
+        alpha: theme.brightness == Brightness.dark ? 0.18 : 0.07,
+      ),
+      theme.colorScheme.surface,
+    );
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: appBarColor,
       elevation: 0,
-      shadowColor: Colors.black12,
+      shadowColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
+      shape: Border(
+        bottom: BorderSide(
+          color: AppColors.primary.withValues(alpha: 0.15),
+          width: 1,
+        ),
+      ),
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new,
-            color: AppColors.textPrimary, size: 20),
+        icon: Icon(
+          Icons.arrow_back_ios_new,
+          color: theme.colorScheme.onSurface,
+          size: 20,
+        ),
         onPressed: () => Navigator.pop(context),
       ),
       titleSpacing: 0,
@@ -227,7 +243,7 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
         children: [
           CircleAvatar(
             radius: 18,
-            backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+            backgroundColor: AppColors.primary.withValues(alpha: 0.18),
             child: Text(
               _getInitials(widget.teacherName),
               style: const TextStyle(
@@ -244,8 +260,8 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
               children: [
                 Text(
                   widget.teacherName,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
                   ),
@@ -256,7 +272,7 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
                     widget.subject,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade500,
+                      color: theme.colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w400,
                     ),
                   ),
@@ -280,20 +296,27 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.wifi_off_rounded, size: 48, color: Colors.grey.shade400),
+              Icon(
+                Icons.wifi_off_rounded,
+                size: 48,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               const SizedBox(height: 16),
               Text(
                 'Could not load messages',
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade700,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 _error!,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 20),
               ElevatedButton.icon(
@@ -334,16 +357,15 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
             const SizedBox(height: 16),
             const Text(
               'No messages yet',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
-                color: AppColors.textPrimary,
-              ),
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
             ),
             const SizedBox(height: 6),
             Text(
               'Say hello to start the conversation!',
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+              style: TextStyle(
+                fontSize: 13,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -383,7 +405,8 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
         final isMe = senderId == currentUserId;
 
         // Show date separator if needed
-        final showDate = msgIndex == 0 ||
+        final showDate =
+            msgIndex == 0 ||
             _isDifferentDay(
               _messages[msgIndex - 1]['createdAt'] as String? ?? '',
               createdAt,
@@ -396,7 +419,8 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
               text: text,
               time: createdAt,
               isMe: isMe,
-              showTail: msgIndex == _messages.length - 1 ||
+              showTail:
+                  msgIndex == _messages.length - 1 ||
                   (_messages[msgIndex + 1]['senderId'] != senderId),
             ),
           ],
@@ -410,25 +434,37 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Row(
         children: [
-          Expanded(child: Divider(color: Colors.grey.shade300, height: 1)),
+          Expanded(
+            child: Divider(
+              color: Theme.of(context).colorScheme.outlineVariant,
+              height: 1,
+            ),
+          ),
           const SizedBox(width: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.grey.shade200,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFF2C2C3E)
+                  : const Color(0xFFEEEEF4),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               _formatDate(isoString),
               style: TextStyle(
                 fontSize: 11,
-                color: Colors.grey.shade600,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ),
           const SizedBox(width: 12),
-          Expanded(child: Divider(color: Colors.grey.shade300, height: 1)),
+          Expanded(
+            child: Divider(
+              color: Theme.of(context).colorScheme.outlineVariant,
+              height: 1,
+            ),
+          ),
         ],
       ),
     );
@@ -443,28 +479,38 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
     return Padding(
       padding: EdgeInsets.only(bottom: showTail ? 8 : 2),
       child: Row(
-        mainAxisAlignment:
-            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isMe
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (isMe) const SizedBox(width: 60),
           Flexible(
             child: Column(
-              crossAxisAlignment:
-                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment: isMe
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
-                    color: isMe ? AppColors.primary : Colors.white,
+                    color: isMe
+                        ? AppColors.primary
+                        : Theme.of(context).brightness == Brightness.dark
+                        ? const Color(0xFF2C2C3E)
+                        : const Color(0xFFEEEEF4),
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(18),
                       topRight: const Radius.circular(18),
-                      bottomLeft:
-                          Radius.circular(isMe ? 18 : (showTail ? 4 : 18)),
-                      bottomRight:
-                          Radius.circular(isMe ? (showTail ? 4 : 18) : 18),
+                      bottomLeft: Radius.circular(
+                        isMe ? 18 : (showTail ? 4 : 18),
+                      ),
+                      bottomRight: Radius.circular(
+                        isMe ? (showTail ? 4 : 18) : 18,
+                      ),
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -478,7 +524,9 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
                     text,
                     style: TextStyle(
                       fontSize: 14.5,
-                      color: isMe ? Colors.white : AppColors.textPrimary,
+                      color: isMe
+                          ? Colors.white
+                          : Theme.of(context).colorScheme.onSurface,
                       height: 1.45,
                     ),
                   ),
@@ -489,7 +537,7 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
                     _formatTime(time),
                     style: TextStyle(
                       fontSize: 11,
-                      color: Colors.grey.shade500,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -511,7 +559,7 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
         MediaQuery.of(context).padding.bottom + 10,
       ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.06),
@@ -527,7 +575,9 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
             child: Container(
               constraints: const BoxConstraints(maxHeight: 120),
               decoration: BoxDecoration(
-                color: const Color(0xFFF0F4F8),
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF2C2C3E)
+                    : const Color(0xFFEEEEF4),
                 borderRadius: BorderRadius.circular(24),
               ),
               child: TextField(
@@ -535,7 +585,10 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
                 focusNode: _focusNode,
                 decoration: InputDecoration(
                   hintText: 'Message...',
-                  hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                  hintStyle: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 14,
+                  ),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 18,
@@ -558,7 +611,11 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: _sending ? Colors.grey.shade300 : AppColors.primary,
+                  color: _sending
+                      ? (Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF2C2C3E)
+                            : const Color(0xFFEEEEF4))
+                      : AppColors.primary,
                   shape: BoxShape.circle,
                   boxShadow: _sending
                       ? []
@@ -575,10 +632,16 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
                         padding: const EdgeInsets.all(12),
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation(Colors.grey.shade600),
+                          valueColor: AlwaysStoppedAnimation(
+                            Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       )
-                    : const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                    : const Icon(
+                        Icons.send_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
               ),
             ),
           ),

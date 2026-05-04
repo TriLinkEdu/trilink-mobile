@@ -17,7 +17,7 @@ class _ParentChatScreenState extends State<ParentChatScreen>
   late TabController _tabController;
   bool _loading = true;
   String? _error;
-  
+
   List<_ContactUser> _adminUsers = [];
   List<_ContactUser> _teacherUsers = [];
 
@@ -43,12 +43,12 @@ class _ParentChatScreenState extends State<ParentChatScreen>
 
       // Search for admin and teacher users
       final users = await ApiService().searchUsers();
-      
+
       if (!mounted) return;
-      
+
       final List<_ContactUser> admins = [];
       final List<_ContactUser> teachers = [];
-      
+
       for (final user in users) {
         final role = user['role'] as String?;
         if (role == 'admin') {
@@ -57,7 +57,7 @@ class _ParentChatScreenState extends State<ParentChatScreen>
           teachers.add(_ContactUser.fromJson(user));
         }
       }
-      
+
       setState(() {
         _adminUsers = admins;
         _teacherUsers = teachers;
@@ -87,7 +87,7 @@ class _ParentChatScreenState extends State<ParentChatScreen>
       final conversationId = conversation['id'] as String;
 
       if (!mounted) return;
-      
+
       // Close loading dialog
       Navigator.pop(context);
 
@@ -98,16 +98,18 @@ class _ParentChatScreenState extends State<ParentChatScreen>
           builder: (_) => ParentMessageViewScreen(
             conversationId: conversationId,
             teacherName: user.fullName,
-            subject: user.role == 'admin' ? 'Administrator' : user.subject ?? 'Teacher',
+            subject: user.role == 'admin'
+                ? 'Administrator'
+                : user.subject ?? 'Teacher',
           ),
         ),
       );
     } catch (e) {
       if (!mounted) return;
-      
+
       // Close loading dialog
       Navigator.pop(context);
-      
+
       // Show error
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -131,20 +133,23 @@ class _ParentChatScreenState extends State<ParentChatScreen>
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
                   : _error != null
-                      ? Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(_error!,
-                                  style: const TextStyle(color: AppColors.error)),
-                              const SizedBox(height: 12),
-                              ElevatedButton(
-                                  onPressed: _loadData,
-                                  child: const Text('Retry')),
-                            ],
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _error!,
+                            style: const TextStyle(color: AppColors.error),
                           ),
-                        )
-                      : _buildTabView(),
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                            onPressed: _loadData,
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : _buildTabView(),
             ),
           ],
         ),
@@ -153,22 +158,26 @@ class _ParentChatScreenState extends State<ParentChatScreen>
   }
 
   Widget _buildHeader() {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 16, 20, 0),
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new,
-                color: AppColors.textPrimary, size: 20),
+            icon: Icon(
+              Icons.arrow_back_ios_new,
+              color: theme.colorScheme.onSurface,
+              size: 20,
+            ),
             onPressed: () => Navigator.pop(context),
           ),
-          const Expanded(
+          Expanded(
             child: Text(
               'Messages',
               style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+                color: theme.colorScheme.onSurface,
               ),
             ),
           ),
@@ -180,8 +189,12 @@ class _ParentChatScreenState extends State<ParentChatScreen>
   Widget _buildTabBar() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
+        ),
       ),
       child: TabBar(
         controller: _tabController,
@@ -190,11 +203,8 @@ class _ParentChatScreenState extends State<ParentChatScreen>
           insets: EdgeInsets.symmetric(horizontal: 24),
         ),
         labelColor: AppColors.primary,
-        unselectedLabelColor: AppColors.textSecondary,
-        labelStyle: const TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 14,
-        ),
+        unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
+        labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
         unselectedLabelStyle: const TextStyle(
           fontWeight: FontWeight.w500,
           fontSize: 14,
@@ -211,7 +221,9 @@ class _ParentChatScreenState extends State<ParentChatScreen>
                   const SizedBox(width: 6),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 1),
+                      horizontal: 6,
+                      vertical: 1,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(10),
@@ -240,7 +252,9 @@ class _ParentChatScreenState extends State<ParentChatScreen>
                   const SizedBox(width: 6),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 1),
+                      horizontal: 6,
+                      vertical: 1,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(10),
@@ -266,10 +280,7 @@ class _ParentChatScreenState extends State<ParentChatScreen>
   Widget _buildTabView() {
     return TabBarView(
       controller: _tabController,
-      children: [
-        _buildAdminTab(),
-        _buildTeachersTab(),
-      ],
+      children: [_buildAdminTab(), _buildTeachersTab()],
     );
   }
 
@@ -279,11 +290,18 @@ class _ParentChatScreenState extends State<ParentChatScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.admin_panel_settings_outlined,
-                size: 48, color: Colors.grey.shade300),
+            Icon(
+              Icons.admin_panel_settings_outlined,
+              size: 48,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 12),
-            Text('No administrators available',
-                style: TextStyle(color: Colors.grey.shade500)),
+            Text(
+              'No administrators available',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
         ),
       );
@@ -306,11 +324,18 @@ class _ParentChatScreenState extends State<ParentChatScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.school_outlined,
-                size: 48, color: Colors.grey.shade300),
+            Icon(
+              Icons.school_outlined,
+              size: 48,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 12),
-            Text('No teachers available',
-                style: TextStyle(color: Colors.grey.shade500)),
+            Text(
+              'No teachers available',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
         ),
       );
@@ -352,7 +377,7 @@ class _ContactUser {
   });
 
   String get fullName => '$firstName $lastName'.trim();
-  
+
   String get displaySubject {
     if (role == 'admin') return 'Administrator';
     return subject ?? 'Teacher';
@@ -396,11 +421,11 @@ class _ContactTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
+                color: Theme.of(context).shadowColor.withValues(alpha: 0.03),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -416,10 +441,10 @@ class _ContactTile extends StatelessWidget {
                   children: [
                     Text(
                       user.fullName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
-                        color: AppColors.textPrimary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -427,7 +452,9 @@ class _ContactTile extends StatelessWidget {
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 7, vertical: 2),
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.primary.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(6),
@@ -447,7 +474,9 @@ class _ContactTile extends StatelessWidget {
                             user.department!,
                             style: TextStyle(
                               fontSize: 11,
-                              color: Colors.grey.shade500,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -483,15 +512,17 @@ class _ContactTile extends StatelessWidget {
         return CircleAvatar(
           radius: 24,
           backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-          backgroundImage: (user.profileImagePath != null && 
-                           user.profileImagePath!.isNotEmpty && 
-                           snapshot.hasData)
+          backgroundImage:
+              (user.profileImagePath != null &&
+                  user.profileImagePath!.isNotEmpty &&
+                  snapshot.hasData)
               ? NetworkImage(
                   '${ApiConstants.fileBaseUrl}${user.profileImagePath}',
                   headers: snapshot.data,
                 )
               : null,
-          child: (user.profileImagePath == null || user.profileImagePath!.isEmpty)
+          child:
+              (user.profileImagePath == null || user.profileImagePath!.isEmpty)
               ? Text(
                   _getInitials(),
                   style: const TextStyle(

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
 
 class TeacherFeedbackScreen extends StatefulWidget {
@@ -74,8 +73,8 @@ class _TeacherFeedbackScreenState extends State<TeacherFeedbackScreen>
     final source = _isReceived
         ? _items
         : _sentItems
-            .where((f) => (f['category'] as String? ?? '') == 'school')
-            .toList();
+              .where((f) => (f['category'] as String? ?? '') == 'school')
+              .toList();
 
     if (_filter == 'all') return source;
     return source.where((f) => f['status'] == _filter).toList();
@@ -93,12 +92,14 @@ class _TeacherFeedbackScreenState extends State<TeacherFeedbackScreen>
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setModalState) => Padding(
           padding: EdgeInsets.only(
-              bottom: MediaQuery.of(ctx).viewInsets.bottom),
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          ),
           child: Container(
             decoration: BoxDecoration(
               color: Theme.of(ctx).colorScheme.surface,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
             ),
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
             child: Column(
@@ -111,7 +112,7 @@ class _TeacherFeedbackScreenState extends State<TeacherFeedbackScreen>
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
+                      color: Theme.of(ctx).colorScheme.outlineVariant,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -122,11 +123,16 @@ class _TeacherFeedbackScreenState extends State<TeacherFeedbackScreen>
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
+                        color: Theme.of(
+                          ctx,
+                        ).colorScheme.primary.withOpacity(0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.feedback_outlined,
-                          color: AppColors.primary, size: 20),
+                      child: Icon(
+                        Icons.feedback_outlined,
+                        color: Theme.of(ctx).colorScheme.primary,
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Column(
@@ -143,7 +149,7 @@ class _TeacherFeedbackScreenState extends State<TeacherFeedbackScreen>
                           'Your feedback goes to school administration',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade500,
+                            color: Theme.of(ctx).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -158,7 +164,9 @@ class _TeacherFeedbackScreenState extends State<TeacherFeedbackScreen>
                     hintText:
                         'Write your feedback to the school administration...',
                     hintStyle: TextStyle(
-                        color: Colors.grey.shade400, fontSize: 14),
+                      color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                      fontSize: 14,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -172,7 +180,7 @@ class _TeacherFeedbackScreenState extends State<TeacherFeedbackScreen>
                       value: isAnonymous,
                       onChanged: (v) =>
                           setModalState(() => isAnonymous = v ?? false),
-                      activeColor: AppColors.primary,
+                      activeColor: Theme.of(ctx).colorScheme.primary,
                     ),
                     const Text('Submit anonymously'),
                   ],
@@ -196,9 +204,10 @@ class _TeacherFeedbackScreenState extends State<TeacherFeedbackScreen>
                               if (!ctx.mounted) return;
                               Navigator.pop(ctx);
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                      'Feedback sent to school administration'),
+                                SnackBar(
+                                  content: const Text(
+                                    'Feedback sent to school administration',
+                                  ),
                                   backgroundColor: Colors.green,
                                   behavior: SnackBarBehavior.floating,
                                 ),
@@ -209,28 +218,35 @@ class _TeacherFeedbackScreenState extends State<TeacherFeedbackScreen>
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text('Failed to send: $e'),
-                                  backgroundColor: AppColors.error,
+                                  backgroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.error,
                                   behavior: SnackBarBehavior.floating,
                                 ),
                               );
                             }
                           },
                     icon: submitting
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 16,
                             height: 16,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white),
+                              strokeWidth: 2,
+                              color: Theme.of(context).colorScheme.onPrimary,
+                            ),
                           )
                         : const Icon(Icons.send_rounded, size: 18),
-                    label: const Text('Send Feedback',
-                        style: TextStyle(fontWeight: FontWeight.w600)),
+                    label: const Text(
+                      'Send Feedback',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
                 ),
@@ -268,9 +284,9 @@ class _TeacherFeedbackScreenState extends State<TeacherFeedbackScreen>
         // ── Primary navigation: TabBar in AppBar ──────────────────────────
         bottom: TabBar(
           controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: Colors.grey.shade500,
-          indicatorColor: AppColors.primary,
+          labelColor: theme.colorScheme.primary,
+          unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
+          indicatorColor: theme.colorScheme.primary,
           indicatorWeight: 3,
           labelStyle: const TextStyle(
             fontSize: 14,
@@ -310,10 +326,15 @@ class _TeacherFeedbackScreenState extends State<TeacherFeedbackScreen>
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showComposeFeedback,
-        backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.edit_outlined, color: Colors.white),
-        label: const Text('Send to School',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+        backgroundColor: theme.colorScheme.primary,
+        icon: Icon(Icons.edit_outlined, color: theme.colorScheme.onPrimary),
+        label: Text(
+          'Send to School',
+          style: TextStyle(
+            color: theme.colorScheme.onPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
       body: Column(
         children: [
@@ -335,8 +356,8 @@ class _TeacherFeedbackScreenState extends State<TeacherFeedbackScreen>
     final source = _isReceived
         ? _items
         : _sentItems
-            .where((f) => (f['category'] as String? ?? '') == 'school')
-            .toList();
+              .where((f) => (f['category'] as String? ?? '') == 'school')
+              .toList();
     final allCount = source.length;
     final openCount = source.where((f) => f['status'] == 'open').length;
     final resolvedCount = source.where((f) => f['status'] == 'resolved').length;
@@ -407,7 +428,11 @@ class _TeacherFeedbackScreenState extends State<TeacherFeedbackScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.grey.shade300),
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: theme.colorScheme.outlineVariant,
+            ),
             const SizedBox(height: 16),
             Text(
               'Failed to load feedback',
@@ -421,7 +446,10 @@ class _TeacherFeedbackScreenState extends State<TeacherFeedbackScreen>
             Text(
               _error!,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+              style: TextStyle(
+                fontSize: 13,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
@@ -429,8 +457,8 @@ class _TeacherFeedbackScreenState extends State<TeacherFeedbackScreen>
               icon: const Icon(Icons.refresh, size: 18),
               label: const Text('Retry'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -447,18 +475,22 @@ class _TeacherFeedbackScreenState extends State<TeacherFeedbackScreen>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.feedback_outlined, size: 64, color: Colors.grey.shade300),
+          Icon(
+            Icons.feedback_outlined,
+            size: 64,
+            color: theme.colorScheme.outlineVariant,
+          ),
           const SizedBox(height: 16),
           Text(
             !_isReceived
                 ? 'No feedback sent to school yet'
                 : _filter == 'all'
-                    ? 'No feedback yet'
-                    : 'No ${_filter} feedback',
+                ? 'No feedback yet'
+                : 'No ${_filter} feedback',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.grey.shade600,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
@@ -467,7 +499,10 @@ class _TeacherFeedbackScreenState extends State<TeacherFeedbackScreen>
                 ? 'Tap "Send to School" to submit feedback\nto school administration.'
                 : 'Feedback from students and parents\nwill appear here.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+            style: TextStyle(
+              fontSize: 13,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -484,19 +519,20 @@ class _Badge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
       decoration: BoxDecoration(
         color: active
-            ? AppColors.primary
-            : Colors.grey.shade400,
+            ? theme.colorScheme.primary
+            : theme.colorScheme.onSurfaceVariant,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
         '$count',
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 11,
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.onPrimary,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -523,7 +559,8 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeColor = color ?? AppColors.primary;
+    final theme = Theme.of(context);
+    final activeColor = color ?? theme.colorScheme.primary;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -531,11 +568,11 @@ class _FilterChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: selected
-              ? activeColor.withValues(alpha: 0.12)
-              : Colors.grey.shade100,
+              ? activeColor.withOpacity(0.9)
+              : theme.colorScheme.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected ? activeColor : Colors.transparent,
+            color: selected ? activeColor : theme.colorScheme.outlineVariant,
             width: 1.5,
           ),
         ),
@@ -546,27 +583,29 @@ class _FilterChip extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 13,
-                fontWeight:
-                    selected ? FontWeight.w600 : FontWeight.w500,
-                color: selected ? activeColor : Colors.grey.shade600,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                color: selected
+                    ? theme.colorScheme.onPrimary
+                    : theme.colorScheme.onSurfaceVariant,
               ),
             ),
             if (count > 0) ...[
               const SizedBox(width: 6),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 6, vertical: 1),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                 decoration: BoxDecoration(
                   color: selected
-                      ? activeColor
-                      : Colors.grey.shade400,
+                      ? theme.colorScheme.onPrimary
+                      : theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   '$count',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: Colors.white,
+                    color: selected
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurface,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -605,8 +644,8 @@ class _FeedbackCard extends StatelessWidget {
     } else if (isAnonymous || sender == null) {
       senderName = 'Anonymous ${_capitalize(senderRole)}';
     } else {
-      senderName =
-          '${sender['firstName'] ?? ''} ${sender['lastName'] ?? ''}'.trim();
+      senderName = '${sender['firstName'] ?? ''} ${sender['lastName'] ?? ''}'
+          .trim();
       if (senderName.isEmpty) senderName = 'Unknown';
     }
 
@@ -614,27 +653,27 @@ class _FeedbackCard extends StatelessWidget {
     Color roleColor;
     IconData roleIcon;
     if (isSent) {
-      roleColor = AppColors.primary;
+      roleColor = theme.colorScheme.primary;
       roleIcon = Icons.send_outlined;
     } else {
       roleColor = senderRole == 'student'
-          ? AppColors.primary
+          ? theme.colorScheme.primary
           : senderRole == 'parent'
-              ? AppColors.secondary
-              : Colors.grey;
+          ? theme.colorScheme.secondary
+          : Colors.grey;
       roleIcon = senderRole == 'student'
           ? Icons.school_outlined
           : senderRole == 'parent'
-              ? Icons.family_restroom_outlined
-              : Icons.person_outline;
+          ? Icons.family_restroom_outlined
+          : Icons.person_outline;
     }
 
     // Status badge
     final statusColor = status == 'resolved'
         ? Colors.green
         : status == 'in_progress'
-            ? Colors.orange
-            : Colors.blue;
+        ? Colors.orange
+        : Colors.blue;
 
     // Date
     String dateStr = '';
@@ -652,7 +691,7 @@ class _FeedbackCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: theme.shadowColor.withOpacity(0.12),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -666,7 +705,7 @@ class _FeedbackCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: roleColor.withValues(alpha: 0.1),
+                  color: roleColor.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(roleIcon, size: 18, color: roleColor),
@@ -699,26 +738,30 @@ class _FeedbackCard extends StatelessWidget {
               if (isSent)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
+                    color: theme.colorScheme.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     _capitalize(category),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
+                      color: theme.colorScheme.primary,
                     ),
                   ),
                 )
               else
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.1),
+                    color: statusColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -733,7 +776,10 @@ class _FeedbackCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Divider(height: 1, color: Colors.grey.shade100),
+          Divider(
+            height: 1,
+            color: Theme.of(context).colorScheme.surfaceContainerLowest,
+          ),
           const SizedBox(height: 12),
           Text(
             message,
@@ -747,14 +793,17 @@ class _FeedbackCard extends StatelessWidget {
             const SizedBox(height: 10),
             Row(
               children: [
-                Icon(Icons.visibility_off_outlined,
-                    size: 13, color: Colors.grey.shade400),
+                Icon(
+                  Icons.visibility_off_outlined,
+                  size: 13,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   'Submitted anonymously',
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.grey.shade400,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontStyle: FontStyle.italic,
                   ),
                 ),

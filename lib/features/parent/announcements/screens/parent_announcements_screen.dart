@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
 import 'announcement_detail_screen.dart';
+import '../../../shared/widgets/role_page_background.dart';
 
 class ParentAnnouncementsScreen extends StatefulWidget {
   const ParentAnnouncementsScreen({super.key});
@@ -77,9 +78,10 @@ class _ParentAnnouncementsScreenState extends State<ParentAnnouncementsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(title: const Text('Announcements')),
-      body: _loading
+      body: RolePageBackground(
+        flavor: RoleThemeFlavor.parent,
+        child: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
           ? Center(
@@ -103,17 +105,17 @@ class _ParentAnnouncementsScreenState extends State<ParentAnnouncementsScreen> {
                   Icon(
                     Icons.campaign_outlined,
                     size: 56,
-                    color: Colors.grey.shade400,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'No announcements yet',
-                    style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+                    style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'School announcements will appear here.',
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                    style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -140,12 +142,12 @@ class _ParentAnnouncementsScreenState extends State<ParentAnnouncementsScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade200),
+                        border: Border.all(color: theme.colorScheme.outlineVariant),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
+                            color: Theme.of(context).shadowColor.withValues(alpha: 0.03),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -175,10 +177,10 @@ class _ParentAnnouncementsScreenState extends State<ParentAnnouncementsScreen> {
                                   children: [
                                     Text(
                                       a['title'] as String? ?? '',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.w600,
                                         fontSize: 15,
-                                        color: AppColors.textPrimary,
+                                        color: theme.colorScheme.onSurface,
                                       ),
                                     ),
                                     const SizedBox(height: 2),
@@ -186,7 +188,7 @@ class _ParentAnnouncementsScreenState extends State<ParentAnnouncementsScreen> {
                                       _getAuthorName(a),
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Colors.grey.shade500,
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                                       ),
                                     ),
                                   ],
@@ -196,7 +198,7 @@ class _ParentAnnouncementsScreenState extends State<ParentAnnouncementsScreen> {
                                 _formatDate(a['createdAt'] as String?),
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: Colors.grey.shade500,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ],
@@ -206,7 +208,7 @@ class _ParentAnnouncementsScreenState extends State<ParentAnnouncementsScreen> {
                             a['message'] as String? ?? a['body'] as String? ?? a['content'] as String? ?? '',
                             style: TextStyle(
                               fontSize: 13,
-                              color: Colors.grey.shade700,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                               height: 1.5,
                             ),
                             maxLines: 3,
@@ -239,6 +241,7 @@ class _ParentAnnouncementsScreenState extends State<ParentAnnouncementsScreen> {
                 },
               ),
             ),
+        ),
     );
   }
 }

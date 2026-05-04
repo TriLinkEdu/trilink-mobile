@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../shared/widgets/role_page_background.dart';
 
 class WeeklyReportScreen extends StatefulWidget {
   final String? childStudentId;
@@ -74,47 +75,50 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              color: AppColors.textPrimary, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new,
+              color: theme.colorScheme.onSurface, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           'Weekly Report',
-          style: const TextStyle(
-              color: AppColors.textPrimary,
+          style: TextStyle(
+              color: theme.colorScheme.onSurface,
               fontWeight: FontWeight.bold,
               fontSize: 17),
         ),
         centerTitle: true,
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? _buildError()
-              : RefreshIndicator(
-                  onRefresh: _loadData,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildWeekHeader(),
-                        const SizedBox(height: 16),
-                        _buildAttendanceCard(),
-                        const SizedBox(height: 16),
-                        _buildExamsCard(),
-                        const SizedBox(height: 20),
-                      ],
+      body: RolePageBackground(
+        flavor: RoleThemeFlavor.parent,
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+                ? _buildError()
+                : RefreshIndicator(
+                    onRefresh: _loadData,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildWeekHeader(),
+                          const SizedBox(height: 16),
+                          _buildAttendanceCard(),
+                          const SizedBox(height: 16),
+                          _buildExamsCard(),
+                          const SizedBox(height: 20),
+                        ],
+                      ),
                     ),
                   ),
-                ),
+      ),
     );
   }
 
@@ -125,11 +129,11 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.wifi_off_rounded, size: 48, color: Colors.grey.shade300),
+            Icon(Icons.wifi_off_rounded, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(height: 16),
             Text(_error!,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
             const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: _loadData,
@@ -161,11 +165,11 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Theme.of(context).shadowColor.withValues(alpha: 0.03),
               blurRadius: 8,
               offset: const Offset(0, 2)),
         ],
@@ -187,16 +191,16 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(_displayName,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary)),
+                        color: Theme.of(context).colorScheme.onSurface)),
                 const SizedBox(height: 3),
                 if (weekFrom.isNotEmpty && weekThrough.isNotEmpty)
                   Text(
                     '${_formatDate(weekFrom)} – ${_formatDate(weekThrough)}',
                     style: TextStyle(
-                        fontSize: 12, color: Colors.grey.shade500),
+                        fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
               ],
             ),
@@ -231,7 +235,7 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
     final ratePct = rate != null ? rate * 100 : null;
 
     final rateColor = ratePct == null
-        ? Colors.grey
+        ? Theme.of(context).colorScheme.onSurfaceVariant
         : ratePct >= 80
             ? AppColors.success
             : ratePct >= 60
@@ -241,11 +245,11 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Theme.of(context).shadowColor.withValues(alpha: 0.03),
               blurRadius: 8,
               offset: const Offset(0, 2)),
         ],
@@ -265,11 +269,11 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
                     color: AppColors.secondary, size: 18),
               ),
               const SizedBox(width: 10),
-              const Text('Attendance This Week',
+              Text('Attendance This Week',
                   style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary)),
+                      color: Theme.of(context).colorScheme.onSurface)),
             ],
           ),
           const SizedBox(height: 16),
@@ -277,7 +281,7 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
             Center(
               child: Text('No attendance data this week',
                   style: TextStyle(
-                      color: Colors.grey.shade500, fontSize: 13)),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
             )
           else ...[
             Row(
@@ -296,7 +300,7 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
                       ),
                       Text('Rate',
                           style: TextStyle(
-                              fontSize: 12, color: Colors.grey.shade500)),
+                              fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                     ],
                   ),
                 ),
@@ -311,7 +315,7 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
                 value: total > 0 ? (present + late) / total : 0,
-                backgroundColor: Colors.grey.shade200,
+                backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
                 valueColor: AlwaysStoppedAnimation(rateColor),
                 minHeight: 6,
               ),
@@ -319,7 +323,7 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
             const SizedBox(height: 4),
             Text('$total sessions recorded this week',
                 style: TextStyle(
-                    fontSize: 11, color: Colors.grey.shade400)),
+                    fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ],
         ],
       ),
@@ -337,7 +341,7 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
                   color: color)),
           Text(label,
               style: TextStyle(
-                  fontSize: 11, color: Colors.grey.shade500)),
+                  fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
         ],
       ),
     );
@@ -351,11 +355,11 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Theme.of(context).shadowColor.withValues(alpha: 0.03),
               blurRadius: 8,
               offset: const Offset(0, 2)),
         ],
@@ -377,10 +381,10 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text('Exams This Week',
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary)),
+                        color: Theme.of(context).colorScheme.onSurface)),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -406,7 +410,7 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Text('No exams released this week',
                     style: TextStyle(
-                        color: Colors.grey.shade500, fontSize: 13)),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
               ),
             )
           else
@@ -415,7 +419,7 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
               final score = exam['score'] as num?;
               final releasedAt = exam['releasedAt'] as String? ?? '';
               final scoreColor = score == null
-                  ? Colors.grey
+                  ? Theme.of(context).colorScheme.onSurfaceVariant
                   : score >= 80
                       ? AppColors.success
                       : score >= 60
@@ -427,7 +431,7 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F7FA),
+                  color: Theme.of(context).colorScheme.surfaceContainerLow,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
@@ -437,16 +441,16 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(title,
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary),
+                                  color: Theme.of(context).colorScheme.onSurface),
                               overflow: TextOverflow.ellipsis),
                           if (releasedAt.isNotEmpty)
                             Text(_formatDate(releasedAt),
                                 style: TextStyle(
                                     fontSize: 11,
-                                    color: Colors.grey.shade500)),
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
                         ],
                       ),
                     ),

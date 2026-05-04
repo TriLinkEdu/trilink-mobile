@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../features/auth/services/auth_service.dart';
 
@@ -73,9 +72,8 @@ class _TeacherChatConversationScreenState
           }
 
           // Backend uses 'text', not 'content'
-          final text = map['text'] as String?
-              ?? map['content'] as String?
-              ?? '';
+          final text =
+              map['text'] as String? ?? map['content'] as String? ?? '';
 
           final createdAt = map['createdAt'] as String?;
           String time = '';
@@ -211,8 +209,8 @@ class _TeacherChatConversationScreenState
             Container(
               width: 10,
               height: 10,
-              decoration: const BoxDecoration(
-                color: AppColors.secondary,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.secondary,
                 shape: BoxShape.circle,
               ),
             ),
@@ -246,7 +244,10 @@ class _TeacherChatConversationScreenState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_error!, style: const TextStyle(color: AppColors.error)),
+            Text(
+              _error!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: _loadMessages,
@@ -260,7 +261,9 @@ class _TeacherChatConversationScreenState
       return Center(
         child: Text(
           'No messages yet. Start the conversation!',
-          style: TextStyle(color: Colors.grey.shade500),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       );
     }
@@ -286,23 +289,24 @@ class _TeacherChatConversationScreenState
   }
 
   Widget _buildDateDivider(String date) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Row(
         children: [
-          Expanded(child: Divider(color: Colors.grey.shade300)),
+          Expanded(child: Divider(color: theme.colorScheme.outlineVariant)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Text(
               date,
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey.shade500,
+                color: theme.colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ),
-          Expanded(child: Divider(color: Colors.grey.shade300)),
+          Expanded(child: Divider(color: theme.colorScheme.outlineVariant)),
         ],
       ),
     );
@@ -327,17 +331,19 @@ class _TeacherChatConversationScreenState
                 padding: const EdgeInsets.only(left: 4, bottom: 4),
                 child: Text(
                   message.sender,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: isSent ? AppColors.primary : Colors.grey.shade200,
+                color: isSent
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(16),
                   topRight: const Radius.circular(16),
@@ -349,7 +355,9 @@ class _TeacherChatConversationScreenState
                 message.text,
                 style: TextStyle(
                   fontSize: 14,
-                  color: isSent ? Colors.white : AppColors.textPrimary,
+                  color: isSent
+                      ? Theme.of(context).colorScheme.onPrimary
+                      : Theme.of(context).colorScheme.onSurface,
                   height: 1.4,
                 ),
               ),
@@ -358,7 +366,10 @@ class _TeacherChatConversationScreenState
               padding: const EdgeInsets.only(top: 4, left: 4, right: 4),
               child: Text(
                 message.time,
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
           ],
@@ -371,10 +382,10 @@ class _TeacherChatConversationScreenState
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 24),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: Theme.of(context).shadowColor.withOpacity(0.14),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),
@@ -383,14 +394,17 @@ class _TeacherChatConversationScreenState
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.attach_file, color: AppColors.textSecondary),
+            icon: Icon(
+              Icons.attach_file,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             onPressed: () {},
           ),
           Expanded(
             child: Container(
               height: 44,
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: Theme.of(context).colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(22),
               ),
               child: TextField(
@@ -398,7 +412,7 @@ class _TeacherChatConversationScreenState
                 decoration: InputDecoration(
                   hintText: 'Type a message...',
                   hintStyle: TextStyle(
-                    color: Colors.grey.shade500,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 14,
                   ),
                   border: InputBorder.none,
@@ -414,12 +428,16 @@ class _TeacherChatConversationScreenState
           Container(
             width: 44,
             height: 44,
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
               shape: BoxShape.circle,
             ),
             child: IconButton(
-              icon: const Icon(Icons.send, color: Colors.white, size: 20),
+              icon: Icon(
+                Icons.send,
+                color: Theme.of(context).colorScheme.onPrimary,
+                size: 20,
+              ),
               onPressed: _sending ? null : _sendMessage,
             ),
           ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../shared/widgets/role_page_background.dart';
 
 class ParentAttendanceScreen extends StatefulWidget {
   final String? studentId;
@@ -97,15 +98,15 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new,
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
             size: 20,
           ),
           onPressed: () => Navigator.pop(context),
@@ -114,31 +115,34 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
           widget.childName.isNotEmpty
               ? '${widget.childName}\'s Attendance'
               : 'Attendance Record',
-          style: const TextStyle(
-            color: AppColors.textPrimary,
+          style: TextStyle(
+            color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.bold,
             fontSize: 17,
           ),
         ),
         centerTitle: true,
       ),
-      body: RefreshIndicator(
-        onRefresh: _loadDayData,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildStudentInfo(),
-              const SizedBox(height: 20),
-              _buildCalendarCard(),
-              const SizedBox(height: 20),
-              _buildSelectedDateHeader(),
-              const SizedBox(height: 12),
-              _buildDayRecords(),
-              const SizedBox(height: 20),
-            ],
+      body: RolePageBackground(
+        flavor: RoleThemeFlavor.parent,
+        child: RefreshIndicator(
+          onRefresh: _loadDayData,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildStudentInfo(),
+                const SizedBox(height: 20),
+                _buildCalendarCard(),
+                const SizedBox(height: 20),
+                _buildSelectedDateHeader(),
+                const SizedBox(height: 12),
+                _buildDayRecords(),
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
       ),
@@ -149,11 +153,11 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Theme.of(context).shadowColor.withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -180,17 +184,20 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
               children: [
                 Text(
                   _studentName.isNotEmpty ? _studentName : widget.childName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 if (_grade.isNotEmpty || _section.isNotEmpty)
                   Text(
                     '$_grade ${_section.isNotEmpty ? '- $_section' : ''}'
                         .trim(),
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
               ],
             ),
@@ -227,11 +234,11 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Theme.of(context).shadowColor.withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -288,7 +295,7 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: Colors.grey.shade500,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ),
@@ -324,7 +331,7 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
             'Tap a date to view attendance details',
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey.shade500,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontStyle: FontStyle.italic,
             ),
           ),
@@ -373,7 +380,7 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
                     ? Colors.white
                     : isToday
                     ? AppColors.primary
-                    : AppColors.textPrimary,
+                    : Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),
@@ -385,14 +392,18 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
   Widget _buildSelectedDateHeader() {
     return Row(
       children: [
-        Icon(Icons.calendar_today, size: 18, color: Colors.grey.shade600),
+        Icon(
+          Icons.calendar_today,
+          size: 18,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
         const SizedBox(width: 8),
         Text(
           DateFormat('EEEE, MMMM d, yyyy').format(_selectedDate),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ],
@@ -404,7 +415,7 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
       return Container(
         padding: const EdgeInsets.symmetric(vertical: 48),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
         ),
         child: const Center(child: CircularProgressIndicator()),
@@ -415,26 +426,33 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
       return Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
           children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.grey.shade300),
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 12),
             Text(
               'Failed to load attendance',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               _error!,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
@@ -459,7 +477,7 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 48),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -467,7 +485,7 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
             Icon(
               Icons.event_note_outlined,
               size: 48,
-              color: Colors.grey.shade300,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: 12),
             Text(
@@ -475,13 +493,16 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade600,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               'Select another date to view attendance',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -496,7 +517,7 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: Colors.grey.shade600,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             letterSpacing: 0.5,
           ),
         ),
@@ -556,12 +577,12 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: statusColor.withValues(alpha: 0.2)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Theme.of(context).shadowColor.withValues(alpha: 0.03),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -578,10 +599,10 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
                   children: [
                     Text(
                       className.isNotEmpty ? className : subjectName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     if (subjectCode.isNotEmpty)
@@ -589,7 +610,7 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
                         subjectCode,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade500,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                   ],
@@ -629,12 +650,15 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
                 Icon(
                   Icons.person_outline,
                   size: 16,
-                  color: Colors.grey.shade500,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 6),
                 Text(
                   teacherName,
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -644,9 +668,11 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: Theme.of(context).colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -654,7 +680,7 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
                   Icon(
                     Icons.note_outlined,
                     size: 16,
-                    color: Colors.grey.shade600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -662,7 +688,7 @@ class _ParentAttendanceScreenState extends State<ParentAttendanceScreen> {
                       note,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade700,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontStyle: FontStyle.italic,
                       ),
                     ),

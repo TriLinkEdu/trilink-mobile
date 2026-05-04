@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../features/auth/services/auth_service.dart';
@@ -98,9 +97,9 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
       if (image != null) setState(() => _selectedImage = File(image.path));
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to pick image: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to pick image: $e')));
       }
     }
   }
@@ -144,7 +143,11 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
         addIfChanged('lastName', _lastNameController.text, user.lastName);
         addIfChanged('phone', _phoneController.text, user.phone);
         addIfChanged('experience', _experienceController.text, user.experience);
-        addIfChanged('homeroomClass', _homeroomClassController.text, user.homeroomClass);
+        addIfChanged(
+          'homeroomClass',
+          _homeroomClassController.text,
+          user.homeroomClass,
+        );
         addIfChanged('officeRoom', _officeRoomController.text, user.officeRoom);
         addIfChanged('country', _countryController.text, user.country);
         addIfChanged('cityState', _cityStateController.text, user.cityState);
@@ -212,7 +215,7 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     // When editing, show a full screen with its own AppBar
     if (_isEditing) {
       return Scaffold(
@@ -233,14 +236,11 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
         ),
         body: RolePageBackground(
           flavor: RoleThemeFlavor.teacher,
-          child: Form(
-            key: _formKey,
-            child: _buildBody(theme),
-          ),
+          child: Form(key: _formKey, child: _buildBody(theme)),
         ),
       );
     }
-    
+
     // When not editing, just show the body (parent provides AppBar)
     return RolePageBackground(
       flavor: RoleThemeFlavor.teacher,
@@ -267,22 +267,73 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
                 _buildSectionTitle('Professional Information', theme),
                 const SizedBox(height: 12),
                 _buildInfoCard(theme, [
-                  _InfoRow(icon: Icons.person_outline, label: 'Full Name', value: AuthService().currentUser?.fullName ?? ''),
-                  _InfoRow(icon: Icons.email_outlined, label: 'Email', value: AuthService().currentUser?.email ?? ''),
-                  _InfoRow(icon: Icons.phone_outlined, label: 'Phone', value: AuthService().currentUser?.phone ?? 'Not provided'),
-                  _InfoRow(icon: Icons.book_outlined, label: 'Subject', value: AuthService().currentUser?.subject ?? 'Not provided'),
-                  _InfoRow(icon: Icons.business_outlined, label: 'Department', value: AuthService().currentUser?.department ?? 'Not provided'),
-                  _InfoRow(icon: Icons.workspace_premium_outlined, label: 'Experience', value: AuthService().currentUser?.experience ?? 'Not provided'),
-                  _InfoRow(icon: Icons.class_outlined, label: 'Homeroom Class', value: AuthService().currentUser?.homeroomClass ?? 'Not provided'),
-                  _InfoRow(icon: Icons.meeting_room_outlined, label: 'Office Room', value: AuthService().currentUser?.officeRoom ?? 'Not provided'),
+                  _InfoRow(
+                    icon: Icons.person_outline,
+                    label: 'Full Name',
+                    value: AuthService().currentUser?.fullName ?? '',
+                  ),
+                  _InfoRow(
+                    icon: Icons.email_outlined,
+                    label: 'Email',
+                    value: AuthService().currentUser?.email ?? '',
+                  ),
+                  _InfoRow(
+                    icon: Icons.phone_outlined,
+                    label: 'Phone',
+                    value: AuthService().currentUser?.phone ?? 'Not provided',
+                  ),
+                  _InfoRow(
+                    icon: Icons.book_outlined,
+                    label: 'Subject',
+                    value: AuthService().currentUser?.subject ?? 'Not provided',
+                  ),
+                  _InfoRow(
+                    icon: Icons.business_outlined,
+                    label: 'Department',
+                    value:
+                        AuthService().currentUser?.department ?? 'Not provided',
+                  ),
+                  _InfoRow(
+                    icon: Icons.workspace_premium_outlined,
+                    label: 'Experience',
+                    value:
+                        AuthService().currentUser?.experience ?? 'Not provided',
+                  ),
+                  _InfoRow(
+                    icon: Icons.class_outlined,
+                    label: 'Homeroom Class',
+                    value:
+                        AuthService().currentUser?.homeroomClass ??
+                        'Not provided',
+                  ),
+                  _InfoRow(
+                    icon: Icons.meeting_room_outlined,
+                    label: 'Office Room',
+                    value:
+                        AuthService().currentUser?.officeRoom ?? 'Not provided',
+                  ),
                 ]),
                 const SizedBox(height: 24),
                 _buildSectionTitle('Address', theme),
                 const SizedBox(height: 12),
                 _buildInfoCard(theme, [
-                  _InfoRow(icon: Icons.public, label: 'Country', value: AuthService().currentUser?.country ?? 'Not provided'),
-                  _InfoRow(icon: Icons.location_city, label: 'City / State', value: AuthService().currentUser?.cityState ?? 'Not provided'),
-                  _InfoRow(icon: Icons.markunread_mailbox_outlined, label: 'Postal Code', value: AuthService().currentUser?.postalCode ?? 'Not provided'),
+                  _InfoRow(
+                    icon: Icons.public,
+                    label: 'Country',
+                    value: AuthService().currentUser?.country ?? 'Not provided',
+                  ),
+                  _InfoRow(
+                    icon: Icons.location_city,
+                    label: 'City / State',
+                    value:
+                        AuthService().currentUser?.cityState ?? 'Not provided',
+                  ),
+                  _InfoRow(
+                    icon: Icons.markunread_mailbox_outlined,
+                    label: 'Postal Code',
+                    value:
+                        AuthService().currentUser?.postalCode ?? 'Not provided',
+                  ),
                 ]),
                 const SizedBox(height: 24),
                 _buildLogoutButton(theme),
@@ -300,10 +351,7 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
                 _error = null;
                 _successMessage = null;
               }),
-              icon: Icon(
-                Icons.edit_outlined,
-                color: theme.colorScheme.primary,
-              ),
+              icon: Icon(Icons.edit_outlined, color: theme.colorScheme.primary),
               tooltip: 'Edit Profile',
             ),
           ),
@@ -311,7 +359,7 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
       ),
     );
   }
-  
+
   Widget _buildBody(ThemeData theme) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -348,19 +396,19 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
             children: [
               CircleAvatar(
                 radius: 48,
-                backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                backgroundColor: theme.colorScheme.primary.withOpacity(0.12),
                 backgroundImage: _selectedImage != null
                     ? FileImage(_selectedImage!) as ImageProvider
                     : imageUrl != null
-                        ? NetworkImage(imageUrl)
-                        : null,
+                    ? NetworkImage(imageUrl)
+                    : null,
                 child: (_selectedImage == null && imageUrl == null)
                     ? Text(
                         _initials,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 30,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                          color: theme.colorScheme.primary,
                         ),
                       )
                     : null,
@@ -374,13 +422,18 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppColors.primary,
+                        color: theme.colorScheme.primary,
                         shape: BoxShape.circle,
                         border: Border.all(
-                            color: theme.colorScheme.surface, width: 2),
+                          color: theme.colorScheme.surface,
+                          width: 2,
+                        ),
                       ),
-                      child: const Icon(Icons.camera_alt,
-                          color: Colors.white, size: 16),
+                      child: Icon(
+                        Icons.camera_alt,
+                        color: theme.colorScheme.onPrimary,
+                        size: 16,
+                      ),
                     ),
                   ),
                 ),
@@ -401,7 +454,7 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
               user!.subject!,
               style: TextStyle(
                 fontSize: 14,
-                color: AppColors.primary,
+                color: theme.colorScheme.primary,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -446,12 +499,16 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
                 Divider(height: 1, color: theme.colorScheme.outlineVariant),
               Padding(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 14),
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 child: Row(
                   children: [
-                    Icon(row.icon,
-                        size: 20,
-                        color: theme.colorScheme.onSurfaceVariant),
+                    Icon(
+                      row.icon,
+                      size: 20,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
@@ -496,19 +553,32 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
         const SizedBox(height: 12),
         _buildField(_lastNameController, 'Last Name', Icons.person_outline),
         const SizedBox(height: 12),
-        _buildField(_phoneController, 'Phone Number', Icons.phone_outlined,
-            keyboardType: TextInputType.phone),
+        _buildField(
+          _phoneController,
+          'Phone Number',
+          Icons.phone_outlined,
+          keyboardType: TextInputType.phone,
+        ),
         const SizedBox(height: 24),
         _buildSectionTitle('Professional Details', theme),
         const SizedBox(height: 16),
-        _buildField(_experienceController, 'Experience (e.g. 5 years)',
-            Icons.workspace_premium_outlined),
-        const SizedBox(height: 12),
-        _buildField(_homeroomClassController, 'Homeroom Class',
-            Icons.class_outlined),
+        _buildField(
+          _experienceController,
+          'Experience (e.g. 5 years)',
+          Icons.workspace_premium_outlined,
+        ),
         const SizedBox(height: 12),
         _buildField(
-            _officeRoomController, 'Office Room', Icons.meeting_room_outlined),
+          _homeroomClassController,
+          'Homeroom Class',
+          Icons.class_outlined,
+        ),
+        const SizedBox(height: 12),
+        _buildField(
+          _officeRoomController,
+          'Office Room',
+          Icons.meeting_room_outlined,
+        ),
         const SizedBox(height: 24),
         _buildSectionTitle('Address', theme),
         const SizedBox(height: 16),
@@ -516,26 +586,34 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
         const SizedBox(height: 12),
         _buildField(_cityStateController, 'City / State', Icons.location_city),
         const SizedBox(height: 12),
-        _buildField(_postalCodeController, 'Postal Code',
-            Icons.markunread_mailbox_outlined),
+        _buildField(
+          _postalCodeController,
+          'Postal Code',
+          Icons.markunread_mailbox_outlined,
+        ),
         const SizedBox(height: 24),
         _buildSectionTitle('Change Password (Optional)', theme),
         const SizedBox(height: 16),
         _buildPasswordField(
-            _currentPasswordController, 'Current Password',
-            _showCurrentPassword,
-            () => setState(() => _showCurrentPassword = !_showCurrentPassword)),
+          _currentPasswordController,
+          'Current Password',
+          _showCurrentPassword,
+          () => setState(() => _showCurrentPassword = !_showCurrentPassword),
+        ),
         const SizedBox(height: 12),
         _buildPasswordField(
-            _newPasswordController, 'New Password',
-            _showNewPassword,
-            () => setState(() => _showNewPassword = !_showNewPassword)),
+          _newPasswordController,
+          'New Password',
+          _showNewPassword,
+          () => setState(() => _showNewPassword = !_showNewPassword),
+        ),
         const SizedBox(height: 12),
         _buildPasswordField(
-            _confirmPasswordController, 'Confirm New Password',
-            _showConfirmPassword,
-            () => setState(
-                () => _showConfirmPassword = !_showConfirmPassword)),
+          _confirmPasswordController,
+          'Confirm New Password',
+          _showConfirmPassword,
+          () => setState(() => _showConfirmPassword = !_showConfirmPassword),
+        ),
         const SizedBox(height: 28),
         Row(
           children: [
@@ -545,7 +623,8 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
                 child: const Text('Cancel'),
               ),
@@ -555,21 +634,26 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
               child: ElevatedButton(
                 onPressed: _saving ? null : _saveProfile,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
                 child: _saving
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
+                          strokeWidth: 2,
+                          color: theme.colorScheme.onPrimary,
+                        ),
                       )
-                    : const Text('Save Changes',
-                        style: TextStyle(fontWeight: FontWeight.w600)),
+                    : const Text(
+                        'Save Changes',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
               ),
             ),
           ],
@@ -591,8 +675,10 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
         labelText: label,
         prefixIcon: Icon(icon, size: 20),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 14,
+        ),
       ),
     );
   }
@@ -610,13 +696,17 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
         labelText: label,
         prefixIcon: const Icon(Icons.lock_outline, size: 20),
         suffixIcon: IconButton(
-          icon: Icon(visible ? Icons.visibility_off : Icons.visibility,
-              size: 20),
+          icon: Icon(
+            visible ? Icons.visibility_off : Icons.visibility,
+            size: 20,
+          ),
           onPressed: onToggle,
         ),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 14,
+        ),
       ),
     );
   }
@@ -638,8 +728,10 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
                 ),
                 TextButton(
                   onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Logout',
-                      style: TextStyle(color: Colors.red)),
+                  child: const Text(
+                    'Logout',
+                    style: TextStyle(color: Colors.red),
+                  ),
                 ),
               ],
             ),
@@ -651,13 +743,13 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
           }
         },
         icon: Icon(Icons.logout, color: theme.colorScheme.error, size: 18),
-        label: Text('Logout',
-            style: TextStyle(color: theme.colorScheme.error)),
+        label: Text('Logout', style: TextStyle(color: theme.colorScheme.error)),
         style: OutlinedButton.styleFrom(
           side: BorderSide(color: theme.colorScheme.error),
           padding: const EdgeInsets.symmetric(vertical: 14),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       ),
     );
@@ -668,7 +760,11 @@ class _InfoRow {
   final IconData icon;
   final String label;
   final String value;
-  const _InfoRow({required this.icon, required this.label, required this.value});
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 }
 
 class _MessageBanner extends StatelessWidget {
@@ -683,9 +779,9 @@ class _MessageBanner extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Text(message, style: TextStyle(color: color)),
     );

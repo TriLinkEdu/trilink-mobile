@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/offline_banner.dart';
+import 'attendance_session_detail_screen.dart';
 
 // ─── Enums & Models ──────────────────────────────────────────────────────────
 
@@ -56,8 +57,7 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
   // ── History tab state ──
   List<Map<String, dynamic>> _sessions = [];
   bool _loadingHistory = false;
-  String _historyFilter = 'all';
-  Set<String> _expandedSessions = {};
+  DateTime? _historyDateFilter;
 
   @override
   void initState() {
@@ -88,8 +88,10 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
     final gradeName = offering['gradeName'] as String? ?? '';
     final sectionName = offering['sectionName'] as String? ?? '';
     final subjectName = offering['subjectName'] as String? ?? '';
-    final classPart =
-        [gradeName, sectionName].where((s) => s.isNotEmpty).join(' ');
+    final classPart = [
+      gradeName,
+      sectionName,
+    ].where((s) => s.isNotEmpty).join(' ');
     if (classPart.isNotEmpty && subjectName.isNotEmpty) {
       return '$classPart | $subjectName';
     }
@@ -139,7 +141,7 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
       _sessions = [];
       _todaySessionId = null;
       _isEditMode = false;
-      _expandedSessions = {};
+      _historyDateFilter = null;
     });
     await Future.wait([_loadSession(), _loadHistory()]);
   }
@@ -152,11 +154,11 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
       final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
       // Load students
-      final studentsResp =
-          await ApiService().getClassStudents(_selectedClassId!);
-      final studentList =
-          (studentsResp['students'] as List<dynamic>? ?? [])
-              .cast<Map<String, dynamic>>();
+      final studentsResp = await ApiService().getClassStudents(
+        _selectedClassId!,
+      );
+      final studentList = (studentsResp['students'] as List<dynamic>? ?? [])
+          .cast<Map<String, dynamic>>();
 
       // Check for existing session today
       final sessions = await ApiService().getAttendanceSessions(
@@ -184,7 +186,9 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
         final firstName = s['firstName'] as String? ?? '';
         final lastName = s['lastName'] as String? ?? '';
         final email = s['email'] as String? ?? '';
-        final mark = existingMarks.where((m) => m['studentId'] == sid).firstOrNull;
+        final mark = existingMarks
+            .where((m) => m['studentId'] == sid)
+            .firstOrNull;
         AttendanceStatus status = AttendanceStatus.present;
         String note = '';
         if (mark != null) {
@@ -216,12 +220,12 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
     if (_selectedClassId == null || _selectedClassId!.isEmpty) return;
     setState(() => _loadingHistory = true);
     try {
-      final report =
-          await ApiService().getClassAttendanceReport(_selectedClassId!);
+      final report = await ApiService().getClassAttendanceReport(
+        _selectedClassId!,
+      );
       if (!mounted) return;
-      final rawSessions =
-          (report['sessions'] as List<dynamic>? ?? [])
-              .cast<Map<String, dynamic>>();
+      final rawSessions = (report['sessions'] as List<dynamic>? ?? [])
+          .cast<Map<String, dynamic>>();
       setState(() {
         _sessions = rawSessions;
         _loadingHistory = false;
@@ -279,11 +283,13 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
       }
 
       final marks = _students
-          .map((s) => {
-                'studentId': s.id,
-                'status': _statusString(s.status),
-                'note': s.note,
-              })
+          .map(
+            (s) => {
+              'studentId': s.id,
+              'status': _statusString(s.status),
+              'note': s.note,
+            },
+          )
           .toList();
 
       await ApiService().saveAttendanceMarks(sessionId, marks);
@@ -360,47 +366,49 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
   Widget build(BuildContext context) {
     // Note: This screen is embedded in TeacherMainScreen which provides the AppBar
     // We wrap in Material to provide Material context for DropdownButton
+    final theme = Theme.of(context);
     return Material(
-      color: AppColors.lightBackground,
+      color: theme.scaffoldBackgroundColor,
       child: OfflineBanner(
         child: _loadingClasses
             ? const Center(child: CircularProgressIndicator())
             : _classError != null
-                ? _buildError(_classError!, _loadClasses)
-                : _classOfferings.isEmpty
-                    ? _buildEmptyClasses()
-                    : Column(
-                        children: [
-                          // TabBar with blue background
-                          Material(
-                            color: AppColors.primary,
-                            child: TabBar(
-                              controller: _tabController,
-                              indicatorColor: Colors.white,
-                              labelColor: Colors.white,
-                              unselectedLabelColor: Colors.white70,
-                              tabs: const [
-                                Tab(text: 'Today', icon: Icon(Icons.today_outlined)),
-                                Tab(text: 'History', icon: Icon(Icons.history_outlined)),
-                              ],
-                            ),
-                          ),
-                          Expanded(
-                            child: TabBarView(
-                              controller: _tabController,
-                              children: [
-                                _buildTodayTab(),
-                                _buildHistoryTab(),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+            ? _buildError(_classError!, _loadClasses)
+            : _classOfferings.isEmpty
+            ? _buildEmptyClasses()
+            : Column(
+                children: [
+                  // TabBar with blue background
+                  Material(
+                    color: AppColors.primary,
+                    child: TabBar(
+                      controller: _tabController,
+                      indicatorColor: Colors.white,
+                      labelColor: Colors.white,
+                      unselectedLabelColor: Colors.white70,
+                      tabs: const [
+                        Tab(text: 'Today', icon: Icon(Icons.today_outlined)),
+                        Tab(
+                          text: 'History',
+                          icon: Icon(Icons.history_outlined),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [_buildTodayTab(), _buildHistoryTab()],
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }
 
   Widget _buildError(String message, VoidCallback onRetry) {
+    final theme = Theme.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -412,7 +420,7 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
             Text(
               message,
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
@@ -431,25 +439,30 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
   }
 
   Widget _buildEmptyClasses() {
+    final theme = Theme.of(context);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.class_outlined, size: 64, color: Colors.grey.shade400),
+          Icon(
+            Icons.class_outlined,
+            size: 64,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(height: 16),
           Text(
             'No classes assigned',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'You have no class offerings for the current academic year.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textSecondary),
+            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -457,13 +470,14 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
   }
 
   Widget _buildClassDropdown() {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -497,6 +511,7 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
   // ─── Today Tab ────────────────────────────────────────────────────────────
 
   Widget _buildTodayTab() {
+    final theme = Theme.of(context);
     final today = DateTime.now();
     final dateStr = DateFormat('EEEE, MMMM d, yyyy').format(today);
     final readOnly = _todaySessionId != null && !_isEditMode;
@@ -507,14 +522,15 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
             return s.name.toLowerCase().contains(q) ||
                 s.email.toLowerCase().contains(q);
           }).toList();
-    final presentCount =
-        _students.where((s) => s.status == AttendanceStatus.present).length;
+    final presentCount = _students
+        .where((s) => s.status == AttendanceStatus.present)
+        .length;
 
     return Stack(
       children: [
         RefreshIndicator(
           onRefresh: _loadSession,
-          color: AppColors.primary,
+          color: theme.colorScheme.primary,
           child: CustomScrollView(
             slivers: [
               SliverToBoxAdapter(child: _buildClassDropdown()),
@@ -523,13 +539,16 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   child: Row(
                     children: [
-                      Icon(Icons.calendar_today,
-                          size: 16, color: AppColors.textSecondary),
+                      Icon(
+                        Icons.calendar_today,
+                        size: 16,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         dateStr,
                         style: TextStyle(
-                          color: AppColors.textSecondary,
+                          color: theme.colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -542,35 +561,43 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
                   child: Container(
                     margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
-                      color: AppColors.success.withOpacity(0.1),
+                      color: theme.colorScheme.secondaryContainer,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                          color: AppColors.success.withOpacity(0.4)),
+                        color: theme.colorScheme.secondary,
+                        width: 1.2,
+                      ),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.check_circle,
-                            color: AppColors.success, size: 20),
+                        Icon(
+                          Icons.check_circle,
+                          color: theme.colorScheme.secondary,
+                          size: 20,
+                        ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             'Attendance already submitted for today',
                             style: TextStyle(
-                              color: AppColors.success,
+                              color: theme.colorScheme.onSecondaryContainer,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
                         if (!_isEditMode)
                           TextButton(
-                            onPressed: () =>
-                                setState(() => _isEditMode = true),
+                            onPressed: () => setState(() => _isEditMode = true),
                             style: TextButton.styleFrom(
-                              foregroundColor: AppColors.primary,
+                              foregroundColor: theme.colorScheme.primary,
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
                             ),
                             child: const Text('Edit'),
                           ),
@@ -588,14 +615,17 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.people_outline,
-                            size: 64, color: Colors.grey.shade400),
+                        Icon(
+                          Icons.people_outline,
+                          size: 64,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                         const SizedBox(height: 16),
                         Text(
                           'No students in this class',
                           style: TextStyle(
                             fontSize: 16,
-                            color: AppColors.textSecondary,
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -613,53 +643,56 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
                             controller: _searchController,
                             decoration: InputDecoration(
                               hintText: 'Search students...',
-                              prefixIcon:
-                                  const Icon(Icons.search, size: 20),
+                              prefixIcon: const Icon(Icons.search, size: 20),
                               suffixIcon: _searchQuery.isNotEmpty
                                   ? IconButton(
-                                      icon: const Icon(Icons.clear,
-                                          size: 18),
+                                      icon: const Icon(Icons.clear, size: 18),
                                       onPressed: () {
                                         _searchController.clear();
-                                        setState(
-                                            () => _searchQuery = '');
+                                        setState(() => _searchQuery = '');
                                       },
                                     )
                                   : null,
-                              contentPadding:
-                                  const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 10),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 10,
+                              ),
                               border: OutlineInputBorder(
-                                borderRadius:
-                                    BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(10),
                                 borderSide: BorderSide(
-                                    color: AppColors.divider),
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.outlineVariant,
+                                ),
                               ),
                               enabledBorder: OutlineInputBorder(
-                                borderRadius:
-                                    BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(10),
                                 borderSide: BorderSide(
-                                    color: AppColors.divider),
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.outlineVariant,
+                                ),
                               ),
                               filled: true,
-                              fillColor: Colors.white,
+                              fillColor: theme.colorScheme.surfaceContainerLow,
                             ),
-                            onChanged: (v) =>
-                                setState(() => _searchQuery = v),
+                            onChanged: (v) => setState(() => _searchQuery = v),
                           ),
                         ),
                         const SizedBox(width: 10),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
+                            color: theme.colorScheme.primaryContainer,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
                             '$presentCount / ${_students.length}',
                             style: TextStyle(
-                              color: AppColors.primary,
+                              color: theme.colorScheme.onPrimaryContainer,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -684,8 +717,8 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
                         icon: const Icon(Icons.done_all, size: 18),
                         label: const Text('Mark All Present'),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.secondary,
-                          side: BorderSide(color: AppColors.secondary),
+                          foregroundColor: theme.colorScheme.secondary,
+                          side: BorderSide(color: theme.colorScheme.secondary),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -696,26 +729,23 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 10, 16, 100),
                   sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final student = filtered[index];
-                        return _StudentAttendanceTile(
-                          student: student,
-                          readOnly: readOnly,
-                          onStatusChanged: (status) async {
-                            if (status == AttendanceStatus.excused) {
-                              await _showExcusedDialog(student);
-                            } else {
-                              setState(() {
-                                student.status = status;
-                                student.note = '';
-                              });
-                            }
-                          },
-                        );
-                      },
-                      childCount: filtered.length,
-                    ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final student = filtered[index];
+                      return _StudentAttendanceTile(
+                        student: student,
+                        readOnly: readOnly,
+                        onStatusChanged: (status) async {
+                          if (status == AttendanceStatus.excused) {
+                            await _showExcusedDialog(student);
+                          } else {
+                            setState(() {
+                              student.status = status;
+                              student.note = '';
+                            });
+                          }
+                        },
+                      );
+                    }, childCount: filtered.length),
                   ),
                 ),
               ],
@@ -731,8 +761,8 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
               child: ElevatedButton(
                 onPressed: _submitting ? null : _submitAttendance,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -767,74 +797,189 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
   // ─── History Tab ──────────────────────────────────────────────────────────
 
   List<Map<String, dynamic>> get _filteredSessions {
-    if (_historyFilter == 'all') return _sessions;
+    if (_historyDateFilter == null) return _sessions;
     return _sessions.where((session) {
-      final marks =
-          (session['marks'] as List<dynamic>? ?? [])
-              .cast<Map<String, dynamic>>();
-      if (marks.isEmpty) return false;
-      return marks.any(
-          (m) => (m['status'] as String? ?? '').toLowerCase() == _historyFilter);
+      final dateRaw = session['date'] as String? ?? '';
+      try {
+        final parsed = DateTime.parse(dateRaw);
+        return parsed.year == _historyDateFilter!.year &&
+            parsed.month == _historyDateFilter!.month &&
+            parsed.day == _historyDateFilter!.day;
+      } catch (_) {
+        return false;
+      }
     }).toList();
   }
 
+  Future<void> _pickHistoryDate() async {
+    // Find the date range from sessions
+    DateTime firstDate = DateTime(2020);
+    DateTime lastDate = DateTime.now().add(const Duration(days: 1));
+    if (_sessions.isNotEmpty) {
+      final dates = _sessions.map((s) {
+        try {
+          return DateTime.parse(s['date'] as String? ?? '');
+        } catch (_) {
+          return DateTime.now();
+        }
+      }).toList()..sort();
+      firstDate = dates.first;
+      // lastDate should be at least today so the picker doesn't crash
+      lastDate = dates.last.isAfter(DateTime.now())
+          ? dates.last
+          : DateTime.now().add(const Duration(days: 1));
+    }
+
+    // initialDate must be within [firstDate, lastDate]
+    DateTime initialDate = _historyDateFilter ?? DateTime.now();
+    if (initialDate.isBefore(firstDate)) initialDate = firstDate;
+    if (initialDate.isAfter(lastDate)) initialDate = lastDate;
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
+      helpText: 'Filter by date',
+    );
+    if (picked != null) {
+      setState(() => _historyDateFilter = picked);
+    }
+  }
+
   Widget _buildHistoryTab() {
+    final theme = Theme.of(context);
+    final filtered = _filteredSessions;
     return RefreshIndicator(
       onRefresh: _loadHistory,
-      color: AppColors.primary,
+      color: theme.colorScheme.primary,
       child: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(child: _buildClassDropdown()),
+          // ── Date filter bar ──
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _buildFilterChip('all', 'All'),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: _pickHistoryDate,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _historyDateFilter != null
+                              ? theme.colorScheme.primaryContainer
+                              : theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: _historyDateFilter != null
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.outlineVariant,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today_outlined,
+                              size: 18,
+                              color: _historyDateFilter != null
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              _historyDateFilter != null
+                                  ? DateFormat(
+                                      'EEE, MMM d, yyyy',
+                                    ).format(_historyDateFilter!)
+                                  : 'Filter by date',
+                              style: TextStyle(
+                                color: _historyDateFilter != null
+                                    ? theme.colorScheme.primary
+                                    : theme.colorScheme.onSurfaceVariant,
+                                fontWeight: _historyDateFilter != null
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (_historyDateFilter != null) ...[
                     const SizedBox(width: 8),
-                    _buildFilterChip('present', 'Present',
-                        color: AppColors.success),
-                    const SizedBox(width: 8),
-                    _buildFilterChip('absent', 'Absent',
-                        color: AppColors.error),
-                    const SizedBox(width: 8),
-                    _buildFilterChip('late', 'Late',
-                        color: AppColors.accent),
-                    const SizedBox(width: 8),
-                    _buildFilterChip('excused', 'Excused',
-                        color: AppColors.secondary),
+                    IconButton(
+                      onPressed: () =>
+                          setState(() => _historyDateFilter = null),
+                      icon: const Icon(Icons.close),
+                      tooltip: 'Clear filter',
+                      style: IconButton.styleFrom(
+                        backgroundColor: theme.colorScheme.surface,
+                        side: BorderSide(
+                          color: theme.colorScheme.outlineVariant,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
                   ],
-                ),
+                ],
               ),
             ),
           ),
+          if (_historyDateFilter != null)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+                child: Text(
+                  '${filtered.length} session${filtered.length == 1 ? '' : 's'} found',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
           if (_loadingHistory)
             const SliverFillRemaining(
               child: Center(child: CircularProgressIndicator()),
             )
-          else if (_filteredSessions.isEmpty)
+          else if (filtered.isEmpty)
             SliverFillRemaining(
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.history,
-                        size: 64, color: Colors.grey.shade400),
+                    Icon(
+                      Icons.history,
+                      size: 64,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                     const SizedBox(height: 16),
                     Text(
-                      'No attendance history',
+                      _historyDateFilter != null
+                          ? 'No sessions on this date'
+                          : 'No attendance history',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textSecondary,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Submitted sessions will appear here.',
-                      style: TextStyle(color: AppColors.textSecondary),
+                      _historyDateFilter != null
+                          ? 'Try a different date or clear the filter.'
+                          : 'Submitted sessions will appear here.',
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -844,13 +989,9 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
               sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final session = _filteredSessions[index];
-                    return _buildSessionCard(session);
-                  },
-                  childCount: _filteredSessions.length,
-                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  return _buildSessionCard(filtered[index]);
+                }, childCount: filtered.length),
               ),
             ),
         ],
@@ -858,33 +999,11 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
     );
   }
 
-  Widget _buildFilterChip(String value, String label, {Color? color}) {
-    final selected = _historyFilter == value;
-    final chipColor = color ?? AppColors.primary;
-    return FilterChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: (_) => setState(() => _historyFilter = value),
-      selectedColor: chipColor.withOpacity(0.15),
-      checkmarkColor: chipColor,
-      labelStyle: TextStyle(
-        color: selected ? chipColor : AppColors.textSecondary,
-        fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-      ),
-      side: BorderSide(
-        color: selected ? chipColor : AppColors.divider,
-      ),
-      backgroundColor: Colors.white,
-    );
-  }
-
   Widget _buildSessionCard(Map<String, dynamic> session) {
-    final sessionId = session['sessionId'] as String? ?? session['id'] as String? ?? '';
+    final theme = Theme.of(context);
     final dateRaw = session['date'] as String? ?? '';
-    final marks =
-        (session['marks'] as List<dynamic>? ?? [])
-            .cast<Map<String, dynamic>>();
-    final isExpanded = _expandedSessions.contains(sessionId);
+    final marks = (session['marks'] as List<dynamic>? ?? [])
+        .cast<Map<String, dynamic>>();
 
     DateTime? parsedDate;
     try {
@@ -894,185 +1013,119 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
     final dateLabel = parsedDate != null
         ? DateFormat('EEE, MMM d').format(parsedDate)
         : dateRaw;
+    final fullDateLabel = parsedDate != null
+        ? DateFormat('EEEE, MMMM d, yyyy').format(parsedDate)
+        : dateRaw;
 
-    final presentCount =
-        marks.where((m) => (m['status'] as String? ?? '') == 'present').length;
-    final absentCount =
-        marks.where((m) => (m['status'] as String? ?? '') == 'absent').length;
-    final lateCount =
-        marks.where((m) => (m['status'] as String? ?? '') == 'late').length;
-    final excusedCount =
-        marks.where((m) => (m['status'] as String? ?? '') == 'excused').length;
+    final presentCount = marks
+        .where((m) => (m['status'] as String? ?? '') == 'present')
+        .length;
+    final absentCount = marks
+        .where((m) => (m['status'] as String? ?? '') == 'absent')
+        .length;
+    final lateCount = marks
+        .where((m) => (m['status'] as String? ?? '') == 'late')
+        .length;
+    final excusedCount = marks
+        .where((m) => (m['status'] as String? ?? '') == 'excused')
+        .length;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: theme.shadowColor.withOpacity(0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Column(
-        children: [
-          InkWell(
-            onTap: () {
-              setState(() {
-                if (isExpanded) {
-                  _expandedSessions.remove(sessionId);
-                } else {
-                  _expandedSessions.add(sessionId);
-                }
-              });
-            },
-            borderRadius: BorderRadius.circular(14),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Row(
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => AttendanceSessionDetailScreen(session: session),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.event_note,
+                  color: theme.colorScheme.onPrimaryContainer,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      fullDateLabel,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${marks.length} students',
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(Icons.event_note,
-                        color: AppColors.primary, size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          dateLabel,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${marks.length} students',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                   Wrap(
                     spacing: 4,
+                    runSpacing: 4,
                     children: [
                       if (presentCount > 0)
-                        _buildBadge('$presentCount P', AppColors.success),
+                        _buildBadge(
+                          '$presentCount P',
+                          theme.colorScheme.secondary,
+                        ),
                       if (absentCount > 0)
-                        _buildBadge('$absentCount A', AppColors.error),
+                        _buildBadge('$absentCount A', theme.colorScheme.error),
                       if (lateCount > 0)
-                        _buildBadge('$lateCount L', AppColors.accent),
+                        _buildBadge('$lateCount L', theme.colorScheme.tertiary),
                       if (excusedCount > 0)
-                        _buildBadge('$excusedCount E', AppColors.secondary),
+                        _buildBadge(
+                          '$excusedCount E',
+                          theme.colorScheme.primary,
+                        ),
                     ],
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(height: 4),
                   Icon(
-                    isExpanded
-                        ? Icons.keyboard_arrow_up
-                        : Icons.keyboard_arrow_down,
-                    color: AppColors.textSecondary,
+                    Icons.chevron_right,
+                    size: 18,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ],
               ),
-            ),
+            ],
           ),
-          if (isExpanded) ...[
-            Divider(height: 1, color: AppColors.divider),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: marks.length,
-              itemBuilder: (context, i) {
-                final mark = marks[i];
-                final firstName =
-                    mark['studentFirstName'] as String? ?? '';
-                final lastName =
-                    mark['studentLastName'] as String? ?? '';
-                final name = '$firstName $lastName'.trim();
-                final status =
-                    (mark['status'] as String? ?? 'present').toLowerCase();
-                final note = mark['note'] as String? ?? '';
-                final initials = _initials(name);
-                final statusColor = _statusColor(status);
-
-                return Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 8),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 18,
-                        backgroundColor:
-                            AppColors.primary.withOpacity(0.15),
-                        child: Text(
-                          initials,
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              name.isEmpty ? 'Unknown' : name,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w500),
-                            ),
-                            if (note.isNotEmpty)
-                              Text(
-                                note,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          _capitalize(status),
-                          style: TextStyle(
-                            color: statusColor,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
-        ],
+        ),
       ),
     );
   }
@@ -1081,7 +1134,7 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withOpacity(0.16),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -1098,15 +1151,15 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
   Color _statusColor(String status) {
     switch (status) {
       case 'present':
-        return AppColors.success;
+        return Colors.green;
       case 'absent':
-        return AppColors.error;
+        return Colors.red;
       case 'late':
-        return AppColors.accent;
+        return Colors.orange;
       case 'excused':
-        return AppColors.secondary;
+        return Colors.blue;
       default:
-        return AppColors.textSecondary;
+        return Colors.grey;
     }
   }
 
@@ -1145,12 +1198,13 @@ class _StudentAttendanceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -1161,11 +1215,11 @@ class _StudentAttendanceTile extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 22,
-                  backgroundColor: AppColors.primary.withOpacity(0.12),
+                  backgroundColor: theme.colorScheme.primaryContainer,
                   child: Text(
                     _initials(student.name),
                     style: TextStyle(
-                      color: AppColors.primary,
+                      color: theme.colorScheme.onPrimaryContainer,
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
@@ -1187,7 +1241,7 @@ class _StudentAttendanceTile extends StatelessWidget {
                         Text(
                           student.email,
                           style: TextStyle(
-                            color: AppColors.textSecondary,
+                            color: theme.colorScheme.onSurfaceVariant,
                             fontSize: 12,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -1242,8 +1296,11 @@ class _StudentAttendanceTile extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 6),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline,
-                        size: 14, color: AppColors.secondary),
+                    Icon(
+                      Icons.info_outline,
+                      size: 14,
+                      color: AppColors.secondary,
+                    ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
@@ -1355,6 +1412,7 @@ class _StatusButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
@@ -1362,7 +1420,9 @@ class _StatusButton extends StatelessWidget {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(vertical: 7),
           decoration: BoxDecoration(
-            color: selected ? color.withOpacity(0.15) : Colors.grey.shade100,
+            color: selected
+                ? color.withOpacity(0.15)
+                : theme.colorScheme.surfaceContainerLowest,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: selected ? color : Colors.transparent,
@@ -1375,16 +1435,15 @@ class _StatusButton extends StatelessWidget {
               Icon(
                 icon,
                 size: 16,
-                color: selected ? color : AppColors.textSecondary,
+                color: selected ? color : theme.colorScheme.onSurfaceVariant,
               ),
               const SizedBox(height: 2),
               Text(
                 label,
                 style: TextStyle(
                   fontSize: 10,
-                  fontWeight:
-                      selected ? FontWeight.bold : FontWeight.normal,
-                  color: selected ? color : AppColors.textSecondary,
+                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                  color: selected ? color : theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ],

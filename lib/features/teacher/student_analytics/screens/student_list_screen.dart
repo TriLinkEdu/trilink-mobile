@@ -348,7 +348,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.error_outline,
-                  size: 48, color: Colors.grey.shade300),
+                  size: 48, color: theme.colorScheme.outlineVariant),
               const SizedBox(height: 16),
               Text(
                 'Failed to load students',
@@ -392,7 +392,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.people_outline,
-                size: 64, color: Colors.grey.shade300),
+                size: 64, color: theme.colorScheme.outlineVariant),
             const SizedBox(height: 16),
             Text(
               _searchQuery.isNotEmpty

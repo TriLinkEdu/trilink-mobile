@@ -137,6 +137,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
   }
 
   Widget _buildBody() {
+    final theme = Theme.of(context);
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -148,21 +149,21 @@ class _ClassListScreenState extends State<ClassListScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, size: 48, color: Colors.grey.shade400),
+              Icon(Icons.error_outline, size: 48, color: theme.colorScheme.onSurfaceVariant),
               const SizedBox(height: 16),
               Text(
                 'Failed to load classes',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade700,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 _error ?? '',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurfaceVariant),
               ),
               const SizedBox(height: 20),
               ElevatedButton.icon(
@@ -188,21 +189,21 @@ class _ClassListScreenState extends State<ClassListScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.class_outlined, size: 64, color: Colors.grey.shade300),
+            Icon(Icons.class_outlined, size: 64, color: theme.colorScheme.outlineVariant),
             const SizedBox(height: 16),
             Text(
               'No classes found',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade600,
+                color: theme.colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'You have no class offerings for the current academic year.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+              style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -221,7 +222,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
             child: Container(
               height: 44,
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: theme.colorScheme.surfaceContainerLowest,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: TextField(
@@ -230,12 +231,12 @@ class _ClassListScreenState extends State<ClassListScreen> {
                 decoration: InputDecoration(
                   hintText: 'Search classes...',
                   hintStyle: TextStyle(
-                    color: Colors.grey.shade500,
+                    color: theme.colorScheme.onSurfaceVariant,
                     fontSize: 14,
                   ),
                   prefixIcon: Icon(
                     Icons.search,
-                    color: Colors.grey.shade600,
+                    color: theme.colorScheme.onSurfaceVariant,
                     size: 20,
                   ),
                   suffixIcon: Row(
@@ -244,7 +245,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
                       if (_searchQuery.isNotEmpty)
                         IconButton(
                           icon: Icon(Icons.clear,
-                              color: Colors.grey.shade600, size: 18),
+                              color: theme.colorScheme.onSurfaceVariant, size: 18),
                           onPressed: () {
                             _searchController.clear();
                             setState(() => _searchQuery = '');
@@ -281,7 +282,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
                   '${displayedClasses.length} class${displayedClasses.length == 1 ? '' : 'es'}',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey.shade600,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -322,14 +323,14 @@ class _ClassListScreenState extends State<ClassListScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.search_off,
-                            size: 64, color: Colors.grey.shade300),
+                            size: 64, color: theme.colorScheme.outlineVariant),
                         const SizedBox(height: 16),
                         Text(
                           'No classes match "$_searchQuery"',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
-                            color: Colors.grey.shade600,
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -352,6 +353,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
   }
   
   Widget _buildClassCard(Map<String, dynamic> c, Color color) {
+    final theme = Theme.of(context);
     final classId = c['id'] as String? ?? '';
     final subjectId = c['subjectId'] as String? ?? '';
     final subjectName = c['subjectName'] as String? ?? _className(c);
@@ -360,7 +362,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
     
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
@@ -416,10 +418,10 @@ class _ClassListScreenState extends State<ClassListScreen> {
                     children: [
                       Text(
                         className,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 15,
-                          color: AppColors.textPrimary,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       if (classPeriod.isNotEmpty) ...[
@@ -428,7 +430,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
                           classPeriod,
                           style: TextStyle(
                             fontSize: 13,
-                            color: Colors.grey.shade600,
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -438,7 +440,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
                 // Arrow
                 Icon(
                   Icons.chevron_right,
-                  color: Colors.grey.shade400,
+                  color: theme.colorScheme.onSurfaceVariant,
                   size: 20,
                 ),
               ],
