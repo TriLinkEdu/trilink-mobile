@@ -368,7 +368,7 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
     // We wrap in Material to provide Material context for DropdownButton
     final theme = Theme.of(context);
     return Material(
-      color: theme.scaffoldBackgroundColor,
+      color: theme.colorScheme.surface,
       child: OfflineBanner(
         child: _loadingClasses
             ? const Center(child: CircularProgressIndicator())
@@ -1422,10 +1422,10 @@ class _StatusButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: selected
                 ? color.withOpacity(0.15)
-                : theme.colorScheme.surfaceContainerLowest,
+                : theme.colorScheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: selected ? color : Colors.transparent,
+              color: selected ? color : theme.colorScheme.outlineVariant,
               width: 1.5,
             ),
           ),
