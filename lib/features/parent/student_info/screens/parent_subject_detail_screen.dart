@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../shared/widgets/role_page_background.dart';
 
 class ParentSubjectDetailScreen extends StatefulWidget {
   final String studentId;
@@ -107,14 +108,14 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              color: AppColors.textPrimary, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new,
+              color: theme.colorScheme.onSurface, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
@@ -122,8 +123,8 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
           children: [
             Text(
               widget.subjectName,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
                 fontSize: 17,
               ),
@@ -132,7 +133,7 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
               Text(
                 widget.childName,
                 style: TextStyle(
-                  color: Colors.grey.shade600,
+                  color: theme.colorScheme.onSurfaceVariant,
                   fontSize: 12,
                   fontWeight: FontWeight.normal,
                 ),
@@ -142,7 +143,7 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
         bottom: TabBar(
           controller: _tabController,
           labelColor: AppColors.primary,
-          unselectedLabelColor: Colors.grey.shade600,
+          unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
           indicatorColor: AppColors.primary,
           indicatorWeight: 3,
           labelStyle: const TextStyle(
@@ -155,12 +156,15 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildGradesTab(),
-          _buildAttendanceTab(),
-        ],
+      body: RolePageBackground(
+        flavor: RoleThemeFlavor.parent,
+        child: TabBarView(
+          controller: _tabController,
+          children: [
+            _buildGradesTab(),
+            _buildAttendanceTab(),
+          ],
+        ),
       ),
     );
   }
@@ -228,7 +232,7 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade500,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 letterSpacing: 0.8,
               ),
             ),
@@ -315,7 +319,7 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade500,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 letterSpacing: 0.8,
               ),
             ),
@@ -351,7 +355,7 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: selected ? color.withValues(alpha: 0.12) : Colors.grey.shade100,
+          color: selected ? color.withValues(alpha: 0.12) : Theme.of(context).colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: selected ? color : Colors.transparent,
@@ -366,7 +370,7 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                color: selected ? color : Colors.grey.shade600,
+                color: selected ? color : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             if (count > 0) ...[
@@ -374,7 +378,7 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                 decoration: BoxDecoration(
-                  color: selected ? color : Colors.grey.shade400,
+                  color: selected ? color : Theme.of(context).colorScheme.onSurfaceVariant,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -608,11 +612,11 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Theme.of(context).shadowColor.withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -638,17 +642,17 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     Text(
                       type[0].toUpperCase() + type.substring(1),
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -659,17 +663,17 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
                 children: [
                   Text(
                     '$score / $maxScore',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   Text(
                     '${percent.toStringAsFixed(1)}%',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade600,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -681,21 +685,22 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: Theme.of(context).colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(Icons.note_outlined,
-                      size: 16, color: Colors.grey.shade600),
+                      size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       note,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade700,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -748,7 +753,7 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: statusColor.withValues(alpha: 0.2),
@@ -756,7 +761,7 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Theme.of(context).shadowColor.withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -782,10 +787,10 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
                   children: [
                     Text(
                       _formatDate(date),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -826,21 +831,22 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: Theme.of(context).colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(Icons.note_outlined,
-                      size: 16, color: Colors.grey.shade600),
+                      size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       note,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade700,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -862,21 +868,21 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.grey.shade300),
+            Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(height: 16),
             Text(
               'Failed to load data',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               error,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
@@ -903,21 +909,21 @@ class _ParentSubjectDetailScreenState extends State<ParentSubjectDetailScreen>
       padding: const EdgeInsets.symmetric(vertical: 48),
       child: Column(
         children: [
-          Icon(icon, size: 64, color: Colors.grey.shade300),
+          Icon(icon, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(height: 16),
           Text(
             title,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.grey.shade600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+            style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ],
       ),

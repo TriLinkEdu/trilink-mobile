@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
 import 'parent_subject_detail_screen.dart';
+import '../../../shared/widgets/role_page_background.dart';
 
 class ParentSubjectListScreen extends StatefulWidget {
   final String studentId;
@@ -54,23 +55,23 @@ class _ParentSubjectListScreenState extends State<ParentSubjectListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              color: AppColors.textPrimary, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new,
+              color: theme.colorScheme.onSurface, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Subjects',
               style: TextStyle(
-                color: AppColors.textPrimary,
+                color: theme.colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
                 fontSize: 17,
               ),
@@ -78,7 +79,7 @@ class _ParentSubjectListScreenState extends State<ParentSubjectListScreen> {
             Text(
               widget.childName,
               style: TextStyle(
-                color: Colors.grey.shade600,
+                color: theme.colorScheme.onSurfaceVariant,
                 fontSize: 12,
                 fontWeight: FontWeight.normal,
               ),
@@ -86,7 +87,10 @@ class _ParentSubjectListScreenState extends State<ParentSubjectListScreen> {
           ],
         ),
       ),
-      body: _buildBody(),
+      body: RolePageBackground(
+        flavor: RoleThemeFlavor.parent,
+        child: _buildBody(),
+      ),
     );
   }
 
@@ -152,7 +156,7 @@ class _ParentSubjectListScreenState extends State<ParentSubjectListScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -193,10 +197,10 @@ class _ParentSubjectListScreenState extends State<ParentSubjectListScreen> {
                 children: [
                   Text(
                     subjectName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -204,14 +208,14 @@ class _ParentSubjectListScreenState extends State<ParentSubjectListScreen> {
                     Row(
                       children: [
                         Icon(Icons.person_outline,
-                            size: 14, color: Colors.grey.shade600),
+                            size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             teacherName,
                             style: TextStyle(
                               fontSize: 13,
-                              color: Colors.grey.shade600,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -223,7 +227,7 @@ class _ParentSubjectListScreenState extends State<ParentSubjectListScreen> {
                     Row(
                       children: [
                         Icon(Icons.class_outlined,
-                            size: 14, color: Colors.grey.shade600),
+                            size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         const SizedBox(width: 4),
                         Text(
                           sectionName.isNotEmpty
@@ -231,7 +235,7 @@ class _ParentSubjectListScreenState extends State<ParentSubjectListScreen> {
                               : gradeName,
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade600,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -240,7 +244,7 @@ class _ParentSubjectListScreenState extends State<ParentSubjectListScreen> {
               ),
             ),
             Icon(Icons.arrow_forward_ios,
-                size: 16, color: Colors.grey.shade400),
+                size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ],
         ),
       ),
@@ -254,21 +258,21 @@ class _ParentSubjectListScreenState extends State<ParentSubjectListScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.grey.shade300),
+            Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(height: 16),
             Text(
               'Failed to load subjects',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               _error!,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
@@ -295,21 +299,21 @@ class _ParentSubjectListScreenState extends State<ParentSubjectListScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.menu_book_outlined,
-              size: 64, color: Colors.grey.shade300),
+              size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(height: 16),
           Text(
             'No subjects found',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.grey.shade600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'No subjects are enrolled for this student.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+            style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ],
       ),

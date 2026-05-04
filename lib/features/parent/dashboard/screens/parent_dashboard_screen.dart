@@ -327,8 +327,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                     ),
                     child: Text(
                       _unreadCount > 99 ? '99+' : '$_unreadCount',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.surface,
                         fontSize: 9,
                         fontWeight: FontWeight.bold,
                       ),
@@ -363,15 +363,15 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
               children: [
                 CircleAvatar(
                   radius: 30,
-                  backgroundColor: Colors.white.withValues(alpha: 0.2),
+                  backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.2),
                   child: Text(
                     (user?.firstName ?? '').isNotEmpty
                         ? user!.firstName[0].toUpperCase()
                         : 'P',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                     ),
                   ),
                 ),
@@ -383,8 +383,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                     children: [
                       Text(
                         user?.fullName ?? 'Parent',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.surface,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1183,10 +1183,10 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Contact Teacher',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1208,9 +1208,9 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                 color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.arrow_forward,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 size: 20,
               ),
             ),
@@ -1431,7 +1431,7 @@ class _DrawerSection extends StatelessWidget {
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: Colors.grey.shade500,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
           letterSpacing: 0.8,
         ),
       ),

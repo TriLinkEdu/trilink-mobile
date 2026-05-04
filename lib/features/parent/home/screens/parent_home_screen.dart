@@ -150,8 +150,8 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
               ),
               child: Text(
                 _unreadCount > 99 ? '99+' : '$_unreadCount',
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.surface,
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                 ),

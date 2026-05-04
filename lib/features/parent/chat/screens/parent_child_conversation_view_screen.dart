@@ -83,14 +83,26 @@ class _ParentChildConversationViewScreenState
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final appBarColor = Color.alphaBlend(
+      AppColors.primary.withValues(alpha: theme.brightness == Brightness.dark ? 0.18 : 0.07),
+      theme.colorScheme.surface,
+    );
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: appBarColor,
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        shape: Border(
+          bottom: BorderSide(
+            color: AppColors.primary.withValues(alpha: 0.15),
+            width: 1,
+          ),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              color: AppColors.textPrimary, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new,
+              color: theme.colorScheme.onSurface, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
@@ -98,8 +110,8 @@ class _ParentChildConversationViewScreenState
           children: [
             Text(
               widget.conversationTitle,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
                 fontSize: 17,
               ),
@@ -107,7 +119,7 @@ class _ParentChildConversationViewScreenState
             Text(
               '${widget.childName}\'s conversation',
               style: TextStyle(
-                color: Colors.grey.shade600,
+                color: theme.colorScheme.onSurfaceVariant,
                 fontSize: 12,
                 fontWeight: FontWeight.normal,
               ),
@@ -192,19 +204,19 @@ class _ParentChildConversationViewScreenState
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       child: Row(
         children: [
-          Expanded(child: Divider(color: Colors.grey.shade300)),
+          Expanded(child: Divider(color: Theme.of(context).colorScheme.outlineVariant)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Text(
               date,
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey.shade500,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ),
-          Expanded(child: Divider(color: Colors.grey.shade300)),
+          Expanded(child: Divider(color: Theme.of(context).colorScheme.outlineVariant)),
         ],
       ),
     );
@@ -246,7 +258,9 @@ class _ParentChildConversationViewScreenState
                   decoration: BoxDecoration(
                     color: isChild
                         ? AppColors.primary
-                        : Colors.white,
+                        : Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF2C2C3E)
+                            : const Color(0xFFEEEEF4),
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(16),
                       topRight: const Radius.circular(16),
@@ -265,7 +279,7 @@ class _ParentChildConversationViewScreenState
                     text,
                     style: TextStyle(
                       fontSize: 14,
-                      color: isChild ? Colors.white : AppColors.textPrimary,
+                      color: isChild ? Colors.white : Theme.of(context).colorScheme.onSurface,
                       height: 1.4,
                     ),
                   ),
@@ -276,7 +290,7 @@ class _ParentChildConversationViewScreenState
                     _formatTime(createdAt),
                     style: TextStyle(
                       fontSize: 11,
-                      color: Colors.grey.shade500,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
@@ -312,21 +326,21 @@ class _ParentChildConversationViewScreenState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.grey.shade300),
+            Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(height: 16),
             Text(
               'Failed to load messages',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               _error!,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
@@ -353,21 +367,21 @@ class _ParentChildConversationViewScreenState
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.chat_bubble_outline,
-              size: 64, color: Colors.grey.shade300),
+              size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(height: 16),
           Text(
             'No messages',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.grey.shade600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'This conversation has no messages yet.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+            style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ],
       ),

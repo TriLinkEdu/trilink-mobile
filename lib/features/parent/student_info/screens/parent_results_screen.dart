@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
 import 'parent_subject_detail_screen.dart';
+import '../../../shared/widgets/role_page_background.dart';
 
 class ParentResultsScreen extends StatefulWidget {
   final String? studentId;
@@ -74,49 +75,52 @@ class _ParentResultsScreenState extends State<ParentResultsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              color: AppColors.textPrimary, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new,
+              color: theme.colorScheme.onSurface, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Academic Results',
           style: TextStyle(
-              color: AppColors.textPrimary,
+              color: theme.colorScheme.onSurface,
               fontWeight: FontWeight.bold,
               fontSize: 17),
         ),
         centerTitle: true,
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? _buildError()
-              : RefreshIndicator(
-                  onRefresh: _loadData,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildStudentHeader(),
-                        const SizedBox(height: 16),
-                        _buildSummaryCard(),
-                        const SizedBox(height: 20),
-                        _buildSectionLabel('Subject Results'),
-                        const SizedBox(height: 10),
-                        _buildSubjectsList(),
-                        const SizedBox(height: 20),
-                      ],
+      body: RolePageBackground(
+        flavor: RoleThemeFlavor.parent,
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+                ? _buildError()
+                : RefreshIndicator(
+                    onRefresh: _loadData,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildStudentHeader(),
+                          const SizedBox(height: 16),
+                          _buildSummaryCard(),
+                          const SizedBox(height: 20),
+                          _buildSectionLabel('Subject Results'),
+                          const SizedBox(height: 10),
+                          _buildSubjectsList(),
+                          const SizedBox(height: 20),
+                        ],
+                      ),
                     ),
                   ),
-                ),
+      ),
     );
   }
 
@@ -127,11 +131,11 @@ class _ParentResultsScreenState extends State<ParentResultsScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.wifi_off_rounded, size: 48, color: Colors.grey.shade300),
+            Icon(Icons.wifi_off_rounded, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(height: 16),
             Text(_error!,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
             const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: _loadData,
@@ -163,11 +167,11 @@ class _ParentResultsScreenState extends State<ParentResultsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Theme.of(context).shadowColor.withValues(alpha: 0.03),
               blurRadius: 8,
               offset: const Offset(0, 2)),
         ],
@@ -189,10 +193,10 @@ class _ParentResultsScreenState extends State<ParentResultsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(_studentName,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary)),
+                        color: Theme.of(context).colorScheme.onSurface)),
                 if (_gradeSection.isNotEmpty) ...[
                   const SizedBox(height: 3),
                   Container(
@@ -297,10 +301,10 @@ class _ParentResultsScreenState extends State<ParentResultsScreen> {
 
   Widget _buildSectionLabel(String text) {
     return Text(text,
-        style: const TextStyle(
+        style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary));
+            color: Theme.of(context).colorScheme.onSurface));
   }
 
   Widget _buildSubjectsList() {
@@ -310,14 +314,14 @@ class _ParentResultsScreenState extends State<ParentResultsScreen> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 32),
         decoration: BoxDecoration(
-            color: Colors.white, borderRadius: BorderRadius.circular(14)),
+            color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(14)),
         child: Column(
           children: [
             Icon(Icons.menu_book_outlined,
-                size: 36, color: Colors.grey.shade300),
+                size: 36, color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(height: 8),
             Text('No subject data for this period',
-                style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
           ],
         ),
       );
@@ -417,11 +421,11 @@ class _SubjectResultCardState extends State<_SubjectResultCard> {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Theme.of(context).shadowColor.withValues(alpha: 0.03),
               blurRadius: 6,
               offset: const Offset(0, 2)),
         ],
@@ -460,14 +464,14 @@ class _SubjectResultCardState extends State<_SubjectResultCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(widget.subjectName,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 14,
-                                color: AppColors.textPrimary)),
+                                color: Theme.of(context).colorScheme.onSurface)),
                         const SizedBox(height: 2),
                         Text(widget.teacherName,
                             style: TextStyle(
-                                fontSize: 12, color: Colors.grey.shade500)),
+                                fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                       ],
                     ),
                   ),
@@ -495,7 +499,7 @@ class _SubjectResultCardState extends State<_SubjectResultCard> {
                       Text(
                         '${widget.releasedCount} exam${widget.releasedCount == 1 ? '' : 's'}',
                         style: TextStyle(
-                            fontSize: 10, color: Colors.grey.shade400),
+                            fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                     ],
                   ),
@@ -504,7 +508,7 @@ class _SubjectResultCardState extends State<_SubjectResultCard> {
                     _expanded
                         ? Icons.keyboard_arrow_up
                         : Icons.keyboard_arrow_down,
-                    color: Colors.grey.shade400,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     size: 20,
                   ),
                 ],
@@ -512,7 +516,7 @@ class _SubjectResultCardState extends State<_SubjectResultCard> {
             ),
           ),
           if (_expanded) ...[
-            Divider(height: 1, color: Colors.grey.shade100),
+            Divider(height: 1, color: Theme.of(context).colorScheme.onSurfaceVariant),
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
               child: Column(
@@ -523,7 +527,7 @@ class _SubjectResultCardState extends State<_SubjectResultCard> {
                         style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade600)),
+                            color: Theme.of(context).colorScheme.onSurfaceVariant)),
                     const SizedBox(height: 8),
                     ...widget.exams.take(5).map((exam) {
                       final title = exam['examTitle'] as String? ?? 'Exam';
@@ -545,9 +549,9 @@ class _SubjectResultCardState extends State<_SubjectResultCard> {
                           children: [
                             Expanded(
                               child: Text(title,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       fontSize: 13,
-                                      color: AppColors.textPrimary),
+                                      color: Theme.of(context).colorScheme.onSurface),
                                   overflow: TextOverflow.ellipsis),
                             ),
                             Text(
@@ -567,7 +571,7 @@ class _SubjectResultCardState extends State<_SubjectResultCard> {
                   ] else ...[
                     Text('No exams released yet',
                         style: TextStyle(
-                            fontSize: 12, color: Colors.grey.shade400)),
+                            fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                     const SizedBox(height: 12),
                   ],
                   SizedBox(
@@ -615,7 +619,7 @@ class _SubjectResultCardState extends State<_SubjectResultCard> {
         Icon(icon, size: 14, color: color),
         const SizedBox(width: 6),
         Text(label,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
         const Spacer(),
         Text(value,
             style: TextStyle(

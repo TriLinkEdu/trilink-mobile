@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/role_page_background.dart';
 
 class AnnouncementDetailScreen extends StatelessWidget {
   final Map<String, dynamic> announcement;
@@ -32,7 +33,6 @@ class AnnouncementDetailScreen extends StatelessWidget {
         : '';
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
@@ -49,8 +49,10 @@ class AnnouncementDetailScreen extends StatelessWidget {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        child: Column(
+      body: RolePageBackground(
+        flavor: RoleThemeFlavor.parent,
+        child: SingleChildScrollView(
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header with icon
@@ -156,6 +158,7 @@ class AnnouncementDetailScreen extends StatelessWidget {
               ),
             ),
           ],
+        ),
         ),
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../shared/widgets/role_page_background.dart';
 
 class ParentNotificationsScreen extends StatefulWidget {
   const ParentNotificationsScreen({super.key});
@@ -90,7 +91,7 @@ class _ParentNotificationsScreenState extends State<ParentNotificationsScreen> {
       SnackBar(
         content: Row(
           children: [
-            Icon(icon, color: Colors.white, size: 20),
+            Icon(icon, color: Theme.of(context).colorScheme.surface, size: 20),
             const SizedBox(width: 12),
             Expanded(child: Text(message)),
           ],
@@ -109,7 +110,6 @@ class _ParentNotificationsScreenState extends State<ParentNotificationsScreen> {
     final unreadCount = _notifications.where((n) => n['readAt'] == null).length;
     
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,7 +121,7 @@ class _ParentNotificationsScreenState extends State<ParentNotificationsScreen> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.normal,
-                  color: Colors.grey.shade600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
           ],
@@ -138,7 +138,9 @@ class _ParentNotificationsScreenState extends State<ParentNotificationsScreen> {
             ),
         ],
       ),
-      body: _loading
+      body: RolePageBackground(
+        flavor: RoleThemeFlavor.parent,
+        child: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
           ? Center(
@@ -147,21 +149,21 @@ class _ParentNotificationsScreenState extends State<ParentNotificationsScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.error_outline, size: 48, color: Colors.grey.shade300),
+                    Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     const SizedBox(height: 16),
                     Text(
                       'Failed to load notifications',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade700,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       _error!,
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                      style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                     const SizedBox(height: 20),
                     ElevatedButton.icon(
@@ -188,7 +190,7 @@ class _ParentNotificationsScreenState extends State<ParentNotificationsScreen> {
                   Icon(
                     Icons.notifications_none,
                     size: 64,
-                    color: Colors.grey.shade300,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -196,14 +198,14 @@ class _ParentNotificationsScreenState extends State<ParentNotificationsScreen> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade600,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     "You'll be notified about your child's updates here.",
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                    style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -281,6 +283,7 @@ class _ParentNotificationsScreenState extends State<ParentNotificationsScreen> {
                 },
               ),
             ),
+        ),
     );
   }
 
@@ -293,15 +296,15 @@ class _ParentNotificationsScreenState extends State<ParentNotificationsScreen> {
     
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isRead ? Colors.grey.shade200 : AppColors.primary.withValues(alpha: 0.3),
+          color: isRead ? Theme.of(context).colorScheme.outlineVariant : AppColors.primary.withValues(alpha: 0.3),
           width: isRead ? 1 : 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Theme.of(context).shadowColor.withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -326,13 +329,13 @@ class _ParentNotificationsScreenState extends State<ParentNotificationsScreen> {
                   height: 44,
                   decoration: BoxDecoration(
                     color: isRead
-                        ? Colors.grey.shade100
+                        ? Theme.of(context).colorScheme.surfaceContainerLow
                         : AppColors.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     _getNotificationIcon(type),
-                    color: isRead ? Colors.grey.shade500 : AppColors.primary,
+                    color: isRead ? Theme.of(context).colorScheme.onSurfaceVariant : AppColors.primary,
                     size: 22,
                   ),
                 ),
@@ -349,7 +352,7 @@ class _ParentNotificationsScreenState extends State<ParentNotificationsScreen> {
                               style: TextStyle(
                                 fontWeight: isRead ? FontWeight.w500 : FontWeight.bold,
                                 fontSize: 15,
-                                color: AppColors.textPrimary,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                           ),
@@ -369,7 +372,7 @@ class _ParentNotificationsScreenState extends State<ParentNotificationsScreen> {
                         body,
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.grey.shade700,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           height: 1.4,
                         ),
                         maxLines: 3,
@@ -381,14 +384,14 @@ class _ParentNotificationsScreenState extends State<ParentNotificationsScreen> {
                           Icon(
                             Icons.access_time,
                             size: 12,
-                            color: Colors.grey.shade400,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             _formatTime(createdAt),
                             style: TextStyle(
                               fontSize: 11,
-                              color: Colors.grey.shade500,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],

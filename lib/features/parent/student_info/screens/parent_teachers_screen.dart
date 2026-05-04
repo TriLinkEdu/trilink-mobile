@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
 import '../../chat/screens/parent_message_view_screen.dart';
+import '../../../shared/widgets/role_page_background.dart';
 
 class ParentTeachersScreen extends StatefulWidget {
   final String studentId;
@@ -55,23 +56,23 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              color: AppColors.textPrimary, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new,
+              color: theme.colorScheme.onSurface, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Teachers',
               style: TextStyle(
-                color: AppColors.textPrimary,
+                color: theme.colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
                 fontSize: 17,
               ),
@@ -79,7 +80,7 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
             Text(
               widget.childName,
               style: TextStyle(
-                color: Colors.grey.shade600,
+                color: theme.colorScheme.onSurfaceVariant,
                 fontSize: 12,
                 fontWeight: FontWeight.normal,
               ),
@@ -87,7 +88,10 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
           ],
         ),
       ),
-      body: _buildBody(),
+      body: RolePageBackground(
+        flavor: RoleThemeFlavor.parent,
+        child: _buildBody(),
+      ),
     );
   }
 
@@ -147,7 +151,7 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeInOut,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -183,10 +187,10 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
                       children: [
                         Text(
                           fullName,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                         if (subjects.isNotEmpty) ...[
@@ -195,7 +199,7 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
                             subjects.join(', '),
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey.shade600,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -247,7 +251,7 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
               firstChild: const SizedBox.shrink(),
               secondChild: Column(
                 children: [
-                  Divider(height: 1, color: Colors.grey.shade100),
+                  Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                     child: Column(
@@ -259,7 +263,7 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Icon(Icons.book_outlined,
-                                  size: 16, color: Colors.grey.shade600),
+                                  size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Wrap(
@@ -289,7 +293,7 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
                             ],
                           ),
                           const SizedBox(height: 10),
-                          Divider(height: 1, color: Colors.grey.shade100),
+                          Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
                           const SizedBox(height: 10),
                         ],
                         // Email
@@ -297,14 +301,14 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
                           Row(
                             children: [
                               Icon(Icons.email_outlined,
-                                  size: 16, color: Colors.grey.shade600),
+                                  size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   email,
                                   style: TextStyle(
                                     fontSize: 13,
-                                    color: Colors.grey.shade700,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                               ),
@@ -317,13 +321,13 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
                           Row(
                             children: [
                               Icon(Icons.phone_outlined,
-                                  size: 16, color: Colors.grey.shade600),
+                                  size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                               const SizedBox(width: 8),
                               Text(
                                 phone,
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Colors.grey.shade700,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ],
@@ -376,21 +380,21 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.grey.shade300),
+            Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(height: 16),
             Text(
               'Failed to load teachers',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               _error!,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
@@ -416,21 +420,21 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.people_outline, size: 64, color: Colors.grey.shade300),
+          Icon(Icons.people_outline, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(height: 16),
           Text(
             'No teachers found',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.grey.shade600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'No teachers are assigned to this student.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+            style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ],
       ),
