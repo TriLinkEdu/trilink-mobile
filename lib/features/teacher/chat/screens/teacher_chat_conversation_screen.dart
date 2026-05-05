@@ -186,11 +186,23 @@ class _TeacherChatConversationScreenState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final appBarColor = Color.alphaBlend(
+      theme.colorScheme.primary.withValues(
+          alpha: theme.brightness == Brightness.dark ? 0.18 : 0.07),
+      theme.colorScheme.surface,
+    );
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: theme.colorScheme.surface,
-        elevation: 0.5,
+        backgroundColor: appBarColor,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        shape: Border(
+          bottom: BorderSide(
+            color: theme.colorScheme.primary.withValues(alpha: 0.15),
+            width: 1,
+          ),
+        ),
         iconTheme: IconThemeData(color: theme.colorScheme.onSurface),
         title: Row(
           children: [
@@ -343,7 +355,9 @@ class _TeacherChatConversationScreenState
               decoration: BoxDecoration(
                 color: isSent
                     ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.surfaceContainerHighest,
+                    : Theme.of(context).brightness == Brightness.dark
+                        ? const Color(0xFF2C2C3E)
+                        : const Color(0xFFEEEEF4),
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(16),
                   topRight: const Radius.circular(16),
@@ -404,7 +418,9 @@ class _TeacherChatConversationScreenState
             child: Container(
               height: 44,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerLow,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF2C2C3E)
+                    : const Color(0xFFEEEEF4),
                 borderRadius: BorderRadius.circular(22),
               ),
               child: TextField(
