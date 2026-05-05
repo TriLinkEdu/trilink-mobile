@@ -124,8 +124,9 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: theme.colorScheme.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -171,7 +172,7 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
           IconButton(
             icon: Icon(
               Icons.arrow_back_ios_new,
-              color: AppColors.textPrimary,
+              color: theme.colorScheme.onSurface,
               size: 20,
             ),
             onPressed: () => Navigator.pop(context),
@@ -188,7 +189,7 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
           ),
           CircleAvatar(
             radius: 20,
-            backgroundColor: Colors.grey.shade200,
+            backgroundColor: theme.colorScheme.surfaceContainerLow,
             backgroundImage: const NetworkImage(
               'https://i.pravatar.cc/80?img=32',
             ),
@@ -214,7 +215,7 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
           indicatorSize: TabBarIndicatorSize.tab,
           dividerColor: Colors.transparent,
           labelColor: Colors.white,
-          unselectedLabelColor: Colors.grey.shade600,
+          unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
           labelStyle: const TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 14,
@@ -241,7 +242,7 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
       child: Container(
         height: 44,
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
+          color: Theme.of(context).colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(10),
         ),
         child: TextField(
@@ -249,17 +250,19 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
           onChanged: (value) => setState(() => _searchQuery = value),
           decoration: InputDecoration(
             hintText: 'Search students, parents, or groups...',
-            hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+            hintStyle: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 14),
             prefixIcon: Icon(
               Icons.search,
-              color: Colors.grey.shade500,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               size: 20,
             ),
             suffixIcon: _searchQuery.isNotEmpty
                 ? IconButton(
                     icon: Icon(
                       Icons.clear,
-                      color: Colors.grey.shade400,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       size: 20,
                     ),
                     onPressed: () {
@@ -306,7 +309,9 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
       return Center(
         child: Text(
           'No conversations yet',
-          style: TextStyle(color: Colors.grey.shade500, fontSize: 15),
+          style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 15),
         ),
       );
     }
@@ -358,7 +363,7 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
       style: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w600,
-        color: Colors.grey.shade500,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
         letterSpacing: 0.8,
       ),
     );
@@ -383,17 +388,20 @@ class _ActionChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
+          color: Theme.of(context).colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: Colors.grey.shade600),
+            Icon(icon, size: 14,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(width: 4),
             Text(
               label,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -450,7 +458,7 @@ class _ThreadTile extends StatelessWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 15,
-                            color: AppColors.textPrimary,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -459,7 +467,7 @@ class _ThreadTile extends StatelessWidget {
                         thread.time,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade500,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -467,7 +475,9 @@ class _ThreadTile extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     thread.message,
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                   ),
