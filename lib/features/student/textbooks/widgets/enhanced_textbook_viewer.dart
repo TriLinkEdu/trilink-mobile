@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:pdfx/pdfx.dart';
 import '../models/textbook_reading_models.dart';
 import '../services/textbook_reading_service.dart';
+import '../services/pdf_toc_extractor.dart';
 import '../widgets/thumbnail_navigator.dart';
 import '../widgets/table_of_contents.dart';
 
@@ -79,6 +80,9 @@ class _EnhancedTextbookViewerState extends State<EnhancedTextbookViewer>
             totalPages: document.pagesCount,
           );
         });
+        
+        // Analyze PDF for bounding box issues
+        _analyzePdfIssues();
       }
       
       _setupPdfListener();
@@ -111,6 +115,27 @@ class _EnhancedTextbookViewerState extends State<EnhancedTextbookViewer>
     _overlayController.dispose();
     _readingTimer.cancel();
     super.dispose();
+  }
+
+  Future<void> _analyzePdfIssues() async {
+    try {
+      final document = await _pdfController?.document;
+      if (document == null) return;
+      
+      // Check first page for dimension issues
+      final page = await document.getPage(1);
+      final aspectRatio = page.width / page.height;
+      
+      // Log if there are bounding box issues
+      if (aspectRatio > 2.0 || aspectRatio < 0.3) {
+        print('⚠️ PDF has bounding box issues: aspect ratio = $aspectRatio');
+        print('   Page dimensions: ${page.width}x${page.height}');
+      }
+      
+      await page.close();
+    } catch (e) {
+      print('Error analyzing PDF: $e');
+    }
   }
 
   void _setupPdfListener() {
@@ -448,9 +473,22 @@ class _EnhancedTextbookViewerState extends State<EnhancedTextbookViewer>
                               ),
                             ),
                             IconButton(
-                              onPressed: () {
-                                // Generate mock TOC for now
-                                final toc = MockTocGenerator.generateMockToc(_readingState.totalPages);
+                              onPressed: () async {
+                                // Extract real TOC from PDF
+                                final toc = await PdfTocExtractor.extractToc(widget.localPath);
+                                
+                                if (toc.isEmpty) {
+                                  if (!mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('This PDF has no table of contents'),
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                
+                                if (!mounted) return;
                                 showModalBottomSheet(
                                   context: context,
                                   isScrollControlled: true,

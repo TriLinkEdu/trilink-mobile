@@ -232,7 +232,7 @@ class _AiAssistantViewState extends State<_AiAssistantView> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.small(
+      floatingActionButton: _selectedTab == 0 ? null : FloatingActionButton.small(
         tooltip: 'Refresh AI suggestions',
         onPressed: () => context.read<AiAssistantCubit>().loadAssistantData(),
         backgroundColor: theme.colorScheme.primary,

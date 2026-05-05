@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:pdfx/pdfx.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../../core/services/storage_service.dart';
@@ -75,12 +76,19 @@ class TextbookFileCacheService {
       index = _readIndex();
       final entry = index[safeId];
       if (entry is Map<String, dynamic> && await file.exists()) {
-        final cachedKey = (entry['cacheKey'] ?? '').toString();
-        if (cachedKey == textbook.cacheKey) {
-          entry['lastAccessedAt'] = DateTime.now().toIso8601String();
-          index[safeId] = entry;
-          await _writeIndex(index);
-          return TextbookOpenResult(localPath: file.path, fromCache: true);
+        // Validate PDF integrity before using cached file
+        if (await _validatePdfIntegrity(file)) {
+          final cachedKey = (entry['cacheKey'] ?? '').toString();
+          if (cachedKey == textbook.cacheKey) {
+            entry['lastAccessedAt'] = DateTime.now().toIso8601String();
+            index[safeId] = entry;
+            await _writeIndex(index);
+            return TextbookOpenResult(localPath: file.path, fromCache: true);
+          }
+        } else {
+          // Corrupted file, delete and re-download
+          print('Corrupted PDF detected, re-downloading...');
+          await file.delete();
         }
       }
     } catch (e) {
@@ -208,5 +216,34 @@ class TextbookFileCacheService {
 
   Future<void> _writeIndex(Map<String, dynamic> index) {
     return _storage.setString(_indexKey, jsonEncode(index));
+  }
+
+  /// Validate PDF file integrity
+  Future<bool> _validatePdfIntegrity(File file) async {
+    try {
+      // Check file size
+      final size = await file.length();
+      if (size < 1024) {
+        // File too small to be a valid PDF
+        return false;
+      }
+
+      // Check PDF header
+      final bytes = await file.openRead(0, 5).first;
+      final header = String.fromCharCodes(bytes);
+      if (!header.startsWith('%PDF-')) {
+        return false;
+      }
+
+      // Try to open with PDF library
+      final document = await PdfDocument.openFile(file.path);
+      final isValid = document.pagesCount > 0;
+      await document.close();
+      
+      return isValid;
+    } catch (e) {
+      print('PDF validation failed: $e');
+      return false;
+    }
   }
 }

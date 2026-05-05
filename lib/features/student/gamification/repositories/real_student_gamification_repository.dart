@@ -61,8 +61,19 @@ class RealStudentGamificationRepository
         if (entries.isNotEmpty) return entries;
       }
 
+      // Get current academic year
+      String academicYearId = '2024'; // fallback
+      try {
+        final yearData = await _apiClient.get('/academic-years/current');
+        if (yearData['data'] != null && yearData['data']['id'] != null) {
+          academicYearId = yearData['data']['id'].toString();
+        }
+      } catch (_) {
+        // Use fallback
+      }
+
       final raw = await _apiClient.get(
-        '${ApiConstants.gamificationLeaderboard}?academicYearId=2024&limit=20',
+        '${ApiConstants.gamificationLeaderboard}?academicYearId=$academicYearId&limit=20',
       );
       final entries = (raw['entries'] as List? ?? const [])
           .whereType<Map<String, dynamic>>()
