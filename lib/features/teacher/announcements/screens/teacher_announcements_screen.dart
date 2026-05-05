@@ -268,8 +268,8 @@ class _TeacherAnnouncementsScreenState extends State<TeacherAnnouncementsScreen>
                     Container(
                       width: 8,
                       height: 8,
-                      decoration: const BoxDecoration(
-                        color: Colors.orange,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -541,9 +541,7 @@ class _AnnCard extends StatelessWidget {
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: !isOwn
-              ? Colors.orange.withValues(alpha: 0.3)
-              : theme.colorScheme.outlineVariant,
+          color: theme.colorScheme.outlineVariant,
         ),
         boxShadow: [
           BoxShadow(
@@ -566,13 +564,12 @@ class _AnnCard extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: (isOwn ? AppColors.primary : Colors.orange)
-                        .withValues(alpha: 0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     isOwn ? ann.audienceIcon : Icons.admin_panel_settings_outlined,
-                    color: isOwn ? AppColors.primary : Colors.orange.shade700,
+                    color: AppColors.primary,
                     size: 20,
                   ),
                 ),

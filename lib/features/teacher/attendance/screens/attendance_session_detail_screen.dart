@@ -146,34 +146,66 @@ class _AttendanceSessionDetailScreenState
   }
 
   Future<void> _showNoteDialog(_EditableMark mark) async {
+    const maxChars = 200;
     final controller = TextEditingController(text: mark.note);
     final result = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Excused Reason'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            hintText: 'Enter reason for excused absence...',
-            border: OutlineInputBorder(),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Excused Reason'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  hintText: 'Enter reason for excused absence...',
+                  border: OutlineInputBorder(),
+                  counterText: '',
+                ),
+                maxLines: 3,
+                maxLength: maxChars,
+                autofocus: true,
+                onChanged: (_) => setDialogState(() {}),
+              ),
+              const SizedBox(height: 6),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    '${controller.text.length}/$maxChars',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: controller.text.length >= maxChars
+                          ? AppColors.error
+                          : Theme.of(ctx).colorScheme.onSurfaceVariant,
+                      fontWeight: controller.text.length >= maxChars
+                          ? FontWeight.w600
+                          : FontWeight.normal,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          maxLines: 3,
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
             ),
-            child: const Text('Confirm'),
-          ),
-        ],
+            ElevatedButton(
+              onPressed: controller.text.trim().isEmpty
+                  ? null
+                  : () => Navigator.pop(ctx, controller.text.trim()),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Confirm'),
+            ),
+          ],
+        ),
       ),
     );
     if (result != null) {
@@ -295,7 +327,7 @@ class _AttendanceSessionDetailScreenState
         _cancelEdit();
       },
       child: Scaffold(
-        backgroundColor: theme.scaffoldBackgroundColor,
+        backgroundColor: theme.colorScheme.surface,
         appBar: AppBar(
           title: const Text(
             'Session Details',
@@ -566,7 +598,7 @@ class _AttendanceSessionDetailScreenState
 
 // ─── Student Row ──────────────────────────────────────────────────────────────
 
-class _StudentMarkRow extends StatelessWidget {
+class _StudentMarkRow extends StatefulWidget {
   final _EditableMark mark;
   final bool editMode;
   final Color statusColor;
@@ -586,8 +618,18 @@ class _StudentMarkRow extends StatelessWidget {
   });
 
   @override
+  State<_StudentMarkRow> createState() => _StudentMarkRowState();
+}
+
+class _StudentMarkRowState extends State<_StudentMarkRow> {
+  bool _noteExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final mark = widget.mark;
+    final editMode = widget.editMode;
+    final hasNote = mark.note.isNotEmpty;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
       padding: const EdgeInsets.all(14),
@@ -601,29 +643,29 @@ class _StudentMarkRow extends StatelessWidget {
           width: mark.changed ? 1.5 : 1,
         ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Avatar
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-            child: Text(
-              mark.initials,
-              style: TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
+          Row(
+            children: [
+              // Avatar
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                child: Text(
+                  mark.initials,
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(width: 12),
+              const SizedBox(width: 12),
 
-          // Name + note
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+              // Name
+              Expanded(
+                child: Row(
                   children: [
                     Expanded(
                       child: Text(
@@ -653,49 +695,81 @@ class _StudentMarkRow extends StatelessWidget {
                       ),
                   ],
                 ),
-                if (mark.note.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            mark.note,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: theme.colorScheme.onSurfaceVariant,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ),
-                        if (editMode && mark.status == 'excused')
-                          GestureDetector(
-                            onTap: onEditNote,
-                            child: Icon(Icons.edit,
-                                size: 14,
-                                color: theme.colorScheme.onSurfaceVariant),
-                          ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
+              ),
+              const SizedBox(width: 8),
 
-          // Status — dropdown in edit mode, badge in view mode
-          if (editMode)
-            _StatusDropdown(
-              value: mark.status,
-              statusColor: statusColor,
-              onChanged: onStatusChanged,
-            )
-          else
-            _StatusBadge(
-              status: mark.status,
-              color: statusColor,
-              icon: statusIcon,
+              // Status — dropdown in edit mode, badge in view mode
+              if (editMode)
+                _StatusDropdown(
+                  value: mark.status,
+                  statusColor: widget.statusColor,
+                  onChanged: widget.onStatusChanged,
+                )
+              else
+                _StatusBadge(
+                  status: mark.status,
+                  color: widget.statusColor,
+                  icon: widget.statusIcon,
+                ),
+            ],
+          ),
+
+          // Collapsible note at the bottom
+          if (hasNote) ...[
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () => setState(() => _noteExpanded = !_noteExpanded),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 7),
+                decoration: BoxDecoration(
+                  color: AppColors.secondary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                      color: AppColors.secondary.withValues(alpha: 0.25)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.info_outline,
+                        size: 14, color: AppColors.secondary),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        mark.note,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.secondary,
+                          fontStyle: FontStyle.italic,
+                        ),
+                        maxLines: _noteExpanded ? null : 1,
+                        overflow: _noteExpanded
+                            ? TextOverflow.visible
+                            : TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      _noteExpanded
+                          ? Icons.keyboard_arrow_up
+                          : Icons.keyboard_arrow_down,
+                      size: 16,
+                      color: AppColors.secondary,
+                    ),
+                    if (editMode && mark.status == 'excused') ...[
+                      const SizedBox(width: 4),
+                      GestureDetector(
+                        onTap: widget.onEditNote,
+                        child: Icon(Icons.edit,
+                            size: 14,
+                            color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
+          ],
         ],
       ),
     );
