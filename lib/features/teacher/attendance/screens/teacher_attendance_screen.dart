@@ -322,34 +322,66 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
   }
 
   Future<void> _showExcusedDialog(_StudentAttendance student) async {
+    const maxChars = 200;
     final controller = TextEditingController(text: student.note);
     final result = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Excused Reason'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            hintText: 'Enter reason for excused absence...',
-            border: OutlineInputBorder(),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Excused Reason'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: controller,
+                decoration: InputDecoration(
+                  hintText: 'Enter reason for excused absence...',
+                  border: const OutlineInputBorder(),
+                  counterText: '',
+                ),
+                maxLines: 3,
+                maxLength: maxChars,
+                autofocus: true,
+                onChanged: (_) => setDialogState(() {}),
+              ),
+              const SizedBox(height: 6),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    '${controller.text.length}/$maxChars',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: controller.text.length >= maxChars
+                          ? AppColors.error
+                          : Theme.of(ctx).colorScheme.onSurfaceVariant,
+                      fontWeight: controller.text.length >= maxChars
+                          ? FontWeight.w600
+                          : FontWeight.normal,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          maxLines: 3,
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
             ),
-            child: const Text('Confirm'),
-          ),
-        ],
+            ElevatedButton(
+              onPressed: controller.text.trim().isEmpty
+                  ? null
+                  : () => Navigator.pop(ctx, controller.text.trim()),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Confirm'),
+            ),
+          ],
+        ),
       ),
     );
     if (result != null) {
@@ -1293,7 +1325,7 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen>
 
 // ─── Helper Widgets ───────────────────────────────────────────────────────────
 
-class _StudentAttendanceTile extends StatelessWidget {
+class _StudentAttendanceTile extends StatefulWidget {
   final _StudentAttendance student;
   final bool readOnly;
   final Future<void> Function(AttendanceStatus) onStatusChanged;
@@ -1303,6 +1335,13 @@ class _StudentAttendanceTile extends StatelessWidget {
     required this.readOnly,
     required this.onStatusChanged,
   });
+
+  @override
+  State<_StudentAttendanceTile> createState() => _StudentAttendanceTileState();
+}
+
+class _StudentAttendanceTileState extends State<_StudentAttendanceTile> {
+  bool _noteExpanded = false;
 
   String _initials(String name) {
     final parts = name.trim().split(' ');
@@ -1314,6 +1353,10 @@ class _StudentAttendanceTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final student = widget.student;
+    final readOnly = widget.readOnly;
+    final hasNote = student.status == AttendanceStatus.excused &&
+        student.note.isNotEmpty;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
@@ -1377,7 +1420,7 @@ class _StudentAttendanceTile extends StatelessWidget {
                     icon: Icons.check_circle_outline,
                     color: AppColors.success,
                     selected: student.status == AttendanceStatus.present,
-                    onTap: () => onStatusChanged(AttendanceStatus.present),
+                    onTap: () => widget.onStatusChanged(AttendanceStatus.present),
                   ),
                   const SizedBox(width: 6),
                   _StatusButton(
@@ -1385,7 +1428,7 @@ class _StudentAttendanceTile extends StatelessWidget {
                     icon: Icons.access_time,
                     color: AppColors.accent,
                     selected: student.status == AttendanceStatus.late,
-                    onTap: () => onStatusChanged(AttendanceStatus.late),
+                    onTap: () => widget.onStatusChanged(AttendanceStatus.late),
                   ),
                   const SizedBox(width: 6),
                   _StatusButton(
@@ -1393,7 +1436,7 @@ class _StudentAttendanceTile extends StatelessWidget {
                     icon: Icons.cancel_outlined,
                     color: AppColors.error,
                     selected: student.status == AttendanceStatus.absent,
-                    onTap: () => onStatusChanged(AttendanceStatus.absent),
+                    onTap: () => widget.onStatusChanged(AttendanceStatus.absent),
                   ),
                   const SizedBox(width: 6),
                   _StatusButton(
@@ -1401,35 +1444,56 @@ class _StudentAttendanceTile extends StatelessWidget {
                     icon: Icons.note_outlined,
                     color: AppColors.secondary,
                     selected: student.status == AttendanceStatus.excused,
-                    onTap: () => onStatusChanged(AttendanceStatus.excused),
+                    onTap: () => widget.onStatusChanged(AttendanceStatus.excused),
                   ),
                 ],
               ),
-            if (student.status == AttendanceStatus.excused &&
-                student.note.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      size: 14,
-                      color: AppColors.secondary,
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        student.note,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.secondary,
-                          fontStyle: FontStyle.italic,
+            if (hasNote) ...[
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: () => setState(() => _noteExpanded = !_noteExpanded),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                        color: AppColors.secondary.withValues(alpha: 0.25)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.info_outline,
+                          size: 14, color: AppColors.secondary),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          student.note,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.secondary,
+                            fontStyle: FontStyle.italic,
+                          ),
+                          maxLines: _noteExpanded ? null : 1,
+                          overflow: _noteExpanded
+                              ? TextOverflow.visible
+                              : TextOverflow.ellipsis,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 4),
+                      Icon(
+                        _noteExpanded
+                            ? Icons.keyboard_arrow_up
+                            : Icons.keyboard_arrow_down,
+                        size: 16,
+                        color: AppColors.secondary,
+                      ),
+                    ],
+                  ),
                 ),
               ),
+            ],
           ],
         ),
       ),

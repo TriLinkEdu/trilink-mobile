@@ -90,7 +90,7 @@ class TeacherAnnouncementDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final accentColor = isOwn ? AppColors.primary : Colors.orange;
+    final accentColor = isOwn ? AppColors.primary : AppColors.primary;
 
     return Scaffold(
       appBar: AppBar(
@@ -242,7 +242,7 @@ class TeacherAnnouncementDetailScreen extends StatelessWidget {
                         icon: Icons.admin_panel_settings_outlined,
                         label: 'From',
                         value: 'School Administration',
-                        color: Colors.orange.shade700,
+                        color: theme.colorScheme.primary,
                       ),
                     ],
                     const SizedBox(height: 24),
