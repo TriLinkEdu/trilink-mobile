@@ -3,6 +3,7 @@ import '../../../core/constants/api_constants.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/dummy_data.dart';
 import '../../../core/models/user_model.dart';
+import '../../../core/services/socket_service.dart';
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
@@ -58,9 +59,24 @@ class AuthService {
         // Continue with login data if fetchMe fails
       }
 
+      // Connect WebSocket for real-time chat
+      unawaited(_connectSocket());
+
       return _currentUser!;
     } catch (e) {
       rethrow;
+    }
+  }
+
+  /// Connect SocketService after a successful login.
+  Future<void> _connectSocket() async {
+    try {
+      final token = await _storage.accessToken;
+      if (token != null && token.isNotEmpty) {
+        await SocketService().connect(token);
+      }
+    } catch (_) {
+      // Non-fatal — chat will work in REST-only mode
     }
   }
 
@@ -132,6 +148,8 @@ class AuthService {
   }
 
   Future<void> logout() async {
+    SocketService().setPresence('offline');
+    SocketService().disconnect();
     _currentUser = null;
     _currentRole = null;
     await _storage.clearAll();
@@ -154,6 +172,8 @@ class AuthService {
           print('DEBUG AUTH: Failed to fetch fresh profile after session restore: $e');
           // Continue with cached data if fetchMe fails
         }
+        // Reconnect WebSocket
+        unawaited(_connectSocket());
       }
       
       return true;
@@ -161,4 +181,9 @@ class AuthService {
     if (!hasTokens) return false;
     return false;
   }
+}
+
+// Helper to fire-and-forget async calls
+void unawaited(Future<void> future) {
+  future.catchError((_) {});
 }

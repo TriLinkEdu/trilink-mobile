@@ -404,6 +404,30 @@ class ApiService {
     DummyData.messages(conversationId),
   );
 
+  /// Cursor-paginated message fetch.
+  /// [before] is the oldest loaded message ID used as the cursor.
+  Future<List<dynamic>> getConversationMessagesPaginated(
+    String conversationId, {
+    String? before,
+    int limit = 50,
+  }) async {
+    try {
+      final response = await _api.get(
+        ApiConstants.conversationMessages(conversationId),
+        queryParameters: {
+          'limit': limit.toString(),
+          if (before != null) 'before': before,
+        },
+      );
+      // Backend returns { messages: [...], hasMore: bool }
+      final messages = response['messages'];
+      if (messages is List) return messages;
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
   Future<Map<String, dynamic>> sendMessage(
     String conversationId,
     Map<String, dynamic> data,
@@ -420,6 +444,143 @@ class ApiService {
       'createdAt': DateTime.now().toIso8601String(),
     },
   );
+
+  // ── Message write operations (errors propagate — no silent fallback) ──────
+
+  Future<Map<String, dynamic>> editMessage(
+    String conversationId,
+    String messageId,
+    String text,
+  ) async {
+    return await _api.patch(
+      ApiConstants.messageEdit(conversationId, messageId),
+      data: {'text': text},
+    ) as Map<String, dynamic>;
+  }
+
+  Future<void> deleteMessage(
+    String conversationId,
+    String messageId,
+  ) async {
+    await _api.delete(ApiConstants.messageEdit(conversationId, messageId));
+  }
+
+  Future<Map<String, dynamic>> toggleReaction(
+    String conversationId,
+    String messageId,
+    String emoji,
+  ) async {
+    return await _api.post(
+      ApiConstants.messageReactions(conversationId, messageId),
+      data: {'emoji': emoji},
+    ) as Map<String, dynamic>;
+  }
+
+  Future<void> markMessageRead(
+    String conversationId,
+    String messageId,
+  ) async {
+    await _api.post(ApiConstants.messageRead(conversationId, messageId));
+  }
+
+  // ── Member management ─────────────────────────────────────────────────────
+
+  Future<List<dynamic>> getConversationMembers(String conversationId) =>
+      _tryOr(
+        () => _api.getList(ApiConstants.conversationMembers(conversationId)),
+        [],
+      );
+
+  Future<void> addConversationMember(
+    String conversationId,
+    String userId,
+  ) async {
+    await _api.post(
+      ApiConstants.conversationMembers(conversationId),
+      data: {'userIds': [userId]},
+    );
+  }
+
+  Future<void> removeConversationMember(
+    String conversationId,
+    String userId,
+  ) async {
+    await _api.delete(
+      ApiConstants.conversationMember(conversationId, userId),
+    );
+  }
+
+  // ── Media ─────────────────────────────────────────────────────────────────
+
+  Future<List<dynamic>> getConversationMedia(String conversationId) =>
+      _tryOr(
+        () => _api.getList(ApiConstants.conversationMedia(conversationId)),
+        [],
+      );
+
+  /// Upload a chat media file. Returns the mediaFileId string.
+  Future<String> uploadChatMedia(dynamic file) async {
+    try {
+      List<int> bytes;
+      String filename = 'attachment';
+
+      if (file is XFile) {
+        bytes = await file.readAsBytes();
+        if (file.name.isNotEmpty) filename = file.name;
+      } else {
+        final dynamic readAsBytes = file.readAsBytes;
+        if (readAsBytes is! Function) {
+          throw Exception('Selected file cannot be read.');
+        }
+        bytes = await readAsBytes();
+        final dynamic rawPath = file.path;
+        if (rawPath is String && rawPath.trim().isNotEmpty) {
+          final segments = rawPath.split(RegExp(r'[\\/]'));
+          final last = segments.isNotEmpty ? segments.last : '';
+          if (last.isNotEmpty) filename = last;
+        }
+      }
+
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(bytes, filename: filename),
+      });
+
+      final response = await _api.post(
+        ApiConstants.chatUpload,
+        data: formData,
+      );
+
+      return response['fileId'] as String? ??
+          response['id'] as String? ??
+          response['mediaFileId'] as String? ??
+          '';
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // ── Presence ──────────────────────────────────────────────────────────────
+
+  Future<List<dynamic>> getUserPresence(List<String> userIds) => _tryOr(
+    () => _api.getList(
+      ApiConstants.usersPresence,
+      queryParameters: {'userIds': userIds.join(',')},
+    ),
+    [],
+  );
+
+  // ── Block / Unblock ───────────────────────────────────────────────────────
+
+  Future<void> blockUser(String userId) async {
+    await _api.post(ApiConstants.blockUser(userId));
+  }
+
+  Future<void> unblockUser(String userId) async {
+    await _api.delete(ApiConstants.blockUser(userId));
+  }
+
+  Future<List<dynamic>> getBlockedUsers() =>
+      _tryOr(() => _api.getList(ApiConstants.usersBlocked), []);
 
   // ─── Settings ───────────────────────────────────────────
   Future<Map<String, dynamic>> getUserSettings() =>
