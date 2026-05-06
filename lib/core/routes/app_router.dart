@@ -23,6 +23,8 @@ import '../../features/teacher/classes/screens/class_list_screen.dart';
 import '../../features/teacher/classes/screens/teacher_class_detail_screen.dart';
 import '../../features/teacher/ai_assistant/screens/teacher_ai_assistant_screen.dart';
 import '../../features/teacher/feedback/screens/teacher_feedback_screen.dart';
+import '../../features/teacher/schedule/screens/teacher_schedule_screen.dart';
+import '../../features/teacher/grades/screens/teacher_grade_analytics_screen.dart';
 
 import '../../features/parent/home/screens/parent_home_screen.dart';
 import '../../features/parent/dashboard/screens/parent_dashboard_screen.dart';
@@ -125,6 +127,14 @@ class AppRouter {
       case RouteNames.teacherFeedback:
         return MaterialPageRoute(
           builder: (_) => const TeacherFeedbackScreen(),
+        );
+      case RouteNames.teacherSchedule:
+        return MaterialPageRoute(
+          builder: (_) => const TeacherScheduleScreen(),
+        );
+      case RouteNames.teacherGradeAnalytics:
+        return MaterialPageRoute(
+          builder: (_) => const TeacherGradeAnalyticsScreen(),
         );
 
       // ── Parent routes ──

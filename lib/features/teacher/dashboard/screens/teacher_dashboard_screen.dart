@@ -21,9 +21,12 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   bool _loading = true;
   String? _error;
 
-  int _myClasses = 0;
+  int _totalClasses = 0;
+  int _classesToday = 0;
   int _pendingGrading = 0;
   int _unreadNotifications = 0;
+  double _attendanceRate = 0;
+  int _publishedExams = 0;
   List<Map<String, dynamic>> _notifications = [];
 
   @override
@@ -38,19 +41,56 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         _loading = true;
         _error = null;
       });
-      // Load dashboard stats and notifications in parallel
+
+      final today = DateTime.now();
+      final todayStr =
+          '${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
       final results = await Future.wait([
         ApiService().getTeacherDashboard(),
         ApiService().getNotifications(),
+        ApiService().getCalendarEvents(from: todayStr, to: todayStr),
+        ApiService().getTeacherAssignments(),
       ]);
       if (!mounted) return;
       final data = results[0] as Map<String, dynamic>;
       final notifs = results[1] as List<dynamic>;
+      final todaysEvents = results[2] as List<dynamic>;
+      final assignments = results[3] as List<dynamic>;
+
+      // Count today's class-related events (class sessions)
+      final todaysClassEvents = todaysEvents.where((e) {
+        final m = e as Map<String, dynamic>;
+        final type = (m['type'] as String? ?? '').toLowerCase();
+        return type == 'class' ||
+            type == 'lecture' ||
+            type == 'session' ||
+            m['classOfferingId'] != null;
+      }).length;
+
+      // Pending grades = backend approx + ungraded assignment submissions
+      final backendPending = (data['pendingGradingApprox'] as num?)?.toInt() ?? 0;
+      int pendingFromAssignments = 0;
+      for (final a in assignments) {
+        final m = a as Map<String, dynamic>;
+        final submitted =
+            (m['submissionCount'] as num? ?? m['totalSubmissions'] as num? ?? 0)
+                .toInt();
+        final graded =
+            (m['gradedCount'] as num? ?? m['totalGraded'] as num? ?? 0)
+                .toInt();
+        if (submitted > graded) pendingFromAssignments += (submitted - graded);
+      }
+
       setState(() {
-        _myClasses = (data['myClasses'] as num?)?.toInt() ?? 0;
-        _pendingGrading = (data['pendingGradingApprox'] as num?)?.toInt() ?? 0;
+        _totalClasses = (data['myClasses'] as num?)?.toInt() ?? 0;
+        _classesToday = todaysClassEvents;
+        _pendingGrading = backendPending + pendingFromAssignments;
         _unreadNotifications =
             (data['unreadNotifications'] as num?)?.toInt() ?? 0;
+        _attendanceRate =
+            (data['attendanceRate'] as num?)?.toDouble() ?? 0.0;
+        _publishedExams = (data['publishedExams'] as num?)?.toInt() ?? 0;
         _notifications = notifs.cast<Map<String, dynamic>>();
         _loading = false;
       });
@@ -264,7 +304,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      '$_myClasses classes today',
+                      '$_classesToday classes today',
                       style: TextStyle(
                         color: theme.colorScheme.onPrimary,
                         fontSize: 12,
@@ -321,28 +361,71 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
 
   Widget _buildStatsRow() {
     final theme = Theme.of(context);
-    return Row(
+    final ratePct = (_attendanceRate * 100).clamp(0.0, 100.0);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(
-          child: _StatCard(
-            icon: Icons.class_outlined,
-            iconColor: theme.colorScheme.secondary,
-            label: 'My Classes',
-            value: '$_myClasses',
-            subtitle: 'active',
-            subtitleColor: theme.colorScheme.secondary,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _StatCard(
+                icon: Icons.today_outlined,
+                iconColor: theme.colorScheme.primary,
+                label: "Today's Classes",
+                value: '$_classesToday',
+                subtitle: 'scheduled',
+                subtitleColor: theme.colorScheme.primary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _StatCard(
+                icon: Icons.class_outlined,
+                iconColor: theme.colorScheme.secondary,
+                label: 'Total Classes',
+                value: '$_totalClasses',
+                subtitle: 'assigned',
+                subtitleColor: theme.colorScheme.secondary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _StatCard(
+                icon: Icons.assignment_outlined,
+                iconColor: Colors.purple.shade400,
+                label: 'Pending Grades',
+                value: '$_pendingGrading',
+                subtitle: 'to grade',
+                subtitleColor: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _StatCard(
-            icon: Icons.assignment_outlined,
-            iconColor: Colors.purple.shade400,
-            label: 'Pending Grades',
-            value: '$_pendingGrading',
-            subtitle: 'papers',
-            subtitleColor: theme.colorScheme.onSurfaceVariant,
-          ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _InfoChip(
+                icon: Icons.fact_check_outlined,
+                label: 'Attendance',
+                value: '${ratePct.toStringAsFixed(0)}%',
+                color: ratePct >= 80
+                    ? Colors.green
+                    : ratePct >= 60
+                        ? Colors.orange
+                        : Colors.red,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _InfoChip(
+                icon: Icons.quiz_outlined,
+                label: 'Exams Published',
+                value: '$_publishedExams',
+                color: theme.colorScheme.tertiary,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -634,27 +717,88 @@ class _StatCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface,
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 4),
               Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
                   subtitle,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 11,
                     color: subtitleColor,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  const _InfoChip({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.25)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

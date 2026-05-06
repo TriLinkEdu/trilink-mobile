@@ -303,6 +303,13 @@ class ApiConstants {
   static String gradesBySubject(String studentId, String subjectId) =>
       '/grades/student/$studentId/by-subject/$subjectId';
 
+  // Grades by Class (teacher)
+  static String gradesClass(String classOfferingId) =>
+      '/grades/class/$classOfferingId';
+
+  // Assignments (teacher)
+  static const String assignmentsTeacherMine = '/assignments/teacher/mine';
+
   // Attendance by Subject
   static String attendanceBySubject(String studentId, String subjectId) =>
       '/reports/attendance/student/$studentId/by-subject/$subjectId';
