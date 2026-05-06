@@ -75,6 +75,8 @@ class RouteNames {
   static const String teacherSettings = '/teacher/settings';
   static const String teacherAiAssistant = '/teacher/ai-assistant';
   static const String teacherFeedback = '/teacher/feedback';
+  static const String teacherSchedule = '/teacher/schedule';
+  static const String teacherGradeAnalytics = '/teacher/grades/analytics';
 
   // Parent
   static const String parentHome = '/parent/home';
