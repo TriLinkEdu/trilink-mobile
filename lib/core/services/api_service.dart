@@ -578,9 +578,21 @@ class ApiService {
       });
 
   // ─── AI ─────────────────────────────────────────────────
-  Future<Map<String, dynamic>> getAiRecommendations(String studentId) => _tryOr(
-    () => _api.get(ApiConstants.aiRecommendations(studentId)),
-    {'recommendations': []},
+  Future<Map<String, dynamic>> getAiRecommendations(
+    String studentId, {
+    String? subjectId,
+    String? difficulty,
+    int? limit,
+  }) => _tryOr(
+    () => _api.get(
+      ApiConstants.aiRecommendations(studentId),
+      queryParameters: {
+        if (subjectId != null) 'subjectId': subjectId,
+        if (difficulty != null) 'difficulty': difficulty,
+        if (limit != null) 'limit': limit.toString(),
+      },
+    ),
+    {'recommendations': [], 'items': []},
   );
 
   Future<Map<String, dynamic>> getAiLearningPath(String studentId) => _tryOr(
@@ -755,6 +767,25 @@ class ApiService {
           'studentCount': 0,
           'students': [],
         },
+      );
+
+  /// Get gradebook for a class (teacher)
+  Future<Map<String, dynamic>> getClassGrades(String classOfferingId) =>
+      _tryOr(
+        () => _api.get(ApiConstants.gradesClass(classOfferingId)),
+        {'classOfferingId': classOfferingId, 'groups': []},
+      );
+
+  /// Get assignments created by current teacher (optionally filtered by class)
+  Future<List<dynamic>> getTeacherAssignments({String? classOfferingId}) =>
+      _tryOr(
+        () => _api.getList(
+          ApiConstants.assignmentsTeacherMine,
+          queryParameters: classOfferingId != null
+              ? {'classOfferingId': classOfferingId}
+              : null,
+        ),
+        [],
       );
 
   /// Get my subjects (student)
