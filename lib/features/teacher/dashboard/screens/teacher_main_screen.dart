@@ -243,6 +243,14 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                     Navigator.pushNamed(context, RouteNames.teacherCalendar);
                   },
                 ),
+                _DrawerItem(
+                  icon: Icons.event_note_outlined,
+                  label: 'Schedule',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, RouteNames.teacherSchedule);
+                  },
+                ),
                 const Divider(height: 1),
                 _DrawerSection(title: 'TEACHING'),
                 _DrawerItem(
@@ -263,6 +271,17 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                     Navigator.pushNamed(
                       context,
                       RouteNames.teacherAttendanceAnalytics,
+                    );
+                  },
+                ),
+                _DrawerItem(
+                  icon: Icons.grading_outlined,
+                  label: 'Grade Analytics',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(
+                      context,
+                      RouteNames.teacherGradeAnalytics,
                     );
                   },
                 ),
