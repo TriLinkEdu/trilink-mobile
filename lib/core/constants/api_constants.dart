@@ -152,13 +152,28 @@ class ApiConstants {
 
   // Chat
   static const String chatWsInfo = '/chat/ws-info';
+  static const String chatUpload = '/chat/upload';
   static const String conversations = '/conversations';
   static const String conversationsInitiate = '/conversations/initiate';
   static String conversation(String id) => '/conversations/$id';
   static String conversationMessages(String id) =>
       '/conversations/$id/messages';
+  static String conversationMembers(String id) =>
+      '/conversations/$id/members';
+  static String conversationMember(String id, String userId) =>
+      '/conversations/$id/members/$userId';
+  static String conversationMedia(String id) => '/conversations/$id/media';
+  static String messageReactions(String convId, String msgId) =>
+      '/conversations/$convId/messages/$msgId/reactions';
+  static String messageRead(String convId, String msgId) =>
+      '/conversations/$convId/messages/$msgId/read';
+  static String messageEdit(String convId, String msgId) =>
+      '/conversations/$convId/messages/$msgId';
   static String messageReadReceipts(String id) => '/messages/$id/read-receipts';
   static const String usersSearch = '/users/search';
+  static const String usersPresence = '/users/presence';
+  static const String usersBlocked = '/users/blocked';
+  static String blockUser(String userId) => '/users/$userId/block';
 
   // Settings
   static const String userSettings = '/me/settings';
