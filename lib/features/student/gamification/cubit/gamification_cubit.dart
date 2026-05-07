@@ -1,6 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../exams/models/exam_model.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/services/storage_service.dart';
 import '../models/gamification_models.dart';
 import '../repositories/student_gamification_repository.dart';
 import 'gamification_state.dart';
@@ -9,11 +11,17 @@ export 'gamification_state.dart';
 
 class GamificationCubit extends Cubit<GamificationState> {
   final StudentGamificationRepository _repository;
+  final StorageService _storage = sl<StorageService>();
   DateTime? _lastLoadedAt;
 
   static const Duration _ttl = Duration(seconds: 30);
 
   GamificationCubit(this._repository) : super(const GamificationState());
+
+  Future<String> _currentUserId() async {
+    final user = await _storage.getUser();
+    return (user?['id'] ?? '').toString();
+  }
 
   Future<void> loadIfNeeded() async {
     if (state.status == GamificationStatus.loaded &&
@@ -27,6 +35,7 @@ class GamificationCubit extends Cubit<GamificationState> {
   Future<void> loadAll() async {
     emit(state.copyWith(status: GamificationStatus.loading));
     try {
+      final userId = await _currentUserId();
       final results = await Future.wait([
         _repository.fetchStreak(),
         _repository.fetchAchievements(),
@@ -39,11 +48,12 @@ class GamificationCubit extends Cubit<GamificationState> {
         _repository.fetchXpProgress(),
         _repository.fetchNextBadgeProgress(),
         _repository.fetchBadges(),
-        _repository.fetchStudentBadges('s1'),
+        _repository.fetchStudentBadges(userId),
       ]);
       emit(
         GamificationState(
           status: GamificationStatus.loaded,
+          currentUserId: userId,
           streak: results[0] as StreakModel,
           achievements: results[1] as List<AchievementModel>,
           leaderboardEntries: results[2] as List<LeaderboardEntry>,
@@ -89,12 +99,13 @@ class GamificationCubit extends Cubit<GamificationState> {
   Future<void> completeMission(String missionId) async {
     try {
       final mutation = await _repository.markMissionCompleted(missionId);
+      final userId = await _currentUserId();
       final refreshed = await Future.wait([
         _repository.fetchDailyMissions(),
         _repository.fetchXpProgress(),
         _repository.fetchNextBadgeProgress(),
         _repository.fetchAchievements(),
-        _repository.fetchStudentBadges('s1'),
+        _repository.fetchStudentBadges(userId),
         _repository.fetchLeaderboard(
           state.isWeeklyRanking ? 'weekly' : 'monthly',
         ),
@@ -144,13 +155,13 @@ class GamificationCubit extends Cubit<GamificationState> {
           answerMap: answerMap,
         ),
       );
-
+      final userId = await _currentUserId();
       final refreshed = await Future.wait([
         _repository.fetchAchievements(),
         _repository.fetchDailyMissions(),
         _repository.fetchXpProgress(),
         _repository.fetchNextBadgeProgress(),
-        _repository.fetchStudentBadges('s1'),
+        _repository.fetchStudentBadges(userId),
         _repository.fetchLeaderboard(
           state.isWeeklyRanking ? 'weekly' : 'monthly',
         ),

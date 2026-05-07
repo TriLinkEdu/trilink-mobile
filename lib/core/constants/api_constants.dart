@@ -197,6 +197,11 @@ class ApiConstants {
   static const String gamificationMyBadges = '/gamification/me/badges';
   static const String gamificationMyPoints = '/gamification/me/badge-points';
   static const String gamificationMyProgress = '/gamification/me/progress';
+  static const String gamificationMyStreak = '/gamification/me/streak';
+    static const String gamificationAchievements = '/gamification/achievements';
+    static const String gamificationMyAchievements = '/gamification/my-achievements';
+    static const String gamificationMyAchievementsProgress =
+            '/gamification/my-achievements/progress';
   static const String gamificationMissions = '/gamification/me/missions';
   static String gamificationMissionComplete(String missionId) =>
       '/gamification/me/missions/$missionId/complete';
@@ -206,6 +211,8 @@ class ApiConstants {
   static String gamificationQuizById(String id) => '/gamification/quizzes/$id';
   static String gamificationQuizSubmit(String id) =>
       '/gamification/quizzes/$id/submit';
+  static const String gamificationLeaderboardXp =
+      '/gamification/leaderboard/xp';
   static const String gamificationLeaderboard =
       '/gamification/leaderboard/exam-average';
   static const String gamificationStreakLeaderboard =

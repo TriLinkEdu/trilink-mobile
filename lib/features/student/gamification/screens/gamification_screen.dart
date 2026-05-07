@@ -355,6 +355,7 @@ class _GamificationViewState extends State<_GamificationView> {
                           _buildLeaderboardSection(
                             state.leaderboardEntries,
                             state.isWeeklyRanking,
+                            state.currentUserId,
                           ),
                           AppSpacing.gapXxl,
                         ],
@@ -912,15 +913,16 @@ class _GamificationViewState extends State<_GamificationView> {
   Widget _buildLeaderboardSection(
     List<LeaderboardEntry> leaderboardEntries,
     bool isWeeklyRanking,
+    String currentUserId,
   ) {
     final theme = Theme.of(context);
     final sortedEntries = [...leaderboardEntries]
       ..sort((a, b) => a.rank.compareTo(b.rank));
     final topEntries = sortedEntries.take(3).toList();
     final myEntry = leaderboardEntries.firstWhere(
-      (entry) => entry.studentId == 's1',
+      (entry) => entry.studentId == currentUserId,
       orElse: () => const LeaderboardEntry(
-        studentId: 's1',
+        studentId: '',
         studentName: 'You',
         rank: 0,
         points: 0,

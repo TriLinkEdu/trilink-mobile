@@ -66,34 +66,43 @@ class LeaderboardEntry {
 
 class BadgeModel {
   final String id;
+  final String? key;
   final String name;
   final String description;
   final String iconUrl;
+  final String? iconKey;
   final int xpValue;
 
   const BadgeModel({
     required this.id,
+    this.key,
     required this.name,
     required this.description,
     required this.iconUrl,
+    this.iconKey,
     required this.xpValue,
   });
 
   factory BadgeModel.fromJson(Map<String, dynamic> json) {
+    final iconValue = (json['iconUrl'] ?? json['iconKey'] ?? '').toString();
     return BadgeModel(
       id: json['id'] as String,
+      key: json['key'] as String?,
       name: json['name'] as String,
       description: json['description'] as String,
-      iconUrl: json['iconUrl'] as String,
+      iconUrl: iconValue,
+      iconKey: json['iconKey'] as String?,
       xpValue: json['xpValue'] as int,
     );
   }
 
   Map<String, dynamic> toJson() => {
     'id': id,
+    'key': key,
     'name': name,
     'description': description,
     'iconUrl': iconUrl,
+    'iconKey': iconKey,
     'xpValue': xpValue,
   };
 }
@@ -186,7 +195,7 @@ class AchievementModel {
       id: json['id'] as String,
       title: json['title'] as String,
       description: json['description'] as String,
-      iconUrl: json['iconUrl'] as String,
+      iconUrl: (json['iconUrl'] ?? '').toString(),
       xpValue: json['xpValue'] as int? ?? 0,
       isUnlocked: json['isUnlocked'] as bool,
       unlockedAt: json['unlockedAt'] != null
