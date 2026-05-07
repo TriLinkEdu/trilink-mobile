@@ -4,12 +4,14 @@ class ChatBubble extends StatelessWidget {
   final String message;
   final bool isMe;
   final String time;
+  final String? imageUrl;
 
   const ChatBubble({
     super.key,
     required this.message,
     required this.isMe,
     required this.time,
+    this.imageUrl,
   });
 
   @override
@@ -19,6 +21,9 @@ class ChatBubble extends StatelessWidget {
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.72,
+        ),
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
         decoration: BoxDecoration(
@@ -30,14 +35,38 @@ class ChatBubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(
-              message,
-              style: TextStyle(
-                color: isMe
-                    ? theme.colorScheme.onPrimaryContainer
-                    : theme.colorScheme.onSurface,
+            if (imageUrl != null) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  imageUrl!,
+                  height: 160,
+                  width: 220,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    alignment: Alignment.center,
+                    height: 160,
+                    width: 220,
+                    child: Text(
+                      'Unable to load image',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ),
+                ),
               ),
-            ),
+            ],
+            if (message.isNotEmpty) ...[
+              if (imageUrl != null) const SizedBox(height: 8),
+              Text(
+                message,
+                style: TextStyle(
+                  color: isMe
+                      ? theme.colorScheme.onPrimaryContainer
+                      : theme.colorScheme.onSurface,
+                ),
+              ),
+            ],
             Text(
               time,
               style: TextStyle(

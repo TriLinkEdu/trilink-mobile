@@ -259,6 +259,13 @@ class _ChatViewState extends State<_ChatView> {
                   onTap: () async {
                     Navigator.pop(dialogContext);
                     // Show connection request dialog for students
+                    if (contact.id == _currentUserId) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('You cannot connect with yourself.')),
+                      );
+                      return;
+                    }
                     final result = await showDialog<bool>(
                       context: context,
                       builder: (_) => ConnectionRequestDialog(
@@ -296,6 +303,13 @@ class _ChatViewState extends State<_ChatView> {
 
   Future<void> _initiateDirectMessage(ChatContactModel contact) async {
     try {
+      if (contact.id == _currentUserId && _currentUserId.isNotEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('You cannot message yourself.')),
+        );
+        return;
+      }
       final conversation = await context.read<ChatCubit>().createConversation(
         title: contact.displayName,
         participantIds: [
@@ -444,6 +458,8 @@ class _ChatList extends StatelessWidget {
   String _previewText(ChatConversationModel conversation) {
     final msg = conversation.lastMessage;
     if (msg == null) return 'No messages yet';
+    if (msg.type == MessageType.image) return 'Image';
+    if (msg.type == MessageType.file) return 'File';
     return msg.content;
   }
 

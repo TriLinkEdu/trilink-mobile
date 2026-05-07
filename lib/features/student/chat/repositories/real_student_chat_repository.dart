@@ -135,6 +135,37 @@ class RealStudentChatRepository implements StudentChatRepository {
   }
 
   @override
+  Future<ChatMessageModel> sendImageMessage(
+    String conversationId,
+    String imagePath,
+  ) async {
+    final uploadResponse = await _api.uploadFile(
+      ApiConstants.chatUpload,
+      imagePath,
+      fieldName: 'file',
+    );
+
+    final fileId = (uploadResponse['fileId'] ?? '').toString();
+    if (fileId.isEmpty) {
+      throw Exception('Failed to upload image');
+    }
+
+    final me = await _currentUserId();
+    final raw = await _api.post(
+      ApiConstants.conversationMessages(conversationId),
+      data: {'mediaFileId': fileId},
+    );
+    final sent = _mapMessage(raw, me);
+
+    final existing = _messagesCache[conversationId] ?? const [];
+    _messagesCache[conversationId] = [...existing, sent];
+    _messagesFetchedAt[conversationId] = DateTime.now();
+    _conversationsFetchedAt = null;
+
+    return sent;
+  }
+
+  @override
   Future<ChatConversationModel> createConversation({
     required String title,
     required List<String> participantIds,
@@ -192,19 +223,45 @@ class RealStudentChatRepository implements StudentChatRepository {
 
   ChatMessageModel _mapMessage(Map<String, dynamic> raw, String me) {
     final senderId = (raw['senderId'] ?? '').toString();
+    final senderName = (raw['senderName'] ?? '').toString();
+    final text = (raw['text'] ?? '').toString();
+    final mediaFileId = (raw['mediaFileId'] ?? '').toString();
+    final mediaType = (raw['mediaType'] ?? '').toString();
+    final mediaName = (raw['mediaName'] ?? '').toString();
+    final mediaMimeType = (raw['mediaMimeType'] ?? '').toString();
     final createdAt =
         DateTime.tryParse((raw['createdAt'] ?? '').toString()) ??
         DateTime.now();
+    final type = _resolveMessageType(mediaType);
+    final mediaUrl = mediaFileId.isEmpty
+        ? null
+        : '${ApiConstants.fileBaseUrl}${ApiConstants.fileDownload(mediaFileId)}';
     return ChatMessageModel(
       id: (raw['id'] ?? '').toString(),
       senderId: senderId,
-      senderName: senderId == me ? 'You' : 'User',
-      content: (raw['text'] ?? '').toString(),
+      senderName: senderId == me
+          ? 'You'
+          : (senderName.isEmpty ? 'User' : senderName),
+      content: text,
       timestamp: createdAt,
       isRead: senderId == me,
-      type: MessageType.text,
+      type: type,
+      mediaFileId: mediaFileId.isEmpty ? null : mediaFileId,
+      mediaUrl: mediaUrl,
+      mediaType: mediaType.isEmpty ? null : mediaType,
+      mediaName: mediaName.isEmpty ? null : mediaName,
+      mediaMimeType: mediaMimeType.isEmpty ? null : mediaMimeType,
       readReceipts: const [],
     );
+  }
+
+  MessageType _resolveMessageType(String mediaType) {
+    final type = mediaType.toLowerCase();
+    if (type == 'image') return MessageType.image;
+    if (type == 'video' || type == 'audio' || type == 'file') {
+      return MessageType.file;
+    }
+    return MessageType.text;
   }
 
   Future<String> _currentUserId() async {
@@ -215,17 +272,95 @@ class RealStudentChatRepository implements StudentChatRepository {
   @override
   Future<List<ChatContactModel>> searchUsers(String query) async {
     try {
-      final rows = await _api.getList(
-        ApiConstants.usersSearch,
-        queryParameters: {'q': query},
+      final me = await _currentUserId();
+      final myUser = await _storage.getUser();
+      final myGrade = (myUser?['grade'] ?? '').toString();
+      final mySection = (myUser?['section'] ?? '').toString();
+      final normalizedQuery = query.trim().toLowerCase();
+
+      final teachers = await _fetchAssignedTeachers(me, normalizedQuery);
+      final students = await _fetchClassmates(
+        normalizedQuery,
+        me,
+        myGrade,
+        mySection,
       );
-      return rows
-          .whereType<Map<String, dynamic>>()
-          .map((json) => ChatContactModel.fromJson(json))
-          .toList();
+
+      return [...teachers, ...students];
     } catch (e) {
       return [];
     }
+  }
+
+  Future<List<ChatContactModel>> _fetchAssignedTeachers(
+    String studentId,
+    String query,
+  ) async {
+    if (studentId.isEmpty) return [];
+    final data = await _api.get(ApiConstants.studentTeachers(studentId));
+    final teachers = (data['teachers'] as List?) ?? const [];
+    return teachers
+        .whereType<Map<String, dynamic>>()
+        .map((json) {
+          final subjects = (json['subjects'] as List?)
+                  ?.whereType<String>()
+                  .toList() ??
+              const <String>[];
+          final subjectLabel =
+              subjects.isEmpty ? null : subjects.join(', ');
+          return ChatContactModel(
+            id: (json['id'] ?? '').toString(),
+            firstName: (json['firstName'] ?? '').toString(),
+            lastName: (json['lastName'] ?? '').toString(),
+            role: 'teacher',
+            subject: subjectLabel,
+          );
+        })
+        .where((contact) => _matchesQuery(contact, query))
+        .toList();
+  }
+
+  Future<List<ChatContactModel>> _fetchClassmates(
+    String query,
+    String me,
+    String myGrade,
+    String mySection,
+  ) async {
+    if (myGrade.isEmpty) return [];
+    final rows = await _api.getList(
+      ApiConstants.usersSearch,
+      queryParameters: {'q': query},
+    );
+
+    return rows
+        .whereType<Map<String, dynamic>>()
+        .where((json) {
+          final userId = (json['id'] ?? '').toString();
+          final role = (json['role'] ?? '').toString().toLowerCase();
+          final grade = (json['grade'] ?? '').toString();
+          final section = (json['section'] ?? '').toString();
+
+          if (userId == me) return false;
+          if (role != 'student') return false;
+          if (grade != myGrade) return false;
+          if (mySection.isNotEmpty && section != mySection) return false;
+
+          if (query.isEmpty) return true;
+          final fullName =
+              '${(json['firstName'] ?? '').toString()} ${(json['lastName'] ?? '').toString()}'
+                  .trim()
+                  .toLowerCase();
+          return fullName.contains(query);
+        })
+        .map((json) => ChatContactModel.fromJson(json))
+        .toList();
+  }
+
+  bool _matchesQuery(ChatContactModel contact, String query) {
+    if (query.isEmpty) return true;
+    final name = contact.fullName.toLowerCase();
+    final subject = (contact.subject ?? '').toLowerCase();
+    return name.contains(query) || subject.contains(query);
   }
 
   @override

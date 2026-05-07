@@ -43,23 +43,32 @@ class RealStudentAttendanceRepository implements StudentAttendanceRepository {
     final data = await _api.get(
       ApiConstants.attendanceStudentReport(studentId),
     );
-    final marks = data['marks'];
-    if (marks is! List) return const [];
+    final records = data['records'];
+    if (records is! List) return const [];
 
-    return marks.whereType<Map<String, dynamic>>().map(_mapRecord).toList()
+    return records.whereType<Map<String, dynamic>>().map(_mapRecord).toList()
       ..sort((a, b) => b.date.compareTo(a.date));
   }
 
   AttendanceModel _mapRecord(Map<String, dynamic> raw) {
     final status = _parseStatus((raw['status'] ?? '').toString());
+    final markId = (raw['markId'] ?? '').toString();
     final sessionId = (raw['sessionId'] ?? '').toString();
     final classOfferingId = (raw['classOfferingId'] ?? '').toString();
-    final sessionDate = (raw['sessionDate'] ?? '').toString();
+    
+    // Extract subject info from nested object
+    final subject = raw['subject'];
+    final subjectName = subject is Map<String, dynamic> 
+        ? (subject['name'] ?? 'Unknown Subject').toString()
+        : 'Unknown Subject';
+    
+    // Parse session date from the session object or fall back to top-level date
+    final sessionDate = (raw['sessionDate'] ?? raw['date'] ?? '').toString();
 
     return AttendanceModel(
-      id: sessionId,
+      id: markId.isNotEmpty ? markId : sessionId,
       subjectId: classOfferingId,
-      subjectName: classOfferingId.isEmpty ? 'Class' : 'Class $classOfferingId',
+      subjectName: subjectName,
       date: DateTime.tryParse(sessionDate) ?? DateTime.now(),
       status: status,
     );

@@ -327,6 +327,12 @@ class _EnhancedTextbookViewerState extends State<EnhancedTextbookViewer>
                       opacity: _readingState.brightness,
                       child: PdfViewPinch(
                         controller: _pdfController!,
+                        onPageChanged: (page) {
+                          setState(() {
+                            _readingState = _readingState.copyWith(currentPage: page);
+                          });
+                          TextbookReadingService.saveReadingState(widget.textbookId, _readingState);
+                        },
                       ),
                     ),
                   )

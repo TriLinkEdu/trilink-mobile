@@ -150,6 +150,7 @@ class ApiConstants {
 
   // Chat
   static const String chatWsInfo = '/chat/ws-info';
+    static const String chatUpload = '/chat/upload';
   static const String conversations = '/conversations';
   static const String conversationsInitiate = '/conversations/initiate';
   static String conversation(String id) => '/conversations/$id';
@@ -164,6 +165,10 @@ class ApiConstants {
   static const String studentSyncStatus = '/sync/student/status';
   static const String studentSyncTrigger = '/sync/student/trigger';
   static const String integrationsSyncHints = '/integrations/sync-hints';
+
+  // Files
+  static const String filesUpload = '/files/upload';
+  static String fileDownload(String id) => '/files/$id/download';
 
   // Feedback
   static const String feedback = '/feedback';
@@ -184,7 +189,6 @@ class ApiConstants {
   static const String parentWeeklySummary = '/reports/parent/weekly-summary';
 
   // Files
-  static const String filesUpload = '/files/upload';
   static String file(String id) => '/files/$id';
   static String fileAccess(String id) => '/files/$id/access';
 

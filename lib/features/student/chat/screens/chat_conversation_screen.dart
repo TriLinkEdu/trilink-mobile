@@ -15,6 +15,7 @@ import '../../shared/widgets/student_page_background.dart';
 import '../cubit/chat_conversation_cubit.dart';
 import '../repositories/student_chat_repository.dart';
 import '../widgets/chat_bubble.dart';
+import '../models/chat_models.dart';
 
 class ChatConversationScreen extends StatelessWidget {
   final String conversationId;
@@ -135,22 +136,20 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
 
       setState(() => _isSending = true);
 
-      // TODO: Upload image to backend and get URL
-      // For now, send image path as message
-      await context.read<ChatConversationCubit>().sendMessage('[Image: ${image.name}]');
+      await context.read<ChatConversationCubit>().sendImageMessage(image.path);
       
       if (!mounted) return;
       setState(() => _isSending = false);
       _scrollToBottom();
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Image sent!')),
+        const SnackBar(content: Text('Image sent!')),
       );
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSending = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to send image')),
+        const SnackBar(content: Text('Failed to send image')),
       );
     }
   }
@@ -215,6 +214,9 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
                       final isMine = message.senderId == _currentUserId;
                       return ChatBubble(
                         message: message.content,
+                        imageUrl: message.type == MessageType.image
+                            ? message.mediaUrl
+                            : null,
                         isMe: isMine,
                         time: DateFormat.jm().format(message.timestamp),
                       );

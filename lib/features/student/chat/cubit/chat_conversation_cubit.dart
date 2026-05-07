@@ -63,4 +63,20 @@ class ChatConversationCubit extends Cubit<ChatConversationState> {
       rethrow;
     }
   }
+
+  Future<void> sendImageMessage(String imagePath) async {
+    try {
+      final sentMessage = await _repository.sendImageMessage(conversationId, imagePath);
+      emit(
+        state.copyWith(
+          status: ConversationStatus.loaded,
+          messages: [...state.messages, sentMessage],
+        ),
+      );
+      _lastLoadedAt = DateTime.now();
+    } catch (e) {
+      emit(state.copyWith(errorMessage: 'Unable to send image.'));
+      rethrow;
+    }
+  }
 }

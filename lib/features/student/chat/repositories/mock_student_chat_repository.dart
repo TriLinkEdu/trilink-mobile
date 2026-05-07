@@ -282,6 +282,26 @@ class MockStudentChatRepository implements StudentChatRepository {
   }
 
   @override
+  Future<ChatMessageModel> sendImageMessage(
+    String conversationId,
+    String imagePath,
+  ) async {
+    await Future<void>.delayed(_latency);
+    final message = ChatMessageModel(
+      id: _nextMessageId(),
+      senderId: 'student1',
+      senderName: 'You',
+      content: '[Image]',
+      timestamp: DateTime.now(),
+      isRead: true,
+      type: MessageType.image,
+    );
+    _messages.putIfAbsent(conversationId, () => []);
+    _messages[conversationId]!.add(message);
+    return message;
+  }
+
+  @override
   Future<ChatConversationModel> createConversation({
     required String title,
     required List<String> participantIds,

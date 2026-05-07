@@ -8,6 +8,11 @@ class ChatMessageModel {
   final DateTime timestamp;
   final bool isRead;
   final MessageType type;
+  final String? mediaFileId;
+  final String? mediaUrl;
+  final String? mediaType;
+  final String? mediaName;
+  final String? mediaMimeType;
   final List<MessageReadReceipt> readReceipts;
 
   const ChatMessageModel({
@@ -18,10 +23,31 @@ class ChatMessageModel {
     required this.timestamp,
     required this.isRead,
     this.type = MessageType.text,
+    this.mediaFileId,
+    this.mediaUrl,
+    this.mediaType,
+    this.mediaName,
+    this.mediaMimeType,
     this.readReceipts = const [],
   });
 
   factory ChatMessageModel.fromJson(Map<String, dynamic> json) {
+    final rawType = json['type'] as String?;
+    final rawMediaType = (json['mediaType'] as String?)?.toLowerCase();
+    MessageType resolvedType = MessageType.text;
+    if (rawType != null) {
+      resolvedType = MessageType.values.firstWhere(
+        (t) => t.name == rawType,
+        orElse: () => MessageType.text,
+      );
+    } else if (rawMediaType != null && rawMediaType.isNotEmpty) {
+      if (rawMediaType == 'image') {
+        resolvedType = MessageType.image;
+      } else {
+        resolvedType = MessageType.file;
+      }
+    }
+
     return ChatMessageModel(
       id: json['id'] as String,
       senderId: json['senderId'] as String,
@@ -29,10 +55,12 @@ class ChatMessageModel {
       content: json['content'] as String,
       timestamp: DateTime.parse(json['timestamp'] as String),
       isRead: json['isRead'] as bool,
-      type: MessageType.values.firstWhere(
-        (t) => t.name == json['type'],
-        orElse: () => MessageType.text,
-      ),
+      type: resolvedType,
+      mediaFileId: json['mediaFileId'] as String?,
+      mediaUrl: json['mediaUrl'] as String?,
+      mediaType: json['mediaType'] as String?,
+      mediaName: json['mediaName'] as String?,
+      mediaMimeType: json['mediaMimeType'] as String?,
       readReceipts: (json['readReceipts'] as List?)
               ?.map(
                   (r) => MessageReadReceipt.fromJson(r as Map<String, dynamic>))
@@ -49,6 +77,11 @@ class ChatMessageModel {
         'timestamp': timestamp.toIso8601String(),
         'isRead': isRead,
         'type': type.name,
+        'mediaFileId': mediaFileId,
+        'mediaUrl': mediaUrl,
+        'mediaType': mediaType,
+        'mediaName': mediaName,
+        'mediaMimeType': mediaMimeType,
         'readReceipts': readReceipts.map((r) => r.toJson()).toList(),
       };
 }
