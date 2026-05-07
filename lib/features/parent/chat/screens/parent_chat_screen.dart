@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/socket_service.dart';
+import '../../../../core/models/conversation_summary.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/services/storage_service.dart';
 import 'parent_message_view_screen.dart';
@@ -20,18 +23,57 @@ class _ParentChatScreenState extends State<ParentChatScreen>
 
   List<_ContactUser> _adminUsers = [];
   List<_ContactUser> _teacherUsers = [];
+  List<ConversationSummary> _conversations = [];
+
+  StreamSubscription? _convUpdateSub;
+  StreamSubscription? _msgNewSub;
+  String? _openConversationId;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _loadData();
+
+    _convUpdateSub =
+        SocketService().conversationUpdateStream.listen(_onConversationUpdate);
+    _msgNewSub = SocketService().messageNewStream.listen(_onMessageNew);
+    SocketService().setPresence('online');
   }
 
   @override
   void dispose() {
+    _convUpdateSub?.cancel();
+    _msgNewSub?.cancel();
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _onConversationUpdate(Map<String, dynamic> event) {
+    final id = event['id'] as String?;
+    if (id == null) return;
+    final idx = _conversations.indexWhere((c) => c.id == id);
+    if (idx == -1) return;
+    setState(() {
+      _conversations[idx] = ConversationSummary.fromJson({
+        ..._conversations[idx].toJson(),
+        ...event,
+      });
+    });
+  }
+
+  void _onMessageNew(Map<String, dynamic> event) {
+    final convId = event['conversationId'] as String?;
+    if (convId == null || convId == _openConversationId) return;
+    final idx = _conversations.indexWhere((c) => c.id == convId);
+    if (idx == -1) return;
+    setState(() {
+      _conversations[idx] = _conversations[idx].copyWith(
+        unreadCount: _conversations[idx].unreadCount + 1,
+        lastMessageText: event['text'] as String?,
+        lastMessageAt: event['createdAt'] as String?,
+      );
+    });
   }
 
   Future<void> _loadData() async {
@@ -41,10 +83,16 @@ class _ParentChatScreenState extends State<ParentChatScreen>
         _error = null;
       });
 
-      // Search for admin and teacher users
-      final users = await ApiService().searchUsers();
+      // Load contacts and existing conversations in parallel
+      final results = await Future.wait([
+        ApiService().searchUsers(),
+        ApiService().getConversations(),
+      ]);
 
       if (!mounted) return;
+
+      final users = results[0] as List<dynamic>;
+      final convRaw = results[1] as List<dynamic>;
 
       final List<_ContactUser> admins = [];
       final List<_ContactUser> teachers = [];
@@ -52,15 +100,21 @@ class _ParentChatScreenState extends State<ParentChatScreen>
       for (final user in users) {
         final role = user['role'] as String?;
         if (role == 'admin') {
-          admins.add(_ContactUser.fromJson(user));
+          admins.add(_ContactUser.fromJson(user as Map<String, dynamic>));
         } else if (role == 'teacher') {
-          teachers.add(_ContactUser.fromJson(user));
+          teachers.add(_ContactUser.fromJson(user as Map<String, dynamic>));
         }
       }
+
+      final conversations = convRaw
+          .map((c) => ConversationSummary.fromJson(c as Map<String, dynamic>))
+          .where((c) => c.type == 'direct')
+          .toList();
 
       setState(() {
         _adminUsers = admins;
         _teacherUsers = teachers;
+        _conversations = conversations;
         _loading = false;
       });
     } catch (e) {
@@ -74,25 +128,22 @@ class _ParentChatScreenState extends State<ParentChatScreen>
 
   Future<void> _startConversation(_ContactUser user) async {
     try {
-      // Show loading
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (_) => const Center(child: CircularProgressIndicator()),
       );
 
-      // Initiate conversation
       final response = await ApiService().initiateConversation(user.id);
       final conversation = response['conversation'] as Map<String, dynamic>;
       final conversationId = conversation['id'] as String;
 
       if (!mounted) return;
-
-      // Close loading dialog
       Navigator.pop(context);
 
-      // Navigate to message view
-      Navigator.push(
+      setState(() => _openConversationId = conversationId);
+
+      await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => ParentMessageViewScreen(
@@ -104,19 +155,53 @@ class _ParentChatScreenState extends State<ParentChatScreen>
           ),
         ),
       );
+
+      // Reset unread on return
+      final idx = _conversations.indexWhere((c) => c.id == conversationId);
+      if (idx != -1 && mounted) {
+        setState(() {
+          _conversations[idx] = _conversations[idx].copyWith(unreadCount: 0);
+          _openConversationId = null;
+        });
+      } else {
+        setState(() => _openConversationId = null);
+      }
+      // Refresh to pick up any new conversation
+      _loadData();
     } catch (e) {
       if (!mounted) return;
-
-      // Close loading dialog
       Navigator.pop(context);
-
-      // Show error
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to start conversation: $e'),
           backgroundColor: Colors.red,
         ),
       );
+    }
+  }
+
+  Future<void> _openConversation(ConversationSummary conv) async {
+    setState(() => _openConversationId = conv.id);
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ParentMessageViewScreen(
+          conversationId: conv.id,
+          teacherName: conv.title,
+          subject: '',
+        ),
+      ),
+    );
+
+    final idx = _conversations.indexWhere((c) => c.id == conv.id);
+    if (idx != -1 && mounted) {
+      setState(() {
+        _conversations[idx] = _conversations[idx].copyWith(unreadCount: 0);
+        _openConversationId = null;
+      });
+    } else {
+      setState(() => _openConversationId = null);
     }
   }
 
@@ -285,69 +370,129 @@ class _ParentChatScreenState extends State<ParentChatScreen>
   }
 
   Widget _buildAdminTab() {
-    if (_adminUsers.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.admin_panel_settings_outlined,
-              size: 48,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'No administrators available',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+    final recentConvs = _conversations.where((c) {
+      final members = [...c.participants, ...c.members];
+      return members.any((m) => m.role == 'admin' || m.role == 'superadmin');
+    }).toList();
+
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          if (recentConvs.isNotEmpty) ...[
+            _sectionLabel('RECENT'),
+            const SizedBox(height: 8),
+            ...recentConvs.map((c) => _ConversationTile(
+                  conv: c,
+                  onTap: () => _openConversation(c),
+                )),
+            const SizedBox(height: 16),
+            _sectionLabel('ALL ADMINS'),
+            const SizedBox(height: 8),
+          ],
+          if (_adminUsers.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.admin_panel_settings_outlined,
+                        size: 48,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    const SizedBox(height: 12),
+                    Text('No administrators available',
+                        style: TextStyle(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant)),
+                  ],
+                ),
+              ),
+            )
+          else
+            ...List.generate(
+              _adminUsers.length,
+              (i) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _ContactTile(
+                  user: _adminUsers[i],
+                  onTap: () => _startConversation(_adminUsers[i]),
+                ),
               ),
             ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: _adminUsers.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (context, index) => _ContactTile(
-        user: _adminUsers[index],
-        onTap: () => _startConversation(_adminUsers[index]),
+        ],
       ),
     );
   }
 
   Widget _buildTeachersTab() {
-    if (_teacherUsers.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.school_outlined,
-              size: 48,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'No teachers available',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+    final recentConvs = _conversations.where((c) {
+      final members = [...c.participants, ...c.members];
+      return members.any((m) => m.role == 'teacher');
+    }).toList();
+
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          if (recentConvs.isNotEmpty) ...[
+            _sectionLabel('RECENT'),
+            const SizedBox(height: 8),
+            ...recentConvs.map((c) => _ConversationTile(
+                  conv: c,
+                  onTap: () => _openConversation(c),
+                )),
+            const SizedBox(height: 16),
+            _sectionLabel('ALL TEACHERS'),
+            const SizedBox(height: 8),
+          ],
+          if (_teacherUsers.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.school_outlined,
+                        size: 48,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    const SizedBox(height: 12),
+                    Text('No teachers available',
+                        style: TextStyle(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant)),
+                  ],
+                ),
+              ),
+            )
+          else
+            ...List.generate(
+              _teacherUsers.length,
+              (i) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _ContactTile(
+                  user: _teacherUsers[i],
+                  onTap: () => _startConversation(_teacherUsers[i]),
+                ),
               ),
             ),
-          ],
-        ),
-      );
-    }
+        ],
+      ),
+    );
+  }
 
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: _teacherUsers.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (context, index) => _ContactTile(
-        user: _teacherUsers[index],
-        onTap: () => _startConversation(_teacherUsers[index]),
+  Widget _sectionLabel(String label) {
+    return Text(
+      label,
+      style: TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+        letterSpacing: 0.8,
       ),
     );
   }
@@ -548,5 +693,147 @@ class _ContactTile extends StatelessWidget {
       return {'Authorization': 'Bearer $token'};
     }
     return null;
+  }
+}
+
+// ─── Conversation Tile (existing chats) ──────────────────────────────────────
+
+class _ConversationTile extends StatelessWidget {
+  final ConversationSummary conv;
+  final VoidCallback onTap;
+
+  const _ConversationTile({required this.conv, required this.onTap});
+
+  String _timeAgo(String? iso) {
+    if (iso == null) return '';
+    try {
+      final d = DateTime.parse(iso);
+      final diff = DateTime.now().difference(d);
+      if (diff.inMinutes < 1) return 'Just now';
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+      if (diff.inHours < 24) return '${diff.inHours}h ago';
+      if (diff.inDays < 7) return '${diff.inDays}d ago';
+      return '${d.month}/${d.day}';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final unread = conv.unreadCount;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: unread > 0
+                ? AppColors.primary.withValues(alpha: 0.3)
+                : theme.colorScheme.outlineVariant,
+            width: unread > 0 ? 1.5 : 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: theme.shadowColor.withValues(alpha: 0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 22,
+              backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+              child: Text(
+                conv.title.isNotEmpty ? conv.title[0].toUpperCase() : '?',
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          conv.title,
+                          style: TextStyle(
+                            fontWeight: unread > 0
+                                ? FontWeight.w700
+                                : FontWeight.w600,
+                            fontSize: 15,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Text(
+                        _timeAgo(conv.lastMessageAt),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (conv.lastMessageText != null) ...[
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            conv.lastMessageText!,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: unread > 0
+                                  ? theme.colorScheme.onSurface
+                                  : theme.colorScheme.onSurfaceVariant,
+                              fontWeight: unread > 0
+                                  ? FontWeight.w500
+                                  : FontWeight.normal,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (unread > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              unread > 99 ? '99+' : '$unread',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

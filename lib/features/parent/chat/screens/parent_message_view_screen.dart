@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/socket_service.dart';
 import '../../../../features/auth/services/auth_service.dart';
 
 class ParentMessageViewScreen extends StatefulWidget {
@@ -29,22 +31,34 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
 
   // Messages stored oldest-first for display (index 0 = oldest)
   List<Map<String, dynamic>> _messages = [];
-  int _skip = 0;
-  static const int _pageSize = 30;
+  String? _nextCursor; // oldest loaded message ID for cursor pagination
 
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
+
+  // Real-time
+  StreamSubscription? _msgSub;
+  bool _showNewMessageButton = false;
 
   @override
   void initState() {
     super.initState();
     _loadInitial();
     _scrollController.addListener(_onScroll);
+
+    if (widget.conversationId.isNotEmpty) {
+      _msgSub = SocketService().messageNewStream.listen(_onMessageNew);
+      SocketService().joinConversation(widget.conversationId);
+    }
   }
 
   @override
   void dispose() {
+    _msgSub?.cancel();
+    if (widget.conversationId.isNotEmpty) {
+      SocketService().leaveConversation(widget.conversationId);
+    }
     _messageController.dispose();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
@@ -53,7 +67,6 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
   }
 
   void _onScroll() {
-    // Load more when user scrolls near the top
     if (_scrollController.position.pixels <= 80 &&
         !_loadingMore &&
         _hasMore &&
@@ -62,20 +75,61 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
     }
   }
 
+  void _onMessageNew(Map<String, dynamic> event) {
+    if (event['conversationId'] != widget.conversationId) return;
+
+    final currentUserId = AuthService().currentUser?.id ?? '';
+    final senderId = event['senderId'] as String? ?? '';
+
+    // Deduplicate: if we sent this and there's a temp bubble, replace it
+    if (senderId == currentUserId) {
+      final text = event['text'] as String? ?? '';
+      final tempIdx = _messages.indexWhere(
+        (m) => (m['id'] as String? ?? '').startsWith('temp-') &&
+            m['text'] == text,
+      );
+      if (tempIdx != -1) {
+        setState(() => _messages[tempIdx] = event);
+        return;
+      }
+    }
+
+    // Check for existing message update
+    final existingIdx = _messages.indexWhere(
+      (m) => m['id'] == event['id'],
+    );
+    if (existingIdx != -1) {
+      setState(() => _messages[existingIdx] = event);
+      return;
+    }
+
+    // New message from other party
+    final isNearBottom = _scrollController.hasClients &&
+        (_scrollController.position.maxScrollExtent -
+                _scrollController.position.pixels) <=
+            100;
+
+    setState(() {
+      _messages.add(event);
+      if (!isNearBottom) _showNewMessageButton = true;
+    });
+
+    if (isNearBottom) _scrollToBottom();
+  }
+
   Future<void> _loadInitial() async {
     try {
       setState(() {
         _loading = true;
         _error = null;
-        _skip = 0;
         _messages = [];
         _hasMore = true;
+        _nextCursor = null;
       });
 
-      final msgs = await ApiService().getConversationMessages(
+      final msgs = await ApiService().getConversationMessagesPaginated(
         widget.conversationId,
-        limit: _pageSize,
-        skip: 0,
+        limit: 30,
       );
 
       if (!mounted) return;
@@ -85,12 +139,13 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
 
       setState(() {
         _messages = reversed;
-        _skip = msgs.length;
-        _hasMore = msgs.length == _pageSize;
+        _nextCursor = msgs.isNotEmpty ? (msgs.first as Map)['id'] as String? : null;
+        _hasMore = msgs.length == 30;
         _loading = false;
       });
 
       _scrollToBottom(jump: true);
+      _markLastRead();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -101,43 +156,53 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
   }
 
   Future<void> _loadMore() async {
-    if (_loadingMore || !_hasMore) return;
-
+    if (_loadingMore || !_hasMore || _nextCursor == null) return;
     setState(() => _loadingMore = true);
 
     try {
-      final msgs = await ApiService().getConversationMessages(
+      final msgs = await ApiService().getConversationMessagesPaginated(
         widget.conversationId,
-        limit: _pageSize,
-        skip: _skip,
+        before: _nextCursor,
+        limit: 30,
       );
 
       if (!mounted) return;
 
-      // Preserve scroll position when prepending older messages
-      final oldMaxExtent = _scrollController.position.maxScrollExtent;
+      final oldExtent = _scrollController.hasClients
+          ? _scrollController.position.maxScrollExtent
+          : 0.0;
 
       final older = msgs.cast<Map<String, dynamic>>().reversed.toList();
 
       setState(() {
         _messages = [...older, ..._messages];
-        _skip += msgs.length;
-        _hasMore = msgs.length == _pageSize;
+        if (msgs.isNotEmpty) {
+          _nextCursor = (msgs.first as Map)['id'] as String?;
+        }
+        _hasMore = msgs.length == 30;
         _loadingMore = false;
       });
 
-      // Restore scroll position so user stays at same message
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
-          final newMaxExtent = _scrollController.position.maxScrollExtent;
-          final diff = newMaxExtent - oldMaxExtent;
-          _scrollController.jumpTo(_scrollController.offset + diff);
+          final newExtent = _scrollController.position.maxScrollExtent;
+          _scrollController.jumpTo(
+            _scrollController.offset + (newExtent - oldExtent),
+          );
         }
       });
     } catch (e) {
       if (!mounted) return;
       setState(() => _loadingMore = false);
     }
+  }
+
+  void _markLastRead() {
+    if (_messages.isEmpty || widget.conversationId.isEmpty) return;
+    final lastId = _messages.last['id'] as String? ?? '';
+    if (lastId.isEmpty) return;
+    ApiService().markMessageRead(widget.conversationId, lastId).catchError((_) {});
+    SocketService().sendReadUpdate(widget.conversationId, lastId);
   }
 
   Future<void> _sendMessage() async {
@@ -147,36 +212,51 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
     _messageController.clear();
     setState(() => _sending = true);
 
+    // Optimistic bubble
+    final tempId = 'temp-${DateTime.now().millisecondsSinceEpoch}';
+    final currentUser = AuthService().currentUser;
+    final optimistic = {
+      'id': tempId,
+      'conversationId': widget.conversationId,
+      'senderId': currentUser?.id ?? '',
+      'text': text,
+      'createdAt': DateTime.now().toIso8601String(),
+    };
+    setState(() => _messages.add(optimistic));
+    _scrollToBottom();
+
     try {
-      final sent = await ApiService().sendMessage(widget.conversationId, {
-        'text': text,
-      });
+      final sent = await ApiService().sendMessage(
+        widget.conversationId,
+        {'text': text},
+      );
 
       if (!mounted) return;
 
-      // Optimistically append the sent message
-      setState(() {
-        _messages.add(sent);
-        _skip += 1;
-      });
-
-      _scrollToBottom();
+      final idx = _messages.indexWhere((m) => m['id'] == tempId);
+      if (idx != -1) {
+        setState(() {
+          _messages[idx] = sent;
+          _sending = false;
+        });
+      } else {
+        setState(() => _sending = false);
+      }
     } catch (e) {
       if (!mounted) return;
-      // Restore text on failure
+      setState(() {
+        _messages.removeWhere((m) => m['id'] == tempId);
+        _sending = false;
+      });
       _messageController.text = text;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Failed to send message'),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
-    } finally {
-      if (mounted) setState(() => _sending = false);
     }
   }
 
@@ -202,10 +282,49 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: _buildAppBar(),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(child: _buildBody()),
-          _buildMessageInput(),
+          Column(
+            children: [
+              Expanded(child: _buildBody()),
+              _buildMessageInput(),
+            ],
+          ),
+          if (_showNewMessageButton)
+            Positioned(
+              bottom: 80,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() => _showNewMessageButton = false);
+                    _scrollToBottom();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.keyboard_arrow_down,
+                            color: Colors.white, size: 18),
+                        SizedBox(width: 4),
+                        Text('New messages',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
