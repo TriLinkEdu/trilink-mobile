@@ -87,19 +87,36 @@ class _GradesViewState extends State<_GradesView> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        IconButton(
-                          tooltip: 'Switch term view',
-                          onPressed: () {
-                            final next = state.selectedTerm == 'Fall 2023'
-                                ? 'Spring 2023'
-                                : 'Fall 2023';
-                            context.read<GradesCubit>().switchTerm(next);
-                          },
-                          icon: Icon(
-                            Icons.more_horiz,
-                            color: theme.colorScheme.onSurface,
+                        if (state.availableTerms.length > 1)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: DropdownButton<String>(
+                              value: state.availableTerms.contains(state.selectedTerm)
+                                  ? state.selectedTerm
+                                  : null,
+                              underline: const SizedBox.shrink(),
+                              icon: Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                color: theme.colorScheme.primary,
+                              ),
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: theme.colorScheme.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              borderRadius: AppRadius.borderMd,
+                              items: state.availableTerms
+                                  .map((t) => DropdownMenuItem(
+                                        value: t,
+                                        child: Text(t),
+                                      ))
+                                  .toList(),
+                              onChanged: (t) {
+                                if (t != null) {
+                                  context.read<GradesCubit>().switchTerm(t);
+                                }
+                              },
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),
@@ -238,9 +255,9 @@ class _GradesViewState extends State<_GradesView> {
                                         MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        state.selectedTerm == 'Fall 2023'
-                                            ? 'Fall Semester 2023'
-                                            : 'Spring Semester 2023',
+                                        state.selectedTerm.isEmpty
+                                            ? 'All Grades'
+                                            : state.selectedTerm,
                                         style: theme.textTheme.titleSmall
                                             ?.copyWith(
                                               fontWeight: FontWeight.w700,
