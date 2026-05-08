@@ -13,6 +13,177 @@ class RealStudentGamificationRepository
   RealStudentGamificationRepository({ApiClient? apiClient})
       : _apiClient = apiClient ?? sl<ApiClient>();
 
+  // ── BFF Hub ────────────────────────────────────────────────────────────────
+
+  @override
+  Future<GamificationHubPayload> fetchHub() async {
+    final raw = await _apiClient.get(ApiConstants.gamificationHub);
+
+    // ── Streak ───────────────────────────────────────────────────────────────
+    final streakRaw = (raw['streak'] as Map<String, dynamic>?) ?? {};
+    final currentStreak = _asInt(streakRaw['currentStreak'], fallback: 0);
+    final longestStreak = _asInt(streakRaw['longestStreak'], fallback: 0);
+    final lastLoginDateStr = (streakRaw['lastLoginDate'] ?? '').toString();
+    final recentDays = <DateTime>[];
+    if (currentStreak > 0 && lastLoginDateStr.isNotEmpty) {
+      final lastDate = DateTime.tryParse(lastLoginDateStr);
+      if (lastDate != null) {
+        final count = currentStreak.clamp(1, 7);
+        for (var i = count - 1; i >= 0; i--) {
+          recentDays.add(lastDate.subtract(Duration(days: i)));
+        }
+      }
+    }
+    final streak = StreakModel(
+      currentStreak: currentStreak,
+      longestStreak: longestStreak,
+      recentDays: recentDays,
+    );
+
+    // ── Achievements ─────────────────────────────────────────────────────────
+    final achievementRows =
+        (raw['achievements'] as List? ?? const []).whereType<Map<String, dynamic>>();
+    final achievements = achievementRows
+        .map((json) => AchievementModel.fromJson(json))
+        .toList();
+
+    // ── Leaderboard ──────────────────────────────────────────────────────────
+    final lbRaw = raw['leaderboard'] as Map<String, dynamic>? ?? {};
+    final lbRows =
+        (lbRaw['entries'] as List? ?? const []).whereType<Map<String, dynamic>>();
+    final leaderboardEntries = lbRows.map((e) {
+      final user = e['student'] as Map<String, dynamic>?;
+      final firstName = (user?['firstName'] ?? '').toString();
+      final lastName = (user?['lastName'] ?? '').toString();
+      final displayName = '$firstName $lastName'.trim();
+      return LeaderboardEntry(
+        studentId: (e['userId'] ?? '').toString(),
+        studentName: displayName.isEmpty ? 'Student' : displayName,
+        rank: _asInt(e['rank'], fallback: 0),
+        points: _asInt(e['points'], fallback: 0),
+        scope: LeaderboardScope.classScope,
+        period: LeaderboardPeriod.weekly,
+      );
+    }).toList();
+
+    // ── Quizzes ───────────────────────────────────────────────────────────────
+    final quizRows =
+        (raw['availableQuizzes'] as List? ?? const []).whereType<Map<String, dynamic>>();
+    final availableQuizzes = quizRows.map((q) => QuizModel(
+          id: (q['id'] ?? '').toString(),
+          title: (q['title'] ?? 'Quick Quiz').toString(),
+          subjectId: (q['subjectId'] ?? '').toString(),
+          subjectName: (q['subjectName'] ?? 'Subject').toString(),
+          chapterId: q['chapterId']?.toString(),
+          questionCount: _asInt(q['questionCount'], fallback: 0),
+          xpReward: _asInt(q['xpReward'], fallback: 0),
+          difficulty: (q['difficulty'] ?? 'medium').toString(),
+        )).toList();
+
+    // ── Daily Missions ────────────────────────────────────────────────────────
+    final missionRows =
+        (raw['dailyMissions'] as List? ?? const []).whereType<Map<String, dynamic>>();
+    final dailyMissions = missionRows.map((m) => DailyMissionModel(
+          id: (m['id'] ?? '').toString(),
+          title: (m['title'] ?? 'Mission').toString(),
+          description: (m['description'] ?? '').toString(),
+          xpReward: _asInt(m['xpReward'], fallback: 0),
+          isCompleted: m['isCompleted'] == true,
+          progressCurrent: _asInt(m['progressCurrent'], fallback: 0),
+          progressTarget: _asInt(m['progressTarget'], fallback: 1),
+        )).toList();
+
+    // ── Team Challenge ────────────────────────────────────────────────────────
+    TeamChallengeModel? teamChallenge;
+    final tcRaw = raw['teamChallenge'] as Map<String, dynamic>?;
+    if (tcRaw != null && (tcRaw['id'] ?? '') != 'team-none') {
+      teamChallenge = TeamChallengeModel(
+        id: (tcRaw['id'] ?? '').toString(),
+        title: (tcRaw['title'] ?? 'Class Weekly Sprint').toString(),
+        objective: (tcRaw['objective'] ?? '').toString(),
+        progressCurrent: _asInt(tcRaw['progressCurrent'], fallback: 0),
+        progressTarget: _asInt(tcRaw['progressTarget'], fallback: 500),
+        contributorCount: _asInt(tcRaw['contributorCount'], fallback: 0),
+        endsAt: DateTime.tryParse((tcRaw['endsAt'] ?? '').toString()) ??
+            DateTime.now().add(const Duration(days: 7)),
+      );
+    }
+
+    // ── XP Progress ───────────────────────────────────────────────────────────
+    final xpRaw = (raw['xpProgress'] as Map<String, dynamic>?) ?? {};
+    final totalXp = _asInt(xpRaw['totalXp'], fallback: 0);
+    final level = _asInt(xpRaw['level'], fallback: (totalXp ~/ 100).clamp(1, 999));
+    final xpProgress = XpProgressModel(
+      level: level,
+      totalXp: totalXp,
+      xpIntoCurrentLevel: _asInt(xpRaw['xpIntoCurrentLevel'], fallback: totalXp % 100),
+      xpNeededForNextLevel: _asInt(xpRaw['xpNeededForNextLevel'], fallback: 100),
+      weeklyXpTarget: _asInt(xpRaw['weeklyXpTarget'] ?? raw['weeklyXpTarget'], fallback: 300),
+      weeklyXpEarned: _asInt(xpRaw['weeklyXpEarned'] ?? raw['weeklyXpEarned'], fallback: 0),
+    );
+
+    // ── Next Badge Progress ───────────────────────────────────────────────────
+    NextBadgeProgressModel? nextBadgeProgress;
+    final nbRaw = raw['nextBadgeProgress'] as Map<String, dynamic>?;
+    if (nbRaw != null) {
+      nextBadgeProgress = NextBadgeProgressModel(
+        badgeName: (nbRaw['title'] ?? '').toString(),
+        description: (nbRaw['title'] ?? '').toString(),
+        progressCurrent: _asInt(nbRaw['progressCurrent'], fallback: 0),
+        progressTarget: _asInt(nbRaw['progressTarget'], fallback: 1),
+        xpReward: 0,
+      );
+    }
+
+    // ── Badges ────────────────────────────────────────────────────────────────
+    final badgeRows =
+        (raw['badges'] as List? ?? const []).whereType<Map<String, dynamic>>();
+    final badges = badgeRows.map((b) => BadgeModel(
+          id: (b['id'] ?? '').toString(),
+          key: (b['key'] ?? '').toString(),
+          name: (b['name'] ?? 'Badge').toString(),
+          description: (b['description'] ?? '').toString(),
+          iconUrl: (b['iconKey'] ?? 'badge').toString(),
+          iconKey: (b['iconKey'] ?? '').toString(),
+          xpValue: _asInt(b['pointsValue'], fallback: 0),
+        )).toList();
+
+    // ── Student Badges ────────────────────────────────────────────────────────
+    final sbRows =
+        (raw['studentBadges'] as List? ?? const []).whereType<Map<String, dynamic>>();
+    final studentBadges = sbRows.map((row) {
+      final badgeRaw =
+          (row['badge'] as Map<String, dynamic>?) ?? const <String, dynamic>{};
+      return StudentBadgeModel(
+        studentId: (row['userId'] ?? row['studentId'] ?? 'me').toString(),
+        badge: BadgeModel(
+          id: (badgeRaw['id'] ?? '').toString(),
+          key: (badgeRaw['key'] ?? '').toString(),
+          name: (badgeRaw['name'] ?? 'Badge').toString(),
+          description: (badgeRaw['description'] ?? '').toString(),
+          iconUrl: (badgeRaw['iconKey'] ?? 'badge').toString(),
+          iconKey: (badgeRaw['iconKey'] ?? '').toString(),
+          xpValue: _asInt(badgeRaw['pointsValue'], fallback: 0),
+        ),
+        awardedAt: DateTime.tryParse((row['awardedAt'] ?? '').toString()) ??
+            DateTime.now(),
+      );
+    }).toList();
+
+    return GamificationHubPayload(
+      streak: streak,
+      achievements: achievements,
+      leaderboardEntries: leaderboardEntries,
+      availableQuizzes: availableQuizzes,
+      dailyMissions: dailyMissions,
+      teamChallenge: teamChallenge,
+      xpProgress: xpProgress,
+      nextBadgeProgress: nextBadgeProgress,
+      badges: badges,
+      studentBadges: studentBadges,
+    );
+  }
+
   @override
   Future<List<LeaderboardEntry>> fetchLeaderboard(String period) async {
     final normalized = period == 'monthly' ? 'monthly' : 'weekly';

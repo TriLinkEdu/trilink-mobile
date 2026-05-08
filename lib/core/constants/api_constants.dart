@@ -193,6 +193,9 @@ class ApiConstants {
   static String fileAccess(String id) => '/files/$id/access';
 
   // Gamification
+  // ── Gamification Hub (BFF — single request replaces 10) ────────────────────
+  static const String gamificationHub = '/gamification/hub';
+
   static const String gamificationBadges = '/gamification/badges';
   static const String gamificationMyBadges = '/gamification/me/badges';
   static const String gamificationMyPoints = '/gamification/me/badge-points';

@@ -36,34 +36,24 @@ class GamificationCubit extends Cubit<GamificationState> {
     emit(state.copyWith(status: GamificationStatus.loading));
     try {
       final userId = await _currentUserId();
-      final results = await Future.wait([
-        _repository.fetchStreak(),
-        _repository.fetchAchievements(),
-        _repository.fetchLeaderboard(
-          state.isWeeklyRanking ? 'weekly' : 'monthly',
-        ),
-        _repository.fetchAvailableQuizzes(),
-        _repository.fetchDailyMissions(),
-        _repository.fetchTeamChallenge(),
-        _repository.fetchXpProgress(),
-        _repository.fetchNextBadgeProgress(),
-        _repository.fetchBadges(),
-        _repository.fetchStudentBadges(userId),
-      ]);
+
+      // ── Single BFF request (replaces 10 parallel calls) ───────────────────
+      final hub = await _repository.fetchHub();
+
       emit(
         GamificationState(
           status: GamificationStatus.loaded,
           currentUserId: userId,
-          streak: results[0] as StreakModel,
-          achievements: results[1] as List<AchievementModel>,
-          leaderboardEntries: results[2] as List<LeaderboardEntry>,
-          availableQuizzes: results[3] as List<QuizModel>,
-          dailyMissions: results[4] as List<DailyMissionModel>,
-          teamChallenge: results[5] as TeamChallengeModel?,
-          xpProgress: results[6] as XpProgressModel,
-          nextBadgeProgress: results[7] as NextBadgeProgressModel?,
-          badges: results[8] as List<BadgeModel>,
-          studentBadges: results[9] as List<StudentBadgeModel>,
+          streak: hub.streak,
+          achievements: hub.achievements,
+          leaderboardEntries: hub.leaderboardEntries,
+          availableQuizzes: hub.availableQuizzes,
+          dailyMissions: hub.dailyMissions,
+          teamChallenge: hub.teamChallenge,
+          xpProgress: hub.xpProgress,
+          nextBadgeProgress: hub.nextBadgeProgress,
+          badges: hub.badges,
+          studentBadges: hub.studentBadges,
           isWeeklyRanking: state.isWeeklyRanking,
         ),
       );

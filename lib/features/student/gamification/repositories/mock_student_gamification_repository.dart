@@ -854,6 +854,35 @@ class MockStudentGamificationRepository
   }
 
   @override
+  Future<GamificationHubPayload> fetchHub() async {
+    // Delegate to individual methods so mock data stays consistent and DRY.
+    final results = await Future.wait([
+      fetchStreak(),
+      fetchAchievements(),
+      fetchLeaderboard('weekly'),
+      fetchAvailableQuizzes(),
+      fetchDailyMissions(),
+      fetchTeamChallenge(),
+      fetchXpProgress(),
+      fetchNextBadgeProgress(),
+      fetchBadges(),
+      fetchStudentBadges('mock-student-id'),
+    ]);
+    return GamificationHubPayload(
+      streak             : results[0] as StreakModel,
+      achievements       : results[1] as List<AchievementModel>,
+      leaderboardEntries : results[2] as List<LeaderboardEntry>,
+      availableQuizzes   : results[3] as List<QuizModel>,
+      dailyMissions      : results[4] as List<DailyMissionModel>,
+      teamChallenge      : results[5] as TeamChallengeModel?,
+      xpProgress         : results[6] as XpProgressModel,
+      nextBadgeProgress  : results[7] as NextBadgeProgressModel?,
+      badges             : results[8] as List<BadgeModel>,
+      studentBadges      : results[9] as List<StudentBadgeModel>,
+    );
+  }
+
+  @override
   Future<StreakModel> fetchStreak() async {
     await Future<void>.delayed(_latency);
     final progress = await _safeProgress();
