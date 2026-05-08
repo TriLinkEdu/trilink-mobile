@@ -36,7 +36,9 @@ class _MediaGalleryScreenState extends State<MediaGalleryScreen>
   Future<void> _loadMedia() async {
     setState(() => _loading = true);
     try {
-      final raw = await ApiService().getConversationMedia(widget.conversationId);
+      final raw = await ApiService().getConversationMedia(
+        widget.conversationId,
+      );
       if (!mounted) return;
 
       // raw is a grouped object: { images: [...], videos: [...], audio: [...], files: [...] }
@@ -97,14 +99,19 @@ class _MediaGalleryScreenState extends State<MediaGalleryScreen>
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new,
-              color: theme.colorScheme.onSurface, size: 20),
+          icon: Icon(
+            Icons.arrow_back_ios_new,
+            color: theme.colorScheme.onSurface,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           'Media & Files',
           style: TextStyle(
-              color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold),
+            color: theme.colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         centerTitle: true,
         bottom: TabBar(
@@ -122,10 +129,7 @@ class _MediaGalleryScreenState extends State<MediaGalleryScreen>
           ? const Center(child: CircularProgressIndicator())
           : TabBarView(
               controller: _tabController,
-              children: [
-                _buildMediaGrid(),
-                _buildFilesList(),
-              ],
+              children: [_buildMediaGrid(), _buildFilesList()],
             ),
     );
   }
@@ -136,14 +140,17 @@ class _MediaGalleryScreenState extends State<MediaGalleryScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.photo_library_outlined,
-                size: 64,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.photo_library_outlined,
+              size: 64,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 16),
             Text(
               'No media shared yet',
               style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -173,11 +180,13 @@ class _MediaGalleryScreenState extends State<MediaGalleryScreen>
                       url,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Container(
-                        color: Theme.of(context).colorScheme.surfaceContainerLow,
-                        child: Icon(Icons.broken_image_outlined,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerLow,
+                        child: Icon(
+                          Icons.broken_image_outlined,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     )
                   : Container(
@@ -185,8 +194,11 @@ class _MediaGalleryScreenState extends State<MediaGalleryScreen>
                     ),
               if (isVideo)
                 const Center(
-                  child: Icon(Icons.play_circle_outline,
-                      color: Colors.white, size: 32),
+                  child: Icon(
+                    Icons.play_circle_outline,
+                    color: Colors.white,
+                    size: 32,
+                  ),
                 ),
             ],
           ),
@@ -201,14 +213,17 @@ class _MediaGalleryScreenState extends State<MediaGalleryScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.folder_outlined,
-                size: 64,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.folder_outlined,
+              size: 64,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 16),
             Text(
               'No files shared yet',
               style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -232,7 +247,8 @@ class _MediaGalleryScreenState extends State<MediaGalleryScreen>
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-                color: Theme.of(context).colorScheme.outlineVariant),
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
           child: Row(
             children: [
@@ -274,8 +290,11 @@ class _MediaGalleryScreenState extends State<MediaGalleryScreen>
               ),
               if (url.isNotEmpty)
                 IconButton(
-                  icon: Icon(Icons.open_in_new,
-                      color: AppColors.primary, size: 20),
+                  icon: Icon(
+                    Icons.open_in_new,
+                    color: AppColors.primary,
+                    size: 20,
+                  ),
                   onPressed: () => _openUrl(url),
                 ),
             ],
@@ -329,9 +348,9 @@ class _MediaGalleryScreenState extends State<MediaGalleryScreen>
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Cannot open: $url')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Cannot open: $url')));
     }
   }
 

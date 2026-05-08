@@ -85,8 +85,9 @@ class _TeacherChatConversationScreenState
       _msgSub = SocketService().messageNewStream.listen(_onMessageNew);
       _typingSub = SocketService().typingUpdateStream.listen(_onTypingUpdate);
       _readSub = SocketService().readUpdateStream.listen(_onReadUpdate);
-      _presenceSub =
-          SocketService().presenceUpdateStream.listen(_onPresenceUpdate);
+      _presenceSub = SocketService().presenceUpdateStream.listen(
+        _onPresenceUpdate,
+      );
       SocketService().joinConversation(widget.conversationId);
       _loadPresence();
     }
@@ -129,7 +130,8 @@ class _TeacherChatConversationScreenState
     }
 
     // New message — append
-    final isNearBottom = _scrollController.hasClients &&
+    final isNearBottom =
+        _scrollController.hasClients &&
         (_scrollController.position.maxScrollExtent -
                 _scrollController.position.pixels) <=
             100;
@@ -162,7 +164,8 @@ class _TeacherChatConversationScreenState
   void _onReadUpdate(Map<String, dynamic> event) {
     if (event['conversationId'] != widget.conversationId) return;
     final userId = event['userId'] as String? ?? '';
-    final messageId = event['lastReadMessageId'] as String? ??
+    final messageId =
+        event['lastReadMessageId'] as String? ??
         event['messageId'] as String? ??
         '';
     if (userId.isEmpty || messageId.isEmpty) return;
@@ -245,7 +248,9 @@ class _TeacherChatConversationScreenState
 
       setState(() {
         _messages = msgs;
-        _nextCursor = raw.isNotEmpty ? (raw.first as Map)['id'] as String? : null;
+        _nextCursor = raw.isNotEmpty
+            ? (raw.first as Map)['id'] as String?
+            : null;
         _hasMore = raw.length == 50;
         _loading = false;
       });
@@ -307,7 +312,9 @@ class _TeacherChatConversationScreenState
     if (_messages.isEmpty || widget.conversationId.isEmpty) return;
     final lastId = _messages.last.id;
     if (lastId.isEmpty) return;
-    ApiService().markMessageRead(widget.conversationId, lastId).catchError((_) {});
+    ApiService()
+        .markMessageRead(widget.conversationId, lastId)
+        .catchError((_) {});
     SocketService().sendReadUpdate(widget.conversationId, lastId);
   }
 
@@ -348,7 +355,10 @@ class _TeacherChatConversationScreenState
         if (mediaFileId != null) 'mediaFileId': mediaFileId,
         if (replyToId != null) 'replyToId': replyToId,
       };
-      final result = await ApiService().sendMessage(widget.conversationId, body);
+      final result = await ApiService().sendMessage(
+        widget.conversationId,
+        body,
+      );
       if (!mounted) return;
       final confirmed = ChatMessage.fromJson(result);
       final idx = _messages.indexWhere((m) => m.id == tempId);
@@ -434,9 +444,9 @@ class _TeacherChatConversationScreenState
     } catch (e) {
       if (!mounted) return;
       setState(() => _uploading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Upload failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
     }
   }
 
@@ -502,7 +512,10 @@ class _TeacherChatConversationScreenState
               ),
               ListTile(
                 leading: const Icon(Icons.delete_outline, color: Colors.red),
-                title: const Text('Delete', style: TextStyle(color: Colors.red)),
+                title: const Text(
+                  'Delete',
+                  style: TextStyle(color: Colors.red),
+                ),
                 onTap: () {
                   Navigator.pop(ctx);
                   _confirmDelete(message);
@@ -518,13 +531,17 @@ class _TeacherChatConversationScreenState
 
   Future<void> _toggleReaction(ChatMessage message, String emoji) async {
     try {
-      await ApiService().toggleReaction(widget.conversationId, message.id, emoji);
+      await ApiService().toggleReaction(
+        widget.conversationId,
+        message.id,
+        emoji,
+      );
       // The server will emit message:new with updated reactions
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to react: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to react: $e')));
     }
   }
 
@@ -539,19 +556,26 @@ class _TeacherChatConversationScreenState
     final newText = _editController.text.trim();
     if (newText.isEmpty) return;
     try {
-      await ApiService().editMessage(widget.conversationId, message.id, newText);
+      await ApiService().editMessage(
+        widget.conversationId,
+        message.id,
+        newText,
+      );
       final idx = _messages.indexWhere((m) => m.id == message.id);
       if (idx != -1 && mounted) {
         setState(() {
-          _messages[idx] = _messages[idx].copyWith(text: newText, isEdited: true);
+          _messages[idx] = _messages[idx].copyWith(
+            text: newText,
+            isEdited: true,
+          );
           _editingMessageId = '';
         });
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to edit: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to edit: $e')));
       setState(() => _editingMessageId = '');
     }
   }
@@ -589,9 +613,9 @@ class _TeacherChatConversationScreenState
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to delete: $e')));
     }
   }
 
@@ -601,9 +625,7 @@ class _TeacherChatConversationScreenState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         if (jump) {
-          _scrollController.jumpTo(
-            _scrollController.position.maxScrollExtent,
-          );
+          _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
         } else {
           _scrollController.animateTo(
             _scrollController.position.maxScrollExtent,
@@ -641,7 +663,8 @@ class _TeacherChatConversationScreenState
     final theme = Theme.of(context);
     final appBarColor = Color.alphaBlend(
       theme.colorScheme.primary.withValues(
-          alpha: theme.brightness == Brightness.dark ? 0.18 : 0.07),
+        alpha: theme.brightness == Brightness.dark ? 0.18 : 0.07,
+      ),
       theme.colorScheme.surface,
     );
     return Scaffold(
@@ -728,7 +751,9 @@ class _TeacherChatConversationScreenState
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primary,
                       borderRadius: BorderRadius.circular(20),
@@ -736,14 +761,20 @@ class _TeacherChatConversationScreenState
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.keyboard_arrow_down,
-                            color: Colors.white, size: 18),
+                        Icon(
+                          Icons.keyboard_arrow_down,
+                          color: Colors.white,
+                          size: 18,
+                        ),
                         SizedBox(width: 4),
-                        Text('New messages',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600)),
+                        Text(
+                          'New messages',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -797,10 +828,15 @@ class _TeacherChatConversationScreenState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            Text(
+              _error!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
             const SizedBox(height: 12),
-            ElevatedButton(onPressed: _loadMessages, child: const Text('Retry')),
+            ElevatedButton(
+              onPressed: _loadMessages,
+              child: const Text('Retry'),
+            ),
           ],
         ),
       );
@@ -816,20 +852,29 @@ class _TeacherChatConversationScreenState
                 color: AppColors.primary.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.chat_bubble_outline_rounded,
-                  size: 40, color: AppColors.primary),
+              child: const Icon(
+                Icons.chat_bubble_outline_rounded,
+                size: 40,
+                color: AppColors.primary,
+              ),
             ),
             const SizedBox(height: 16),
-            Text('No messages yet',
-                style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                    color: Theme.of(context).colorScheme.onSurface)),
+            Text(
+              'No messages yet',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
             const SizedBox(height: 6),
-            Text('Say hello to start the conversation!',
-                style: TextStyle(
-                    fontSize: 13,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            Text(
+              'Say hello to start the conversation!',
+              style: TextStyle(
+                fontSize: 13,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
         ),
       );
@@ -843,14 +888,18 @@ class _TeacherChatConversationScreenState
 
     final widgets = <Widget>[];
     if (_loadingMore) {
-      widgets.add(const Padding(
-        padding: EdgeInsets.symmetric(vertical: 12),
-        child: Center(
+      widgets.add(
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 12),
+          child: Center(
             child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2))),
-      ));
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        ),
+      );
     }
     for (final entry in grouped.entries) {
       widgets.add(_buildDateDivider(entry.key));
@@ -872,9 +921,11 @@ class _TeacherChatConversationScreenState
     try {
       final d = DateTime.parse(iso).toLocal();
       final now = DateTime.now();
-      final diff = DateTime(now.year, now.month, now.day)
-          .difference(DateTime(d.year, d.month, d.day))
-          .inDays;
+      final diff = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).difference(DateTime(d.year, d.month, d.day)).inDays;
       if (diff == 0) return 'Today';
       if (diff == 1) return 'Yesterday';
       return '${d.day}/${d.month}/${d.year}';
@@ -935,252 +986,270 @@ class _TeacherChatConversationScreenState
     return KeyedSubtree(
       key: key,
       child: GestureDetector(
-      onLongPress: () => _showMessageActions(message),
-      onHorizontalDragEnd: (details) {
-        if ((details.primaryVelocity ?? 0) > 0 && !message.isDeleted) {
-          setState(() => _replyTo = message);
-        }
-      },
-      child: Padding(
-        padding: EdgeInsets.only(
-          bottom: 8,
-          left: isMe ? 60 : 0,
-          right: isMe ? 0 : 60,
-        ),
-        child: Column(
-          crossAxisAlignment:
-              isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-          children: [
-            if (!isMe)
-              Padding(
-                padding: const EdgeInsets.only(left: 4, bottom: 4),
-                child: Text(
-                  message.senderName.isNotEmpty ? message.senderName : 'User',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurfaceVariant,
+        onLongPress: () => _showMessageActions(message),
+        onHorizontalDragEnd: (details) {
+          if ((details.primaryVelocity ?? 0) > 0 && !message.isDeleted) {
+            setState(() => _replyTo = message);
+          }
+        },
+        child: Padding(
+          padding: EdgeInsets.only(
+            bottom: 8,
+            left: isMe ? 60 : 0,
+            right: isMe ? 0 : 60,
+          ),
+          child: Column(
+            crossAxisAlignment: isMe
+                ? CrossAxisAlignment.end
+                : CrossAxisAlignment.start,
+            children: [
+              if (!isMe)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 4),
+                  child: Text(
+                    message.senderName.isNotEmpty ? message.senderName : 'User',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
-              ),
-            // Reply-to quoted block — tap to scroll to original
-            if (message.replyToId != null && message.replyTo != null)
-              GestureDetector(
-                onTap: () => _scrollToMessage(message.replyToId!),
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 4),
-                  padding: const EdgeInsets.all(8),
+              // Reply-to quoted block — tap to scroll to original
+              if (message.replyToId != null && message.replyTo != null)
+                GestureDetector(
+                  onTap: () => _scrollToMessage(message.replyToId!),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 4),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border(
+                        left: BorderSide(color: AppColors.primary, width: 3),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          message.replyTo!['senderName'] as String? ?? 'User',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        Text(
+                          message.replyTo!['text'] as String? ?? '',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              // Bubble or edit field
+              if (isEditing)
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _editController,
+                        autofocus: true,
+                        decoration: InputDecoration(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.check, color: AppColors.success),
+                      onPressed: () => _confirmEdit(message),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.close,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      onPressed: () => setState(() => _editingMessageId = ''),
+                    ),
+                  ],
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border(
-                        left: BorderSide(color: AppColors.primary, width: 3)),
+                    color: message.isDeleted
+                        ? theme.colorScheme.surfaceContainerLow
+                        : isMe
+                        ? AppColors.primary
+                        : theme.brightness == Brightness.dark
+                        ? const Color(0xFF2C2C3E)
+                        : const Color(0xFFEEEEF4),
+                    borderRadius: BorderRadius.only(
+                      topLeft: const Radius.circular(16),
+                      topRight: const Radius.circular(16),
+                      bottomLeft: Radius.circular(isMe ? 16 : 4),
+                      bottomRight: Radius.circular(isMe ? 4 : 16),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        message.replyTo!['senderName'] as String? ?? 'User',
-                        style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primary),
-                      ),
-                      Text(
-                        message.replyTo!['text'] as String? ?? '',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: theme.colorScheme.onSurfaceVariant),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            // Bubble or edit field
-            if (isEditing)
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _editController,
-                      autofocus: true,
-                      decoration: InputDecoration(
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.check, color: AppColors.success),
-                    onPressed: () => _confirmEdit(message),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.close,
-                        color: theme.colorScheme.onSurfaceVariant),
-                    onPressed: () => setState(() => _editingMessageId = ''),
-                  ),
-                ],
-              )
-            else
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: message.isDeleted
-                      ? theme.colorScheme.surfaceContainerLow
-                      : isMe
-                          ? AppColors.primary
-                          : theme.brightness == Brightness.dark
-                              ? const Color(0xFF2C2C3E)
-                              : const Color(0xFFEEEEF4),
-                  borderRadius: BorderRadius.only(
-                    topLeft: const Radius.circular(16),
-                    topRight: const Radius.circular(16),
-                    bottomLeft: Radius.circular(isMe ? 16 : 4),
-                    bottomRight: Radius.circular(isMe ? 4 : 16),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (message.mediaFileId != null &&
-                        message.mediaType == 'image')
-                      GestureDetector(
-                        onTap: () => _openImageFullScreen(message),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            '${ApiConstants.fileBaseUrl}/api/files/${message.mediaFileId!}/download',
-                            width: 200,
-                            height: 150,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
+                      if (message.mediaFileId != null &&
+                          message.mediaType == 'image')
+                        GestureDetector(
+                          onTap: () => _openImageFullScreen(message),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              '${ApiConstants.fileBaseUrl}/api/files/${message.mediaFileId!}/download',
                               width: 200,
-                              height: 100,
-                              color: theme.colorScheme.surfaceContainerLow,
-                              child: const Icon(Icons.broken_image_outlined),
+                              height: 150,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                width: 200,
+                                height: 100,
+                                color: theme.colorScheme.surfaceContainerLow,
+                                child: const Icon(Icons.broken_image_outlined),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    if (message.mediaFileId != null &&
-                        message.mediaType != null &&
-                        message.mediaType != 'image')
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.attach_file,
+                      if (message.mediaFileId != null &&
+                          message.mediaType != null &&
+                          message.mediaType != 'image')
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.attach_file,
                               size: 16,
                               color: isMe
                                   ? Colors.white70
-                                  : theme.colorScheme.onSurfaceVariant),
-                          const SizedBox(width: 4),
-                          Text(
-                            message.mediaName ?? 'File',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: isMe
-                                  ? Colors.white
-                                  : theme.colorScheme.onSurface,
+                                  : theme.colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              message.mediaName ?? 'File',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isMe
+                                    ? Colors.white
+                                    : theme.colorScheme.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
+                      if (message.text.isNotEmpty)
+                        Text(
+                          message.text,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: message.isDeleted
+                                ? theme.colorScheme.onSurfaceVariant
+                                : isMe
+                                ? Colors.white
+                                : theme.colorScheme.onSurface,
+                            fontStyle: message.isDeleted
+                                ? FontStyle.italic
+                                : FontStyle.normal,
+                            height: 1.4,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              // Reactions
+              if (message.reactions.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Wrap(
+                    spacing: 4,
+                    children: message.reactions.map((r) {
+                      final isOwn = r.userIds.contains(currentUserId);
+                      return GestureDetector(
+                        onTap: () => _toggleReaction(message, r.emoji),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isOwn
+                                ? AppColors.primary.withValues(alpha: 0.15)
+                                : theme.colorScheme.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isOwn
+                                  ? AppColors.primary.withValues(alpha: 0.4)
+                                  : theme.colorScheme.outlineVariant,
                             ),
                           ),
-                        ],
-                      ),
-                    if (message.text.isNotEmpty)
-                      Text(
-                        message.text,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: message.isDeleted
-                              ? theme.colorScheme.onSurfaceVariant
-                              : isMe
-                                  ? Colors.white
-                                  : theme.colorScheme.onSurface,
-                          fontStyle: message.isDeleted
-                              ? FontStyle.italic
-                              : FontStyle.normal,
-                          height: 1.4,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            // Reactions
-            if (message.reactions.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Wrap(
-                  spacing: 4,
-                  children: message.reactions.map((r) {
-                    final isOwn = r.userIds.contains(currentUserId);
-                    return GestureDetector(
-                      onTap: () => _toggleReaction(message, r.emoji),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: isOwn
-                              ? AppColors.primary.withValues(alpha: 0.15)
-                              : theme.colorScheme.surfaceContainerLow,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isOwn
-                                ? AppColors.primary.withValues(alpha: 0.4)
-                                : theme.colorScheme.outlineVariant,
+                          child: Text(
+                            '${r.emoji} ${r.userIds.length}',
+                            style: const TextStyle(fontSize: 12),
                           ),
                         ),
-                        child: Text('${r.emoji} ${r.userIds.length}',
-                            style: const TextStyle(fontSize: 12)),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              // Time + edited + read ticks (for sent messages)
+              Padding(
+                padding: const EdgeInsets.only(top: 3, left: 4, right: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _formatTime(message.createdAt),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
-                    );
-                  }).toList(),
+                    ),
+                    if (message.isEdited) ...[
+                      const SizedBox(width: 4),
+                      Text(
+                        '(edited)',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                    if (isMe) ...[
+                      const SizedBox(width: 4),
+                      Icon(
+                        _readByMap[message.id] == true
+                            ? Icons.done_all
+                            : Icons.done,
+                        size: 14,
+                        color: _readByMap[message.id] == true
+                            ? AppColors.primary
+                            : theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ],
+                  ],
                 ),
               ),
-            // Time + edited + read ticks (for sent messages)
-            Padding(
-              padding: const EdgeInsets.only(top: 3, left: 4, right: 4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _formatTime(message.createdAt),
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: theme.colorScheme.onSurfaceVariant),
-                  ),
-                  if (message.isEdited) ...[
-                    const SizedBox(width: 4),
-                    Text(
-                      '(edited)',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ],
-                  if (isMe) ...[
-                    const SizedBox(width: 4),
-                    Icon(
-                      _readByMap[message.id] == true
-                          ? Icons.done_all
-                          : Icons.done,
-                      size: 14,
-                      color: _readByMap[message.id] == true
-                          ? AppColors.primary
-                          : theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -1235,7 +1304,11 @@ class _TeacherChatConversationScreenState
 
     return Container(
       padding: EdgeInsets.fromLTRB(
-          12, 10, 12, MediaQuery.of(context).padding.bottom + 10),
+        12,
+        10,
+        12,
+        MediaQuery.of(context).padding.bottom + 10,
+      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         boxShadow: [
@@ -1253,13 +1326,13 @@ class _TeacherChatConversationScreenState
           if (_replyTo != null)
             Container(
               margin: const EdgeInsets.only(bottom: 8),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
                 border: Border(
-                    left: BorderSide(color: AppColors.primary, width: 3)),
+                  left: BorderSide(color: AppColors.primary, width: 3),
+                ),
               ),
               child: Row(
                 children: [
@@ -1272,15 +1345,17 @@ class _TeacherChatConversationScreenState
                               ? _replyTo!.senderName
                               : 'User',
                           style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.primary),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                          ),
                         ),
                         Text(
                           _replyTo!.text,
                           style: TextStyle(
-                              fontSize: 12,
-                              color: theme.colorScheme.onSurfaceVariant),
+                            fontSize: 12,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -1288,9 +1363,11 @@ class _TeacherChatConversationScreenState
                     ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.close,
-                        size: 18,
-                        color: theme.colorScheme.onSurfaceVariant),
+                    icon: Icon(
+                      Icons.close,
+                      size: 18,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                     onPressed: () => setState(() => _replyTo = null),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
@@ -1312,8 +1389,10 @@ class _TeacherChatConversationScreenState
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               IconButton(
-                icon: Icon(Icons.attach_file,
-                    color: theme.colorScheme.onSurfaceVariant),
+                icon: Icon(
+                  Icons.attach_file,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
                 onPressed: _uploading ? null : _showAttachmentSheet,
               ),
               Expanded(
@@ -1329,11 +1408,14 @@ class _TeacherChatConversationScreenState
                     decoration: InputDecoration(
                       hintText: 'Message...',
                       hintStyle: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontSize: 14),
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontSize: 14,
+                      ),
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 18, vertical: 11),
+                        horizontal: 18,
+                        vertical: 11,
+                      ),
                     ),
                     maxLines: null,
                     textCapitalization: TextCapitalization.sentences,
@@ -1361,11 +1443,15 @@ class _TeacherChatConversationScreenState
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation(
-                                theme.colorScheme.onSurfaceVariant),
+                              theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         )
-                      : const Icon(Icons.send_rounded,
-                          color: Colors.white, size: 20),
+                      : const Icon(
+                          Icons.send_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                 ),
               ),
             ],
