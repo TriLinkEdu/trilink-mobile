@@ -46,6 +46,8 @@ class ChatMessage {
   final bool isDeleted;
   final bool isEdited;
 
+  static const String deletedPlaceholder = 'This message was deleted';
+
   const ChatMessage({
     required this.id,
     required this.conversationId,
@@ -97,7 +99,9 @@ class ChatMessage {
       senderId: json['senderId'] as String? ?? '',
       senderName: json['senderName'] as String? ?? '',
       senderAvatarFileId: json['senderAvatarFileId'] as String?,
-      text: json['text'] as String? ?? json['content'] as String? ?? '',
+      text: (json['deletedAt'] != null || (json['isDeleted'] as bool? ?? false))
+          ? deletedPlaceholder
+          : (json['text'] as String? ?? json['content'] as String? ?? ''),
       createdAt: json['createdAt'] as String? ?? '',
       updatedAt: json['updatedAt'] as String? ?? json['createdAt'] as String? ?? '',
       replyToId: json['replyToId'] as String?,
@@ -106,7 +110,7 @@ class ChatMessage {
       mediaType: json['mediaType'] as String?,
       mediaName: json['mediaName'] as String?,
       mediaMimeType: json['mediaMimeType'] as String?,
-      mediaSize: json['mediaSize'] as int?,
+      mediaSize: _parseInt(json['mediaSize']),
       reactions: reactions,
       isDeleted: json['deletedAt'] != null || (json['isDeleted'] as bool? ?? false),
       isEdited: json['editedAt'] != null || (json['isEdited'] as bool? ?? false),
@@ -225,4 +229,12 @@ bool _listEquals<T>(List<T> a, List<T> b) {
     if (a[i] != b[i]) return false;
   }
   return true;
+}
+
+int? _parseInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is double) return value.toInt();
+  if (value is String) return int.tryParse(value);
+  return null;
 }

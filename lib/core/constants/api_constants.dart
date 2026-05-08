@@ -171,7 +171,7 @@ class ApiConstants {
       '/conversations/$convId/messages/$msgId';
   static String messageReadReceipts(String id) => '/messages/$id/read-receipts';
   static const String usersSearch = '/users/search';
-  static const String usersPresence = '/users/presence';
+    static const String usersPresence = '/users/presence';
   static const String usersBlocked = '/users/blocked';
   static String blockUser(String userId) => '/users/$userId/block';
 

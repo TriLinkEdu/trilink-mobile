@@ -8,22 +8,23 @@ class FeatureFlags {
   FeatureFlags._();
 
   /// Source of truth lives in [ApiConstants.useRealApi]
-  static const bool useRealApi = ApiConstants.useRealApi;
+  /// Made non-const to allow tests to override at runtime.
+  static bool useRealApi = ApiConstants.useRealApi;
 
-  /// Set to true to show debug  info in UI (like data source indicator)
-  static const bool showDebugInfo = true;
+  /// Set to true to show debug info in UI (like data source indicator)
+  static bool showDebugInfo = true;
 
   /// Set to true to enable verbose logging
-  static const bool verboseLogging = false;
+  static bool verboseLogging = false;
 
   /// Set to true to simulate slow network (adds delay to API calls)
-  static const bool simulateSlowNetwork = true;
+  static bool simulateSlowNetwork = true;
 
   /// Network delay in milliseconds (only if simulateSlowNetwork is true)
-  static const int networkDelayMs = 1000;
+  static int networkDelayMs = 1000;
 
   /// Set to true to enable offline mode testing
-  static const bool offlineMode = false;
+  static bool offlineMode = false;
 
   /// Print current configuration
   static void printConfig() {
@@ -33,6 +34,7 @@ class FeatureFlags {
     print('  showDebugInfo: $showDebugInfo');
     print('  verboseLogging: $verboseLogging');
     print('  simulateSlowNetwork: $simulateSlowNetwork');
+    print('  networkDelayMs: $networkDelayMs');
     print('  offlineMode: $offlineMode');
     print('═══════════════════════════════════════');
   }

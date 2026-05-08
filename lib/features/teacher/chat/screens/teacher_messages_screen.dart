@@ -611,7 +611,7 @@ class _TeacherMessagesScreenState extends State<TeacherMessagesScreen>
 
     if (imageFileId != null && imageFileId.isNotEmpty) {
       final imageUrl =
-          '${ApiConstants.fileBaseUrl}/api${ApiConstants.file(imageFileId)}';
+          '${ApiConstants.fileBaseUrl}/api/files/$imageFileId/download';
       return CircleAvatar(
         radius: 24,
         backgroundColor: AppColors.primary.withOpacity(0.15),
