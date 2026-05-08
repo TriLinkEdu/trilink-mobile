@@ -59,10 +59,21 @@ class _TeacherChatConversationScreenState
   // Edit
   String _editingMessageId = '';
 
+  // Read receipts — tracks which sent messages have been read by others
+  final Map<String, bool> _readByMap = {};
+
   // Real-time subscriptions
   StreamSubscription? _msgSub;
   StreamSubscription? _typingSub;
   StreamSubscription? _readSub;
+  StreamSubscription? _presenceSub;
+
+  // Presence — other participant's online status
+  bool _otherUserOnline = false;
+  String? _otherUserId;
+
+  // Message key map for scroll-to-message
+  final Map<String, GlobalKey> _messageKeys = {};
 
   @override
   void initState() {
@@ -74,7 +85,10 @@ class _TeacherChatConversationScreenState
       _msgSub = SocketService().messageNewStream.listen(_onMessageNew);
       _typingSub = SocketService().typingUpdateStream.listen(_onTypingUpdate);
       _readSub = SocketService().readUpdateStream.listen(_onReadUpdate);
+      _presenceSub =
+          SocketService().presenceUpdateStream.listen(_onPresenceUpdate);
       SocketService().joinConversation(widget.conversationId);
+      _loadPresence();
     }
   }
 
@@ -146,8 +160,68 @@ class _TeacherChatConversationScreenState
   }
 
   void _onReadUpdate(Map<String, dynamic> event) {
-    // Read receipts — no-op for now (ticks shown based on readBy field)
+    if (event['conversationId'] != widget.conversationId) return;
+    final userId = event['userId'] as String? ?? '';
+    final messageId = event['lastReadMessageId'] as String? ??
+        event['messageId'] as String? ??
+        '';
+    if (userId.isEmpty || messageId.isEmpty) return;
+
+    final currentUserId = AuthService().currentUser?.id ?? '';
+    if (userId == currentUserId) return; // ignore own read events
+
+    // Mark all sent messages up to and including messageId as read
+    bool found = false;
+    for (int i = _messages.length - 1; i >= 0; i--) {
+      final m = _messages[i];
+      if (!found && m.id == messageId) found = true;
+      if (found && m.senderId == currentUserId) {
+        _readByMap[m.id] = true;
+      }
+      if (i == 0) break;
+    }
     setState(() {});
+  }
+
+  void _onPresenceUpdate(Map<String, dynamic> event) {
+    final userId = event['userId'] as String? ?? '';
+    final isOnline = event['isOnline'] as bool? ?? false;
+    if (_otherUserId != null && userId == _otherUserId) {
+      setState(() => _otherUserOnline = isOnline);
+    }
+  }
+
+  Future<void> _loadPresence() async {
+    try {
+      final conv = await ApiService().getConversation(widget.conversationId);
+      final currentUserId = AuthService().currentUser?.id ?? '';
+      final members = (conv['members'] as List<dynamic>? ?? [])
+          .cast<Map<String, dynamic>>();
+      final participants = (conv['participants'] as List<dynamic>? ?? [])
+          .cast<Map<String, dynamic>>();
+      final all = [...members, ...participants];
+
+      String otherId = '';
+      for (final m in all) {
+        final id = m['id'] as String? ?? m['userId'] as String? ?? '';
+        if (id.isNotEmpty && id != currentUserId) {
+          otherId = id;
+          break;
+        }
+      }
+      if (otherId.isEmpty) return;
+
+      _otherUserId = otherId;
+      final presenceMap = await ApiService().getUserPresence([otherId]);
+      if (!mounted) return;
+
+      // Backend returns { userId: { isOnline: bool, lastSeenAt: string } }
+      final userPresence = presenceMap[otherId] as Map<String, dynamic>?;
+      final isOnline = userPresence?['isOnline'] as bool? ?? false;
+      setState(() => _otherUserOnline = isOnline);
+    } catch (_) {
+      // Non-fatal
+    }
   }
 
   // ── Data loading ──────────────────────────────────────────────────────────
@@ -509,7 +583,7 @@ class _TeacherChatConversationScreenState
         setState(() {
           _messages[idx] = _messages[idx].copyWith(
             isDeleted: true,
-            text: 'This message was deleted.',
+            text: ChatMessage.deletedPlaceholder,
           );
         });
       }
@@ -546,6 +620,7 @@ class _TeacherChatConversationScreenState
     _msgSub?.cancel();
     _typingSub?.cancel();
     _readSub?.cancel();
+    _presenceSub?.cancel();
     _typingTimer?.cancel();
     for (final t in _typingAutoHideTimers.values) {
       t.cancel();
@@ -584,14 +659,44 @@ class _TeacherChatConversationScreenState
         iconTheme: IconThemeData(color: theme.colorScheme.onSurface),
         title: GestureDetector(
           onTap: _openConversationInfo,
-          child: Text(
-            widget.threadName,
-            style: TextStyle(
-              color: theme.colorScheme.onSurface,
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
-            ),
-            overflow: TextOverflow.ellipsis,
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.threadName,
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (_otherUserOnline)
+                      Text(
+                        'Online',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.green,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (_otherUserOnline)
+                Container(
+                  width: 10,
+                  height: 10,
+                  margin: const EdgeInsets.only(left: 6),
+                  decoration: const BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+            ],
           ),
         ),
         actions: [
@@ -750,6 +855,8 @@ class _TeacherChatConversationScreenState
     for (final entry in grouped.entries) {
       widgets.add(_buildDateDivider(entry.key));
       for (final msg in entry.value) {
+        // Assign a GlobalKey for scroll-to-message
+        _messageKeys.putIfAbsent(msg.id, () => GlobalKey());
         widgets.add(_buildMessageBubble(msg, currentUserId));
       }
     }
@@ -823,8 +930,11 @@ class _TeacherChatConversationScreenState
     final isMe = message.senderId == currentUserId;
     final isEditing = _editingMessageId == message.id;
     final theme = Theme.of(context);
+    final key = _messageKeys[message.id];
 
-    return GestureDetector(
+    return KeyedSubtree(
+      key: key,
+      child: GestureDetector(
       onLongPress: () => _showMessageActions(message),
       onHorizontalDragEnd: (details) {
         if ((details.primaryVelocity ?? 0) > 0 && !message.isDeleted) {
@@ -853,36 +963,39 @@ class _TeacherChatConversationScreenState
                   ),
                 ),
               ),
-            // Reply-to quoted block
+            // Reply-to quoted block — tap to scroll to original
             if (message.replyToId != null && message.replyTo != null)
-              Container(
-                margin: const EdgeInsets.only(bottom: 4),
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border(
-                      left: BorderSide(color: AppColors.primary, width: 3)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      message.replyTo!['senderName'] as String? ?? 'User',
-                      style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary),
-                    ),
-                    Text(
-                      message.replyTo!['text'] as String? ?? '',
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: theme.colorScheme.onSurfaceVariant),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+              GestureDetector(
+                onTap: () => _scrollToMessage(message.replyToId!),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 4),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border(
+                        left: BorderSide(color: AppColors.primary, width: 3)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        message.replyTo!['senderName'] as String? ?? 'User',
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary),
+                      ),
+                      Text(
+                        message.replyTo!['text'] as String? ?? '',
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: theme.colorScheme.onSurfaceVariant),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             // Bubble or edit field
@@ -941,7 +1054,7 @@ class _TeacherChatConversationScreenState
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: Image.network(
-                            '${ApiConstants.fileBaseUrl}/api${ApiConstants.file(message.mediaFileId!)}',
+                            '${ApiConstants.fileBaseUrl}/api/files/${message.mediaFileId!}/download',
                             width: 200,
                             height: 150,
                             fit: BoxFit.cover,
@@ -1027,7 +1140,7 @@ class _TeacherChatConversationScreenState
                   }).toList(),
                 ),
               ),
-            // Time + edited
+            // Time + edited + read ticks (for sent messages)
             Padding(
               padding: const EdgeInsets.only(top: 3, left: 4, right: 4),
               child: Row(
@@ -1050,19 +1163,44 @@ class _TeacherChatConversationScreenState
                       ),
                     ),
                   ],
+                  if (isMe) ...[
+                    const SizedBox(width: 4),
+                    Icon(
+                      _readByMap[message.id] == true
+                          ? Icons.done_all
+                          : Icons.done,
+                      size: 14,
+                      color: _readByMap[message.id] == true
+                          ? AppColors.primary
+                          : theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ],
                 ],
               ),
             ),
           ],
         ),
       ),
+      ),
     );
+  }
+
+  void _scrollToMessage(String messageId) {
+    final key = _messageKeys[messageId];
+    if (key?.currentContext != null) {
+      Scrollable.ensureVisible(
+        key!.currentContext!,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+        alignment: 0.3,
+      );
+    }
   }
 
   void _openImageFullScreen(ChatMessage message) {
     if (message.mediaFileId == null) return;
     final url =
-        '${ApiConstants.fileBaseUrl}/api${ApiConstants.file(message.mediaFileId!)}';
+        '${ApiConstants.fileBaseUrl}/api/files/${message.mediaFileId!}/download';
     showDialog(
       context: context,
       builder: (_) => Dialog(

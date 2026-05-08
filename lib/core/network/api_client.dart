@@ -4,6 +4,9 @@ import '../services/storage_service.dart';
 import 'api_exceptions.dart';
 
 class ApiClient {
+  // When `testMode` is true the client will fail fast without network.
+  static bool testMode = false;
+
   static final ApiClient _instance = ApiClient._internal();
   factory ApiClient() => _instance;
 
@@ -77,6 +80,13 @@ class ApiClient {
     String path, {
     Map<String, dynamic>? queryParameters,
   }) async {
+    if (testMode) {
+      // Simulate immediate connection failure to trigger fallbacks quickly.
+      throw DioException(
+        requestOptions: RequestOptions(path: path),
+        type: DioExceptionType.connectionError,
+      );
+    }
     try {
       final res = await _dio.get(path, queryParameters: queryParameters);
       return _extractData(res);
@@ -89,6 +99,12 @@ class ApiClient {
     String path, {
     Map<String, dynamic>? queryParameters,
   }) async {
+    if (testMode) {
+      throw DioException(
+        requestOptions: RequestOptions(path: path),
+        type: DioExceptionType.connectionError,
+      );
+    }
     try {
       final res = await _dio.get(path, queryParameters: queryParameters);
       if (res.data is List) return res.data as List<dynamic>;
@@ -99,6 +115,12 @@ class ApiClient {
   }
 
   Future<Map<String, dynamic>> post(String path, {dynamic data}) async {
+    if (testMode) {
+      throw DioException(
+        requestOptions: RequestOptions(path: path),
+        type: DioExceptionType.connectionError,
+      );
+    }
     try {
       final res = await _dio.post(path, data: data);
       return _extractData(res);
@@ -108,6 +130,12 @@ class ApiClient {
   }
 
   Future<Map<String, dynamic>> patch(String path, {dynamic data}) async {
+    if (testMode) {
+      throw DioException(
+        requestOptions: RequestOptions(path: path),
+        type: DioExceptionType.connectionError,
+      );
+    }
     try {
       final res = await _dio.patch(path, data: data);
       return _extractData(res);
@@ -117,6 +145,12 @@ class ApiClient {
   }
 
   Future<Map<String, dynamic>> put(String path, {dynamic data}) async {
+    if (testMode) {
+      throw DioException(
+        requestOptions: RequestOptions(path: path),
+        type: DioExceptionType.connectionError,
+      );
+    }
     try {
       final res = await _dio.put(path, data: data);
       return _extractData(res);
@@ -126,6 +160,12 @@ class ApiClient {
   }
 
   Future<void> delete(String path) async {
+    if (testMode) {
+      throw DioException(
+        requestOptions: RequestOptions(path: path),
+        type: DioExceptionType.connectionError,
+      );
+    }
     try {
       await _dio.delete(path);
     } on DioException catch (e) {

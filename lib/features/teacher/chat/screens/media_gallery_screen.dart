@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/constants/api_constants.dart';
@@ -83,7 +84,7 @@ class _MediaGalleryScreenState extends State<MediaGalleryScreen>
   String _mediaUrl(Map<String, dynamic> item) {
     final fileId = item['mediaFileId'] as String?;
     if (fileId != null && fileId.isNotEmpty) {
-      return '${ApiConstants.fileBaseUrl}/api${ApiConstants.file(fileId)}';
+      return '${ApiConstants.fileBaseUrl}/api/files/$fileId/download';
     }
     return item['mediaUrl'] as String? ?? '';
   }
@@ -320,11 +321,18 @@ class _MediaGalleryScreenState extends State<MediaGalleryScreen>
     );
   }
 
-  void _openUrl(String url) {
-    // url_launcher would be used here in production
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Opening: $url')),
-    );
+  Future<void> _openUrl(String url) async {
+    if (url.isEmpty) return;
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Cannot open: $url')),
+      );
+    }
   }
 
   String _formatSize(int bytes) {

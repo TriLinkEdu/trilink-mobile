@@ -561,13 +561,22 @@ class ApiService {
 
   // ── Presence ──────────────────────────────────────────────────────────────
 
-  Future<List<dynamic>> getUserPresence(List<String> userIds) => _tryOr(
-    () => _api.getList(
-      ApiConstants.usersPresence,
-      queryParameters: {'userIds': userIds.join(',')},
-    ),
-    [],
-  );
+  Future<Map<String, dynamic>> getUserPresence(List<String> userIds) async {
+    try {
+      // Only send valid UUIDs to the backend presence endpoint. Passing
+      // non-UUID strings (e.g. legacy IDs like 'teacher-001') can cause
+      // server-side cast errors; filter them out here.
+      final uuidRegex = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12} ');
+      final uuids = userIds.where((id) => uuidRegex.hasMatch(id)).toList();
+      if (uuids.isEmpty) return {};
+      return await _api.get(
+        ApiConstants.usersPresence,
+        queryParameters: {'userIds': uuids.join(',')},
+      );
+    } catch (_) {
+      return {};
+    }
+  }
 
   // ── Block / Unblock ───────────────────────────────────────────────────────
 
@@ -686,7 +695,6 @@ class ApiService {
         () => _api.post(ApiConstants.feedback, data: data),
         DummyData.feedbackResponse,
       );
-
   Future<List<dynamic>> getMyFeedback() => _tryOr(
     () => _api.getList(ApiConstants.feedbackMine),
     DummyData.myFeedbackList,
@@ -1023,23 +1031,13 @@ class ApiService {
     [],
   );
 
-  /// Initiate conversation with a user
-  Future<Map<String, dynamic>> initiateConversation(String targetUserId) =>
-      _tryOr(
-        () => _api.post(
-          ApiConstants.conversationsInitiate,
-          data: {'targetUserId': targetUserId},
-        ),
-        {
-          'conversation': {
-            'id': 'mock-conversation-id',
-            'type': 'direct',
-            'title': 'Mock Conversation',
-            'createdAt': DateTime.now().toIso8601String(),
-          },
-          'isNew': true,
-        },
-      );
+  /// Initiate conversation with a user — propagates errors (no mock fallback).
+  Future<Map<String, dynamic>> initiateConversation(String targetUserId) async {
+    return await _api.post(
+      ApiConstants.conversationsInitiate,
+      data: {'targetUserId': targetUserId},
+    );
+  }
 
   /// Get messages from conversation
   Future<List<dynamic>> getConversationMessages(
