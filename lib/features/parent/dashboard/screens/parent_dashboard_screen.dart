@@ -4,6 +4,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/widgets/offline_banner.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/constants/api_constants.dart';
 import '../../../../features/auth/services/auth_service.dart';
 import '../../student_info/screens/parent_student_info_screen.dart';
 import '../../student_info/screens/parent_results_screen.dart';
@@ -363,19 +364,26 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
               children: [
                 CircleAvatar(
                   radius: 30,
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.surface.withValues(alpha: 0.2),
-                  child: Text(
-                    (user?.firstName ?? '').isNotEmpty
-                        ? user!.firstName[0].toUpperCase()
-                        : 'P',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.surface,
-                    ),
-                  ),
+                  backgroundColor: Colors.white.withValues(alpha: 0.25),
+                  backgroundImage: (user?.profileImageFileId != null &&
+                          user!.profileImageFileId!.isNotEmpty)
+                      ? NetworkImage(
+                          '${ApiConstants.fileBaseUrl}/api/files/${user.profileImageFileId}/download',
+                        )
+                      : null,
+                  child: (user?.profileImageFileId == null ||
+                          user!.profileImageFileId!.isEmpty)
+                      ? Text(
+                          (user?.firstName ?? '').isNotEmpty
+                              ? user!.firstName[0].toUpperCase()
+                              : 'P',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        )
+                      : null,
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -385,8 +393,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                     children: [
                       Text(
                         user?.fullName ?? 'Parent',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.surface,
+                        style: const TextStyle(
+                          color: Colors.white,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
