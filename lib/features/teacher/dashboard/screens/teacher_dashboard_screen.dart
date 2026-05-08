@@ -369,17 +369,6 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           children: [
             Expanded(
               child: _StatCard(
-                icon: Icons.today_outlined,
-                iconColor: theme.colorScheme.primary,
-                label: "Today's Classes",
-                value: '$_classesToday',
-                subtitle: 'scheduled',
-                subtitleColor: theme.colorScheme.primary,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _StatCard(
                 icon: Icons.class_outlined,
                 iconColor: theme.colorScheme.secondary,
                 label: 'Total Classes',
@@ -689,10 +678,14 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+        ),
         boxShadow: [
-          BoxShadow(color: theme.shadowColor.withOpacity(0.12), blurRadius: 10),
+          BoxShadow(
+              color: theme.shadowColor.withOpacity(0.08), blurRadius: 8),
         ],
       ),
       child: Column(
