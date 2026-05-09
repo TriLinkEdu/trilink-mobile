@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../features/auth/services/auth_service.dart';
 import '../../../../core/models/conversation_summary.dart';
 import 'media_gallery_screen.dart';
 
@@ -25,6 +26,7 @@ class _ConversationInfoScreenState extends State<ConversationInfoScreen> {
   String? _error;
   List<ConversationMember> _members = [];
   bool _isBlocked = false;
+  bool _blockedMe = false;
   String? _otherUserId;
   bool _isGroup = false;
 
@@ -49,21 +51,27 @@ class _ConversationInfoScreenState extends State<ConversationInfoScreen> {
       final conv = await ApiService().getConversation(widget.conversationId);
       final isGroup = (conv['type'] as String? ?? '') == 'group';
 
-      // For direct conversations, find the other user
+      // For direct conversations, find the other user (NOT current user)
       String? otherUserId;
-      if (!isGroup && members.isNotEmpty) {
-        otherUserId = members.first.id;
+      if (!isGroup) {
+        final currentUserId = AuthService().currentUser?.id ?? '';
+        final convMembers = (conv['members'] as List<dynamic>? ?? [])
+            .cast<Map<String, dynamic>>();
+        final convParticipants = (conv['participants'] as List<dynamic>? ?? [])
+            .cast<Map<String, dynamic>>();
+        final all = [...convMembers, ...convParticipants];
+
+        for (final m in all) {
+          final id = m['id'] as String? ?? m['userId'] as String? ?? '';
+          if (id.isNotEmpty && id != currentUserId) {
+            otherUserId = id;
+            break;
+          }
+        }
       }
 
-      // Check block status
-      bool isBlocked = false;
-      if (otherUserId != null) {
-        final blocked = await ApiService().getBlockedUsers();
-        isBlocked = blocked.any((b) {
-          final id = b is Map ? b['id'] ?? b['blockedId'] : null;
-          return id == otherUserId;
-        });
-      }
+      final isBlocked = conv['blockedByMe'] as bool? ?? false;
+      final blockedMe = conv['blockedMe'] as bool? ?? false;
 
       if (!mounted) return;
       setState(() {
@@ -71,6 +79,7 @@ class _ConversationInfoScreenState extends State<ConversationInfoScreen> {
         _isGroup = isGroup;
         _otherUserId = otherUserId;
         _isBlocked = isBlocked;
+        _blockedMe = blockedMe;
         _loading = false;
       });
     } catch (e) {
@@ -182,6 +191,27 @@ class _ConversationInfoScreenState extends State<ConversationInfoScreen> {
   }
 
   Future<void> _toggleBlock() async {
+    // Validate other user ID exists and is not empty
+    if (_otherUserId == null || _otherUserId!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to block: User information missing'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_blockedMe) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You are blocked by this user'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     final action = _isBlocked ? 'Unblock' : 'Block';
     final confirmed = await showDialog<bool>(
       context: context,
@@ -205,14 +235,23 @@ class _ConversationInfoScreenState extends State<ConversationInfoScreen> {
         ],
       ),
     );
-    if (confirmed != true || _otherUserId == null) return;
+    if (confirmed != true) return;
     try {
       if (_isBlocked) {
         await ApiService().unblockUser(_otherUserId!);
       } else {
         await ApiService().blockUser(_otherUserId!);
       }
+      if (!mounted) return;
       setState(() => _isBlocked = !_isBlocked);
+      
+      final message = _isBlocked ? 'User blocked successfully' : 'User unblocked successfully';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.green,
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -328,12 +367,20 @@ class _ConversationInfoScreenState extends State<ConversationInfoScreen> {
                     // Block/Unblock (direct only)
                     if (!_isGroup && _otherUserId != null) ...[
                       const SizedBox(height: 16),
-                      _buildListTile(
-                        icon: _isBlocked ? Icons.lock_open_outlined : Icons.block_outlined,
-                        title: _isBlocked ? 'Unblock User' : 'Block User',
-                        color: _isBlocked ? AppColors.primary : AppColors.error,
-                        onTap: _toggleBlock,
-                      ),
+                      if (_blockedMe)
+                        _buildListTile(
+                          icon: Icons.block,
+                          title: 'You are blocked by this user',
+                          color: AppColors.error,
+                          onTap: () {},
+                        )
+                      else
+                        _buildListTile(
+                          icon: _isBlocked ? Icons.lock_open_outlined : Icons.block_outlined,
+                          title: _isBlocked ? 'Unblock User' : 'Block User',
+                          color: _isBlocked ? AppColors.primary : AppColors.error,
+                          onTap: _toggleBlock,
+                        ),
                     ],
                   ],
                 ),

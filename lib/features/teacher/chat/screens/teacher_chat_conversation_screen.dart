@@ -7,6 +7,7 @@ import '../../../../core/services/api_service.dart';
 import '../../../../core/services/socket_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/api_constants.dart';
+import '../../../../core/network/api_exceptions.dart';
 import '../../../../features/auth/services/auth_service.dart';
 import 'conversation_info_screen.dart';
 
@@ -39,6 +40,7 @@ class _TeacherChatConversationScreenState
   List<ChatMessage> _messages = [];
   bool _sending = false;
   bool _uploading = false;
+  String? _blockedNotice;
 
   // Pagination
   String? _nextCursor;
@@ -64,6 +66,7 @@ class _TeacherChatConversationScreenState
 
   // Real-time subscriptions
   StreamSubscription? _msgSub;
+  StreamSubscription? _msgUpdateSub;
   StreamSubscription? _typingSub;
   StreamSubscription? _readSub;
   StreamSubscription? _presenceSub;
@@ -83,6 +86,9 @@ class _TeacherChatConversationScreenState
 
     if (widget.conversationId.isNotEmpty) {
       _msgSub = SocketService().messageNewStream.listen(_onMessageNew);
+      _msgUpdateSub = SocketService().messageUpdateStream.listen(
+        _onMessageUpdate,
+      );
       _typingSub = SocketService().typingUpdateStream.listen(_onTypingUpdate);
       _readSub = SocketService().readUpdateStream.listen(_onReadUpdate);
       _presenceSub = SocketService().presenceUpdateStream.listen(
@@ -104,8 +110,19 @@ class _TeacherChatConversationScreenState
   // ── Real-time handlers ────────────────────────────────────────────────────
 
   void _onMessageNew(Map<String, dynamic> event) {
-    if (event['conversationId'] != widget.conversationId) return;
-    final incoming = ChatMessage.fromJson(event);
+    _handleIncomingMessageEvent(event);
+  }
+
+  void _onMessageUpdate(Map<String, dynamic> event) {
+    _handleIncomingMessageEvent(event);
+  }
+
+  void _handleIncomingMessageEvent(Map<String, dynamic> event) {
+    final payload = _normalizeIncomingMessagePayload(event);
+    if (payload == null || payload['id'] == null) return;
+    if (payload['conversationId'] != widget.conversationId) return;
+    final incoming = ChatMessage.fromJson(payload);
+    if (incoming.id.isEmpty) return;
 
     // 1. Check if this is an update to an existing message (edit/delete/reaction)
     final existingIdx = _messages.indexWhere((m) => m.id == incoming.id);
@@ -143,6 +160,19 @@ class _TeacherChatConversationScreenState
 
     if (isNearBottom) _scrollToBottom();
     _markLastMessageRead();
+  }
+
+  Map<String, dynamic>? _normalizeIncomingMessagePayload(
+    Map<String, dynamic> event,
+  ) {
+    final nested = event['message'];
+    if (nested is Map) {
+      final payload = Map<String, dynamic>.from(nested);
+      payload['conversationId'] =
+          payload['conversationId'] ?? event['conversationId'];
+      return payload;
+    }
+    return event;
   }
 
   void _onTypingUpdate(Map<String, dynamic> event) {
@@ -215,6 +245,14 @@ class _TeacherChatConversationScreenState
       if (otherId.isEmpty) return;
 
       _otherUserId = otherId;
+      final blockedByMe = conv['blockedByMe'] as bool? ?? false;
+      final blockedMe = conv['blockedMe'] as bool? ?? false;
+      _blockedNotice = blockedMe
+          ? 'You are blocked by this user'
+          : blockedByMe
+          ? 'You blocked this user'
+          : null;
+
       final presenceMap = await ApiService().getUserPresence([otherId]);
       if (!mounted) return;
 
@@ -365,26 +403,43 @@ class _TeacherChatConversationScreenState
       if (idx != -1 && mounted) {
         setState(() {
           _messages[idx] = confirmed;
+          _blockedNotice = null;
           _sending = false;
         });
       } else if (mounted) {
         // Temp was already replaced by the WebSocket event — just clear sending
-        setState(() => _sending = false);
+        setState(() {
+          _blockedNotice = null;
+          _sending = false;
+        });
       }
     } catch (e) {
       if (!mounted) return;
+      final isBlockedError =
+          e is ApiException &&
+          e.statusCode == 403 &&
+          e.message.toLowerCase().contains('blocked');
       setState(() {
         _messages.removeWhere((m) => m.id == tempId);
         _sending = false;
         _replyTo = replySnapshot;
+        if (isBlockedError) {
+          _blockedNotice = e.message;
+        }
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to send: $e'),
-          action: SnackBarAction(
-            label: 'Retry',
-            onPressed: () => _sendMessage(mediaFileId: mediaFileId),
+          content: Text(
+            isBlockedError
+                ? 'This conversation is blocked'
+                : 'Failed to send: $e',
           ),
+          action: isBlockedError
+              ? SnackBarAction(label: 'Check', onPressed: _openConversationInfo)
+              : SnackBarAction(
+                  label: 'Retry',
+                  onPressed: () => _sendMessage(mediaFileId: mediaFileId),
+                ),
         ),
       );
     }
@@ -536,7 +591,7 @@ class _TeacherChatConversationScreenState
         message.id,
         emoji,
       );
-      // The server will emit message:new with updated reactions
+      // The server emits message:update with updated reactions
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -640,6 +695,7 @@ class _TeacherChatConversationScreenState
   @override
   void dispose() {
     _msgSub?.cancel();
+    _msgUpdateSub?.cancel();
     _typingSub?.cancel();
     _readSub?.cancel();
     _presenceSub?.cancel();
@@ -735,6 +791,7 @@ class _TeacherChatConversationScreenState
             children: [
               Expanded(child: _buildMessagesList()),
               if (_typingUsers.values.any((v) => v)) _buildTypingIndicator(),
+              if (_blockedNotice != null) _buildBlockedBanner(),
               _buildInputBar(),
             ],
           ),
@@ -786,9 +843,9 @@ class _TeacherChatConversationScreenState
     );
   }
 
-  void _openConversationInfo() {
+  Future<void> _openConversationInfo() async {
     if (widget.conversationId.isEmpty) return;
-    Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => ConversationInfoScreen(
@@ -797,6 +854,11 @@ class _TeacherChatConversationScreenState
         ),
       ),
     );
+    if (!mounted) return;
+    await _loadPresence();
+    if (_blockedNotice == null && mounted) {
+      setState(() {});
+    }
   }
 
   Widget _buildTypingIndicator() {
@@ -813,6 +875,39 @@ class _TeacherChatConversationScreenState
               color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontStyle: FontStyle.italic,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBlockedBanner() {
+    final theme = Theme.of(context);
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.error.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.error.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.block_outlined, color: AppColors.error, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _blockedNotice ?? 'This conversation is blocked',
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: _openConversationInfo,
+            child: const Text('Check'),
           ),
         ],
       ),
@@ -881,6 +976,7 @@ class _TeacherChatConversationScreenState
     }
 
     final currentUserId = AuthService().currentUser?.id ?? '';
+    final seenMessageIds = <String>{};
     final grouped = <String, List<ChatMessage>>{};
     for (final msg in _messages) {
       grouped.putIfAbsent(_dateLabel(msg.createdAt), () => []).add(msg);
@@ -904,9 +1000,12 @@ class _TeacherChatConversationScreenState
     for (final entry in grouped.entries) {
       widgets.add(_buildDateDivider(entry.key));
       for (final msg in entry.value) {
-        // Assign a GlobalKey for scroll-to-message
-        _messageKeys.putIfAbsent(msg.id, () => GlobalKey());
-        widgets.add(_buildMessageBubble(msg, currentUserId));
+        GlobalKey? bubbleKey;
+        if (msg.id.isNotEmpty && seenMessageIds.add(msg.id)) {
+          // Key used for scroll-to-message only for unique ids in current build.
+          bubbleKey = _messageKeys.putIfAbsent(msg.id, () => GlobalKey());
+        }
+        widgets.add(_buildMessageBubble(msg, currentUserId, bubbleKey));
       }
     }
 
@@ -977,14 +1076,17 @@ class _TeacherChatConversationScreenState
     );
   }
 
-  Widget _buildMessageBubble(ChatMessage message, String currentUserId) {
+  Widget _buildMessageBubble(
+    ChatMessage message,
+    String currentUserId,
+    GlobalKey? bubbleKey,
+  ) {
     final isMe = message.senderId == currentUserId;
     final isEditing = _editingMessageId == message.id;
     final theme = Theme.of(context);
-    final key = _messageKeys[message.id];
 
     return KeyedSubtree(
-      key: key,
+      key: bubbleKey,
       child: GestureDetector(
         onLongPress: () => _showMessageActions(message),
         onHorizontalDragEnd: (details) {
@@ -1301,6 +1403,7 @@ class _TeacherChatConversationScreenState
     final inputBg = theme.brightness == Brightness.dark
         ? const Color(0xFF2C2C3E)
         : const Color(0xFFEEEEF4);
+    final isBlocked = _blockedNotice != null;
 
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -1406,7 +1509,9 @@ class _TeacherChatConversationScreenState
                     controller: _messageController,
                     focusNode: _focusNode,
                     decoration: InputDecoration(
-                      hintText: 'Message...',
+                      hintText: isBlocked
+                          ? 'Conversation blocked'
+                          : 'Message...',
                       hintStyle: TextStyle(
                         color: theme.colorScheme.onSurfaceVariant,
                         fontSize: 14,
@@ -1417,22 +1522,23 @@ class _TeacherChatConversationScreenState
                         vertical: 11,
                       ),
                     ),
+                    enabled: !isBlocked,
                     maxLines: null,
                     textCapitalization: TextCapitalization.sentences,
                     style: const TextStyle(fontSize: 14.5),
-                    onChanged: _handleTyping,
-                    onSubmitted: (_) => _sendMessage(),
+                    onChanged: isBlocked ? null : _handleTyping,
+                    onSubmitted: isBlocked ? null : (_) => _sendMessage(),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
               GestureDetector(
-                onTap: _sending ? null : () => _sendMessage(),
+                onTap: _sending || isBlocked ? null : () => _sendMessage(),
                 child: Container(
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: _sending
+                    color: (_sending || isBlocked)
                         ? theme.colorScheme.surfaceContainerHigh
                         : AppColors.primary,
                     shape: BoxShape.circle,
@@ -1447,9 +1553,11 @@ class _TeacherChatConversationScreenState
                             ),
                           ),
                         )
-                      : const Icon(
-                          Icons.send_rounded,
-                          color: Colors.white,
+                      : Icon(
+                          isBlocked ? Icons.block_outlined : Icons.send_rounded,
+                          color: isBlocked
+                              ? theme.colorScheme.onSurfaceVariant
+                              : Colors.white,
                           size: 20,
                         ),
                 ),

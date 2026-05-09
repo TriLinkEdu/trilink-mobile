@@ -22,6 +22,8 @@ class SocketService {
 
   final _messageNewCtrl =
       StreamController<Map<String, dynamic>>.broadcast();
+    final _messageUpdateCtrl =
+      StreamController<Map<String, dynamic>>.broadcast();
   final _conversationUpdateCtrl =
       StreamController<Map<String, dynamic>>.broadcast();
   final _presenceUpdateCtrl =
@@ -36,6 +38,8 @@ class SocketService {
 
   Stream<Map<String, dynamic>> get messageNewStream =>
       _messageNewCtrl.stream;
+    Stream<Map<String, dynamic>> get messageUpdateStream =>
+      _messageUpdateCtrl.stream;
   Stream<Map<String, dynamic>> get conversationUpdateStream =>
       _conversationUpdateCtrl.stream;
   Stream<Map<String, dynamic>> get presenceUpdateStream =>
@@ -99,6 +103,10 @@ class SocketService {
 
     _socket!.on('message:new', (data) {
       _emit(_messageNewCtrl, data);
+    });
+
+    _socket!.on('message:update', (data) {
+      _emit(_messageUpdateCtrl, data);
     });
 
     _socket!.on('conversation:update', (data) {
