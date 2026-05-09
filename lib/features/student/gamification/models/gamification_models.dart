@@ -192,22 +192,31 @@ class AchievementModel {
 
   factory AchievementModel.fromJson(Map<String, dynamic> json) {
     return AchievementModel(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      description: json['description'] as String,
+      id: (json['id'] ?? '').toString(),
+      title: (json['title'] ?? '').toString(),
+      description: (json['description'] ?? '').toString(),
       iconUrl: (json['iconUrl'] ?? '').toString(),
-      xpValue: json['xpValue'] as int? ?? 0,
-      isUnlocked: json['isUnlocked'] as bool,
-      unlockedAt: json['unlockedAt'] != null
-          ? DateTime.parse(json['unlockedAt'] as String)
-          : null,
+      xpValue: _parseInt(json['xpValue']),
+      isUnlocked: json['isUnlocked'] == true,
+      unlockedAt: _parseDate(json['unlockedAt']?.toString()),
       category: AchievementCategory.values.firstWhere(
-        (c) => c.name == json['category'],
+        (c) => c.name == (json['category'] ?? '').toString(),
         orElse: () => AchievementCategory.milestone,
       ),
-      progressCurrent: json['progressCurrent'] as int? ?? 0,
-      progressTarget: json['progressTarget'] as int? ?? 1,
+      progressCurrent: _parseInt(json['progressCurrent']),
+      progressTarget: _parseInt(json['progressTarget'], fallback: 1),
     );
+  }
+
+  static int _parseInt(dynamic v, {int fallback = 0}) {
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    return int.tryParse(v?.toString() ?? '') ?? fallback;
+  }
+
+  static DateTime? _parseDate(String? s) {
+    if (s == null || s.isEmpty) return null;
+    try { return DateTime.parse(s); } catch (_) { return null; }
   }
 
   Map<String, dynamic> toJson() => {

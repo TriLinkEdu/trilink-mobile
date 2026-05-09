@@ -55,20 +55,26 @@ class RealStudentChatRepository implements StudentChatRepository {
       for (final raw in rows.whereType<Map<String, dynamic>>()) {
         final id = (raw['id'] ?? '').toString();
         if (id.isEmpty) continue;
-        final latest = await _latestMessage(id, me);
+        ChatMessageModel? latest;
+        try {
+          // Best-effort: if last message preview fails, skip it.
+          latest = await _latestMessage(id, me);
+        } catch (_) {
+          latest = null;
+        }
         conversations.add(
           ChatConversationModel(
             id: id,
             title: (raw['title'] ?? 'Conversation').toString(),
-          isGroup: (raw['type'] ?? 'group').toString() != 'direct',
-          participantIds: const [],
-          lastMessage: latest,
-          unreadCount: 0,
-        ),
-      );
-    }
+            isGroup: (raw['type'] ?? 'group').toString() != 'direct',
+            participantIds: const [],
+            lastMessage: latest,
+            unreadCount: raw['unreadCount'] as int? ?? 0,
+          ),
+        );
+      }
 
-    return conversations;
+      return conversations;
     } catch (e) {
       print('Error fetching conversations: $e');
       rethrow;
@@ -100,16 +106,15 @@ class RealStudentChatRepository implements StudentChatRepository {
     String conversationId,
   ) async {
     final me = await _currentUserId();
-    final rows = await _api.getList(
+    // Backend returns { messages: [...], hasMore: bool } — NOT a plain array.
+    final raw = await _api.get(
       ApiConstants.conversationMessages(conversationId),
-      queryParameters: {'limit': 50, 'skip': 0},
+      queryParameters: {'limit': 50},
     );
+    final rows = (raw['messages'] as List? ?? const [])
+        .whereType<Map<String, dynamic>>();
 
-    final messages = rows
-        .whereType<Map<String, dynamic>>()
-        .map((raw) => _mapMessage(raw, me))
-        .toList();
-
+    final messages = rows.map((m) => _mapMessage(m, me)).toList();
     messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
     return messages;
   }
@@ -146,16 +151,22 @@ class RealStudentChatRepository implements StudentChatRepository {
     );
 
     final fileId = (uploadResponse['fileId'] ?? '').toString();
-    if (fileId.isEmpty) {
-      throw Exception('Failed to upload image');
-    }
+    if (fileId.isEmpty) throw Exception('Failed to upload image');
+
+    // Use the Cloudinary CDN URL directly from the upload response.
+    // This avoids an extra /files/:id/download redirect and makes
+    // Image.network work without auth headers.
+    final directUrl = (uploadResponse['url'] ?? '').toString();
 
     final me = await _currentUserId();
     final raw = await _api.post(
       ApiConstants.conversationMessages(conversationId),
       data: {'mediaFileId': fileId},
     );
-    final sent = _mapMessage(raw, me);
+    // Merge the direct URL into the raw response so _mapMessage picks it up.
+    final enriched = Map<String, dynamic>.from(raw)
+      ..['_directMediaUrl'] = directUrl;
+    final sent = _mapMessage(enriched, me);
 
     final existing = _messagesCache[conversationId] ?? const [];
     _messagesCache[conversationId] = [...existing, sent];
@@ -212,11 +223,13 @@ class RealStudentChatRepository implements StudentChatRepository {
     String conversationId,
     String me,
   ) async {
-    final rows = await _api.getList(
+    // Backend returns { messages: [...], hasMore: bool } — not a plain array.
+    final raw = await _api.get(
       ApiConstants.conversationMessages(conversationId),
-      queryParameters: {'limit': 1, 'skip': 0},
+      queryParameters: {'limit': 1},
     );
-    final first = rows.isNotEmpty ? rows.first : null;
+    final rows = raw['messages'] as List?;
+    final first = rows?.isNotEmpty == true ? rows!.first : null;
     if (first is! Map<String, dynamic>) return null;
     return _mapMessage(first, me);
   }
@@ -233,9 +246,14 @@ class RealStudentChatRepository implements StudentChatRepository {
         DateTime.tryParse((raw['createdAt'] ?? '').toString()) ??
         DateTime.now();
     final type = _resolveMessageType(mediaType);
-    final mediaUrl = mediaFileId.isEmpty
-        ? null
-        : '${ApiConstants.fileBaseUrl}${ApiConstants.fileDownload(mediaFileId)}';
+    // Prefer _directMediaUrl (set when we just uploaded and have the CDN URL
+    // immediately), then fall back to constructing from fileBaseUrl + download.
+    final directUrl = (raw['_directMediaUrl'] ?? '').toString();
+    final mediaUrl = directUrl.isNotEmpty
+        ? directUrl
+        : mediaFileId.isEmpty
+            ? null
+            : '${ApiConstants.fileBaseUrl}${ApiConstants.fileDownload(mediaFileId)}';
     return ChatMessageModel(
       id: (raw['id'] ?? '').toString(),
       senderId: senderId,

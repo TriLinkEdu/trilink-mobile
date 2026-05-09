@@ -324,6 +324,49 @@ class _GamificationViewState extends State<_GamificationView> {
                       });
                     }
 
+                    if (state.status == GamificationStatus.error) {
+                      return Center(
+                        child: Padding(
+                          padding: AppSpacing.paddingXxl,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.cloud_off_rounded,
+                                size: 64,
+                                color: theme.colorScheme.onSurfaceVariant
+                                    .withAlpha(100),
+                              ),
+                              AppSpacing.gapMd,
+                              Text(
+                                'Could not load your hub',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              AppSpacing.gapSm,
+                              Text(
+                                state.errorMessage ??
+                                    'Check your connection and try again.',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              AppSpacing.gapLg,
+                              FilledButton.icon(
+                                onPressed: () =>
+                                    context.read<GamificationCubit>().loadAll(),
+                                icon: const Icon(Icons.refresh_rounded),
+                                label: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
                     return SingleChildScrollView(
                       padding: AppSpacing.horizontalXl,
                       child: Column(

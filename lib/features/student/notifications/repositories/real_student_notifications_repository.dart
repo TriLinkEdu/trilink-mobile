@@ -38,8 +38,17 @@ class RealStudentNotificationsRepository
 
   Future<List<NotificationModel>> _fetchFresh() async {
     final list = await _api.getList(ApiConstants.notifications);
-
-    return list.whereType<Map<String, dynamic>>().map(_toNotification).toList();
+    final results = <NotificationModel>[];
+    
+    for (final raw in list.whereType<Map>()) {
+      try {
+        final map = Map<String, dynamic>.from(raw);
+        results.add(_toNotification(map));
+      } catch (e) {
+        print('Skipping malformed notification: $e');
+      }
+    }
+    return results;
   }
 
   @override
