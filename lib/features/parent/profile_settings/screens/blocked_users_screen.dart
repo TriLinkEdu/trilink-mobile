@@ -46,7 +46,8 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
   }
 
   Future<void> _unblockUser(Map<String, dynamic> user) async {
-    final userId = user['id'] as String? ??
+    final userId =
+        user['id'] as String? ??
         user['blockedId'] as String? ??
         user['userId'] as String?;
     if (userId == null) return;
@@ -55,7 +56,9 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Unblock User'),
-        content: Text('Unblock this user? They will be able to message you again.'),
+        content: Text(
+          'Unblock this user? They will be able to message you again.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -78,13 +81,15 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
     try {
       await ApiService().unblockUser(userId);
       if (!mounted) return;
-      setState(() => _blockedUsers.removeWhere((u) {
-        final id = u['id'] ?? u['blockedId'] ?? u['userId'];
-        return id == userId;
-      }));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('User unblocked')),
+      setState(
+        () => _blockedUsers.removeWhere((u) {
+          final id = u['id'] ?? u['blockedId'] ?? u['userId'];
+          return id == userId;
+        }),
       );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('User unblocked')));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -123,104 +128,98 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _error!,
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: _loadBlockedUsers,
-                        child: const Text('Retry'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _error!,
+                    style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
                   ),
-                )
-              : _blockedUsers.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.check_circle,
-                            size: 48,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No blocked users',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Users you block won\'t be able to message you',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _blockedUsers.length,
-                      itemBuilder: (_, i) {
-                        final user = _blockedUsers[i];
-                        final name =
-                            '${user['firstName'] ?? ''} ${user['lastName'] ?? ''}'
-                                .trim();
-                        final role = user['role'] as String? ?? 'User';
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor:
-                                  AppColors.error.withValues(alpha: 0.12),
-                              child: Icon(
-                                Icons.block,
-                                color: AppColors.error,
-                              ),
-                            ),
-                            title: Text(
-                              name.isNotEmpty ? name : 'Unknown User',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: theme.colorScheme.onSurface,
-                              ),
-                            ),
-                            subtitle: Text(
-                              role.toUpperCase(),
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            trailing: IconButton(
-                              icon: Icon(
-                                Icons.close,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                              onPressed: () => _unblockUser(user),
-                              tooltip: 'Unblock',
-                            ),
-                          ),
-                        );
-                      },
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: _loadBlockedUsers,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          : _blockedUsers.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.check_circle,
+                    size: 48,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No blocked users',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurface,
                     ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Users you block won\'t be able to message you',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _blockedUsers.length,
+              itemBuilder: (_, i) {
+                final user = _blockedUsers[i];
+                final name =
+                    '${user['firstName'] ?? ''} ${user['lastName'] ?? ''}'
+                        .trim();
+                final role = user['role'] as String? ?? 'User';
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: AppColors.error.withValues(alpha: 0.12),
+                      child: Icon(Icons.block, color: AppColors.error),
+                    ),
+                    title: Text(
+                      name.isNotEmpty ? name : 'Unknown User',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    subtitle: Text(
+                      role.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    trailing: IconButton(
+                      icon: Icon(
+                        Icons.close,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      onPressed: () => _unblockUser(user),
+                      tooltip: 'Unblock',
+                    ),
+                  ),
+                );
+              },
+            ),
     );
   }
 }

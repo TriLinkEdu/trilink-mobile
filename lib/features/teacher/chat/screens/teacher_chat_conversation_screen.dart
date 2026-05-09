@@ -86,8 +86,9 @@ class _TeacherChatConversationScreenState
 
     if (widget.conversationId.isNotEmpty) {
       _msgSub = SocketService().messageNewStream.listen(_onMessageNew);
-        _msgUpdateSub =
-          SocketService().messageUpdateStream.listen(_onMessageUpdate);
+      _msgUpdateSub = SocketService().messageUpdateStream.listen(
+        _onMessageUpdate,
+      );
       _typingSub = SocketService().typingUpdateStream.listen(_onTypingUpdate);
       _readSub = SocketService().readUpdateStream.listen(_onReadUpdate);
       _presenceSub = SocketService().presenceUpdateStream.listen(
@@ -249,8 +250,8 @@ class _TeacherChatConversationScreenState
       _blockedNotice = blockedMe
           ? 'You are blocked by this user'
           : blockedByMe
-              ? 'You blocked this user'
-              : null;
+          ? 'You blocked this user'
+          : null;
 
       final presenceMap = await ApiService().getUserPresence([otherId]);
       if (!mounted) return;
@@ -414,7 +415,8 @@ class _TeacherChatConversationScreenState
       }
     } catch (e) {
       if (!mounted) return;
-      final isBlockedError = e is ApiException &&
+      final isBlockedError =
+          e is ApiException &&
           e.statusCode == 403 &&
           e.message.toLowerCase().contains('blocked');
       setState(() {
@@ -433,10 +435,7 @@ class _TeacherChatConversationScreenState
                 : 'Failed to send: $e',
           ),
           action: isBlockedError
-              ? SnackBarAction(
-                  label: 'Check',
-                  onPressed: _openConversationInfo,
-                )
+              ? SnackBarAction(label: 'Check', onPressed: _openConversationInfo)
               : SnackBarAction(
                   label: 'Retry',
                   onPressed: () => _sendMessage(mediaFileId: mediaFileId),
@@ -1510,7 +1509,9 @@ class _TeacherChatConversationScreenState
                     controller: _messageController,
                     focusNode: _focusNode,
                     decoration: InputDecoration(
-                      hintText: isBlocked ? 'Conversation blocked' : 'Message...',
+                      hintText: isBlocked
+                          ? 'Conversation blocked'
+                          : 'Message...',
                       hintStyle: TextStyle(
                         color: theme.colorScheme.onSurfaceVariant,
                         fontSize: 14,
@@ -1554,7 +1555,9 @@ class _TeacherChatConversationScreenState
                         )
                       : Icon(
                           isBlocked ? Icons.block_outlined : Icons.send_rounded,
-                          color: isBlocked ? theme.colorScheme.onSurfaceVariant : Colors.white,
+                          color: isBlocked
+                              ? theme.colorScheme.onSurfaceVariant
+                              : Colors.white,
                           size: 20,
                         ),
                 ),
