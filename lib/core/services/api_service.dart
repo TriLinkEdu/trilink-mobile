@@ -454,8 +454,7 @@ class ApiService {
     return await _api.patch(
           ApiConstants.messageEdit(conversationId, messageId),
           data: {'text': text},
-        )
-        as Map<String, dynamic>;
+        );
   }
 
   Future<void> deleteMessage(String conversationId, String messageId) async {
@@ -470,8 +469,7 @@ class ApiService {
     return await _api.post(
           ApiConstants.messageReactions(conversationId, messageId),
           data: {'emoji': emoji},
-        )
-        as Map<String, dynamic>;
+        );
   }
 
   Future<void> markMessageRead(String conversationId, String messageId) async {
@@ -521,11 +519,16 @@ class ApiService {
         bytes = await file.readAsBytes();
         if (file.name.isNotEmpty) filename = file.name;
       } else {
-        final dynamic readAsBytes = file.readAsBytes;
-        if (readAsBytes is! Function) {
-          throw Exception('Selected file cannot be read.');
+        final dynamic rawBytes = file.bytes;
+        if (rawBytes is List<int> && rawBytes.isNotEmpty) {
+          bytes = rawBytes;
+        } else {
+          final dynamic readAsBytes = file.readAsBytes;
+          if (readAsBytes is! Function) {
+            throw Exception('Selected file cannot be read.');
+          }
+          bytes = await readAsBytes();
         }
-        bytes = await readAsBytes();
         final dynamic rawPath = file.path;
         if (rawPath is String && rawPath.trim().isNotEmpty) {
           final segments = rawPath.split(RegExp(r'[\\/]'));

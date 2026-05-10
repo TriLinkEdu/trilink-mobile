@@ -2,14 +2,20 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:get_it/get_it.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:dio/dio.dart';
 import '../../../../core/models/chat_message.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/socket_service.dart';
+import '../../../../core/services/storage_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/api_exceptions.dart';
 import '../../../../features/auth/services/auth_service.dart';
 import 'conversation_info_screen.dart';
+
+final sl = GetIt.instance;
 
 class TeacherChatConversationScreen extends StatefulWidget {
   final String threadName;
@@ -78,6 +84,10 @@ class _TeacherChatConversationScreenState
   // Message key map for scroll-to-message
   final Map<String, GlobalKey> _messageKeys = {};
 
+  // Upload/Download progress
+  double _uploadProgress = 0.0;
+  Map<String, double> _downloadProgress = {};
+
   @override
   void initState() {
     super.initState();
@@ -131,19 +141,28 @@ class _TeacherChatConversationScreenState
       return;
     }
 
-    // 2. Check if there's an optimistic (temp) message from us with the same text
-    //    — this happens when the WebSocket event arrives before or after the HTTP
-    //    response replaces the temp bubble. Avoid duplicating.
+    // 2. Replace optimistic temp messages from us, or ignore an echoed copy if
+    //    the confirmed message is already in the list.
     final currentUserId = AuthService().currentUser?.id ?? '';
     if (incoming.senderId == currentUserId) {
       final tempIdx = _messages.indexWhere(
-        (m) => m.id.startsWith('temp-') && m.text == incoming.text,
+        (m) => m.id.startsWith('temp-') && m.senderId == currentUserId,
       );
       if (tempIdx != -1) {
-        // Replace the optimistic bubble with the confirmed one
         setState(() => _messages[tempIdx] = incoming);
         return;
       }
+
+      final duplicateIdx = _messages.indexWhere(
+        (m) =>
+            !m.id.startsWith('temp-') &&
+            m.senderId == currentUserId &&
+            m.text == incoming.text &&
+            m.mediaFileId == incoming.mediaFileId &&
+            m.mediaType == incoming.mediaType &&
+            m.replyToId == incoming.replyToId,
+      );
+      if (duplicateIdx != -1) return;
     }
 
     // New message — append
@@ -173,6 +192,114 @@ class _TeacherChatConversationScreenState
       return payload;
     }
     return event;
+  }
+
+  Future<void> _downloadFile(ChatMessage message) async {
+    if (message.mediaFileId == null) return;
+    try {
+      final downloadUrl =
+          '${ApiConstants.fileBaseUrl}/api/files/${message.mediaFileId!}/download';
+      final token = sl<StorageService>().getAccessTokenSync();
+      if (token == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Authentication required')),
+        );
+        return;
+      }
+
+      final dio = Dio();
+      final dir = await getDownloadsDirectory();
+      if (dir == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cannot access downloads folder')),
+        );
+        return;
+      }
+
+      final fileName = message.mediaName ?? 'download';
+      final savePath = '${dir.path}/$fileName';
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Downloading...')));
+
+      final fileId = message.mediaFileId!;
+      _showDownloadProgress(fileId, fileName);
+
+      await dio.download(
+        downloadUrl,
+        savePath,
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+        onReceiveProgress: (received, total) {
+          if (mounted) {
+            setState(() {
+              _downloadProgress[fileId] = total > 0 ? received / total : 0;
+            });
+          }
+        },
+      );
+
+      if (mounted) Navigator.of(context).pop();
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Saved to: $savePath')));
+      setState(() => _downloadProgress.remove(fileId));
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Download failed: $e')));
+      setState(() => _downloadProgress.remove(message.mediaFileId));
+    }
+  }
+
+  void _showDownloadProgress(String fileId, String fileName) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => Dialog(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Downloading',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 12),
+              Text(fileName, style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 24),
+              StreamBuilder<double>(
+                stream: _createFileProgressStream(fileId),
+                initialData: 0.0,
+                builder: (context, snapshot) {
+                  final progress = snapshot.data ?? 0.0;
+                  return Column(
+                    children: [
+                      LinearProgressIndicator(value: progress, minHeight: 8),
+                      const SizedBox(height: 12),
+                      Text('${(progress * 100).toStringAsFixed(0)}%'),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Stream<double> _createFileProgressStream(String fileId) async* {
+    while (true) {
+      yield _downloadProgress[fileId] ?? 0.0;
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
   }
 
   void _onTypingUpdate(Map<String, dynamic> event) {
@@ -468,7 +595,7 @@ class _TeacherChatConversationScreenState
       } else if (source == 'camera') {
         file = await ImagePicker().pickImage(source: ImageSource.camera);
       } else {
-        final result = await FilePicker.platform.pickFiles();
+        final result = await FilePicker.platform.pickFiles(withData: true);
         if (result != null && result.files.isNotEmpty) {
           file = result.files.first;
         }
@@ -492,13 +619,62 @@ class _TeacherChatConversationScreenState
       }
 
       setState(() => _uploading = true);
-      final mediaFileId = await ApiService().uploadChatMedia(file);
+      final dio = Dio();
+
+      // Build upload
+      List<int> bytes;
+      String filename = 'attachment';
+      if (file is XFile) {
+        bytes = await file.readAsBytes();
+        filename = file.name;
+      } else {
+        final dynamic rawBytes = file.bytes;
+        if (rawBytes is List<int> && rawBytes.isNotEmpty) {
+          bytes = rawBytes;
+        } else {
+          throw Exception('Cannot read file bytes');
+        }
+        final dynamic rawPath = file.path;
+        if (rawPath is String) {
+          final last = rawPath.split(RegExp(r'[\\\/]')).last;
+          if (last.isNotEmpty) filename = last;
+        }
+      }
+
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(bytes, filename: filename),
+      });
+
+      final token = sl<StorageService>().getAccessTokenSync();
+
+      // Upload with progress
+      final response = await dio.post(
+        '${ApiConstants.baseUrl}${ApiConstants.chatUpload}',
+        data: formData,
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+        onSendProgress: (sent, total) {
+          if (!mounted) return;
+          setState(() {
+            _uploadProgress = total > 0 ? sent / total : 0;
+          });
+        },
+      );
+
+      final mediaFileId = response.data['fileId'] ?? response.data['id'] ?? '';
+      if (mediaFileId.isEmpty) throw Exception('No fileId returned');
+
       if (!mounted) return;
-      setState(() => _uploading = false);
+      setState(() {
+        _uploading = false;
+        _uploadProgress = 0;
+      });
       await _sendMessage(mediaFileId: mediaFileId);
     } catch (e) {
       if (!mounted) return;
-      setState(() => _uploading = false);
+      setState(() {
+        _uploading = false;
+        _uploadProgress = 0;
+      });
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
@@ -851,6 +1027,41 @@ class _TeacherChatConversationScreenState
             ),
         ],
       ),
+    );
+  }
+
+  /// Build an image with auth headers for protected endpoints
+  Widget _buildAuthenticatedImage(
+    String url, {
+    required double width,
+    required double height,
+  }) {
+    return FutureBuilder<String?>(
+      future: sl<StorageService>().accessToken,
+      builder: (context, snapshot) {
+        final token = snapshot.data;
+        if (token == null) {
+          return Container(
+            width: width,
+            height: height,
+            color: Theme.of(context).colorScheme.surfaceContainerLow,
+            child: const Icon(Icons.broken_image_outlined),
+          );
+        }
+        return Image.network(
+          url,
+          width: width,
+          height: height,
+          fit: BoxFit.cover,
+          headers: {'Authorization': 'Bearer $token'},
+          errorBuilder: (_, __, ___) => Container(
+            width: width,
+            height: height,
+            color: Theme.of(context).colorScheme.surfaceContainerLow,
+            child: const Icon(Icons.broken_image_outlined),
+          ),
+        );
+      },
     );
   }
 
@@ -1210,44 +1421,41 @@ class _TeacherChatConversationScreenState
                           onTap: () => _openImageFullScreen(message),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
+                            child: _buildAuthenticatedImage(
                               '${ApiConstants.fileBaseUrl}/api/files/${message.mediaFileId!}/download',
                               width: 200,
                               height: 150,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
-                                width: 200,
-                                height: 100,
-                                color: theme.colorScheme.surfaceContainerLow,
-                                child: const Icon(Icons.broken_image_outlined),
-                              ),
                             ),
                           ),
                         ),
                       if (message.mediaFileId != null &&
                           message.mediaType != null &&
                           message.mediaType != 'image')
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.attach_file,
-                              size: 16,
-                              color: isMe
-                                  ? Colors.white70
-                                  : theme.colorScheme.onSurfaceVariant,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              message.mediaName ?? 'File',
-                              style: TextStyle(
-                                fontSize: 13,
+                        GestureDetector(
+                          onTap: () => _downloadFile(message),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.attach_file,
+                                size: 16,
                                 color: isMe
-                                    ? Colors.white
-                                    : theme.colorScheme.onSurface,
+                                    ? Colors.white70
+                                    : theme.colorScheme.onSurfaceVariant,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 4),
+                              Text(
+                                message.mediaName ?? 'File',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: isMe
+                                      ? Colors.white
+                                      : theme.colorScheme.onSurface,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       if (message.text.isNotEmpty)
                         Text(
@@ -1374,7 +1582,53 @@ class _TeacherChatConversationScreenState
           children: [
             Center(
               child: InteractiveViewer(
-                child: Image.network(url, fit: BoxFit.contain),
+                child: StreamBuilder<double>(
+                  stream: _createDownloadProgressStream(message.mediaFileId!),
+                  initialData: 0.0,
+                  builder: (context, progSnapshot) {
+                    final progress = progSnapshot.data ?? 0.0;
+                    return Stack(
+                      children: [
+                        Image.network(
+                          url,
+                          fit: BoxFit.contain,
+                          headers:
+                              sl<StorageService>().getAccessTokenSync() != null
+                              ? {
+                                  'Authorization':
+                                      'Bearer ${sl<StorageService>().getAccessTokenSync()}',
+                                }
+                              : {},
+                          loadingBuilder: (_, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 60,
+                                    height: 60,
+                                    child: CircularProgressIndicator(
+                                      value: progress > 0 ? progress : null,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    '${(progress * 100).toStringAsFixed(0)}%',
+                                    style: const TextStyle(color: Colors.white),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
             Positioned(
@@ -1389,6 +1643,13 @@ class _TeacherChatConversationScreenState
         ),
       ),
     );
+  }
+
+  Stream<double> _createDownloadProgressStream(String fileId) async* {
+    while (true) {
+      yield _downloadProgress[fileId] ?? 0.0;
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
   }
 
   Widget _buildInputBar() {

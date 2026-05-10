@@ -68,6 +68,9 @@ class StorageService {
 
   Future<String?> get refreshToken async => _box.get(_keyRefreshToken) as String?;
 
+  /// Get access token synchronously (from Hive cache)
+  String? getAccessTokenSync() => _box.get(_keyAccessToken) as String?;
+
   Future<void> saveUser(Map<String, dynamic> user) async {
     await _box.put(_keyUser, jsonEncode(user));
   }
