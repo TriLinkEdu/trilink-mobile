@@ -605,6 +605,7 @@ class _TeacherChatConversationScreenState
       _editingMessageId = message.id;
       _editController.text = message.text;
     });
+    FocusScope.of(context).requestFocus(_focusNode);
   }
 
   Future<void> _confirmEdit(ChatMessage message) async {
@@ -624,6 +625,8 @@ class _TeacherChatConversationScreenState
             isEdited: true,
           );
           _editingMessageId = '';
+          _editController.clear();
+          _messageController.clear();
         });
       }
     } catch (e) {
@@ -762,6 +765,15 @@ class _TeacherChatConversationScreenState
                           fontWeight: FontWeight.w500,
                         ),
                       ),
+                    if (_typingUsers.values.any((v) => v))
+                      Text(
+                        'typing...',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -790,7 +802,6 @@ class _TeacherChatConversationScreenState
           Column(
             children: [
               Expanded(child: _buildMessagesList()),
-              if (_typingUsers.values.any((v) => v)) _buildTypingIndicator(),
               if (_blockedNotice != null) _buildBlockedBanner(),
               _buildInputBar(),
             ],
@@ -859,26 +870,6 @@ class _TeacherChatConversationScreenState
     if (_blockedNotice == null && mounted) {
       setState(() {});
     }
-  }
-
-  Widget _buildTypingIndicator() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-      child: Row(
-        children: [
-          _AnimatedDots(),
-          const SizedBox(width: 8),
-          Text(
-            'typing...',
-            style: TextStyle(
-              fontSize: 12,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildBlockedBanner() {
@@ -1036,7 +1027,10 @@ class _TeacherChatConversationScreenState
   String _formatTime(String iso) {
     try {
       final d = DateTime.parse(iso).toLocal();
-      return '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+      final hour = d.hour % 12 == 0 ? 12 : d.hour % 12;
+      final minute = d.minute.toString().padLeft(2, '0');
+      final period = d.hour >= 12 ? 'PM' : 'AM';
+      return '$hour:$minute $period';
     } catch (_) {
       return '';
     }
@@ -1082,13 +1076,12 @@ class _TeacherChatConversationScreenState
     GlobalKey? bubbleKey,
   ) {
     final isMe = message.senderId == currentUserId;
-    final isEditing = _editingMessageId == message.id;
     final theme = Theme.of(context);
 
     return KeyedSubtree(
       key: bubbleKey,
       child: GestureDetector(
-        onLongPress: () => _showMessageActions(message),
+        onTap: () => _showMessageActions(message),
         onHorizontalDragEnd: (details) {
           if ((details.primaryVelocity ?? 0) > 0 && !message.isDeleted) {
             setState(() => _replyTo = message);
@@ -1156,7 +1149,7 @@ class _TeacherChatConversationScreenState
                   ),
                 ),
               // Bubble or edit field
-              if (isEditing)
+              if (_editingMessageId == '__inline_edit__')
                 Row(
                   children: [
                     Expanded(
@@ -1404,6 +1397,16 @@ class _TeacherChatConversationScreenState
         ? const Color(0xFF2C2C3E)
         : const Color(0xFFEEEEF4);
     final isBlocked = _blockedNotice != null;
+    final isEditing = _editingMessageId.isNotEmpty;
+    ChatMessage? editingMessage;
+    if (isEditing) {
+      for (final msg in _messages) {
+        if (msg.id == _editingMessageId) {
+          editingMessage = msg;
+          break;
+        }
+      }
+    }
 
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -1496,7 +1499,9 @@ class _TeacherChatConversationScreenState
                   Icons.attach_file,
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
-                onPressed: _uploading ? null : _showAttachmentSheet,
+                onPressed: _uploading || isEditing
+                    ? null
+                    : _showAttachmentSheet,
               ),
               Expanded(
                 child: Container(
@@ -1506,11 +1511,15 @@ class _TeacherChatConversationScreenState
                     borderRadius: BorderRadius.circular(24),
                   ),
                   child: TextField(
-                    controller: _messageController,
+                    controller: isEditing
+                        ? _editController
+                        : _messageController,
                     focusNode: _focusNode,
                     decoration: InputDecoration(
                       hintText: isBlocked
                           ? 'Conversation blocked'
+                          : isEditing
+                          ? 'Edit message...'
                           : 'Message...',
                       hintStyle: TextStyle(
                         color: theme.colorScheme.onSurfaceVariant,
@@ -1527,13 +1536,29 @@ class _TeacherChatConversationScreenState
                     textCapitalization: TextCapitalization.sentences,
                     style: const TextStyle(fontSize: 14.5),
                     onChanged: isBlocked ? null : _handleTyping,
-                    onSubmitted: isBlocked ? null : (_) => _sendMessage(),
+                    onSubmitted: isBlocked
+                        ? null
+                        : (_) {
+                            if (isEditing && editingMessage != null) {
+                              _confirmEdit(editingMessage);
+                            } else {
+                              _sendMessage();
+                            }
+                          },
                   ),
                 ),
               ),
               const SizedBox(width: 8),
               GestureDetector(
-                onTap: _sending || isBlocked ? null : () => _sendMessage(),
+                onTap: _sending || isBlocked
+                    ? null
+                    : () {
+                        if (isEditing && editingMessage != null) {
+                          _confirmEdit(editingMessage);
+                        } else {
+                          _sendMessage();
+                        }
+                      },
                 child: Container(
                   width: 44,
                   height: 44,
@@ -1554,7 +1579,7 @@ class _TeacherChatConversationScreenState
                           ),
                         )
                       : Icon(
-                          isBlocked ? Icons.block_outlined : Icons.send_rounded,
+                          isEditing ? Icons.check_rounded : Icons.send_rounded,
                           color: isBlocked
                               ? theme.colorScheme.onSurfaceVariant
                               : Colors.white,
