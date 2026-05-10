@@ -625,6 +625,8 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
             isEdited: true,
           );
           _editingMessageId = '';
+          _editController.clear();
+          _messageController.clear();
         });
       }
     } catch (e) {
@@ -714,7 +716,6 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
           Column(
             children: [
               Expanded(child: _buildBody()),
-              if (_typingUsers.values.any((v) => v)) _buildTypingIndicator(),
               if (_blockedNotice != null) _buildBlockedBanner(),
               _buildMessageInput(),
             ],
@@ -841,6 +842,15 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
                       fontWeight: FontWeight.w400,
                     ),
                   ),
+                if (_typingUsers.values.any((v) => v))
+                  Text(
+                    'typing...',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -863,26 +873,6 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
           tooltip: 'Conversation Info',
         ),
       ],
-    );
-  }
-
-  Widget _buildTypingIndicator() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-      child: Row(
-        children: [
-          _ParentAnimatedDots(),
-          const SizedBox(width: 8),
-          Text(
-            'typing...',
-            style: TextStyle(
-              fontSize: 12,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1105,13 +1095,13 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
     GlobalKey? bubbleKey,
   ) {
     final isMe = message.senderId == currentUserId;
-    final isEditing = _editingMessageId == message.id;
+    final isSending = message.id.startsWith('temp-') && isMe;
     final theme = Theme.of(context);
 
     return KeyedSubtree(
       key: bubbleKey,
       child: GestureDetector(
-        onLongPress: () => _showMessageActions(message),
+        onTap: () => _showMessageActions(message),
         onHorizontalDragEnd: (details) {
           if ((details.primaryVelocity ?? 0) > 0 && !message.isDeleted) {
             setState(() => _replyTo = message);
@@ -1177,7 +1167,7 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
                     ),
                   ),
                 ),
-              if (isEditing)
+              if (_editingMessageId == '__inline_edit__')
                 Row(
                   children: [
                     Expanded(
@@ -1236,7 +1226,9 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
                       ),
                     ],
                   ),
-                  child: Column(
+                  child: Opacity(
+                    opacity: isSending ? 0.72 : 1,
+                    child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (message.mediaFileId != null &&
@@ -1300,7 +1292,21 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
                             height: 1.45,
                           ),
                         ),
+                      if (isSending) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          'Sending...',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isMe
+                                ? Colors.white70
+                                : theme.colorScheme.onSurfaceVariant,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
                     ],
+                  ),
                   ),
                 ),
               if (message.reactions.isNotEmpty)
@@ -1418,6 +1424,16 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
         ? const Color(0xFF2C2C3E)
         : const Color(0xFFEEEEF4);
     final isBlocked = _blockedNotice != null;
+    final isEditing = _editingMessageId.isNotEmpty;
+    ChatMessage? editingMessage;
+    if (isEditing) {
+      for (final msg in _messages) {
+        if (msg.id == _editingMessageId) {
+          editingMessage = msg;
+          break;
+        }
+      }
+    }
 
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -1439,6 +1455,59 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (isEditing && editingMessage != null)
+            Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+                border: Border(
+                  left: BorderSide(color: AppColors.primary, width: 3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Editing message',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        Text(
+                          editingMessage.text,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.close,
+                      size: 18,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    onPressed: () {
+                      setState(() => _editingMessageId = '');
+                      _editController.clear();
+                    },
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ),
           if (_replyTo != null)
             Container(
               margin: const EdgeInsets.only(bottom: 8),
@@ -1507,7 +1576,7 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
                   Icons.attach_file,
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
-                onPressed: _uploading ? null : _showAttachmentSheet,
+                onPressed: _uploading || isEditing ? null : _showAttachmentSheet,
               ),
               Expanded(
                 child: Container(
@@ -1517,12 +1586,14 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
                     borderRadius: BorderRadius.circular(24),
                   ),
                   child: TextField(
-                    controller: _messageController,
+                    controller: isEditing ? _editController : _messageController,
                     focusNode: _focusNode,
                     decoration: InputDecoration(
                       hintText: isBlocked
                           ? 'Conversation blocked'
-                          : 'Message...',
+                          : isEditing
+                              ? 'Edit message...'
+                              : 'Message...',
                       hintStyle: TextStyle(
                         color: theme.colorScheme.onSurfaceVariant,
                         fontSize: 14,
@@ -1538,18 +1609,34 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
                     textCapitalization: TextCapitalization.sentences,
                     style: const TextStyle(fontSize: 14.5),
                     onChanged: isBlocked ? null : _handleTyping,
-                    onSubmitted: isBlocked ? null : (_) => _sendMessage(),
+                    onSubmitted: isBlocked
+                        ? null
+                        : (_) {
+                            if (isEditing && editingMessage != null) {
+                              _confirmEdit(editingMessage);
+                            } else {
+                              _sendMessage();
+                            }
+                          },
                   ),
                 ),
               ),
               const SizedBox(width: 8),
               GestureDetector(
-                onTap: _sending ? null : () => _sendMessage(),
+                onTap: _sending || isBlocked
+                    ? null
+                    : () {
+                        if (isEditing && editingMessage != null) {
+                          _confirmEdit(editingMessage);
+                        } else {
+                          _sendMessage();
+                        }
+                      },
                 child: Container(
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: _sending
+                    color: (_sending || isBlocked)
                         ? theme.colorScheme.surfaceContainerHigh
                         : AppColors.primary,
                     shape: BoxShape.circle,
@@ -1564,8 +1651,8 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
                             ),
                           ),
                         )
-                      : const Icon(
-                          Icons.send_rounded,
+                      : Icon(
+                          isEditing ? Icons.check_rounded : Icons.send_rounded,
                           color: Colors.white,
                           size: 20,
                         ),
@@ -1643,9 +1730,10 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
   String _formatTime(String isoString) {
     try {
       final date = DateTime.parse(isoString).toLocal();
-      final h = date.hour.toString().padLeft(2, '0');
-      final m = date.minute.toString().padLeft(2, '0');
-      return '$h:$m';
+      final hour = date.hour % 12 == 0 ? 12 : date.hour % 12;
+      final minute = date.minute.toString().padLeft(2, '0');
+      final period = date.hour >= 12 ? 'PM' : 'AM';
+      return '$hour:$minute $period';
     } catch (_) {
       return '';
     }
