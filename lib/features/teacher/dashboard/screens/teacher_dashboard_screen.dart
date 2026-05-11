@@ -12,7 +12,14 @@ import '../../classes/screens/class_list_screen.dart';
 import '../../notifications/screens/teacher_notifications_screen.dart';
 
 class TeacherDashboardScreen extends StatefulWidget {
-  const TeacherDashboardScreen({super.key});
+  final VoidCallback? onSwitchToAttendance;
+  final VoidCallback? onSwitchToClasses;
+
+  const TeacherDashboardScreen({
+    super.key,
+    this.onSwitchToAttendance,
+    this.onSwitchToClasses,
+  });
 
   @override
   State<TeacherDashboardScreen> createState() => _TeacherDashboardScreenState();
@@ -422,6 +429,8 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
 
   Widget _buildQuickActions(BuildContext context) {
     final theme = Theme.of(context);
+    final onSwitchToAttendance = widget.onSwitchToAttendance ?? () {};
+    final onSwitchToClasses = widget.onSwitchToClasses ?? () {};
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -442,12 +451,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 icon: Icons.fact_check_outlined,
                 label: 'Take\nAttendance',
                 color: theme.colorScheme.primary,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const TeacherAttendanceScreen(),
-                  ),
-                ),
+                onTap: onSwitchToAttendance,
               ),
             ),
             const SizedBox(width: 12),
@@ -456,10 +460,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 icon: Icons.class_outlined,
                 label: 'My\nClasses',
                 color: theme.colorScheme.secondary,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ClassListScreen()),
-                ),
+                onTap: onSwitchToClasses,
               ),
             ),
             const SizedBox(width: 12),
@@ -468,11 +469,9 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 icon: Icons.campaign_outlined,
                 label: 'New\nPost',
                 color: Colors.purple,
-                onTap: () => Navigator.push(
+                onTap: () => Navigator.pushNamed(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const CreateAnnouncementScreen(),
-                  ),
+                  RouteNames.teacherAnnouncements,
                 ),
               ),
             ),
@@ -814,30 +813,39 @@ class _QuickActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, color: color, size: 28),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 112),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(icon, color: color, size: 28),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
