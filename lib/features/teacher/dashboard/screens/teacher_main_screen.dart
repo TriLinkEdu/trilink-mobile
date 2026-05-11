@@ -28,14 +28,14 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
   ];
 
   List<Widget> get _screens => [
-        TeacherDashboardScreen(
-          onSwitchToAttendance: () => setState(() => _currentIndex = 2),
-          onSwitchToClasses: () => setState(() => _currentIndex = 1),
-        ),
-        ClassListScreen(),
-        TeacherAttendanceScreen(),
-        TeacherProfileScreen(),
-      ];
+    TeacherDashboardScreen(
+      onSwitchToAttendance: () => setState(() => _currentIndex = 2),
+      onSwitchToClasses: () => setState(() => _currentIndex = 1),
+    ),
+    ClassListScreen(),
+    TeacherAttendanceScreen(),
+    TeacherProfileScreen(),
+  ];
 
   Future<bool> _onWillPop() async {
     // Close drawer if open
