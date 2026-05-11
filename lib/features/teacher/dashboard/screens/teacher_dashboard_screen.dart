@@ -70,7 +70,8 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
       }).length;
 
       // Pending grades = backend approx + ungraded assignment submissions
-      final backendPending = (data['pendingGradingApprox'] as num?)?.toInt() ?? 0;
+      final backendPending =
+          (data['pendingGradingApprox'] as num?)?.toInt() ?? 0;
       int pendingFromAssignments = 0;
       for (final a in assignments) {
         final m = a as Map<String, dynamic>;
@@ -78,8 +79,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             (m['submissionCount'] as num? ?? m['totalSubmissions'] as num? ?? 0)
                 .toInt();
         final graded =
-            (m['gradedCount'] as num? ?? m['totalGraded'] as num? ?? 0)
-                .toInt();
+            (m['gradedCount'] as num? ?? m['totalGraded'] as num? ?? 0).toInt();
         if (submitted > graded) pendingFromAssignments += (submitted - graded);
       }
 
@@ -89,8 +89,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         _pendingGrading = backendPending + pendingFromAssignments;
         _unreadNotifications =
             (data['unreadNotifications'] as num?)?.toInt() ?? 0;
-        _attendanceRate =
-            (data['attendanceRate'] as num?)?.toDouble() ?? 0.0;
+        _attendanceRate = (data['attendanceRate'] as num?)?.toDouble() ?? 0.0;
         _publishedExams = (data['publishedExams'] as num?)?.toInt() ?? 0;
         _notifications = notifs.cast<Map<String, dynamic>>();
         _loading = false;
@@ -402,8 +401,8 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 color: ratePct >= 80
                     ? Colors.green
                     : ratePct >= 60
-                        ? Colors.orange
-                        : Colors.red,
+                    ? Colors.orange
+                    : Colors.red,
               ),
             ),
             const SizedBox(width: 12),
@@ -685,8 +684,7 @@ class _StatCard extends StatelessWidget {
           color: theme.colorScheme.outlineVariant.withOpacity(0.5),
         ),
         boxShadow: [
-          BoxShadow(
-              color: theme.shadowColor.withOpacity(0.08), blurRadius: 8),
+          BoxShadow(color: theme.shadowColor.withOpacity(0.08), blurRadius: 8),
         ],
       ),
       child: Column(

@@ -61,8 +61,11 @@ class _ParentSubjectListScreenState extends State<ParentSubjectListScreen> {
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new,
-              color: theme.colorScheme.onSurface, size: 20),
+          icon: Icon(
+            Icons.arrow_back_ios_new,
+            color: theme.colorScheme.onSurface,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
@@ -178,10 +181,15 @@ class _ParentSubjectListScreenState extends State<ParentSubjectListScreen> {
               child: Center(
                 child: Text(
                   subjectCode.isNotEmpty
-                      ? subjectCode.substring(0, subjectCode.length > 3 ? 3 : subjectCode.length).toUpperCase()
+                      ? subjectCode
+                            .substring(
+                              0,
+                              subjectCode.length > 3 ? 3 : subjectCode.length,
+                            )
+                            .toUpperCase()
                       : subjectName.isNotEmpty
-                          ? subjectName[0].toUpperCase()
-                          : '?',
+                      ? subjectName[0].toUpperCase()
+                      : '?',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -207,15 +215,20 @@ class _ParentSubjectListScreenState extends State<ParentSubjectListScreen> {
                   if (teacherName.isNotEmpty)
                     Row(
                       children: [
-                        Icon(Icons.person_outline,
-                            size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        Icon(
+                          Icons.person_outline,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             teacherName,
                             style: TextStyle(
                               fontSize: 13,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -226,8 +239,11 @@ class _ParentSubjectListScreenState extends State<ParentSubjectListScreen> {
                   if (gradeName.isNotEmpty || sectionName.isNotEmpty)
                     Row(
                       children: [
-                        Icon(Icons.class_outlined,
-                            size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        Icon(
+                          Icons.class_outlined,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           sectionName.isNotEmpty
@@ -235,7 +251,9 @@ class _ParentSubjectListScreenState extends State<ParentSubjectListScreen> {
                               : gradeName,
                           style: TextStyle(
                             fontSize: 12,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -243,8 +261,11 @@ class _ParentSubjectListScreenState extends State<ParentSubjectListScreen> {
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios,
-                size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ],
         ),
       ),
@@ -258,7 +279,11 @@ class _ParentSubjectListScreenState extends State<ParentSubjectListScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 16),
             Text(
               'Failed to load subjects',
@@ -272,7 +297,10 @@ class _ParentSubjectListScreenState extends State<ParentSubjectListScreen> {
             Text(
               _error!,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                fontSize: 13,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
@@ -298,8 +326,11 @@ class _ParentSubjectListScreenState extends State<ParentSubjectListScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.menu_book_outlined,
-              size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
+          Icon(
+            Icons.menu_book_outlined,
+            size: 64,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(height: 16),
           Text(
             'No subjects found',
@@ -313,7 +344,10 @@ class _ParentSubjectListScreenState extends State<ParentSubjectListScreen> {
           Text(
             'No subjects are enrolled for this student.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            style: TextStyle(
+              fontSize: 13,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),

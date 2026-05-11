@@ -365,13 +365,15 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                 CircleAvatar(
                   radius: 30,
                   backgroundColor: Colors.white.withValues(alpha: 0.25),
-                  backgroundImage: (user?.profileImageFileId != null &&
+                  backgroundImage:
+                      (user?.profileImageFileId != null &&
                           user!.profileImageFileId!.isNotEmpty)
                       ? NetworkImage(
                           '${ApiConstants.fileBaseUrl}/api/files/${user.profileImageFileId}/download',
                         )
                       : null,
-                  child: (user?.profileImageFileId == null ||
+                  child:
+                      (user?.profileImageFileId == null ||
                           user!.profileImageFileId!.isEmpty)
                       ? Text(
                           (user?.firstName ?? '').isNotEmpty
@@ -1185,7 +1187,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
+        decoration: BoxDecoration(
           gradient: AppGradients.level,
           borderRadius: BorderRadius.circular(14),
         ),

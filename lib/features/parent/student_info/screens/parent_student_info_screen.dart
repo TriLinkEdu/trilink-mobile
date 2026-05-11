@@ -319,7 +319,7 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
         const SizedBox(width: 10),
         _buildStatCard(
           icon: Icons.menu_book_outlined,
-            color: AppColors.subjectPurple,
+          color: AppColors.subjectPurple,
           label: 'Subjects',
           value: '$courses',
         ),

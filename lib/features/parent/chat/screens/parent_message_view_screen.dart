@@ -1422,8 +1422,8 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: message.isDeleted
-                      ? theme.colorScheme.surfaceContainerLow
-                      : isMe
+                        ? theme.colorScheme.surfaceContainerLow
+                        : isMe
                         ? AppColors.primary
                         : theme.colorScheme.surfaceVariant,
                     borderRadius: BorderRadius.only(
