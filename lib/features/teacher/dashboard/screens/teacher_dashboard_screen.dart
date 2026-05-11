@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/offline_banner.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/routes/route_names.dart';
@@ -481,7 +482,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               child: _QuickActionButton(
                 icon: Icons.feedback_outlined,
                 label: 'My\nFeedback',
-                color: const Color(0xFFFF6D00),
+                color: AppColors.subjectOrange,
                 onTap: () =>
                     Navigator.pushNamed(context, RouteNames.teacherFeedback),
               ),

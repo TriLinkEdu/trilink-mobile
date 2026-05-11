@@ -432,9 +432,9 @@ class _StudentListScreenState extends State<StudentListScreen> {
           final colors = [
             AppColors.primary,
             AppColors.secondary,
-            const Color(0xFF7C4DFF),
-            const Color(0xFFFF6D00),
-            const Color(0xFF00BFA5),
+            AppColors.subjectPurple,
+            AppColors.subjectOrange,
+            AppColors.subjectTeal,
           ];
           final color = colors[index % colors.length];
 

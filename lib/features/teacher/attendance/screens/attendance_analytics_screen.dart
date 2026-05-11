@@ -1144,7 +1144,7 @@ class _TrendChartPainter extends CustomPainter {
     const double range = maxVal - minVal;
 
     final gridPaint = Paint()
-      ..color = const Color(0xFFE8E8E8)
+      ..color = labelColor.withOpacity(0.12)
       ..strokeWidth = 1;
 
     for (int i = 0; i <= 4; i++) {

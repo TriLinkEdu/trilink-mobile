@@ -355,11 +355,8 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1A73E8), Color(0xFF6C63FF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: AppGradients.primaryHero,
+        
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -1089,10 +1086,8 @@ class _TeacherAiAssistantScreenState extends State<TeacherAiAssistantScreen> {
           Container(
             width: 40,
             height: 40,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF1A73E8), Color(0xFF6C63FF)],
-              ),
+            decoration: BoxDecoration(
+              gradient: AppGradients.primaryHero,
               shape: BoxShape.circle,
             ),
             child: _sendingAsk

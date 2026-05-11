@@ -1249,9 +1249,7 @@ class _TeacherChatConversationScreenState
 
   Widget _buildDateDivider(String date) {
     final theme = Theme.of(context);
-    final divColor = theme.brightness == Brightness.dark
-        ? const Color(0xFF2C2C3E)
-        : const Color(0xFFEEEEF4);
+    final divColor = theme.colorScheme.surfaceVariant;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Row(
@@ -1399,12 +1397,10 @@ class _TeacherChatConversationScreenState
                   ),
                   decoration: BoxDecoration(
                     color: message.isDeleted
-                        ? theme.colorScheme.surfaceContainerLow
-                        : isMe
+                      ? theme.colorScheme.surfaceContainerLow
+                      : isMe
                         ? AppColors.primary
-                        : theme.brightness == Brightness.dark
-                        ? const Color(0xFF2C2C3E)
-                        : const Color(0xFFEEEEF4),
+                        : theme.colorScheme.surfaceVariant,
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(16),
                       topRight: const Radius.circular(16),
@@ -1654,9 +1650,7 @@ class _TeacherChatConversationScreenState
 
   Widget _buildInputBar() {
     final theme = Theme.of(context);
-    final inputBg = theme.brightness == Brightness.dark
-        ? const Color(0xFF2C2C3E)
-        : const Color(0xFFEEEEF4);
+    final inputBg = theme.colorScheme.surfaceVariant;
     final isBlocked = _blockedNotice != null;
     final isEditing = _editingMessageId.isNotEmpty;
     ChatMessage? editingMessage;

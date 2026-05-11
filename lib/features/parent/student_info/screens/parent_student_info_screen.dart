@@ -319,7 +319,7 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
         const SizedBox(width: 10),
         _buildStatCard(
           icon: Icons.menu_book_outlined,
-          color: const Color(0xFF7C4DFF),
+            color: AppColors.subjectPurple,
           label: 'Subjects',
           value: '$courses',
         ),
@@ -492,10 +492,10 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
     final subjectColors = [
       AppColors.primary,
       AppColors.secondary,
-      const Color(0xFF7C4DFF),
-      const Color(0xFFFF6D00),
-      const Color(0xFF00BFA5),
-      const Color(0xFFE91E63),
+      AppColors.subjectPurple,
+      AppColors.subjectOrange,
+      AppColors.subjectTeal,
+      AppColors.subjectPink,
     ];
 
     // Show only top 3 subjects
@@ -672,9 +672,9 @@ class _ParentStudentInfoScreenState extends State<ParentStudentInfoScreen> {
     final colors = [
       AppColors.primary,
       AppColors.secondary,
-      const Color(0xFF7C4DFF),
-      const Color(0xFFFF6D00),
-      const Color(0xFF00BFA5),
+      AppColors.subjectPurple,
+      AppColors.subjectOrange,
+      AppColors.subjectTeal,
     ];
 
     // Show only top 3 teachers
