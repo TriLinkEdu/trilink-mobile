@@ -20,18 +20,21 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
   int _currentIndex = 0;
   final _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  final List<Widget> _screens = const [
-    TeacherDashboardScreen(),
-    ClassListScreen(),
-    TeacherAttendanceScreen(),
-    TeacherProfileScreen(),
-  ];
-
   final List<String> _screenTitles = const [
     'Dashboard',
     'My Classes',
     'Attendance',
     'Profile',
+  ];
+
+  List<Widget> get _screens => [
+    TeacherDashboardScreen(
+      onSwitchToAttendance: () => setState(() => _currentIndex = 2),
+      onSwitchToClasses: () => setState(() => _currentIndex = 1),
+    ),
+    ClassListScreen(),
+    TeacherAttendanceScreen(),
+    TeacherProfileScreen(),
   ];
 
   Future<bool> _onWillPop() async {

@@ -258,9 +258,7 @@ class _ParentChildConversationViewScreenState
                   decoration: BoxDecoration(
                     color: isChild
                         ? AppColors.primary
-                        : Theme.of(context).brightness == Brightness.dark
-                            ? const Color(0xFF2C2C3E)
-                            : const Color(0xFFEEEEF4),
+                        : Theme.of(context).colorScheme.surfaceVariant,
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(16),
                       topRight: const Radius.circular(16),

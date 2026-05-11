@@ -365,13 +365,15 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                 CircleAvatar(
                   radius: 30,
                   backgroundColor: Colors.white.withValues(alpha: 0.25),
-                  backgroundImage: (user?.profileImageFileId != null &&
+                  backgroundImage:
+                      (user?.profileImageFileId != null &&
                           user!.profileImageFileId!.isNotEmpty)
                       ? NetworkImage(
                           '${ApiConstants.fileBaseUrl}/api/files/${user.profileImageFileId}/download',
                         )
                       : null,
-                  child: (user?.profileImageFileId == null ||
+                  child:
+                      (user?.profileImageFileId == null ||
                           user!.profileImageFileId!.isEmpty)
                       ? Text(
                           (user?.firstName ?? '').isNotEmpty
@@ -874,9 +876,9 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
               final colors = [
                 AppColors.primary,
                 AppColors.secondary,
-                const Color(0xFF7C4DFF),
-                const Color(0xFFFF6D00),
-                const Color(0xFF00BFA5),
+                AppColors.subjectPurple,
+                AppColors.subjectOrange,
+                AppColors.subjectTeal,
               ];
               final color = colors[i % colors.length];
               final pct = avg ?? 0;
@@ -1062,7 +1064,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       _FeatureItem(
         icon: Icons.person_outline,
         label: 'Student\nInfo',
-        color: const Color(0xFF7C4DFF),
+        color: AppColors.subjectPurple,
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
@@ -1099,7 +1101,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       _FeatureItem(
         icon: Icons.book_outlined,
         label: 'Subjects\nInfo',
-        color: const Color(0xFF00BFA5),
+        color: AppColors.subjectTeal,
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
@@ -1186,11 +1188,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF1A73E8), Color(0xFF4A9AF5)],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-          ),
+          gradient: AppGradients.level,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(

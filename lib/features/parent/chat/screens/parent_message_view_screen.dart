@@ -1275,9 +1275,7 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
   }
 
   Widget _buildDateSeparator(String date) {
-    final divColor = Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF2C2C3E)
-        : const Color(0xFFEEEEF4);
+    final divColor = Theme.of(context).colorScheme.surfaceVariant;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Row(
@@ -1427,9 +1425,7 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
                         ? theme.colorScheme.surfaceContainerLow
                         : isMe
                         ? AppColors.primary
-                        : theme.brightness == Brightness.dark
-                        ? const Color(0xFF2C2C3E)
-                        : const Color(0xFFEEEEF4),
+                        : theme.colorScheme.surfaceVariant,
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(18),
                       topRight: const Radius.circular(18),
@@ -1697,9 +1693,7 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
 
   Widget _buildMessageInput() {
     final theme = Theme.of(context);
-    final inputBg = theme.brightness == Brightness.dark
-        ? const Color(0xFF2C2C3E)
-        : const Color(0xFFEEEEF4);
+    final inputBg = theme.colorScheme.surfaceVariant;
     final isBlocked = _blockedNotice != null;
     final isEditing = _editingMessageId.isNotEmpty;
     ChatMessage? editingMessage;

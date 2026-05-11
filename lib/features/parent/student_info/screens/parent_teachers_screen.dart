@@ -141,10 +141,10 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
     final colors = [
       AppColors.primary,
       AppColors.secondary,
-      const Color(0xFF7C4DFF),
-      const Color(0xFFFF6D00),
-      const Color(0xFF00BFA5),
-      const Color(0xFFE91E63),
+      AppColors.subjectPurple,
+      AppColors.subjectOrange,
+      AppColors.subjectTeal,
+      AppColors.subjectPink,
     ];
     final color = colors[index % colors.length];
 

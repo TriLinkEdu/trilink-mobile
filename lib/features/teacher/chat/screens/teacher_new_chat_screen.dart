@@ -120,8 +120,9 @@ class _TeacherNewChatScreenState extends State<TeacherNewChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: theme.colorScheme.background,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,

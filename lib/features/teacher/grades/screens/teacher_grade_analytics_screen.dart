@@ -413,7 +413,7 @@ class _TeacherGradeAnalyticsScreenState
           SizedBox(
             height: 140,
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: entries.map((e) {
                 final pct = total == 0 ? 0.0 : (e.value / total) * 100;
                 final h = maxVal == 0 ? 0.0 : (e.value / maxVal) * 110;
@@ -422,7 +422,7 @@ class _TeacherGradeAnalyticsScreenState
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
                           '${e.value}',
@@ -433,12 +433,18 @@ class _TeacherGradeAnalyticsScreenState
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Container(
-                          height: h,
-                          decoration: BoxDecoration(
-                            color: color,
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(6),
+                        Expanded(
+                          child: Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Container(
+                              constraints: BoxConstraints(maxHeight: 110),
+                              height: h,
+                              decoration: BoxDecoration(
+                                color: color,
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(6),
+                                ),
+                              ),
                             ),
                           ),
                         ),
