@@ -20,7 +20,7 @@ class ChatConversationCubit extends Cubit<ChatConversationState> {
         DateTime.now().difference(_lastLoadedAt!) < _ttl) {
       return;
     }
-    await loadMessages();
+    await Future.wait([loadMessages(), loadMembers()]);
   }
 
   Future<void> loadMessages({bool showLoading = true}) async {
@@ -45,6 +45,17 @@ class ChatConversationCubit extends Cubit<ChatConversationState> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> loadMembers() async {
+    if (state.membersLoading) return;
+    emit(state.copyWith(membersLoading: true));
+    try {
+      final members = await _repository.fetchConversationMembers(conversationId);
+      emit(state.copyWith(members: members, membersLoading: false));
+    } catch (e) {
+      emit(state.copyWith(membersLoading: false));
     }
   }
 
@@ -76,6 +87,22 @@ class ChatConversationCubit extends Cubit<ChatConversationState> {
       _lastLoadedAt = DateTime.now();
     } catch (e) {
       emit(state.copyWith(errorMessage: 'Unable to send image.'));
+      rethrow;
+    }
+  }
+
+  Future<void> sendFileMessage(String filePath) async {
+    try {
+      final sentMessage = await _repository.sendFileMessage(conversationId, filePath);
+      emit(
+        state.copyWith(
+          status: ConversationStatus.loaded,
+          messages: [...state.messages, sentMessage],
+        ),
+      );
+      _lastLoadedAt = DateTime.now();
+    } catch (e) {
+      emit(state.copyWith(errorMessage: 'Unable to send file.'));
       rethrow;
     }
   }

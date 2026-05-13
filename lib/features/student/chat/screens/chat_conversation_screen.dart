@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/storage_service.dart';
@@ -16,15 +18,20 @@ import '../cubit/chat_conversation_cubit.dart';
 import '../repositories/student_chat_repository.dart';
 import '../widgets/chat_bubble.dart';
 import '../models/chat_models.dart';
+import '../widgets/chat_profile_sheet.dart';
 
 class ChatConversationScreen extends StatelessWidget {
   final String conversationId;
   final String title;
+  final bool isGroup;
+  final String? avatarPath;
 
   const ChatConversationScreen({
     super.key,
     required this.conversationId,
     required this.title,
+    this.isGroup = false,
+    this.avatarPath,
   });
 
   @override
@@ -36,6 +43,8 @@ class ChatConversationScreen extends StatelessWidget {
       child: _ChatConversationView(
         conversationId: conversationId,
         title: title,
+        isGroup: isGroup,
+        avatarPath: avatarPath,
       ),
     );
   }
@@ -44,10 +53,14 @@ class ChatConversationScreen extends StatelessWidget {
 class _ChatConversationView extends StatefulWidget {
   final String conversationId;
   final String title;
+  final bool isGroup;
+  final String? avatarPath;
 
   const _ChatConversationView({
     required this.conversationId,
     required this.title,
+    required this.isGroup,
+    required this.avatarPath,
   });
 
   @override
@@ -154,6 +167,73 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
     }
   }
 
+  Future<void> _pickAndSendFile() async {
+    if (_isSending) return;
+
+    try {
+      final result = await FilePicker.platform.pickFiles();
+      if (result == null || result.files.isEmpty) return;
+      final path = result.files.single.path;
+      if (path == null || path.isEmpty) return;
+
+      setState(() => _isSending = true);
+      await context.read<ChatConversationCubit>().sendFileMessage(path);
+
+      if (!mounted) return;
+      setState(() => _isSending = false);
+      _scrollToBottom();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('File sent!')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSending = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to send file')),
+      );
+    }
+  }
+
+  void _showProfileSheet(String userId, ChatMemberModel? member) {
+    if (userId.isEmpty) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => ChatProfileSheet(
+        userId: userId,
+        currentUserId: _currentUserId,
+        member: member,
+        repository: sl<StudentChatRepository>(),
+      ),
+    );
+  }
+
+  void _openImageViewer(String imageUrl) {
+    if (imageUrl.isEmpty) return;
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        insetPadding: const EdgeInsets.all(16),
+        child: InteractiveViewer(
+          child: Image.network(imageUrl, fit: BoxFit.contain),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openAttachment(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to open attachment')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -168,7 +248,7 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
                 type: MaterialType.transparency,
                 child: ProfileAvatar(
                   radius: 18,
-                  
+                  profileImagePath: widget.avatarPath,
                   fallbackText: widget.title,
                 ),
               ),
@@ -204,6 +284,11 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
                     );
                   }
 
+                  final membersById = {
+                    for (final member in state.members) member.userId: member,
+                  };
+                  final showSenderNames =
+                      widget.isGroup || state.members.length > 2;
                   final messages = state.messages;
                   return ListView.builder(
                     controller: _scrollController,
@@ -212,13 +297,34 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
                     itemBuilder: (context, index) {
                       final message = messages[index];
                       final isMine = message.senderId == _currentUserId;
+                      final member = membersById[message.senderId];
+                      final avatarPath = member?.profileImagePath ??
+                          message.senderProfileImage;
+                      final role =
+                          (member?.role ?? message.senderRole ?? '').toLowerCase();
+                      final roleLabel = role == 'teacher'
+                          ? 'Teacher'
+                          : role == 'student'
+                              ? 'Classmate'
+                              : null;
+
                       return ChatBubble(
-                        message: message.content,
-                        imageUrl: message.type == MessageType.image
-                            ? message.mediaUrl
-                            : null,
+                        message: message,
                         isMe: isMine,
                         time: DateFormat.jm().format(message.timestamp),
+                        showSenderName: showSenderNames,
+                        senderRoleLabel: roleLabel,
+                        avatarPath: avatarPath,
+                        onAvatarTap: () =>
+                            _showProfileSheet(message.senderId, member),
+                        onImageTap: message.type == MessageType.image &&
+                                message.mediaUrl != null
+                            ? () => _openImageViewer(message.mediaUrl!)
+                            : null,
+                        onAttachmentTap: message.type == MessageType.file &&
+                                message.mediaUrl != null
+                            ? () => _openAttachment(message.mediaUrl!)
+                            : null,
                       );
                     },
                   );
@@ -232,7 +338,12 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
                 child: Row(
                   children: [
                     IconButton(
-                      icon: Icon(Icons.image_outlined),
+                      icon: const Icon(Icons.attach_file),
+                      onPressed: _pickAndSendFile,
+                      tooltip: 'Send file',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.image_outlined),
                       onPressed: _pickAndSendImage,
                       tooltip: 'Send image',
                     ),

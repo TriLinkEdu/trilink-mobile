@@ -302,6 +302,26 @@ class MockStudentChatRepository implements StudentChatRepository {
   }
 
   @override
+  Future<ChatMessageModel> sendFileMessage(
+    String conversationId,
+    String filePath,
+  ) async {
+    await Future<void>.delayed(_latency);
+    final message = ChatMessageModel(
+      id: _nextMessageId(),
+      senderId: 'student1',
+      senderName: 'You',
+      content: '[File]',
+      timestamp: DateTime.now(),
+      isRead: true,
+      type: MessageType.file,
+    );
+    _messages.putIfAbsent(conversationId, () => []);
+    _messages[conversationId]!.add(message);
+    return message;
+  }
+
+  @override
   Future<ChatConversationModel> createConversation({
     required String title,
     required List<String> participantIds,
@@ -343,6 +363,14 @@ class MockStudentChatRepository implements StudentChatRepository {
   }
 
   @override
+  Future<List<ChatMemberModel>> fetchConversationMembers(
+    String conversationId,
+  ) async {
+    await Future<void>.delayed(_latency);
+    return const [];
+  }
+
+  @override
   Future<List<ChatContactModel>> searchUsers(String query) async {
     await Future.delayed(const Duration(milliseconds: 300));
     return [
@@ -379,6 +407,11 @@ class MockStudentChatRepository implements StudentChatRepository {
   }
 
   @override
+  Future<void> cancelConnection(String connectionId) async {
+    await Future<void>.delayed(_latency);
+  }
+
+  @override
   Future<Map<String, List<ConnectionModel>>> fetchConnections() async {
     return {'sent': [], 'received': []};
   }
@@ -394,5 +427,22 @@ class MockStudentChatRepository implements StudentChatRepository {
   @override
   Future<List<BlockedUserModel>> fetchBlockedUsers() async {
     return [];
+  }
+
+  @override
+  Future<ChatInteractionProfile> fetchInteractionProfile(String userId) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    return ChatInteractionProfile(
+      id: userId,
+      firstName: 'Mock',
+      lastName: 'User',
+      role: 'student',
+      grade: '10',
+      section: 'A',
+      totalXp: 1500,
+      connectionStatus: 'none',
+      connectionId: null,
+      isBlocked: false,
+    );
   }
 }

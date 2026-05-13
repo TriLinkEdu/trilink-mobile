@@ -67,6 +67,8 @@ class _ChatViewState extends State<_ChatView> {
           arguments: {
             'conversationId': conversation.id,
             'title': conversation.title,
+            'isGroup': conversation.isGroup,
+            'avatarPath': conversation.avatarPath,
           },
         )
         .then((_) => cubit.loadConversations());
@@ -518,7 +520,7 @@ class _ChatList extends StatelessWidget {
                 child: Material(
                   type: MaterialType.transparency,
                   child: ProfileAvatar(
-                    
+                    profileImagePath: item.avatarPath,
                     fallbackText: item.title,
                   ),
                 ),

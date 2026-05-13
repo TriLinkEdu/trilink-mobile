@@ -327,6 +327,23 @@ class _EnhancedTextbookViewerState extends State<EnhancedTextbookViewer>
                       opacity: _readingState.brightness,
                       child: PdfViewPinch(
                         controller: _pdfController!,
+                        padding: 0,
+                        builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
+                          options: const DefaultBuilderOptions(),
+                          documentLoaderBuilder: (_) => const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                CircularProgressIndicator(),
+                                SizedBox(height: 16),
+                                Text('Loading document...'),
+                              ],
+                            ),
+                          ),
+                          pageLoaderBuilder: (_) => const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
                         onPageChanged: (page) {
                           setState(() {
                             _readingState = _readingState.copyWith(currentPage: page);

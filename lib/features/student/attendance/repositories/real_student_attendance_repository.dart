@@ -43,7 +43,7 @@ class RealStudentAttendanceRepository implements StudentAttendanceRepository {
     final data = await _api.get(
       ApiConstants.attendanceStudentReport(studentId),
     );
-    final records = data['records'];
+    final records = data['marks'];
     if (records is! List) return const [];
 
     return records.whereType<Map<String, dynamic>>().map(_mapRecord).toList()
@@ -58,6 +58,9 @@ class RealStudentAttendanceRepository implements StudentAttendanceRepository {
     
     // Extract subject info from nested object
     final subject = raw['subject'];
+    final subjectId = subject is Map<String, dynamic>
+        ? (subject['id'] ?? classOfferingId).toString()
+        : classOfferingId;
     final subjectName = subject is Map<String, dynamic> 
         ? (subject['name'] ?? 'Unknown Subject').toString()
         : 'Unknown Subject';
@@ -67,7 +70,7 @@ class RealStudentAttendanceRepository implements StudentAttendanceRepository {
 
     return AttendanceModel(
       id: markId.isNotEmpty ? markId : sessionId,
-      subjectId: classOfferingId,
+      subjectId: subjectId,
       subjectName: subjectName,
       date: DateTime.tryParse(sessionDate) ?? DateTime.now(),
       status: status,

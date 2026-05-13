@@ -5,11 +5,14 @@ abstract class StudentChatRepository {
   Future<List<ChatMessageModel>> fetchMessages(String conversationId);
   Future<ChatMessageModel> sendMessage(String conversationId, String content);
   Future<ChatMessageModel> sendImageMessage(String conversationId, String imagePath);
+  Future<ChatMessageModel> sendFileMessage(String conversationId, String filePath);
   Future<ChatConversationModel> createConversation({
     required String title,
     required List<String> participantIds,
     required bool isGroup,
   });
+  Future<List<ChatMemberModel>> fetchConversationMembers(String conversationId);
+  Future<ChatInteractionProfile> fetchInteractionProfile(String userId);
   Future<List<MessageReadReceipt>> fetchReadReceipts(String messageId);
   Future<List<ChatContactModel>> searchUsers(String query);
   
@@ -17,6 +20,7 @@ abstract class StudentChatRepository {
   Future<ConnectionModel> requestConnection(String recipientId);
   Future<ConnectionModel> acceptConnection(String connectionId);
   Future<ConnectionModel> rejectConnection(String connectionId);
+  Future<void> cancelConnection(String connectionId);
   Future<Map<String, List<ConnectionModel>>> fetchConnections();
   
   // Blocking

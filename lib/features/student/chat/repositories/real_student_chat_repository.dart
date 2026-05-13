@@ -242,6 +242,9 @@ class RealStudentChatRepository implements StudentChatRepository {
     final mediaType = (raw['mediaType'] ?? '').toString();
     final mediaName = (raw['mediaName'] ?? '').toString();
     final mediaMimeType = (raw['mediaMimeType'] ?? '').toString();
+    final senderProfileImage = (raw['senderProfileImage'] ?? '').toString();
+    final senderRole = (raw['senderRole'] ?? '').toString();
+    final senderGrade = (raw['senderGrade'] ?? '').toString();
     final createdAt =
         DateTime.tryParse((raw['createdAt'] ?? '').toString()) ??
         DateTime.now();
@@ -264,6 +267,9 @@ class RealStudentChatRepository implements StudentChatRepository {
       timestamp: createdAt,
       isRead: senderId == me,
       type: type,
+      senderProfileImage: senderProfileImage.isEmpty ? null : senderProfileImage,
+      senderRole: senderRole.isEmpty ? null : senderRole,
+      senderGrade: senderGrade.isEmpty ? null : senderGrade,
       mediaFileId: mediaFileId.isEmpty ? null : mediaFileId,
       mediaUrl: mediaUrl,
       mediaType: mediaType.isEmpty ? null : mediaType,
@@ -437,5 +443,11 @@ class RealStudentChatRepository implements StudentChatRepository {
         .whereType<Map<String, dynamic>>()
         .map((json) => BlockedUserModel.fromJson(json))
         .toList();
+  }
+
+  @override
+  Future<InteractionProfileModel> fetchInteractionProfile(String userId) async {
+    final data = await _api.get('/users/$userId/interaction-profile');
+    return InteractionProfileModel.fromJson(data);
   }
 }

@@ -152,12 +152,15 @@ class ApiConstants {
   static const String chatWsInfo = '/chat/ws-info';
     static const String chatUpload = '/chat/upload';
   static const String conversations = '/conversations';
+  static String conversationMembers(String id) => '/conversations/$id/members';
   static const String conversationsInitiate = '/conversations/initiate';
   static String conversation(String id) => '/conversations/$id';
   static String conversationMessages(String id) =>
       '/conversations/$id/messages';
   static String messageReadReceipts(String id) => '/messages/$id/read-receipts';
   static const String usersSearch = '/users/search';
+  static String chatInteractionProfile(String userId) =>
+      '/users/$userId/interaction-profile';
 
   // Settings
   static const String userSettings = '/me/settings';
@@ -193,14 +196,10 @@ class ApiConstants {
   static String fileAccess(String id) => '/files/$id/access';
 
   // Gamification
-  // ── Gamification Hub (BFF — single request replaces 10) ────────────────────
-  static const String gamificationHub = '/gamification/hub';
-
   static const String gamificationBadges = '/gamification/badges';
   static const String gamificationMyBadges = '/gamification/me/badges';
   static const String gamificationMyPoints = '/gamification/me/badge-points';
   static const String gamificationMyProgress = '/gamification/me/progress';
-  static const String gamificationMyStreak = '/gamification/me/streak';
     static const String gamificationAchievements = '/gamification/achievements';
     static const String gamificationMyAchievements = '/gamification/my-achievements';
     static const String gamificationMyAchievementsProgress =
