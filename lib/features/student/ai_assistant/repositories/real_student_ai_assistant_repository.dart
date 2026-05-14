@@ -8,14 +8,17 @@ class RealStudentAiAssistantRepository implements StudentAiAssistantRepository {
   final ApiClient _api;
   final String _studentId;
   final LocalCacheService _cacheService;
+  final int _gradeLevel;
 
   RealStudentAiAssistantRepository({
     ApiClient? apiClient,
     required String studentId,
     required LocalCacheService cacheService,
+    int gradeLevel = 9,
   })  : _api = apiClient ?? ApiClient(),
         _studentId = studentId,
-        _cacheService = cacheService;
+        _cacheService = cacheService,
+        _gradeLevel = gradeLevel;
 
   @override
   Future<AiAssistantData> fetchAssistantData() async {
@@ -46,48 +49,93 @@ class RealStudentAiAssistantRepository implements StudentAiAssistantRepository {
   }
 
   @override
-  Future<String> getAiResponse(String message) async {
+  Future<AiChatMessage> getAiResponse(String message) async {
     try {
       final response = await _api.post(
         ApiConstants.aiChat,
         data: {
           'student_id': _studentId,
           'message': message,
-          'grade_level': 9,
+          'grade_level': _gradeLevel,
         },
       );
-      
-      final answer = response['answer'] as String?;
-      
-      // Check if it's an error message
-      if (answer != null && answer.contains('not configured')) {
+
+      final answer = (response['answer'] as String?) ??
+          'Sorry, I could not generate a response.';
+
+      // Backend explicitly signals "AI not configured" — treat as a real error
+      // so the UI can show a retry CTA instead of pretending it answered.
+      if (answer.contains('not configured')) {
         throw Exception('AI service is not available. Please contact support.');
       }
-      
-      return answer ?? 'Sorry, I could not generate a response.';
+
+      return AiChatMessage(
+        text: answer,
+        isUser: false,
+        timestamp: DateTime.now(),
+        sources: _extractSources(response['sources']),
+      );
     } catch (e) {
-      if (e.toString().contains('not configured')) {
-        rethrow;
-      }
+      if (e.toString().contains('not configured')) rethrow;
       throw Exception('Failed to get AI response: ${e.toString()}');
     }
   }
 
-  Future<List<AiChatMessage>> getChatHistory({int limit = 20}) async {
-    final response = await _api.get(
-      ApiConstants.aiChatHistory(_studentId),
-      queryParameters: {'limit': limit.toString()},
-    );
-    
-    final messages = response['messages'] as List? ?? [];
-    return messages.map((m) {
-      final msg = m as Map<String, dynamic>;
-      return AiChatMessage(
-        text: msg['message'] as String,
-        isUser: msg['role'] == 'user',
-        timestamp: DateTime.parse(msg['timestamp'] as String),
+  @override
+  Future<List<AiChatMessage>> fetchChatHistory({int limit = 20}) async {
+    try {
+      final response = await _api.get(
+        ApiConstants.aiChatHistory(_studentId),
+        queryParameters: {'limit': limit.toString()},
       );
-    }).toList();
+
+      final messages = (response['messages'] ?? response['history']) as List? ?? const [];
+      final history = <AiChatMessage>[];
+      for (final m in messages) {
+        if (m is! Map<String, dynamic>) continue;
+        final text = (m['message'] ?? m['content'] ?? '').toString();
+        if (text.isEmpty) continue;
+        final ts = DateTime.tryParse((m['timestamp'] ?? '').toString()) ??
+            DateTime.now();
+        history.add(
+          AiChatMessage(
+            text: text,
+            isUser: (m['role'] ?? '') == 'user',
+            timestamp: ts,
+          ),
+        );
+      }
+      // Server returns most-recent-first; flip so chat renders oldest-at-top.
+      return history.reversed.toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// Normalises the various shapes the backend may use for `sources`:
+  ///   - `["title1", "title2"]`
+  ///   - `[{title, topic_id, score}, ...]`
+  ///   - `null` / missing
+  List<AiChatSource>? _extractSources(dynamic raw) {
+    if (raw is! List || raw.isEmpty) return null;
+    final out = <AiChatSource>[];
+    for (final item in raw) {
+      if (item is String && item.trim().isNotEmpty) {
+        out.add(AiChatSource(title: item.trim()));
+      } else if (item is Map) {
+        final title = (item['title'] ?? item['name'] ?? '').toString().trim();
+        if (title.isNotEmpty) {
+          out.add(AiChatSource(
+            title: title,
+            topicId: item['topic_id']?.toString(),
+            score: item['score'] is num
+                ? (item['score'] as num).toDouble()
+                : null,
+          ));
+        }
+      }
+    }
+    return out.isEmpty ? null : out;
   }
 
   Future<List<LearningPathItemModel>> _fetchLearningPath() async {

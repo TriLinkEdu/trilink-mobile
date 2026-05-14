@@ -7,7 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/di/injection_container.dart';
-import '../../../../core/services/storage_service.dart';
+import '../../../auth/cubit/auth_cubit.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/error_widget.dart';
@@ -72,12 +72,9 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
   final ScrollController _scrollController = ScrollController();
   bool _isSending = false;
   Timer? _autoReplyTimer;
-  String _currentUserId = '';
-
   @override
   void initState() {
     super.initState();
-    _loadCurrentUserId();
     _scrollController.addListener(_onScroll);
   }
 
@@ -87,13 +84,7 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
     }
   }
 
-  Future<void> _loadCurrentUserId() async {
-    final user = await sl<StorageService>().getUser();
-    if (!mounted) return;
-    setState(() {
-      _currentUserId = (user?['id'] ?? '').toString();
-    });
-  }
+
 
   @override
   void dispose() {
@@ -205,13 +196,14 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
 
   void _showProfileSheet(String userId, ChatMemberModel? member) {
     if (userId.isEmpty) return;
+    final currentUserId = context.read<AuthCubit>().state.user?.id ?? '';
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
       builder: (context) => ChatProfileSheet(
         userId: userId,
-        currentUserId: _currentUserId,
+        currentUserId: currentUserId,
         member: member,
         repository: sl<StudentChatRepository>(),
       ),
@@ -303,8 +295,9 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
                     padding: AppSpacing.paddingMd,
                     itemCount: messages.length,
                     itemBuilder: (context, index) {
+                      final currentUserId = context.read<AuthCubit>().state.user?.id ?? '';
                       final message = messages[index];
-                      final isMine = message.senderId == _currentUserId;
+                      final isMine = message.senderId == currentUserId;
                       final member = membersById[message.senderId];
                       final avatarPath = member?.profileImagePath ??
                           message.senderProfileImage;

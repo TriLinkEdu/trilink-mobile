@@ -8,6 +8,7 @@ import '../services/feature_flags.dart';
 import '../services/sync_queue_service.dart';
 import '../services/telemetry_service.dart';
 import '../services/local_cache_service.dart';
+import '../services/chat_socket_service.dart';
 import '../theme/theme_notifier.dart';
 import '../../features/auth/cubit/auth_cubit.dart';
 import '../../features/auth/repositories/auth_repository.dart';
@@ -108,11 +109,12 @@ Future<void> initDependencies() async {
     () => SoundService(sl<StorageService>()),
   );
 
+  sl.registerLazySingleton<ChatSocketService>(
+    () => ChatSocketService(storageService: sl<StorageService>()),
+  );
+
   // ── Auth ──
   sl.registerLazySingleton<AuthRepository>(() => RealAuthRepository());
-  sl.registerLazySingleton<AuthCubit>(
-    () => AuthCubit(repository: sl<AuthRepository>()),
-  );
 
   // ── Student repositories ──
   final useRealStudentData = FeatureFlags.useRealApi;
@@ -165,6 +167,13 @@ Future<void> initDependencies() async {
             cacheService: sl<LocalCacheService>(),
           )
         : MockStudentChatRepository(),
+  );
+  sl.registerLazySingleton<AuthCubit>(
+    () => AuthCubit(
+      repository: sl<AuthRepository>(),
+      chatSocketService: sl<ChatSocketService>(),
+      chatRepository: sl<StudentChatRepository>(),
+    ),
   );
   sl.registerLazySingleton<StudentCalendarRepository>(
     () => useRealStudentData
@@ -246,9 +255,15 @@ Future<void> initDependencies() async {
       final authCubit = sl<AuthCubit>();
       final userId = authCubit.state.user?.id ?? '';
 
+      final gradeStr = authCubit.state.user?.grade ?? '';
+      final gradeLevel = int.tryParse(
+            RegExp(r'\d+').firstMatch(gradeStr)?.group(0) ?? '',
+          ) ??
+          9;
       return RealStudentAiAssistantRepository(
         studentId: userId,
         cacheService: sl<LocalCacheService>(),
+        gradeLevel: gradeLevel,
       );
     },
   );

@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/services/local_cache_service.dart';
@@ -13,15 +15,24 @@ class RealStudentChatRepository implements StudentChatRepository {
   static const Duration _conversationsTtl = Duration(seconds: 20);
   static const Duration _messagesTtl = Duration(seconds: 10);
 
-  static List<ChatConversationModel>? _conversationsCache;
-  static DateTime? _conversationsFetchedAt;
-  static Future<List<ChatConversationModel>>? _conversationsInFlight;
+  List<ChatConversationModel>? _conversationsCache;
+  DateTime? _conversationsFetchedAt;
+  Future<List<ChatConversationModel>>? _conversationsInFlight;
 
-  static final Map<String, List<ChatMessageModel>> _messagesCache =
+  final Map<String, List<ChatMessageModel>> _messagesCache =
       <String, List<ChatMessageModel>>{};
-  static final Map<String, DateTime> _messagesFetchedAt = <String, DateTime>{};
-  static final Map<String, Future<List<ChatMessageModel>>> _messagesInFlight =
+  final Map<String, DateTime> _messagesFetchedAt = <String, DateTime>{};
+  final Map<String, Future<List<ChatMessageModel>>> _messagesInFlight =
       <String, Future<List<ChatMessageModel>>>{};
+
+  void clearCache() {
+    _conversationsCache = null;
+    _conversationsFetchedAt = null;
+    _conversationsInFlight = null;
+    _messagesCache.clear();
+    _messagesFetchedAt.clear();
+    _messagesInFlight.clear();
+  }
 
   RealStudentChatRepository({
     ApiClient? apiClient,
@@ -73,9 +84,9 @@ class RealStudentChatRepository implements StudentChatRepository {
         );
       }
       return data;
-    } catch (_) {
+    } catch (e) {
       // On network failure, return disk-cached data if available.
-      if (_conversationsCache != null) return _conversationsCache!;
+      if (e is DioException && _conversationsCache != null) return _conversationsCache!;
       rethrow;
     } finally {
       _conversationsInFlight = null;
@@ -84,7 +95,7 @@ class RealStudentChatRepository implements StudentChatRepository {
 
   void _restoreConversationsCache(String userId) {
     if (userId.isEmpty) return;
-    final entry = _cacheService.read(_conversationsCacheKey(userId));
+    final entry = _cacheService.read(_conversationsCacheKey(userId), maxAge: _conversationsTtl);
     if (entry == null || entry.data is! List) return;
     try {
       _conversationsCache = (entry.data as List)
@@ -100,46 +111,55 @@ class RealStudentChatRepository implements StudentChatRepository {
   Future<List<ChatConversationModel>> _fetchConversationsFresh(
     String userId,
   ) async {
-    try {
-      final me = userId.isNotEmpty ? userId : await _currentUserId();
-      final rows = await _api.getList(ApiConstants.conversations);
-      final conversations = <ChatConversationModel>[];
+    final me = userId.isNotEmpty ? userId : await _currentUserId();
+    final rows = await _api.getList(ApiConstants.conversations);
+    final conversations = <ChatConversationModel>[];
 
-      for (final raw in rows.whereType<Map<String, dynamic>>()) {
-        final id = (raw['id'] ?? '').toString();
-        if (id.isEmpty) continue;
-        ChatMessageModel? latest;
-        try {
-          // Best-effort: if last message preview fails, skip it.
-          latest = await _latestMessage(id, me);
-        } catch (_) {
-          latest = null;
-        }
-        conversations.add(
-          ChatConversationModel(
-            id: id,
-            title: (raw['title'] ?? 'Conversation').toString(),
-            isGroup: (raw['type'] ?? 'group').toString() != 'direct',
-            participantIds: const [],
-            lastMessage: latest,
-            unreadCount: raw['unreadCount'] as int? ?? 0,
-          ),
+    for (final raw in rows.whereType<Map<String, dynamic>>()) {
+      final id = (raw['id'] ?? '').toString();
+      if (id.isEmpty) continue;
+
+      ChatMessageModel? latest;
+      final lastText = (raw['lastMessageText'] ?? '').toString();
+      final lastAtStr = (raw['lastMessageAt'] ?? '').toString();
+      final lastSenderId = (raw['lastMessageSenderId'] ?? '').toString();
+      final lastSenderName = (raw['lastMessageSenderName'] ?? '').toString();
+      if (lastText.isNotEmpty && lastAtStr.isNotEmpty) {
+        final ts = DateTime.tryParse(lastAtStr) ?? DateTime.now();
+        latest = ChatMessageModel(
+          id: '',
+          senderId: lastSenderId,
+          senderName: lastSenderId == me ? 'You' : (lastSenderName.isEmpty ? 'User' : lastSenderName),
+          content: lastText,
+          timestamp: ts,
+          isRead: lastSenderId == me,
+          type: MessageType.text,
+          readReceipts: const [],
         );
       }
 
-      return conversations;
-    } catch (e) {
-      rethrow;
+      conversations.add(
+        ChatConversationModel(
+          id: id,
+          title: (raw['title'] ?? 'Conversation').toString(),
+          isGroup: (raw['type'] ?? 'group').toString() != 'direct',
+          participantIds: const [],
+          lastMessage: latest,
+          unreadCount: raw['unreadCount'] as int? ?? 0,
+        ),
+      );
     }
+
+    return conversations;
   }
 
   // ── Messages ────────────────────────────────────────────────
 
   @override
-  Future<List<ChatMessageModel>> fetchMessages(String conversationId, {int offset = 0, int limit = 50}) async {
-    // Bypass memory cache for pagination loads.
-    if (offset > 0) {
-      return _fetchMessagesFresh(conversationId, offset: offset, limit: limit);
+  Future<List<ChatMessageModel>> fetchMessages(String conversationId, {String? before, int limit = 50}) async {
+    // Bypass memory cache for pagination (cursor-based older-page loads).
+    if (before != null && before.isNotEmpty) {
+      return _fetchMessagesFresh(conversationId, before: before, limit: limit);
     }
     
     final cached = _messagesCache[conversationId];
@@ -161,7 +181,7 @@ class RealStudentChatRepository implements StudentChatRepository {
     final inFlight = _messagesInFlight[conversationId];
     if (inFlight != null) return inFlight;
 
-    final future = _fetchMessagesFresh(conversationId, offset: offset, limit: limit);
+    final future = _fetchMessagesFresh(conversationId, limit: limit);
     _messagesInFlight[conversationId] = future;
     try {
       final data = await future;
@@ -174,8 +194,8 @@ class RealStudentChatRepository implements StudentChatRepository {
         toCache.map((m) => m.toJson()).toList(),
       );
       return data;
-    } catch (_) {
-      if (_messagesCache[conversationId] != null) {
+    } catch (e) {
+      if (e is DioException && _messagesCache[conversationId] != null) {
         return _messagesCache[conversationId]!;
       }
       rethrow;
@@ -185,7 +205,7 @@ class RealStudentChatRepository implements StudentChatRepository {
   }
 
   void _restoreMessagesCache(String conversationId) {
-    final entry = _cacheService.read(_messagesCacheKey(conversationId));
+    final entry = _cacheService.read(_messagesCacheKey(conversationId), maxAge: _messagesTtl);
     if (entry == null || entry.data is! List) return;
     try {
       _messagesCache[conversationId] = (entry.data as List)
@@ -200,14 +220,17 @@ class RealStudentChatRepository implements StudentChatRepository {
 
   Future<List<ChatMessageModel>> _fetchMessagesFresh(
     String conversationId, {
-    int offset = 0,
+    String? before,
     int limit = 50,
   }) async {
     final me = await _currentUserId();
-    // Backend returns { messages: [...], hasMore: bool } — NOT a plain array.
+    // Backend returns { messages: [...], hasMore: bool }.
+    // Pagination is cursor-based: pass 'before' = oldest message ID already held.
+    final params = <String, dynamic>{'limit': limit};
+    if (before != null && before.isNotEmpty) params['before'] = before;
     final raw = await _api.get(
       ApiConstants.conversationMessages(conversationId),
-      queryParameters: {'offset': offset, 'limit': limit},
+      queryParameters: params,
     );
     final rows = (raw['messages'] as List? ?? const [])
         .whereType<Map<String, dynamic>>();
@@ -347,21 +370,6 @@ class RealStudentChatRepository implements StudentChatRepository {
   }
 
   // ── Helpers ─────────────────────────────────────────────────
-
-  Future<ChatMessageModel?> _latestMessage(
-    String conversationId,
-    String me,
-  ) async {
-    // Backend returns { messages: [...], hasMore: bool } — not a plain array.
-    final raw = await _api.get(
-      ApiConstants.conversationMessages(conversationId),
-      queryParameters: {'limit': 1},
-    );
-    final rows = raw['messages'] as List?;
-    final first = rows?.isNotEmpty == true ? rows!.first : null;
-    if (first is! Map<String, dynamic>) return null;
-    return _mapMessage(first, me);
-  }
 
   ChatMessageModel _mapMessage(Map<String, dynamic> raw, String me) {
     final senderId = (raw['senderId'] ?? '').toString();

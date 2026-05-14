@@ -189,117 +189,144 @@ class _ChatViewState extends State<_ChatView> {
     );
   }
 
-  void _showNewDmDialog() async {
-    // Fetch real contacts from API
-    List<ChatContactModel> contacts = [];
-    try {
-      contacts = await sl<StudentChatRepository>().searchUsers('');
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load contacts')),
-      );
-      return;
-    }
-
-    if (!mounted) return;
-
-    // Categorize by role
-    final teachers = contacts.where((c) => c.role == 'teacher').toList();
-    final students = contacts.where((c) => c.role == 'student').toList();
-
+  void _showNewDmDialog() {
     showDialog<void>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('New Message'),
-        contentPadding: EdgeInsets.zero,
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              if (teachers.isNotEmpty) ...[
-                Padding(
-                  padding: EdgeInsets.fromLTRB(24, 16, 24, 8),
-                  child: Text(
-                    'TEACHERS',
-                    style: Theme.of(dialogContext).textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(dialogContext).colorScheme.primary,
-                    ),
-                  ),
-                ),
-                ...teachers.map((contact) => ListTile(
-                  leading: CircleAvatar(
-                    child: Text(contact.firstName[0]),
-                  ),
-                  title: Text(contact.displayName),
-                  subtitle: contact.subject != null ? Text(contact.subject!) : null,
-                  onTap: () async {
-                    Navigator.pop(dialogContext);
-                    await _initiateDirectMessage(contact);
-                  },
-                )),
-              ],
-              if (students.isNotEmpty) ...[
-                Padding(
-                  padding: EdgeInsets.fromLTRB(24, 16, 24, 8),
-                  child: Text(
-                    'CLASSMATES',
-                    style: Theme.of(dialogContext).textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(dialogContext).colorScheme.primary,
-                    ),
-                  ),
-                ),
-                ...students.map((contact) => ListTile(
-                  leading: CircleAvatar(
-                    child: Text(contact.firstName[0]),
-                  ),
-                  title: Text(contact.fullName),
-                  trailing: Icon(Icons.person_add_outlined, size: 20),
-                  onTap: () async {
-                    Navigator.pop(dialogContext);
-                    // Show connection request dialog for students
-                    if (contact.id == _currentUserId) {
-                      if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('You cannot connect with yourself.')),
-                      );
-                      return;
-                    }
-                    final result = await showDialog<bool>(
-                      context: context,
-                      builder: (_) => ConnectionRequestDialog(
-                        contact: contact,
-                        repository: sl<StudentChatRepository>(),
+      builder: (dialogContext) {
+        List<ChatContactModel> contacts = [];
+        bool loading = false;
+        String? error;
+
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            Future<void> search(String q) async {
+              if (q.trim().length < 2) {
+                setDialogState(() { contacts = []; loading = false; error = null; });
+                return;
+              }
+              setDialogState(() { loading = true; error = null; });
+              try {
+                final results = await sl<StudentChatRepository>().searchUsers(q.trim());
+                setDialogState(() { contacts = results; loading = false; });
+              } catch (_) {
+                setDialogState(() { loading = false; error = 'Search failed. Please try again.'; });
+              }
+            }
+
+            final teachers = contacts.where((c) => c.role == 'teacher').toList();
+            final students = contacts.where((c) => c.role == 'student').toList();
+            final hasResults = teachers.isNotEmpty || students.isNotEmpty;
+
+            return AlertDialog(
+              title: const Text('New Message'),
+              contentPadding: const EdgeInsets.fromLTRB(0, 8, 0, 0),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                      child: TextField(
+                        autofocus: true,
+                        decoration: const InputDecoration(
+                          hintText: 'Search by name…',
+                          prefixIcon: Icon(Icons.search),
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                        onChanged: search,
                       ),
-                    );
-                    if (result == true && mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Connection request sent to ${contact.fullName}')),
-                      );
-                    }
-                  },
-                )),
-              ],
-              if (teachers.isEmpty && students.isEmpty)
-                Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Center(
-                    child: Text('No contacts available'),
-                  ),
+                    ),
+                    if (loading)
+                      const Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (error != null)
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(error!, style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
+                      )
+                    else
+                      Flexible(
+                        child: ListView(
+                          shrinkWrap: true,
+                          children: [
+                            if (!hasResults)
+                              Padding(
+                                padding: const EdgeInsets.all(24),
+                                child: Center(
+                                  child: Text(
+                                    contacts.isEmpty ? 'Type at least 2 characters to search' : 'No results',
+                                    style: TextStyle(color: Theme.of(ctx).colorScheme.onSurfaceVariant),
+                                  ),
+                                ),
+                              ),
+                            if (teachers.isNotEmpty) ...[
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                                child: Text('TEACHERS', style: Theme.of(ctx).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(ctx).colorScheme.primary)),
+                              ),
+                              ...teachers.map((contact) => ListTile(
+                                leading: CircleAvatar(child: Text(contact.firstName[0])),
+                                title: Text(contact.displayName),
+                                subtitle: contact.subject != null ? Text(contact.subject!) : null,
+                                onTap: () async {
+                                  Navigator.pop(dialogContext);
+                                  await _initiateDirectMessage(contact);
+                                },
+                              )),
+                            ],
+                            if (students.isNotEmpty) ...[
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                                child: Text('CLASSMATES', style: Theme.of(ctx).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(ctx).colorScheme.primary)),
+                              ),
+                              ...students.map((contact) => ListTile(
+                                leading: CircleAvatar(child: Text(contact.firstName[0])),
+                                title: Text(contact.fullName),
+                                trailing: const Icon(Icons.person_add_outlined, size: 20),
+                                onTap: () async {
+                                  Navigator.pop(dialogContext);
+                                  if (contact.id == _currentUserId) {
+                                    if (!mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('You cannot connect with yourself.')),
+                                    );
+                                    return;
+                                  }
+                                  final result = await showDialog<bool>(
+                                    context: context,
+                                    builder: (_) => ConnectionRequestDialog(
+                                      contact: contact,
+                                      repository: sl<StudentChatRepository>(),
+                                    ),
+                                  );
+                                  if (result == true && mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Connection request sent to ${contact.fullName}')),
+                                    );
+                                  }
+                                },
+                              )),
+                            ],
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text('Cancel'),
-          ),
-        ],
-      ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Cancel'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -325,7 +352,7 @@ class _ChatViewState extends State<_ChatView> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Cannot message this user: ${e.toString()}')),
+        const SnackBar(content: Text('Unable to start conversation. Please try again.')),
       );
     }
   }

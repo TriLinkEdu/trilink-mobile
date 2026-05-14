@@ -7,6 +7,11 @@ class MockStudentChatRepository implements StudentChatRepository {
   int _messageCounter = 100;
   int _conversationCounter = 100;
 
+  @override
+  void clearCache() {
+    // Mock implementation: no-op since mock data is always in memory
+  }
+
   String _nextMessageId() => 'msg${_messageCounter++}';
   String _nextConversationId() => 'conv${_conversationCounter++}';
 
@@ -246,18 +251,18 @@ class MockStudentChatRepository implements StudentChatRepository {
   @override
   Future<List<ChatMessageModel>> fetchMessages(
     String conversationId, {
-    int offset = 0,
+    String? before,
     int limit = 50,
   }) async {
     await Future<void>.delayed(_latency);
     final messages = List<ChatMessageModel>.from(_messages[conversationId] ?? []);
-    if (offset <= 0 && limit >= messages.length) {
-      return messages;
+    if (before == null || before.isEmpty) {
+      return messages.length <= limit ? messages : messages.sublist(messages.length - limit);
     }
-
-    final start = offset.clamp(0, messages.length);
-    final end = (start + limit).clamp(start, messages.length);
-    return messages.sublist(start, end);
+    final idx = messages.indexWhere((m) => m.id == before);
+    if (idx <= 0) return [];
+    final start = (idx - limit).clamp(0, idx);
+    return messages.sublist(start, idx);
   }
 
   @override

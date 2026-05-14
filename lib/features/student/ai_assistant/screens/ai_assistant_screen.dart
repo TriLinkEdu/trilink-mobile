@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/routes/route_names.dart';
@@ -14,7 +15,6 @@ import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
 import '../../../../core/widgets/pressable.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../../shared/widgets/student_page_background.dart';
-import '../../shared/widgets/profile_avatar.dart';
 import '../cubit/ai_assistant_cubit.dart';
 import '../cubit/ai_chat_cubit.dart';
 import '../models/ai_assistant_models.dart';
@@ -295,7 +295,9 @@ class _LearningPathTab extends StatelessWidget {
                     AppSpacing.hGapSm,
                     Expanded(
                       child: Text(
-                        'Curated specifically for you based on your recent quiz results in Physics and Mathematics.',
+                        items.isEmpty
+                            ? 'Your path will be generated from your recent activity and mastery levels.'
+                            : 'Sequenced from your weakest topics first, so you build mastery in the right order.',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                           height: 1.4,
@@ -335,8 +337,7 @@ class _LearningPathTab extends StatelessWidget {
                     index: item.step,
                     icon: icon,
                     title: item.title,
-                    subject: item.subject,
-                    duration: item.duration,
+                    subtitle: item.masterySummary,
                     progress: item.progress,
                     isActive: item.isActive,
                     isBookmarked: item.isBookmarked,
@@ -411,8 +412,7 @@ class _PathItem extends StatelessWidget {
   final int index;
   final IconData icon;
   final String title;
-  final String subject;
-  final String duration;
+  final String subtitle;
   final double progress;
   final bool isActive;
   final bool isBookmarked;
@@ -423,8 +423,7 @@ class _PathItem extends StatelessWidget {
     required this.index,
     required this.icon,
     required this.title,
-    required this.subject,
-    required this.duration,
+    required this.subtitle,
     required this.progress,
     required this.isActive,
     required this.isBookmarked,
@@ -475,7 +474,7 @@ class _PathItem extends StatelessWidget {
                     ),
                     AppSpacing.gapXxs,
                     Text(
-                      '$subject • $duration',
+                      subtitle,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -636,20 +635,30 @@ class _ResourcesTab extends StatelessWidget {
                       ),
                       AppSpacing.gapXs,
                       Text(
-                        '${resource.type} • ${resource.estimatedTime} • ${resource.level}',
+                        [resource.type, resource.level]
+                            .where((s) => s.isNotEmpty)
+                            .join(' • '),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
+                      if ((resource.description ?? '').isNotEmpty) ...[
+                        AppSpacing.gapXxs,
+                        Text(
+                          resource.description!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant
+                                .withAlpha(180),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
                 TextButton(
-                  onPressed: () {
-                    Navigator.of(
-                      context,
-                    ).pushNamed(RouteNames.studentResourceRecommendation);
-                  },
+                  onPressed: () => _openResource(context, resource),
                   child: const Text('Open'),
                 ),
               ],
@@ -660,6 +669,26 @@ class _ResourcesTab extends StatelessWidget {
       separatorBuilder: (_, _) => AppSpacing.gapMd,
       itemCount: resources.length,
     );
+  }
+
+  Future<void> _openResource(
+    BuildContext context,
+    ResourceRecommendationModel resource,
+  ) async {
+    final url = resource.url.trim();
+    if (url.isNotEmpty) {
+      final uri = Uri.tryParse(url);
+      if (uri != null && (uri.hasScheme || url.startsWith('//'))) {
+        final launched = await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+        if (launched) return;
+      }
+    }
+    // No usable URL → fall back to the in-app recommendations list.
+    if (!context.mounted) return;
+    Navigator.of(context).pushNamed(RouteNames.studentResourceRecommendation);
   }
 }
 

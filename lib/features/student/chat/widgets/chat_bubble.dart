@@ -224,8 +224,6 @@ class ChatBubble extends StatelessWidget {
               ],
             ),
           ),
-          if (isMe) const SizedBox(width: 8),
-          if (isMe) avatar,
         ],
       ),
     );

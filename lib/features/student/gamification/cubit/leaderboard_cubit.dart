@@ -76,7 +76,15 @@ class LeaderboardCubit extends Cubit<LeaderboardState> {
           hasReachedMax: newEntries.length < 20,
         ),
       );
-    } catch (_) {}
+    } catch (e) {
+      // Don't wipe existing entries on pagination failure, just set errorMessage
+      emit(
+        state.copyWith(
+          status: LeaderboardStatus.loaded,
+          errorMessage: 'Failed to load more. Check your connection.',
+        ),
+      );
+    }
   }
 
   Future<void> togglePeriod() async {

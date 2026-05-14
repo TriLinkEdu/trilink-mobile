@@ -54,6 +54,12 @@ class ApiConstants {
         : localBaseUrl;
   }
 
+  // WebSocket base URL (no /api suffix — Socket.IO connects at root)
+  static String get wsBaseUrl {
+    final base = baseUrl;
+    return base.endsWith('/api') ? base.substring(0, base.length - 4) : base;
+  }
+
   // Base URL without /api suffix for file downloads
   static String get fileBaseUrl {
     const overrideUrl = String.fromEnvironment(
@@ -197,6 +203,7 @@ class ApiConstants {
 
   // Gamification
   static const String gamificationBadges = '/gamification/badges';
+  static const String gamificationHub = '/gamification/hub';
   static const String gamificationMyBadges = '/gamification/me/badges';
   static const String gamificationMyPoints = '/gamification/me/badge-points';
   static const String gamificationMyProgress = '/gamification/me/progress';

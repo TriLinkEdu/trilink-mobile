@@ -1,4 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/services/chat_socket_service.dart';
+import '../models/chat_models.dart';
 import '../repositories/student_chat_repository.dart';
 import 'chat_conversation_state.dart';
 
@@ -6,13 +8,45 @@ export 'chat_conversation_state.dart';
 
 class ChatConversationCubit extends Cubit<ChatConversationState> {
   final StudentChatRepository _repository;
+  final ChatSocketService? _socket;
   final String conversationId;
   DateTime? _lastLoadedAt;
 
   static const Duration _ttl = Duration(seconds: 10);
 
-  ChatConversationCubit(this._repository, this.conversationId)
-    : super(const ChatConversationState());
+  ChatConversationCubit(
+    this._repository,
+    this.conversationId, {
+    ChatSocketService? socketService,
+  })  : _socket = socketService,
+        super(const ChatConversationState()) {
+    _subscribeSocket();
+  }
+
+  void _subscribeSocket() {
+    final socket = _socket;
+    if (socket == null) return;
+    socket.connect().then((_) {
+      socket.joinConversation(conversationId);
+      socket.onMessage(conversationId, injectMessage);
+    });
+  }
+
+  @override
+  Future<void> close() {
+    final socket = _socket;
+    if (socket != null) {
+      socket.offMessage(conversationId, injectMessage);
+      socket.leaveConversation(conversationId);
+    }
+    return super.close();
+  }
+
+  void markLastRead() {
+    final last = state.messages.isNotEmpty ? state.messages.last : null;
+    if (last == null || last.id.isEmpty) return;
+    _socket?.markRead(conversationId, last.id);
+  }
 
   Future<void> loadIfNeeded() async {
     if (state.status == ConversationStatus.loaded &&
@@ -28,7 +62,7 @@ class ChatConversationCubit extends Cubit<ChatConversationState> {
       emit(state.copyWith(status: ConversationStatus.loading));
     }
     try {
-      final messages = await _repository.fetchMessages(conversationId, offset: 0, limit: 50);
+      final messages = await _repository.fetchMessages(conversationId, limit: 50);
       emit(
         ChatConversationState(
           status: ConversationStatus.loaded,
@@ -52,23 +86,38 @@ class ChatConversationCubit extends Cubit<ChatConversationState> {
   Future<void> loadMoreMessages() async {
     if (state.hasReachedMax || state.status == ConversationStatus.loading) return;
 
+    // Use oldest held message ID as cursor for the backend's before-based pagination.
+    final oldestId = state.messages.isNotEmpty ? state.messages.first.id : null;
+    if (oldestId == null || oldestId.isEmpty) return;
+
     try {
       final newMessages = await _repository.fetchMessages(
         conversationId,
-        offset: state.messages.length,
+        before: oldestId,
         limit: 50,
       );
-      
+
       emit(
         state.copyWith(
           status: ConversationStatus.loaded,
-          messages: [...newMessages, ...state.messages], // new messages are older
+          messages: [...newMessages, ...state.messages],
           hasReachedMax: newMessages.length < 50,
         ),
       );
     } catch (_) {
-      // Ignore errors on pagination to not break the UI
+      // Ignore pagination errors to keep existing messages visible.
     }
+  }
+
+  void injectMessage(ChatMessageModel message) {
+    final already = state.messages.any((m) => m.id == message.id);
+    if (already) return;
+    emit(
+      state.copyWith(
+        status: ConversationStatus.loaded,
+        messages: [...state.messages, message],
+      ),
+    );
   }
 
   Future<void> loadMembers() async {

@@ -5,7 +5,7 @@ import 'package:trilink_mobile/core/widgets/illustrations.dart';
 import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
 
 import '../../../../core/di/injection_container.dart';
-import '../../../../core/services/storage_service.dart';
+import '../../../auth/cubit/auth_cubit.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_shadows.dart';
@@ -37,13 +37,11 @@ class _LeaderboardView extends StatefulWidget {
 }
 
 class _LeaderboardViewState extends State<_LeaderboardView> {
-  String _currentUserId = '';
   final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _loadCurrentUser();
     _scrollController.addListener(_onScroll);
   }
 
@@ -60,14 +58,7 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
     }
   }
 
-  Future<void> _loadCurrentUser() async {
-    final user = await sl<StorageService>().getUser();
-    if (mounted) {
-      setState(() {
-        _currentUserId = (user?['id'] ?? '').toString();
-      });
-    }
-  }
+
 
   String _periodLabel(bool weekly) => weekly ? 'Weekly' : 'Monthly';
 
@@ -124,6 +115,7 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final currentUserId = context.read<AuthCubit>().state.user?.id ?? '';
 
     return Scaffold(
       appBar: AppBar(
@@ -168,7 +160,7 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
               ..sort((a, b) => a.rank.compareTo(b.rank));
 
             final yourRank = entries.firstWhere(
-              (entry) => entry.studentId == _currentUserId,
+              (entry) => entry.studentId == currentUserId,
               orElse: () => entries.first,
             );
             final leader = entries.first;
@@ -420,7 +412,7 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
                   // ── Full ranked list ─────────────────────────────
                   ...List.generate(entries.length, (index) {
                     final entry = entries[index];
-                    final isMe = entry.studentId == _currentUserId;
+                    final isMe = entry.studentId == currentUserId;
                     final rankColor = _rankAccent(entry.rank);
                     final gapFromLeader =
                         (leader.points - entry.points).clamp(0, 9999);

@@ -46,6 +46,9 @@ class _GamificationView extends StatefulWidget {
 class _GamificationViewState extends State<_GamificationView> {
   static final _celebratedKeys = <String>{};
 
+  int? _prevLevel;
+  int? _prevTotalXp;
+
   bool _notifyQuizReminders = true;
   bool _notifyLeaderboard = true;
   bool _notifyAchievements = true;
@@ -300,7 +303,34 @@ class _GamificationViewState extends State<_GamificationView> {
               ),
 
               Expanded(
-                child: BlocBuilder<GamificationCubit, GamificationState>(
+                child: BlocConsumer<GamificationCubit, GamificationState>(
+                  listener: (context, state) {
+                    if (state.status != GamificationStatus.loaded) return;
+                    final xp = state.xpProgress;
+                    if (xp == null) return;
+                    final prevLevel = _prevLevel;
+                    final prevXp = _prevTotalXp;
+                    _prevLevel = xp.level;
+                    _prevTotalXp = xp.totalXp;
+                    if (prevLevel == null || prevXp == null) return;
+                    if (xp.level > prevLevel) {
+                      CelebrationOverlay.maybeOf(context)?.celebrate(
+                        type: CelebrationType.levelUp,
+                        message: '⚡ Level ${xp.level} Reached!',
+                        subtext: 'Keep earning XP to unlock more rewards!',
+                      );
+                    } else if (xp.totalXp > prevXp) {
+                      final gained = xp.totalXp - prevXp;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('+$gained XP earned!'),
+                          duration: const Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating,
+                          width: 160,
+                        ),
+                      );
+                    }
+                  },
                   builder: (context, state) {
                     final loading =
                         state.status == GamificationStatus.initial ||
@@ -321,6 +351,41 @@ class _GamificationViewState extends State<_GamificationView> {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         if (!mounted) return;
                         _maybeCelebrateStreakMilestone(streak);
+                      });
+                    }
+
+                    // Celebrate newly unlocked achievements
+                    for (final id in state.newlyUnlockedAchievementIds) {
+                      final aKey = 'achievement_$id';
+                      if (_celebratedKeys.contains(aKey)) continue;
+                      _celebratedKeys.add(aKey);
+                      final title =
+                          _resolveAchievementTitle(id, state.achievements) ??
+                              'Achievement';
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted) return;
+                        CelebrationOverlay.maybeOf(context)?.celebrate(
+                          type: CelebrationType.achievement,
+                          message: '🏆 $title Unlocked!',
+                          subtext: 'Great work — keep going!',
+                        );
+                      });
+                    }
+
+                    // Celebrate newly unlocked badges
+                    for (final id in state.newlyUnlockedBadgeIds) {
+                      final bKey = 'badge_$id';
+                      if (_celebratedKeys.contains(bKey)) continue;
+                      _celebratedKeys.add(bKey);
+                      final name =
+                          _resolveBadgeName(id, state.badges) ?? 'Badge';
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted) return;
+                        CelebrationOverlay.maybeOf(context)?.celebrate(
+                          type: CelebrationType.achievement,
+                          message: '🎖️ $name Earned!',
+                          subtext: 'New badge added to your collection',
+                        );
                       });
                     }
 

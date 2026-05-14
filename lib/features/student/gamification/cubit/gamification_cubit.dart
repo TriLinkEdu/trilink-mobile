@@ -36,110 +36,25 @@ class GamificationCubit extends Cubit<GamificationState> {
     emit(state.copyWith(status: GamificationStatus.loading, errorMessage: null));
     try {
       final userId = await _currentUserId();
-      final streak = await _safeFetch(_repository.fetchStreak);
-      final xpProgress = await _safeFetch(_repository.fetchXpProgress);
-      final nextBadge = await _safeFetch(_repository.fetchNextBadgeProgress);
-      final dailyMissions = await _safeFetch(_repository.fetchDailyMissions);
+      final hub = await _repository.fetchHub();
 
-      final hasCoreData =
-          streak != null || xpProgress != null || dailyMissions != null;
       emit(
         state.copyWith(
-          status: hasCoreData
-              ? GamificationStatus.loaded
-              : GamificationStatus.loading,
+          status: GamificationStatus.loaded,
           currentUserId: userId,
-          streak: streak ?? state.streak,
-          xpProgress: xpProgress ?? state.xpProgress,
-          nextBadgeProgress: nextBadge ?? state.nextBadgeProgress,
-          dailyMissions: dailyMissions ?? state.dailyMissions,
+          streak: hub.streak,
+          xpProgress: hub.xpProgress,
+          nextBadgeProgress: hub.nextBadgeProgress,
+          dailyMissions: hub.dailyMissions,
+          achievements: hub.achievements,
+          leaderboardEntries: hub.leaderboardEntries,
+          availableQuizzes: hub.availableQuizzes,
+          teamChallenge: hub.teamChallenge,
+          badges: hub.badges,
+          studentBadges: hub.studentBadges,
         ),
       );
       _lastLoadedAt = DateTime.now();
-
-      final achievements = await _safeFetch(_repository.fetchAchievements);
-      if (achievements != null) {
-        emit(
-          state.copyWith(
-            status: GamificationStatus.loaded,
-            achievements: achievements,
-          ),
-        );
-      }
-
-      final leaderboard = await _safeFetch(
-        () => _repository.fetchLeaderboard(
-          state.isWeeklyRanking ? 'weekly' : 'monthly',
-        ),
-      );
-      if (leaderboard != null) {
-        emit(
-          state.copyWith(
-            status: GamificationStatus.loaded,
-            leaderboardEntries: leaderboard,
-          ),
-        );
-      }
-
-      final quizzes = await _safeFetch(_repository.fetchAvailableQuizzes);
-      if (quizzes != null) {
-        emit(
-          state.copyWith(
-            status: GamificationStatus.loaded,
-            availableQuizzes: quizzes,
-          ),
-        );
-      }
-
-      final teamChallenge = await _safeFetch(_repository.fetchTeamChallenge);
-      if (teamChallenge != null) {
-        emit(
-          state.copyWith(
-            status: GamificationStatus.loaded,
-            teamChallenge: teamChallenge,
-          ),
-        );
-      }
-
-      final badges = await _safeFetch(_repository.fetchBadges);
-      if (badges != null) {
-        emit(
-          state.copyWith(
-            status: GamificationStatus.loaded,
-            badges: badges,
-          ),
-        );
-      }
-
-      final studentBadges = await _safeFetch(
-        () => _repository.fetchStudentBadges(userId),
-      );
-      if (studentBadges != null) {
-        emit(
-          state.copyWith(
-            status: GamificationStatus.loaded,
-            studentBadges: studentBadges,
-          ),
-        );
-      }
-
-      final hasAnyData = state.streak != null ||
-          state.xpProgress != null ||
-          state.dailyMissions.isNotEmpty ||
-          state.achievements.isNotEmpty ||
-          state.leaderboardEntries.isNotEmpty ||
-          state.availableQuizzes.isNotEmpty ||
-          state.badges.isNotEmpty ||
-          state.studentBadges.isNotEmpty;
-
-      if (!hasAnyData) {
-        emit(
-          state.copyWith(
-            status: GamificationStatus.error,
-            errorMessage: 'Unable to load gamification data.',
-          ),
-        );
-      }
     } catch (e) {
       emit(
         state.copyWith(
