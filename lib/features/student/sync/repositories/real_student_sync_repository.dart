@@ -10,10 +10,10 @@ class RealStudentSyncRepository implements StudentSyncRepository {
   final StorageService _storage;
   final LocalCacheService _cacheService;
 
-  static List<SyncItemModel>? _cache;
-  static DateTime? _fetchedAt;
-  static Future<List<SyncItemModel>>? _inFlight;
-  static const Duration _ttl = Duration(seconds: 20);
+  List<SyncItemModel>? _cache;
+  DateTime? _fetchedAt;
+  Future<List<SyncItemModel>>? _inFlight;
+  static const Duration _ttl = Duration(minutes: 5);
 
   RealStudentSyncRepository({
     ApiClient? apiClient,

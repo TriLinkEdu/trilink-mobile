@@ -12,10 +12,10 @@ class RealStudentDashboardRepository implements StudentDashboardRepository {
   final StorageService _storage;
   final LocalCacheService _cacheService;
 
-  static DashboardDataModel? _cache;
-  static DateTime? _fetchedAt;
-  static Future<DashboardDataModel>? _inFlight;
-  static const Duration _ttl = Duration(seconds: 30);
+  DashboardDataModel? _cache;
+  DateTime? _fetchedAt;
+  Future<DashboardDataModel>? _inFlight;
+  static const Duration _ttl = Duration(minutes: 10);
 
   RealStudentDashboardRepository({
     ApiClient? apiClient,
@@ -141,6 +141,16 @@ class RealStudentDashboardRepository implements StudentDashboardRepository {
 
   String _cacheKey(String userId) =>
       userId.isEmpty ? 'student_dashboard_v1' : 'student_dashboard_v1_$userId';
+
+  @override
+  DashboardDataModel? getCached() => _cache;
+
+  @override
+  void clearCache() {
+    _cache = null;
+    _fetchedAt = null;
+    _inFlight = null;
+  }
 
   void _restoreCache(String userId) {
     if (_cache != null) return;

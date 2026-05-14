@@ -717,11 +717,10 @@ class MockStudentGamificationRepository
   };
 
   @override
-  Future<List<LeaderboardEntry>> fetchLeaderboard(String period) async {
+  Future<List<LeaderboardEntry>> fetchLeaderboard(String period, {int offset = 0, int limit = 50}) async {
     await Future<void>.delayed(_latency);
-    return List<LeaderboardEntry>.from(
-      _leaderboards[period] ?? _leaderboards['weekly']!,
-    );
+    final entries = _leaderboards[period] ?? _leaderboards['weekly']!;
+    return entries.skip(offset).take(limit).toList();
   }
 
   @override
@@ -1210,4 +1209,7 @@ class MockStudentGamificationRepository
       _studentBadgesById[studentId] ?? const <StudentBadgeModel>[],
     );
   }
+
+  @override
+  void clearCache() {}
 }

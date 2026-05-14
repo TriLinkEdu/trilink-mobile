@@ -10,11 +10,11 @@ class RealStudentAttendanceRepository implements StudentAttendanceRepository {
   final StorageService _storage;
   final LocalCacheService _cacheService;
 
-  static List<AttendanceModel>? _cache;
-  static DateTime? _fetchedAt;
-  static Future<List<AttendanceModel>>? _inFlight;
-  static String? _cacheStudentId;
-  static const Duration _ttl = Duration(seconds: 20);
+  List<AttendanceModel>? _cache;
+  DateTime? _fetchedAt;
+  Future<List<AttendanceModel>>? _inFlight;
+  String? _cacheStudentId;
+  static const Duration _ttl = Duration(minutes: 20);
 
   RealStudentAttendanceRepository({
     ApiClient? apiClient,
@@ -115,6 +115,17 @@ class RealStudentAttendanceRepository implements StudentAttendanceRepository {
     return (user?['id'] ?? '').toString();
   }
 
+  @override
+  List<AttendanceModel>? getCached() => _cache;
+
+  @override
+  void clearCache() {
+    _cache = null;
+    _fetchedAt = null;
+    _inFlight = null;
+    _cacheStudentId = null;
+  }
+
   void _restoreCache(String studentId) {
     if (_cache != null && _cacheStudentId == studentId) return;
     if (studentId.isEmpty) return;
@@ -129,6 +140,6 @@ class RealStudentAttendanceRepository implements StudentAttendanceRepository {
     _fetchedAt = entry.savedAt;
   }
 
-  static String _cacheKey(String studentId) =>
+  String _cacheKey(String studentId) =>
       'student_attendance_records_v1_$studentId';
 }

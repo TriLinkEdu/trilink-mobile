@@ -6,4 +6,7 @@ abstract class StudentExamsRepository {
   Future<ExamResultModel> submitExam(String examId, Map<String, int> answers);
   Future<ExamAttemptModel> startAttempt(String examId, String studentId);
   Future<ExamAttemptModel> submitAttempt(String attemptId, Map<String, int> answers);
+
+  List<ExamModel>? getCached() => null;
+  void clearCache() {}
 }

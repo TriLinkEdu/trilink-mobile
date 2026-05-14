@@ -113,4 +113,7 @@ class MockStudentAnalyticsRepository implements StudentAnalyticsRepository {
       ),
     ];
   }
+
+  @override
+  void clearCache() {}
 }

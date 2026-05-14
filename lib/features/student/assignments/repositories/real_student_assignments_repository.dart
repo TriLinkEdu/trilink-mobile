@@ -14,11 +14,11 @@ class RealStudentAssignmentsRepository implements StudentAssignmentsRepository {
   final StorageService _storage;
   final LocalCacheService _cacheService;
 
-  static const Duration _ttl = Duration(seconds: 30);
+  static const Duration _ttl = Duration(minutes: 10);
 
-  static List<AssignmentModel>? _cache;
-  static DateTime? _fetchedAt;
-  static Future<List<AssignmentModel>>? _inFlight;
+  List<AssignmentModel>? _cache;
+  DateTime? _fetchedAt;
+  Future<List<AssignmentModel>>? _inFlight;
 
   RealStudentAssignmentsRepository({
     ApiClient? apiClient,
@@ -142,6 +142,16 @@ class RealStudentAssignmentsRepository implements StudentAssignmentsRepository {
   String _cacheKey(String userId) => userId.isEmpty
       ? 'student_assignments_v1'
       : 'student_assignments_v1_$userId';
+
+  @override
+  List<AssignmentModel>? getCached() => _cache;
+
+  @override
+  void clearCache() {
+    _cache = null;
+    _fetchedAt = null;
+    _inFlight = null;
+  }
 
   void _restoreCache(String userId) {
     if (_cache != null) return;

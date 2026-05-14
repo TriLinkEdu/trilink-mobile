@@ -10,4 +10,6 @@ abstract class StudentGradesRepository {
   /// Return all distinct term strings present in the student's grade data,
   /// sorted most-recent first. Used to populate the term selector.
   Future<List<String>> fetchAvailableTerms();
+  List<GradeModel>? getCached() => null;
+  void clearCache() {}
 }

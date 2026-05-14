@@ -5,4 +5,5 @@ abstract class StudentNotificationsRepository {
   Future<void> markAsRead(String id);
   Future<void> markAsUnread(String id);
   Future<void> markAllAsRead();
+  void clearCache() {}
 }

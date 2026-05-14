@@ -10,10 +10,10 @@ class RealStudentProgressRepository implements StudentProgressRepository {
   final StorageService _storage;
   final LocalCacheService _cacheService;
 
-  static StudentProgressModel? _cache;
-  static DateTime? _fetchedAt;
-  static Future<StudentProgressModel>? _inFlight;
-  static const Duration _ttl = Duration(seconds: 30);
+  StudentProgressModel? _cache;
+  DateTime? _fetchedAt;
+  Future<StudentProgressModel>? _inFlight;
+  static const Duration _ttl = Duration(minutes: 15);
 
   RealStudentProgressRepository({
     ApiClient? apiClient,

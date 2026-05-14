@@ -8,17 +8,17 @@ class RealStudentCurriculumRepository implements StudentCurriculumRepository {
   final ApiClient _api;
   final LocalCacheService _cache;
 
-  static const Duration _subjectsTtl = Duration(seconds: 30);
-  static const Duration _topicsTtl = Duration(seconds: 30);
+  static const Duration _subjectsTtl = Duration(minutes: 30);
+  static const Duration _topicsTtl = Duration(minutes: 30);
 
-  static List<SubjectModel>? _subjectsCache;
-  static DateTime? _subjectsFetchedAt;
-  static Future<List<SubjectModel>>? _subjectsInFlight;
+  List<SubjectModel>? _subjectsCache;
+  DateTime? _subjectsFetchedAt;
+  Future<List<SubjectModel>>? _subjectsInFlight;
 
-  static final Map<String, List<TopicModel>> _topicsCache =
+  final Map<String, List<TopicModel>> _topicsCache =
       <String, List<TopicModel>>{};
-  static final Map<String, DateTime> _topicsFetchedAt = <String, DateTime>{};
-  static final Map<String, Future<List<TopicModel>>> _topicsInFlight =
+  final Map<String, DateTime> _topicsFetchedAt = <String, DateTime>{};
+  final Map<String, Future<List<TopicModel>>> _topicsInFlight =
       <String, Future<List<TopicModel>>>{};
 
   RealStudentCurriculumRepository({
@@ -147,5 +147,18 @@ class RealStudentCurriculumRepository implements StudentCurriculumRepository {
         .whereType<Map<String, dynamic>>()
         .map(TopicModel.fromJson)
         .toList();
+  }
+
+  @override
+  List<SubjectModel>? getCached() => _subjectsCache;
+
+  @override
+  void clearCache() {
+    _subjectsCache = null;
+    _subjectsFetchedAt = null;
+    _subjectsInFlight = null;
+    _topicsCache.clear();
+    _topicsFetchedAt.clear();
+    _topicsInFlight.clear();
   }
 }

@@ -172,7 +172,23 @@ Future<void> initDependencies() async {
     () => AuthCubit(
       repository: sl<AuthRepository>(),
       chatSocketService: sl<ChatSocketService>(),
-      chatRepository: sl<StudentChatRepository>(),
+      onLogout: [
+        () => sl<StudentChatRepository>().clearCache(),
+        () => sl<StudentDashboardRepository>().clearCache(),
+        () => sl<StudentGradesRepository>().clearCache(),
+        () => sl<StudentAttendanceRepository>().clearCache(),
+        () => sl<StudentAssignmentsRepository>().clearCache(),
+        () => sl<StudentAnnouncementsRepository>().clearCache(),
+        () => sl<StudentNotificationsRepository>().clearCache(),
+        () => sl<StudentCalendarRepository>().clearCache(),
+        () => sl<StudentAnalyticsRepository>().clearCache(),
+        () => sl<StudentCoursesRepository>().clearCache(),
+        () => sl<StudentCurriculumRepository>().clearCache(),
+        () => sl<StudentExamsRepository>().clearCache(),
+        () => sl<StudentGamificationRepository>().clearCache(),
+        () => sl<StudentPerformanceRepository>().clearCache(),
+        () => sl<TextbookRepository>().clearCache(),
+      ],
     ),
   );
   sl.registerLazySingleton<StudentCalendarRepository>(

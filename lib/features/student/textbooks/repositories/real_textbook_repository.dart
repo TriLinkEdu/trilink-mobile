@@ -16,12 +16,12 @@ class RealTextbookRepository implements TextbookRepository {
   final ApiClient _api;
   final LocalCacheService _cacheService;
 
-  static const Duration _ttl = Duration(minutes: 10);
+  static const Duration _ttl = Duration(hours: 1);
 
   // Separate caches keyed by "grade_subject" to handle filtered queries.
-  static final Map<String, List<TextbookModel>> _cache = {};
-  static final Map<String, DateTime> _fetchedAt = {};
-  static final Map<String, Future<List<TextbookModel>>> _inFlight = {};
+  final Map<String, List<TextbookModel>> _cache = {};
+  final Map<String, DateTime> _fetchedAt = {};
+  final Map<String, Future<List<TextbookModel>>> _inFlight = {};
 
   RealTextbookRepository({
     ApiClient? apiClient,
@@ -114,6 +114,19 @@ class RealTextbookRepository implements TextbookRepository {
     } catch (_) {
       // Ignore malformed cache entries.
     }
+  }
+
+  @override
+  List<TextbookModel>? getCached() {
+    // Return the most recent cache entry (unfiltered list)
+    return _cache.values.isNotEmpty ? _cache.values.first : null;
+  }
+
+  @override
+  void clearCache() {
+    _cache.clear();
+    _fetchedAt.clear();
+    _inFlight.clear();
   }
 
   Future<List<TextbookModel>> _fetchFresh({

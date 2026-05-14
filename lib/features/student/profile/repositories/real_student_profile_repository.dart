@@ -10,9 +10,9 @@ class RealStudentProfileRepository implements StudentProfileRepository {
   final StorageService _storage;
   final LocalCacheService _cacheService;
 
-  static const Duration _ttl = Duration(seconds: 30);
-  static UserModel? _cache;
-  static DateTime? _fetchedAt;
+  static const Duration _ttl = Duration(hours: 2);
+  UserModel? _cache;
+  DateTime? _fetchedAt;
 
   RealStudentProfileRepository({
     ApiClient? apiClient,

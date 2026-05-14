@@ -16,4 +16,6 @@ abstract class StudentAssignmentsRepository {
 
   /// Force-bust the in-memory cache and return fresh data.
   Future<List<AssignmentModel>> refresh();
+  List<AssignmentModel>? getCached() => null;
+  void clearCache() {}
 }

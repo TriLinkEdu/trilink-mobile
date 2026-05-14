@@ -106,4 +106,10 @@ class MockStudentAssignmentsRepository implements StudentAssignmentsRepository {
     await Future<void>.delayed(_latency);
     return List<AssignmentModel>.from(_assignments);
   }
+
+  @override
+  List<AssignmentModel>? getCached() => null;
+
+  @override
+  void clearCache() {}
 }

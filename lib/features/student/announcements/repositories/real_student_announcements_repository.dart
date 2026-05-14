@@ -11,10 +11,10 @@ class RealStudentAnnouncementsRepository
   final StorageService _storage;
   final LocalCacheService _cacheService;
 
-  static List<AnnouncementModel>? _cache;
-  static DateTime? _fetchedAt;
-  static Future<List<AnnouncementModel>>? _inFlight;
-  static const Duration _ttl = Duration(seconds: 30);
+  List<AnnouncementModel>? _cache;
+  DateTime? _fetchedAt;
+  Future<List<AnnouncementModel>>? _inFlight;
+  static const Duration _ttl = Duration(minutes: 15);
 
   RealStudentAnnouncementsRepository({
     ApiClient? apiClient,
@@ -83,6 +83,16 @@ class RealStudentAnnouncementsRepository
   String _cacheKey(String userId) => userId.isEmpty
       ? 'student_announcements_v1'
       : 'student_announcements_v1_$userId';
+
+  @override
+  List<AnnouncementModel>? getCached() => _cache;
+
+  @override
+  void clearCache() {
+    _cache = null;
+    _fetchedAt = null;
+    _inFlight = null;
+  }
 
   void _restoreCache(String userId) {
     if (_cache != null) return;

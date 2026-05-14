@@ -11,10 +11,10 @@ class RealStudentSettingsRepository implements StudentSettingsRepository {
   final StorageService _storage;
   final LocalCacheService _cacheService;
 
-  static Map<String, dynamic>? _cache;
-  static DateTime? _fetchedAt;
-  static Future<Map<String, dynamic>>? _inFlight;
-  static const Duration _ttl = Duration(seconds: 20);
+  Map<String, dynamic>? _cache;
+  DateTime? _fetchedAt;
+  Future<Map<String, dynamic>>? _inFlight;
+  static const Duration _ttl = Duration(hours: 1);
 
   RealStudentSettingsRepository({
     ApiClient? apiClient,

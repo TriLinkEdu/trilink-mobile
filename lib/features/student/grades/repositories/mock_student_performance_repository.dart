@@ -182,4 +182,10 @@ class MockStudentPerformanceRepository implements StudentPerformanceRepository {
       generatedAt: _report.generatedAt,
     );
   }
+
+  @override
+  List<StudentGoalModel>? getCached() => null;
+
+  @override
+  void clearCache() {}
 }

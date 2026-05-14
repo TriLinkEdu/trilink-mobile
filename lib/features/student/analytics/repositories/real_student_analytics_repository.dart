@@ -11,26 +11,26 @@ class RealStudentAnalyticsRepository implements StudentAnalyticsRepository {
   final StorageService _storage;
   final LocalCacheService _cacheService;
 
-  static const Duration _dashboardTtl = Duration(seconds: 30);
-  static const Duration _gradesTtl = Duration(seconds: 30);
-  static const Duration _goalsTtl = Duration(seconds: 30);
-  static const Duration _attendanceTtl = Duration(seconds: 20);
+  static const Duration _dashboardTtl = Duration(minutes: 30);
+  static const Duration _gradesTtl = Duration(minutes: 30);
+  static const Duration _goalsTtl = Duration(minutes: 30);
+  static const Duration _attendanceTtl = Duration(minutes: 30);
 
-  static Map<String, dynamic>? _dashboardCache;
-  static DateTime? _dashboardFetchedAt;
-  static Future<Map<String, dynamic>>? _dashboardInFlight;
+  Map<String, dynamic>? _dashboardCache;
+  DateTime? _dashboardFetchedAt;
+  Future<Map<String, dynamic>>? _dashboardInFlight;
 
-  static Map<String, dynamic>? _gradesCache;
-  static DateTime? _gradesFetchedAt;
-  static Future<Map<String, dynamic>>? _gradesInFlight;
+  Map<String, dynamic>? _gradesCache;
+  DateTime? _gradesFetchedAt;
+  Future<Map<String, dynamic>>? _gradesInFlight;
 
-  static List<dynamic>? _goalsCache;
-  static DateTime? _goalsFetchedAt;
-  static Future<List<dynamic>>? _goalsInFlight;
+  List<dynamic>? _goalsCache;
+  DateTime? _goalsFetchedAt;
+  Future<List<dynamic>>? _goalsInFlight;
 
-  static Map<String, dynamic>? _attendanceCache;
-  static DateTime? _attendanceFetchedAt;
-  static Future<Map<String, dynamic>>? _attendanceInFlight;
+  Map<String, dynamic>? _attendanceCache;
+  DateTime? _attendanceFetchedAt;
+  Future<Map<String, dynamic>>? _attendanceInFlight;
 
   RealStudentAnalyticsRepository({
     ApiClient? apiClient,
@@ -644,5 +644,21 @@ class RealStudentAnalyticsRepository implements StudentAnalyticsRepository {
     if (entry == null || entry.data is! Map<String, dynamic>) return;
     _attendanceCache = Map<String, dynamic>.from(entry.data as Map);
     _attendanceFetchedAt = entry.savedAt;
+  }
+
+  @override
+  void clearCache() {
+    _dashboardCache = null;
+    _dashboardFetchedAt = null;
+    _dashboardInFlight = null;
+    _gradesCache = null;
+    _gradesFetchedAt = null;
+    _gradesInFlight = null;
+    _goalsCache = null;
+    _goalsFetchedAt = null;
+    _goalsInFlight = null;
+    _attendanceCache = null;
+    _attendanceFetchedAt = null;
+    _attendanceInFlight = null;
   }
 }

@@ -10,11 +10,10 @@ class RealStudentCalendarRepository implements StudentCalendarRepository {
   final StorageService _storage;
   final LocalCacheService _cacheService;
 
-  static final Map<String, List<CalendarEventModel>> _cacheByKey = {};
-  static final Map<String, DateTime> _fetchedAtByKey = {};
-  static final Map<String, Future<List<CalendarEventModel>>> _inFlightByKey =
-      {};
-  static const Duration _ttl = Duration(seconds: 20);
+  final Map<String, List<CalendarEventModel>> _cacheByKey = {};
+  final Map<String, DateTime> _fetchedAtByKey = {};
+  final Map<String, Future<List<CalendarEventModel>>> _inFlightByKey = {};
+  static const Duration _ttl = Duration(minutes: 15);
 
   RealStudentCalendarRepository({
     ApiClient? apiClient,
@@ -171,6 +170,13 @@ class RealStudentCalendarRepository implements StudentCalendarRepository {
         .map(CalendarEventModel.fromJson)
         .toList();
     _fetchedAtByKey[cacheKey] = entry.savedAt;
+  }
+
+  @override
+  void clearCache() {
+    _cacheByKey.clear();
+    _fetchedAtByKey.clear();
+    _inFlightByKey.clear();
   }
 
   Future<void> _upsertEvent(String userId, CalendarEventModel event) async {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../repositories/student_grades_repository.dart';
 import 'grades_state.dart';
@@ -8,7 +9,7 @@ class GradesCubit extends Cubit<GradesState> {
   final StudentGradesRepository _repository;
   DateTime? _lastLoadedAt;
 
-  static const Duration _ttl = Duration(seconds: 30);
+  static const Duration _ttl = Duration(minutes: 30);
 
   GradesCubit(this._repository) : super(const GradesState());
 
@@ -16,12 +17,69 @@ class GradesCubit extends Cubit<GradesState> {
 
   Future<void> loadIfNeeded({String? term}) async {
     final targetTerm = term ?? state.selectedTerm;
-    final cacheHit = state.status == GradesStatus.loaded &&
+    // Fresh in-memory cubit state — skip.
+    if (state.status == GradesStatus.loaded &&
         _lastLoadedAt != null &&
         DateTime.now().difference(_lastLoadedAt!) < _ttl &&
-        (targetTerm.isEmpty || targetTerm == state.selectedTerm);
-    if (cacheHit) return;
-    await loadGrades(term: targetTerm.isEmpty ? null : targetTerm);
+        (targetTerm.isEmpty || targetTerm == state.selectedTerm)) return;
+
+    // SWR: if repo has cached grades, render them immediately.
+    final cached = _repository.getCached();
+    if (cached != null && state.status != GradesStatus.loaded) {
+      final filtered = targetTerm.isEmpty
+          ? cached
+          : cached.where((g) => g.term == targetTerm).toList();
+      final terms = _distinctTerms(cached);
+      final resolved = _resolveTerm(
+        requested: targetTerm.isEmpty ? null : targetTerm,
+        current: state.selectedTerm,
+        available: terms,
+      );
+      emit(state.copyWith(
+        status: GradesStatus.loaded,
+        grades: filtered,
+        selectedTerm: resolved,
+        availableTerms: terms,
+      ));
+    }
+    unawaited(_silentRefresh(targetTerm: targetTerm));
+  }
+
+  Future<void> _silentRefresh({String? targetTerm}) async {
+    try {
+      final results = await Future.wait([
+        _repository.fetchAvailableTerms(),
+        _repository.fetchGrades(),
+      ]);
+      if (isClosed) return;
+      final availableTerms = results[0] as List<String>;
+      final allGrades = results[1] as List<dynamic>;
+      final resolved = _resolveTerm(
+        requested: targetTerm,
+        current: state.selectedTerm,
+        available: availableTerms,
+      );
+      final filtered = resolved.isEmpty
+          ? List.from(allGrades)
+          : allGrades.where((g) => g.term == resolved).toList();
+      emit(state.copyWith(
+        status: GradesStatus.loaded,
+        grades: List.from(filtered),
+        selectedTerm: resolved,
+        availableTerms: availableTerms,
+      ));
+      _lastLoadedAt = DateTime.now();
+    } catch (_) {}
+  }
+
+  List<String> _distinctTerms(List allGrades) {
+    final seen = <String>{};
+    final terms = <String>[];
+    for (final g in allGrades) {
+      final t = (g as dynamic).term as String?;
+      if (t != null && seen.add(t)) terms.add(t);
+    }
+    return terms;
   }
 
   Future<void> loadGrades({String? term}) async {

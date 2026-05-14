@@ -8,11 +8,11 @@ class RealStudentCoursesRepository implements StudentCoursesRepository {
   final ApiClient _api;
   final LocalCacheService _cache;
 
-  static const Duration _ttl = Duration(seconds: 30);
+  static const Duration _ttl = Duration(minutes: 20);
 
-  static List<CourseResourceModel>? _resourcesCache;
-  static DateTime? _resourcesFetchedAt;
-  static Future<List<CourseResourceModel>>? _resourcesInFlight;
+  List<CourseResourceModel>? _resourcesCache;
+  DateTime? _resourcesFetchedAt;
+  Future<List<CourseResourceModel>>? _resourcesInFlight;
 
   RealStudentCoursesRepository({
     ApiClient? apiClient,
@@ -92,6 +92,16 @@ class RealStudentCoursesRepository implements StudentCoursesRepository {
         .map((json) => CourseResourceModel.fromJson(json))
         .toList();
     _resourcesFetchedAt = entry.savedAt;
+  }
+
+  @override
+  List<CourseResourceModel>? getCached() => _resourcesCache;
+
+  @override
+  void clearCache() {
+    _resourcesCache = null;
+    _resourcesFetchedAt = null;
+    _resourcesInFlight = null;
   }
 
 }

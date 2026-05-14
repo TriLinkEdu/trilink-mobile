@@ -12,17 +12,17 @@ class RealStudentPerformanceRepository implements StudentPerformanceRepository {
   final StorageService _storage;
   final LocalCacheService _cacheService;
 
-  static const Duration _goalsTtl = Duration(seconds: 20);
-  static const Duration _reportTtl = Duration(seconds: 30);
+  static const Duration _goalsTtl = Duration(minutes: 30);
+  static const Duration _reportTtl = Duration(hours: 1);
 
-  static List<StudentGoalModel>? _goalsCache;
-  static DateTime? _goalsFetchedAt;
-  static Future<List<StudentGoalModel>>? _goalsInFlight;
+  List<StudentGoalModel>? _goalsCache;
+  DateTime? _goalsFetchedAt;
+  Future<List<StudentGoalModel>>? _goalsInFlight;
 
-  static final Map<String, PerformanceReportModel> _reportCache =
+  final Map<String, PerformanceReportModel> _reportCache =
       <String, PerformanceReportModel>{};
-  static final Map<String, DateTime> _reportFetchedAt = <String, DateTime>{};
-  static final Map<String, Future<PerformanceReportModel>> _reportInFlight =
+  final Map<String, DateTime> _reportFetchedAt = <String, DateTime>{};
+  final Map<String, Future<PerformanceReportModel>> _reportInFlight =
       <String, Future<PerformanceReportModel>>{};
 
   RealStudentPerformanceRepository({
@@ -264,5 +264,18 @@ class RealStudentPerformanceRepository implements StudentPerformanceRepository {
       Map<String, dynamic>.from(entry.data as Map),
     );
     _reportFetchedAt[studentId] = entry.savedAt;
+  }
+
+  @override
+  List<StudentGoalModel>? getCached() => _goalsCache;
+
+  @override
+  void clearCache() {
+    _goalsCache = null;
+    _goalsFetchedAt = null;
+    _goalsInFlight = null;
+    _reportCache.clear();
+    _reportFetchedAt.clear();
+    _reportInFlight.clear();
   }
 }

@@ -12,16 +12,16 @@ class RealStudentExamsRepository implements StudentExamsRepository {
   final StorageService _storage;
   final LocalCacheService _cacheService;
 
-  static const Duration _listTtl = Duration(seconds: 20);
-  static const Duration _examTtl = Duration(seconds: 30);
+  static const Duration _listTtl = Duration(minutes: 30);
+  static const Duration _examTtl = Duration(hours: 1);
 
-  static List<ExamModel>? _listCache;
-  static DateTime? _listFetchedAt;
-  static Future<List<ExamModel>>? _listInFlight;
+  List<ExamModel>? _listCache;
+  DateTime? _listFetchedAt;
+  Future<List<ExamModel>>? _listInFlight;
 
-  static final Map<String, ExamModel> _examCache = <String, ExamModel>{};
-  static final Map<String, DateTime> _examFetchedAt = <String, DateTime>{};
-  static final Map<String, Future<ExamModel>> _examInFlight =
+  final Map<String, ExamModel> _examCache = <String, ExamModel>{};
+  final Map<String, DateTime> _examFetchedAt = <String, DateTime>{};
+  final Map<String, Future<ExamModel>> _examInFlight =
       <String, Future<ExamModel>>{};
 
   RealStudentExamsRepository({
@@ -323,5 +323,18 @@ class RealStudentExamsRepository implements StudentExamsRepository {
       Map<String, dynamic>.from(entry.data as Map),
     );
     _examFetchedAt[examId] = entry.savedAt;
+  }
+
+  @override
+  List<ExamModel>? getCached() => _listCache;
+
+  @override
+  void clearCache() {
+    _listCache = null;
+    _listFetchedAt = null;
+    _listInFlight = null;
+    _examCache.clear();
+    _examFetchedAt.clear();
+    _examInFlight.clear();
   }
 }

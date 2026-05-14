@@ -14,10 +14,10 @@ class RealStudentNotificationsRepository
   final StorageService _storage;
   final LocalCacheService _cacheService;
 
-  static List<NotificationModel>? _cache;
-  static DateTime? _fetchedAt;
-  static Future<List<NotificationModel>>? _inFlight;
-  static const Duration _ttl = Duration(seconds: 20);
+  List<NotificationModel>? _cache;
+  DateTime? _fetchedAt;
+  Future<List<NotificationModel>>? _inFlight;
+  static const Duration _ttl = Duration(minutes: 2);
 
   RealStudentNotificationsRepository({
     ApiClient? apiClient,
@@ -157,6 +157,13 @@ class RealStudentNotificationsRepository
   String _cacheKey(String userId) => userId.isEmpty
       ? 'student_notifications_v1'
       : 'student_notifications_v1_$userId';
+
+  @override
+  void clearCache() {
+    _cache = null;
+    _fetchedAt = null;
+    _inFlight = null;
+  }
 
   void _restoreCache(String userId) {
     if (_cache != null) return;

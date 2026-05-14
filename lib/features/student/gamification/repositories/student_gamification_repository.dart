@@ -55,4 +55,6 @@ abstract class StudentGamificationRepository {
   Future<List<QuizModel>> fetchAvailableQuizzes();
   Future<List<BadgeModel>> fetchBadges();
   Future<List<StudentBadgeModel>> fetchStudentBadges(String studentId);
+
+  void clearCache() {}
 }

@@ -154,4 +154,10 @@ class MockStudentGradesRepository implements StudentGradesRepository {
     }
     return terms;
   }
+
+  @override
+  List<GradeModel>? getCached() => null;
+
+  @override
+  void clearCache() {}
 }

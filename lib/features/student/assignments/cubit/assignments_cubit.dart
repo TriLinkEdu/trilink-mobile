@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../models/assignment_model.dart';
 import '../repositories/student_assignments_repository.dart';
@@ -9,7 +10,7 @@ class AssignmentsCubit extends Cubit<AssignmentsState> {
   final StudentAssignmentsRepository _repository;
   DateTime? _lastLoadedAt;
 
-  static const Duration _ttl = Duration(seconds: 30);
+  static const Duration _ttl = Duration(minutes: 10);
 
   AssignmentsCubit(this._repository) : super(const AssignmentsState());
 
@@ -18,9 +19,21 @@ class AssignmentsCubit extends Cubit<AssignmentsState> {
   Future<void> loadIfNeeded() async {
     if (state.status == AssignmentsStatus.loaded &&
         _lastLoadedAt != null &&
-        DateTime.now().difference(_lastLoadedAt!) < _ttl) {
+        DateTime.now().difference(_lastLoadedAt!) < _ttl) return;
+
+    final cached = _repository.getCached();
+    if (cached != null) {
+      if (state.status != AssignmentsStatus.loaded) {
+        emit(AssignmentsState(
+          status: AssignmentsStatus.loaded,
+          assignments: cached,
+          activeFilter: state.activeFilter,
+        ));
+      }
+      unawaited(_silentRefresh());
       return;
     }
+
     await loadAssignments();
   }
 
@@ -31,7 +44,7 @@ class AssignmentsCubit extends Cubit<AssignmentsState> {
       emit(AssignmentsState(
         status: AssignmentsStatus.loaded,
         assignments: assignments,
-        activeFilter: state.activeFilter, // preserve active filter
+        activeFilter: state.activeFilter,
       ));
       _lastLoadedAt = DateTime.now();
     } catch (e) {
@@ -40,6 +53,20 @@ class AssignmentsCubit extends Cubit<AssignmentsState> {
         errorMessage: 'Unable to load assignments. Please try again.',
       ));
     }
+  }
+
+  Future<void> _silentRefresh() async {
+    try {
+      final assignments = await _repository.fetchAssignments();
+      if (!isClosed) {
+        emit(AssignmentsState(
+          status: AssignmentsStatus.loaded,
+          assignments: assignments,
+          activeFilter: state.activeFilter,
+        ));
+        _lastLoadedAt = DateTime.now();
+      }
+    } catch (_) {}
   }
 
   /// Force-bust cache and reload fresh data from the network.

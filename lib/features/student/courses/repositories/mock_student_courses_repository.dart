@@ -136,4 +136,10 @@ class MockStudentCoursesRepository implements StudentCoursesRepository {
     }
     return null;
   }
+
+  @override
+  List<CourseResourceModel>? getCached() => null;
+
+  @override
+  void clearCache() {}
 }

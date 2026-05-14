@@ -14,7 +14,7 @@ class RealStudentGamificationRepository
   final ApiClient _apiClient;
   final StorageService _storage;
   final LocalCacheService _cacheService;
-  static final Map<String, GamificationMutationResult> _quizMutationCache = {};
+  final Map<String, GamificationMutationResult> _quizMutationCache = {};
 
   RealStudentGamificationRepository({
     ApiClient? apiClient,
@@ -765,5 +765,10 @@ class RealStudentGamificationRepository
 
   Future<void> _writeObject(String key, Map<String, dynamic> value) async {
     await _cacheService.write(key, value);
+  }
+
+  @override
+  void clearCache() {
+    _quizMutationCache.clear();
   }
 }

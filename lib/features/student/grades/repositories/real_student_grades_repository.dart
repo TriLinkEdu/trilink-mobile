@@ -20,10 +20,10 @@ class RealStudentGradesRepository implements StudentGradesRepository {
   final StorageService _storage;
   final LocalCacheService _cacheService;
 
-  static List<GradeModel>? _allGradesCache;
-  static DateTime? _fetchedAt;
-  static Future<List<GradeModel>>? _inFlight;
-  static const Duration _ttl = Duration(seconds: 30);
+  List<GradeModel>? _allGradesCache;
+  DateTime? _fetchedAt;
+  Future<List<GradeModel>>? _inFlight;
+  static const Duration _ttl = Duration(minutes: 30);
 
   RealStudentGradesRepository({
     ApiClient? apiClient,
@@ -171,6 +171,16 @@ class RealStudentGradesRepository implements StudentGradesRepository {
 
   String _cacheKey(String userId) =>
       userId.isEmpty ? 'student_grades_v1' : 'student_grades_v1_$userId';
+
+  @override
+  List<GradeModel>? getCached() => _allGradesCache;
+
+  @override
+  void clearCache() {
+    _allGradesCache = null;
+    _fetchedAt = null;
+    _inFlight = null;
+  }
 
   void _restoreCache(String userId) {
     if (_allGradesCache != null) return;
