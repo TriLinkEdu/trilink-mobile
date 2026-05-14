@@ -1,20 +1,31 @@
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/services/local_cache_service.dart';
+import '../../../../core/services/storage_service.dart';
 import '../models/feedback_model.dart';
 import 'student_feedback_repository.dart';
 
 class RealStudentFeedbackRepository implements StudentFeedbackRepository {
   final ApiClient _api;
+  final StorageService _storage;
+  final LocalCacheService _cacheService;
 
   static List<FeedbackModel> _localHistory = const [];
   static DateTime? _historyFetchedAt;
   static const Duration _ttl = Duration(seconds: 20);
 
-  RealStudentFeedbackRepository({ApiClient? apiClient})
-    : _api = apiClient ?? ApiClient();
+  RealStudentFeedbackRepository({
+    ApiClient? apiClient,
+    required StorageService storageService,
+    required LocalCacheService cacheService,
+  }) : _api = apiClient ?? ApiClient(),
+       _storage = storageService,
+       _cacheService = cacheService;
 
   @override
   Future<List<FeedbackModel>> fetchFeedbackHistory() async {
+    final userId = await _currentUserId();
+    _restoreCache(userId);
     final fetchedAt = _historyFetchedAt;
     if (fetchedAt != null && DateTime.now().difference(fetchedAt) < _ttl) {
       return _localHistory;
@@ -27,6 +38,7 @@ class RealStudentFeedbackRepository implements StudentFeedbackRepository {
           .map(_mapRemote)
           .toList();
       _localHistory = remote;
+      await _persistCache(userId);
     } catch (_) {
       // Keep local in-memory history fallback.
     }
@@ -67,6 +79,7 @@ class RealStudentFeedbackRepository implements StudentFeedbackRepository {
 
     _localHistory = [..._localHistory, model];
     _historyFetchedAt = DateTime.now();
+    await _persistCache(await _currentUserId());
     return model;
   }
 
@@ -136,6 +149,33 @@ class RealStudentFeedbackRepository implements StudentFeedbackRepository {
       buffer.write('Comment: ${comment.trim()}');
     }
     return buffer.toString().trim();
+  }
+
+  Future<String> _currentUserId() async {
+    final user = await _storage.getUser();
+    return (user?['id'] ?? '').toString();
+  }
+
+  String _cacheKey(String userId) => userId.isEmpty
+      ? 'student_feedback_v1'
+      : 'student_feedback_v1_$userId';
+
+  void _restoreCache(String userId) {
+    if (_localHistory.isNotEmpty) return;
+    final entry = _cacheService.read(_cacheKey(userId));
+    if (entry == null || entry.data is! List) return;
+    _localHistory = (entry.data as List)
+        .whereType<Map<String, dynamic>>()
+        .map(FeedbackModel.fromJson)
+        .toList();
+    _historyFetchedAt = entry.savedAt;
+  }
+
+  Future<void> _persistCache(String userId) async {
+    await _cacheService.write(
+      _cacheKey(userId),
+      _localHistory.map((item) => item.toJson()).toList(),
+    );
   }
 }
 

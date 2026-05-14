@@ -119,6 +119,23 @@ class ChatBubble extends StatelessWidget {
                               height: 170,
                               width: 230,
                               fit: BoxFit.cover,
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Container(
+                                  color: theme.colorScheme.surfaceContainerHighest,
+                                  height: 170,
+                                  width: 230,
+                                  child: Center(
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      value: loadingProgress.expectedTotalBytes != null
+                                          ? loadingProgress.cumulativeBytesLoaded /
+                                              loadingProgress.expectedTotalBytes!
+                                          : null,
+                                    ),
+                                  ),
+                                );
+                              },
                               errorBuilder: (context, error, stackTrace) =>
                                   Container(
                                 color: theme.colorScheme.surfaceContainerHighest,

@@ -248,6 +248,7 @@ class _AttendanceViewState extends State<_AttendanceView> {
                     }
 
                     final subjectSummaries = _subjectSummaries(records);
+                    final overallAttendance = _overallAttendance(records);
 
                     return SingleChildScrollView(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -272,13 +273,35 @@ class _AttendanceViewState extends State<_AttendanceView> {
                                 ),
                                 AppSpacing.gapSm,
                                 Text(
-                                  '${_overallAttendance(records).toStringAsFixed(0)}%',
+                                    '${overallAttendance.toStringAsFixed(0)}%',
                                   style: theme.textTheme.displayLarge?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: theme.colorScheme.onPrimary,
                                   ),
                                 ),
+                                  AppSpacing.gapXs,
+                                  Text(
+                                    'Based on ${records.length} recorded classes',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onPrimary
+                                          .withAlpha(180),
+                                    ),
+                                  ),
                                 AppSpacing.gapSm,
+                                  ClipRRect(
+                                    borderRadius: AppRadius.borderXl,
+                                    child: LinearProgressIndicator(
+                                      value: overallAttendance / 100,
+                                      minHeight: 8,
+                                      backgroundColor:
+                                          Colors.white.withAlpha(28),
+                                      valueColor:
+                                          const AlwaysStoppedAnimation<Color>(
+                                        AppColors.success,
+                                      ),
+                                    ),
+                                  ),
+                                  AppSpacing.gapMd,
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 12,
@@ -309,7 +332,7 @@ class _AttendanceViewState extends State<_AttendanceView> {
                                     ],
                                   ),
                                 ),
-                                AppSpacing.gapXl,
+                                AppSpacing.gapLg,
                                 Wrap(
                                   spacing: 8,
                                   runSpacing: 8,
@@ -403,6 +426,7 @@ class _AttendanceViewState extends State<_AttendanceView> {
                                 ),
                                 name: subjectSummaries[index].name,
                                 totalClasses: subjectSummaries[index].total,
+                                progress: subjectSummaries[index].percentage,
                                 percentage:
                                     subjectSummaries[index].percentageLabel,
                                 dots: subjectSummaries[index].dots,
@@ -607,6 +631,7 @@ class _SubjectAttendanceRow extends StatelessWidget {
   final Color iconColor;
   final String name;
   final int totalClasses;
+  final double progress;
   final String percentage;
   final List<_DotStatus> dots;
 
@@ -615,6 +640,7 @@ class _SubjectAttendanceRow extends StatelessWidget {
     required this.iconColor,
     required this.name,
     required this.totalClasses,
+    required this.progress,
     required this.percentage,
     required this.dots,
   });
@@ -676,6 +702,16 @@ class _SubjectAttendanceRow extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+          AppSpacing.gapMd,
+          ClipRRect(
+            borderRadius: AppRadius.borderXl,
+            child: LinearProgressIndicator(
+              value: progress / 100,
+              minHeight: 7,
+              backgroundColor: theme.colorScheme.surfaceContainerHighest,
+              valueColor: AlwaysStoppedAnimation<Color>(iconColor),
+            ),
           ),
           AppSpacing.gapMd,
           Wrap(

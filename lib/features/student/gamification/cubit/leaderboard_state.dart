@@ -9,12 +9,14 @@ class LeaderboardState extends Equatable {
   final List<LeaderboardEntry> entries;
   final bool weekly;
   final String? errorMessage;
+  final bool hasReachedMax;
 
   const LeaderboardState({
     this.status = LeaderboardStatus.initial,
     this.entries = const [],
     this.weekly = true,
     this.errorMessage,
+    this.hasReachedMax = false,
   });
 
   LeaderboardState copyWith({
@@ -22,15 +24,17 @@ class LeaderboardState extends Equatable {
     List<LeaderboardEntry>? entries,
     bool? weekly,
     String? errorMessage,
+    bool? hasReachedMax,
   }) {
     return LeaderboardState(
       status: status ?? this.status,
       entries: entries ?? this.entries,
       weekly: weekly ?? this.weekly,
       errorMessage: errorMessage,
+      hasReachedMax: hasReachedMax ?? this.hasReachedMax,
     );
   }
 
   @override
-  List<Object?> get props => [status, entries, weekly, errorMessage];
+  List<Object?> get props => [status, entries, weekly, errorMessage, hasReachedMax];
 }

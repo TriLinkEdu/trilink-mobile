@@ -1,21 +1,32 @@
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/services/local_cache_service.dart';
+import '../../../../core/services/storage_service.dart';
 import '../models/sync_status_model.dart';
 import 'student_sync_repository.dart';
 
 class RealStudentSyncRepository implements StudentSyncRepository {
   final ApiClient _api;
+  final StorageService _storage;
+  final LocalCacheService _cacheService;
 
   static List<SyncItemModel>? _cache;
   static DateTime? _fetchedAt;
   static Future<List<SyncItemModel>>? _inFlight;
   static const Duration _ttl = Duration(seconds: 20);
 
-  RealStudentSyncRepository({ApiClient? apiClient})
-    : _api = apiClient ?? ApiClient();
+  RealStudentSyncRepository({
+    ApiClient? apiClient,
+    required StorageService storageService,
+    required LocalCacheService cacheService,
+  }) : _api = apiClient ?? ApiClient(),
+       _storage = storageService,
+       _cacheService = cacheService;
 
   @override
   Future<List<SyncItemModel>> fetchSyncStatus() async {
+    final userId = await _currentUserId();
+    _restoreCache(userId);
     if (_cache != null && _fetchedAt != null) {
       final age = DateTime.now().difference(_fetchedAt!);
       if (age < _ttl) return _cache!;
@@ -26,11 +37,18 @@ class RealStudentSyncRepository implements StudentSyncRepository {
 
     final future = _fetchFresh();
     _inFlight = future;
-    final data = await future;
-    _inFlight = null;
-    _cache = data;
-    _fetchedAt = DateTime.now();
-    return data;
+    try {
+      final data = await future;
+      _cache = data;
+      _fetchedAt = DateTime.now();
+      await _persistCache(userId);
+      return data;
+    } catch (_) {
+      if (_cache != null) return _cache!;
+      rethrow;
+    } finally {
+      _inFlight = null;
+    }
   }
 
   @override
@@ -40,6 +58,7 @@ class RealStudentSyncRepository implements StudentSyncRepository {
       final items = _mapItems(res['items']);
       _cache = items;
       _fetchedAt = DateTime.now();
+      await _persistCache(await _currentUserId());
       return items;
     } catch (_) {
       // Fallback for older backend deployments.
@@ -56,6 +75,7 @@ class RealStudentSyncRepository implements StudentSyncRepository {
           .toList();
       _cache = refreshed;
       _fetchedAt = now;
+      await _persistCache(await _currentUserId());
       return refreshed;
     }
   }
@@ -155,5 +175,32 @@ class RealStudentSyncRepository implements StudentSyncRepository {
     if (value is int) return value;
     if (value is num) return value.toInt();
     return int.tryParse(value?.toString() ?? '') ?? fallback;
+  }
+
+  Future<String> _currentUserId() async {
+    final user = await _storage.getUser();
+    return (user?['id'] ?? '').toString();
+  }
+
+  String _cacheKey(String userId) =>
+      userId.isEmpty ? 'student_sync_v1' : 'student_sync_v1_$userId';
+
+  void _restoreCache(String userId) {
+    if (_cache != null) return;
+    final entry = _cacheService.read(_cacheKey(userId));
+    if (entry == null || entry.data is! List) return;
+    _cache = (entry.data as List)
+        .whereType<Map<String, dynamic>>()
+        .map(SyncItemModel.fromJson)
+        .toList();
+    _fetchedAt = entry.savedAt;
+  }
+
+  Future<void> _persistCache(String userId) async {
+    if (_cache == null) return;
+    await _cacheService.write(
+      _cacheKey(userId),
+      _cache!.map((item) => item.toJson()).toList(),
+    );
   }
 }

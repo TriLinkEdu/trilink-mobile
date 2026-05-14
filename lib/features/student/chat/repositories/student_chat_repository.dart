@@ -2,7 +2,7 @@ import '../models/chat_models.dart';
 
 abstract class StudentChatRepository {
   Future<List<ChatConversationModel>> fetchConversations();
-  Future<List<ChatMessageModel>> fetchMessages(String conversationId);
+  Future<List<ChatMessageModel>> fetchMessages(String conversationId, {int offset = 0, int limit = 50});
   Future<ChatMessageModel> sendMessage(String conversationId, String content);
   Future<ChatMessageModel> sendImageMessage(String conversationId, String imagePath);
   Future<ChatMessageModel> sendFileMessage(String conversationId, String filePath);

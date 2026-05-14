@@ -34,7 +34,7 @@ abstract class StudentGamificationRepository {
   Future<GamificationHubPayload> fetchHub();
 
   // Individual endpoints — still used for targeted refreshes after mutations.
-  Future<List<LeaderboardEntry>> fetchLeaderboard(String period);
+  Future<List<LeaderboardEntry>> fetchLeaderboard(String period, {int offset = 0, int limit = 50});
   Future<List<AchievementModel>> fetchAchievements();
   Future<List<DailyMissionModel>> fetchDailyMissions();
   Future<TeamChallengeModel?> fetchTeamChallenge();

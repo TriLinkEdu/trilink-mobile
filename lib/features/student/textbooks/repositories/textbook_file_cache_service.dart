@@ -96,10 +96,7 @@ class TextbookFileCacheService {
       throw Exception('Failed to access device storage. Please restart the app.');
     }
 
-    // The textbook model already carries the Cloudinary CDN URL — no extra
-    // round-trip to /files/{id}/access needed. Cloudinary raw URLs are
-    // permanent and don't require signing, so we can use them directly.
-    final accessUrl = textbook.accessUrl;
+    final accessUrl = textbook.resolvedAccessUrl;
     if (accessUrl.isEmpty) {
       throw StateError('Missing file access URL for textbook');
     }

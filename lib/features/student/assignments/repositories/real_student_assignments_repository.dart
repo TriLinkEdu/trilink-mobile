@@ -1,6 +1,8 @@
 import '../models/assignment_model.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/services/local_cache_service.dart';
+import '../../../../core/services/storage_service.dart';
 import 'student_assignments_repository.dart';
 
 /// Production-only assignments repository.
@@ -9,6 +11,8 @@ import 'student_assignments_repository.dart';
 /// display an accurate error state — silent local mutations are gone.
 class RealStudentAssignmentsRepository implements StudentAssignmentsRepository {
   final ApiClient _api;
+  final StorageService _storage;
+  final LocalCacheService _cacheService;
 
   static const Duration _ttl = Duration(seconds: 30);
 
@@ -16,13 +20,20 @@ class RealStudentAssignmentsRepository implements StudentAssignmentsRepository {
   static DateTime? _fetchedAt;
   static Future<List<AssignmentModel>>? _inFlight;
 
-  RealStudentAssignmentsRepository({ApiClient? apiClient})
-      : _api = apiClient ?? ApiClient();
+  RealStudentAssignmentsRepository({
+    ApiClient? apiClient,
+    required StorageService storageService,
+    required LocalCacheService cacheService,
+  }) : _api = apiClient ?? ApiClient(),
+       _storage = storageService,
+       _cacheService = cacheService;
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
 
   @override
   Future<List<AssignmentModel>> fetchAssignments() async {
+    final userId = await _currentUserId();
+    _restoreCache(userId);
     if (_isCacheValid()) return _cache!;
 
     final inFlight = _inFlight;
@@ -34,7 +45,11 @@ class RealStudentAssignmentsRepository implements StudentAssignmentsRepository {
       final data = await future;
       _cache = data;
       _fetchedAt = DateTime.now();
+      await _persistCache(userId);
       return data;
+    } catch (_) {
+      if (_cache != null) return _cache!;
+      rethrow;
     } finally {
       _inFlight = null;
     }
@@ -51,6 +66,7 @@ class RealStudentAssignmentsRepository implements StudentAssignmentsRepository {
     final raw = await _api.get(ApiConstants.assignmentById(id));
     final remote = _mapRemote(raw);
     _upsertCache(remote);
+    await _persistCache(await _currentUserId());
     return remote;
   }
 
@@ -116,6 +132,34 @@ class RealStudentAssignmentsRepository implements StudentAssignmentsRepository {
       current[index] = item;
     }
     _cache = current;
+  }
+
+  Future<String> _currentUserId() async {
+    final user = await _storage.getUser();
+    return (user?['id'] ?? '').toString();
+  }
+
+  String _cacheKey(String userId) => userId.isEmpty
+      ? 'student_assignments_v1'
+      : 'student_assignments_v1_$userId';
+
+  void _restoreCache(String userId) {
+    if (_cache != null) return;
+    final entry = _cacheService.read(_cacheKey(userId));
+    if (entry == null || entry.data is! List) return;
+    _cache = (entry.data as List)
+        .whereType<Map<String, dynamic>>()
+        .map(AssignmentModel.fromJson)
+        .toList();
+    _fetchedAt = entry.savedAt;
+  }
+
+  Future<void> _persistCache(String userId) async {
+    if (_cache == null) return;
+    await _cacheService.write(
+      _cacheKey(userId),
+      _cache!.map((item) => item.toJson()).toList(),
+    );
   }
 
   AssignmentModel _mapRemote(Map<String, dynamic> raw) {

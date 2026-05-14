@@ -1,20 +1,25 @@
 import '../../../../core/network/api_client.dart';
 import '../../../../core/constants/api_constants.dart';
+import '../../../../core/services/local_cache_service.dart';
 import '../models/ai_assistant_models.dart';
 import 'student_ai_assistant_repository.dart';
 
 class RealStudentAiAssistantRepository implements StudentAiAssistantRepository {
   final ApiClient _api;
   final String _studentId;
+  final LocalCacheService _cacheService;
 
   RealStudentAiAssistantRepository({
     ApiClient? apiClient,
     required String studentId,
+    required LocalCacheService cacheService,
   })  : _api = apiClient ?? ApiClient(),
-        _studentId = studentId;
+        _studentId = studentId,
+        _cacheService = cacheService;
 
   @override
   Future<AiAssistantData> fetchAssistantData() async {
+    final cached = _restoreCache();
     try {
       // Fetch all three in parallel
       final results = await Future.wait([
@@ -23,13 +28,15 @@ class RealStudentAiAssistantRepository implements StudentAiAssistantRepository {
         _fetchEvaluate(),
       ]);
 
-      return AiAssistantData(
+      final data = AiAssistantData(
         learningPath: results[0] as List<LearningPathItemModel>,
         resources: results[1] as List<ResourceRecommendationModel>,
         insights: results[2] as List<EvaluateInsightModel>,
       );
+      await _cacheService.write(_cacheKey, data.toJson());
+      return data;
     } catch (e) {
-      // Return empty data on error
+      if (cached != null) return cached;
       return const AiAssistantData(
         learningPath: [],
         resources: [],
@@ -206,6 +213,16 @@ class RealStudentAiAssistantRepository implements StudentAiAssistantRepository {
   Future<Map<String, dynamic>> getWeeklySummary() async {
     return await _api.get(
       ApiConstants.aiWeeklySummary(_studentId),
+    );
+  }
+
+  String get _cacheKey => 'student_ai_assistant_v1_$_studentId';
+
+  AiAssistantData? _restoreCache() {
+    final entry = _cacheService.read(_cacheKey);
+    if (entry == null || entry.data is! Map<String, dynamic>) return null;
+    return AiAssistantData.fromJson(
+      Map<String, dynamic>.from(entry.data as Map),
     );
   }
 }

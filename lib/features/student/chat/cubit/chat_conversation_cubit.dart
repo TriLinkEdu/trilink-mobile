@@ -28,11 +28,12 @@ class ChatConversationCubit extends Cubit<ChatConversationState> {
       emit(state.copyWith(status: ConversationStatus.loading));
     }
     try {
-      final messages = await _repository.fetchMessages(conversationId);
+      final messages = await _repository.fetchMessages(conversationId, offset: 0, limit: 50);
       emit(
         ChatConversationState(
           status: ConversationStatus.loaded,
           messages: messages,
+          hasReachedMax: messages.length < 50,
         ),
       );
       _lastLoadedAt = DateTime.now();
@@ -45,6 +46,28 @@ class ChatConversationCubit extends Cubit<ChatConversationState> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> loadMoreMessages() async {
+    if (state.hasReachedMax || state.status == ConversationStatus.loading) return;
+
+    try {
+      final newMessages = await _repository.fetchMessages(
+        conversationId,
+        offset: state.messages.length,
+        limit: 50,
+      );
+      
+      emit(
+        state.copyWith(
+          status: ConversationStatus.loaded,
+          messages: [...newMessages, ...state.messages], // new messages are older
+          hasReachedMax: newMessages.length < 50,
+        ),
+      );
+    } catch (_) {
+      // Ignore errors on pagination to not break the UI
     }
   }
 

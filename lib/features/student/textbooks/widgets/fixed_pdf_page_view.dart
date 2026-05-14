@@ -138,7 +138,6 @@ class _FixedPdfPageViewState extends State<FixedPdfPageView> {
 
   @override
   void dispose() {
-    _pageImage?.dispose();
     super.dispose();
   }
 }

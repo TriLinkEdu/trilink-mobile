@@ -1,3 +1,5 @@
+import '../../../../core/constants/api_constants.dart';
+
 class TextbookModel {
   final String id;
   final String title;
@@ -34,7 +36,7 @@ class TextbookModel {
   });
 
   String get fileSizeDisplay {
-    if (sizeBytes == null) {
+    if (sizeBytes == null || sizeBytes! <= 0) {
       return 'Unknown size';
     }
     if (sizeBytes! < 1024) {
@@ -46,19 +48,61 @@ class TextbookModel {
     return '${(sizeBytes! / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
+  String get resolvedAccessUrl {
+    final trimmedAccessUrl = accessUrl.trim();
+    if (trimmedAccessUrl.startsWith('http://') ||
+        trimmedAccessUrl.startsWith('https://')) {
+      return trimmedAccessUrl;
+    }
+    if (trimmedAccessUrl.startsWith('/')) {
+      return '${ApiConstants.fileBaseUrl}/api$trimmedAccessUrl';
+    }
+    if (fileRecordId.trim().isNotEmpty) {
+      return '${ApiConstants.fileBaseUrl}/api${ApiConstants.fileAccess(fileRecordId)}';
+    }
+    return trimmedAccessUrl;
+  }
+
   factory TextbookModel.fromJson(Map<String, dynamic> json) {
+    final file = json['file'];
+    final fileMap = file is Map<String, dynamic> ? file : null;
+
     return TextbookModel(
       id: json['id'] as String,
       title: json['title'] as String,
       subject: json['subject'] as String,
-      grade: json['grade'] as int,
+      grade: (() {
+        final rawGrade = json['grade'];
+        if (rawGrade is int) return rawGrade;
+        if (rawGrade is num) return rawGrade.toInt();
+        return int.tryParse(rawGrade?.toString() ?? '') ?? 0;
+      })(),
       description: json['description'] as String?,
       pageCount: json['pageCount'] as int?,
       sizeBytes: (() {
-        final raw = json['sizeBytes'];
+        final raw = json['sizeBytes'] ?? fileMap?['sizeBytes'] ?? fileMap?['size'];
         if (raw is int) return raw;
         if (raw is num) return raw.toInt();
-        return int.tryParse(raw?.toString() ?? '');
+        final parsed = int.tryParse(raw?.toString() ?? '');
+        if (parsed != null) return parsed;
+
+        final sizeText = raw?.toString().trim() ?? '';
+        final match = RegExp(r'([0-9]+(?:\.[0-9]+)?)\s*(KB|MB|GB|B)', caseSensitive: false)
+            .firstMatch(sizeText);
+        if (match == null) return null;
+        final value = double.tryParse(match.group(1) ?? '');
+        if (value == null) return null;
+        final unit = (match.group(2) ?? 'B').toUpperCase();
+        switch (unit) {
+          case 'KB':
+            return (value * 1024).round();
+          case 'MB':
+            return (value * 1024 * 1024).round();
+          case 'GB':
+            return (value * 1024 * 1024 * 1024).round();
+          default:
+            return value.round();
+        }
       })(),
       isActive: json['isActive'] as bool,
       fileRecordId: (json['fileRecordId'] ?? '').toString(),
@@ -66,8 +110,15 @@ class TextbookModel {
       fileEtag: json['fileEtag']?.toString(),
       cacheKey: (json['cacheKey'] ?? '${json['fileRecordId'] ?? ''}:v1')
           .toString(),
-      accessUrl: json['accessUrl'] as String,
-      coverUrl: json['coverUrl'] as String?,
+      accessUrl: (() {
+        final raw = json['accessUrl'] ?? json['url'] ?? json['fileUrl'] ?? fileMap?['url'] ?? fileMap?['fileUrl'] ?? fileMap?['accessUrl'];
+        return raw?.toString() ?? '';
+      })(),
+      coverUrl: (() {
+        final raw = json['coverUrl'] ?? json['thumbnailUrl'] ?? fileMap?['coverUrl'] ?? fileMap?['thumbnailUrl'];
+        final value = raw?.toString().trim() ?? '';
+        return value.isEmpty ? null : value;
+      })(),
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
   }

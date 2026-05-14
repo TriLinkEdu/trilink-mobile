@@ -38,11 +38,26 @@ class _LeaderboardView extends StatefulWidget {
 
 class _LeaderboardViewState extends State<_LeaderboardView> {
   String _currentUserId = '';
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _loadCurrentUser();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 50) {
+      context.read<LeaderboardCubit>().loadMoreLeaderboard();
+    }
   }
 
   Future<void> _loadCurrentUser() async {
@@ -176,6 +191,7 @@ class _LeaderboardViewState extends State<_LeaderboardView> {
               onRefresh: () =>
                   context.read<LeaderboardCubit>().loadLeaderboard(),
               child: ListView(
+                controller: _scrollController,
                 padding: AppSpacing.paddingLg,
                 children: [
                   // ── Your position hero card ──────────────────────

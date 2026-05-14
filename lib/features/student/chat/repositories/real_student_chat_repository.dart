@@ -1,5 +1,6 @@
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/services/local_cache_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../models/chat_models.dart';
 import 'student_chat_repository.dart';
@@ -7,6 +8,7 @@ import 'student_chat_repository.dart';
 class RealStudentChatRepository implements StudentChatRepository {
   final ApiClient _api;
   final StorageService _storage;
+  final LocalCacheService _cacheService;
 
   static const Duration _conversationsTtl = Duration(seconds: 20);
   static const Duration _messagesTtl = Duration(seconds: 10);
@@ -24,31 +26,82 @@ class RealStudentChatRepository implements StudentChatRepository {
   RealStudentChatRepository({
     ApiClient? apiClient,
     required StorageService storageService,
+    required LocalCacheService cacheService,
   }) : _api = apiClient ?? ApiClient(),
-       _storage = storageService;
+       _storage = storageService,
+       _cacheService = cacheService;
+
+  // ── Cache keys ─────────────────────────────────────────────
+
+  static String _conversationsCacheKey(String userId) =>
+      'chat_conversations_v1_$userId';
+  static String _messagesCacheKey(String conversationId) =>
+      'chat_messages_v1_$conversationId';
+
+  // ── Conversations ───────────────────────────────────────────
 
   @override
   Future<List<ChatConversationModel>> fetchConversations() async {
+    final userId = await _currentUserId();
+
+    // 1. Restore from disk cache if in-memory is cold.
+    if (_conversationsCache == null) {
+      _restoreConversationsCache(userId);
+    }
+
+    // 2. Return in-memory if fresh enough.
     if (_conversationsCache != null && _conversationsFetchedAt != null) {
       final age = DateTime.now().difference(_conversationsFetchedAt!);
       if (age < _conversationsTtl) return _conversationsCache!;
     }
 
+    // 3. Deduplicate in-flight fetches.
     final inFlight = _conversationsInFlight;
     if (inFlight != null) return inFlight;
 
-    final future = _fetchConversationsFresh();
+    final future = _fetchConversationsFresh(userId);
     _conversationsInFlight = future;
-    final data = await future;
-    _conversationsInFlight = null;
-    _conversationsCache = data;
-    _conversationsFetchedAt = DateTime.now();
-    return data;
+    try {
+      final data = await future;
+      _conversationsCache = data;
+      _conversationsFetchedAt = DateTime.now();
+      // Persist to disk.
+      if (userId.isNotEmpty) {
+        await _cacheService.write(
+          _conversationsCacheKey(userId),
+          data.map((c) => c.toJson()).toList(),
+        );
+      }
+      return data;
+    } catch (_) {
+      // On network failure, return disk-cached data if available.
+      if (_conversationsCache != null) return _conversationsCache!;
+      rethrow;
+    } finally {
+      _conversationsInFlight = null;
+    }
   }
 
-  Future<List<ChatConversationModel>> _fetchConversationsFresh() async {
+  void _restoreConversationsCache(String userId) {
+    if (userId.isEmpty) return;
+    final entry = _cacheService.read(_conversationsCacheKey(userId));
+    if (entry == null || entry.data is! List) return;
     try {
-      final me = await _currentUserId();
+      _conversationsCache = (entry.data as List)
+          .whereType<Map<String, dynamic>>()
+          .map(ChatConversationModel.fromJson)
+          .toList();
+      _conversationsFetchedAt = entry.savedAt;
+    } catch (_) {
+      // Ignore malformed cache.
+    }
+  }
+
+  Future<List<ChatConversationModel>> _fetchConversationsFresh(
+    String userId,
+  ) async {
+    try {
+      final me = userId.isNotEmpty ? userId : await _currentUserId();
       final rows = await _api.getList(ApiConstants.conversations);
       final conversations = <ChatConversationModel>[];
 
@@ -76,40 +129,85 @@ class RealStudentChatRepository implements StudentChatRepository {
 
       return conversations;
     } catch (e) {
-      print('Error fetching conversations: $e');
       rethrow;
     }
   }
 
+  // ── Messages ────────────────────────────────────────────────
+
   @override
-  Future<List<ChatMessageModel>> fetchMessages(String conversationId) async {
-    final fetchedAt = _messagesFetchedAt[conversationId];
+  Future<List<ChatMessageModel>> fetchMessages(String conversationId, {int offset = 0, int limit = 50}) async {
+    // Bypass memory cache for pagination loads.
+    if (offset > 0) {
+      return _fetchMessagesFresh(conversationId, offset: offset, limit: limit);
+    }
+    
     final cached = _messagesCache[conversationId];
-    if (cached != null && fetchedAt != null) {
-      final age = DateTime.now().difference(fetchedAt);
-      if (age < _messagesTtl) return cached;
+
+    // 1. Restore from disk if in-memory is cold.
+    if (cached == null) {
+      _restoreMessagesCache(conversationId);
     }
 
+    // 2. Return in-memory if fresh enough.
+    final memCached = _messagesCache[conversationId];
+    final memFetchedAt = _messagesFetchedAt[conversationId];
+    if (memCached != null && memFetchedAt != null) {
+      final age = DateTime.now().difference(memFetchedAt);
+      if (age < _messagesTtl) return memCached;
+    }
+
+    // 3. Deduplicate in-flight.
     final inFlight = _messagesInFlight[conversationId];
     if (inFlight != null) return inFlight;
 
-    final future = _fetchMessagesFresh(conversationId);
+    final future = _fetchMessagesFresh(conversationId, offset: offset, limit: limit);
     _messagesInFlight[conversationId] = future;
-    final data = await future;
-    _messagesInFlight.remove(conversationId);
-    _messagesCache[conversationId] = data;
-    _messagesFetchedAt[conversationId] = DateTime.now();
-    return data;
+    try {
+      final data = await future;
+      _messagesCache[conversationId] = data;
+      _messagesFetchedAt[conversationId] = DateTime.now();
+      // Persist to disk (keep last 100 messages per conversation).
+      final toCache = data.length > 100 ? data.sublist(data.length - 100) : data;
+      await _cacheService.write(
+        _messagesCacheKey(conversationId),
+        toCache.map((m) => m.toJson()).toList(),
+      );
+      return data;
+    } catch (_) {
+      if (_messagesCache[conversationId] != null) {
+        return _messagesCache[conversationId]!;
+      }
+      rethrow;
+    } finally {
+      _messagesInFlight.remove(conversationId);
+    }
+  }
+
+  void _restoreMessagesCache(String conversationId) {
+    final entry = _cacheService.read(_messagesCacheKey(conversationId));
+    if (entry == null || entry.data is! List) return;
+    try {
+      _messagesCache[conversationId] = (entry.data as List)
+          .whereType<Map<String, dynamic>>()
+          .map(ChatMessageModel.fromJson)
+          .toList();
+      _messagesFetchedAt[conversationId] = entry.savedAt;
+    } catch (_) {
+      // Ignore malformed cache.
+    }
   }
 
   Future<List<ChatMessageModel>> _fetchMessagesFresh(
-    String conversationId,
-  ) async {
+    String conversationId, {
+    int offset = 0,
+    int limit = 50,
+  }) async {
     final me = await _currentUserId();
     // Backend returns { messages: [...], hasMore: bool } — NOT a plain array.
     final raw = await _api.get(
       ApiConstants.conversationMessages(conversationId),
-      queryParameters: {'limit': 50},
+      queryParameters: {'offset': offset, 'limit': limit},
     );
     final rows = (raw['messages'] as List? ?? const [])
         .whereType<Map<String, dynamic>>();
@@ -118,6 +216,8 @@ class RealStudentChatRepository implements StudentChatRepository {
     messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
     return messages;
   }
+
+  // ── Mutations ───────────────────────────────────────────────
 
   @override
   Future<ChatMessageModel> sendMessage(
@@ -131,10 +231,22 @@ class RealStudentChatRepository implements StudentChatRepository {
     );
     final sent = _mapMessage(raw, me);
 
+    // Optimistically update in-memory and disk cache.
     final existing = _messagesCache[conversationId] ?? const [];
-    _messagesCache[conversationId] = [...existing, sent];
+    final updated = [...existing, sent];
+    _messagesCache[conversationId] = updated;
     _messagesFetchedAt[conversationId] = DateTime.now();
-    _conversationsFetchedAt = null;
+    _conversationsFetchedAt = null; // Invalidate conversation list.
+
+    final toCache = updated.length > 100
+        ? updated.sublist(updated.length - 100)
+        : updated;
+    unawaited(
+      _cacheService.write(
+        _messagesCacheKey(conversationId),
+        toCache.map((m) => m.toJson()).toList(),
+      ),
+    );
 
     return sent;
   }
@@ -169,9 +281,20 @@ class RealStudentChatRepository implements StudentChatRepository {
     final sent = _mapMessage(enriched, me);
 
     final existing = _messagesCache[conversationId] ?? const [];
-    _messagesCache[conversationId] = [...existing, sent];
+    final updated = [...existing, sent];
+    _messagesCache[conversationId] = updated;
     _messagesFetchedAt[conversationId] = DateTime.now();
     _conversationsFetchedAt = null;
+
+    final toCache = updated.length > 100
+        ? updated.sublist(updated.length - 100)
+        : updated;
+    unawaited(
+      _cacheService.write(
+        _messagesCacheKey(conversationId),
+        toCache.map((m) => m.toJson()).toList(),
+      ),
+    );
 
     return sent;
   }
@@ -191,6 +314,10 @@ class RealStudentChatRepository implements StudentChatRepository {
         'parentVisible': false,
       },
     );
+
+    // Invalidate conversations cache so the new one shows up.
+    _conversationsCache = null;
+    _conversationsFetchedAt = null;
 
     final id = (raw['id'] ?? '').toString();
     return ChatConversationModel(
@@ -218,6 +345,8 @@ class RealStudentChatRepository implements StudentChatRepository {
       );
     }).toList();
   }
+
+  // ── Helpers ─────────────────────────────────────────────────
 
   Future<ChatMessageModel?> _latestMessage(
     String conversationId,
@@ -292,6 +421,8 @@ class RealStudentChatRepository implements StudentChatRepository {
     final user = await _storage.getUser();
     return (user?['id'] ?? '').toString();
   }
+
+  // ── Search / Social ─────────────────────────────────────────
 
   @override
   Future<List<ChatContactModel>> searchUsers(String query) async {
@@ -387,6 +518,39 @@ class RealStudentChatRepository implements StudentChatRepository {
     return name.contains(query) || subject.contains(query);
   }
 
+  // ── Missing interface methods ──────────────────────────────
+
+  @override
+  Future<ChatMessageModel> sendFileMessage(
+    String conversationId,
+    String filePath,
+  ) async {
+    // Delegate to image upload path — both send a file via multipart.
+    return sendImageMessage(conversationId, filePath);
+  }
+
+  @override
+  Future<List<ChatMemberModel>> fetchConversationMembers(
+    String conversationId,
+  ) async {
+    try {
+      final rows = await _api.getList(
+        '${ApiConstants.conversations}/$conversationId/members',
+      );
+      return rows
+          .whereType<Map<String, dynamic>>()
+          .map(ChatMemberModel.fromJson)
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  @override
+  Future<void> cancelConnection(String connectionId) async {
+    await _api.delete('/connections/$connectionId');
+  }
+
   @override
   Future<ConnectionModel> requestConnection(String recipientId) async {
     final data = await _api.post(
@@ -446,8 +610,13 @@ class RealStudentChatRepository implements StudentChatRepository {
   }
 
   @override
-  Future<InteractionProfileModel> fetchInteractionProfile(String userId) async {
+  Future<ChatInteractionProfile> fetchInteractionProfile(String userId) async {
     final data = await _api.get('/users/$userId/interaction-profile');
-    return InteractionProfileModel.fromJson(data);
+    return ChatInteractionProfile.fromJson(data);
   }
+}
+
+// Fire-and-forget helper — avoids unawaited Future warnings.
+void unawaited(Future<void> future) {
+  future.ignore();
 }

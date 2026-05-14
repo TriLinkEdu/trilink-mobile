@@ -1,6 +1,7 @@
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/routes/route_names.dart';
+import '../../../../core/services/local_cache_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../models/student_growth_models.dart';
 import 'student_analytics_repository.dart';
@@ -8,6 +9,7 @@ import 'student_analytics_repository.dart';
 class RealStudentAnalyticsRepository implements StudentAnalyticsRepository {
   final ApiClient _api;
   final StorageService _storage;
+  final LocalCacheService _cacheService;
 
   static const Duration _dashboardTtl = Duration(seconds: 30);
   static const Duration _gradesTtl = Duration(seconds: 30);
@@ -33,8 +35,10 @@ class RealStudentAnalyticsRepository implements StudentAnalyticsRepository {
   RealStudentAnalyticsRepository({
     ApiClient? apiClient,
     required StorageService storageService,
+    required LocalCacheService cacheService,
   }) : _api = apiClient ?? ApiClient(),
-       _storage = storageService;
+       _storage = storageService,
+       _cacheService = cacheService;
 
   @override
   Future<StudentWeeklySnapshot> fetchWeeklySnapshot() async {
@@ -373,6 +377,8 @@ class RealStudentAnalyticsRepository implements StudentAnalyticsRepository {
   }
 
   Future<Map<String, dynamic>> _getDashboardData() async {
+    final userId = await _currentUserId();
+    _restoreDashboardCache(userId);
     if (_isFresh(_dashboardFetchedAt, _dashboardTtl) &&
         _dashboardCache != null) {
       return _dashboardCache!;
@@ -388,12 +394,15 @@ class RealStudentAnalyticsRepository implements StudentAnalyticsRepository {
     if (data.isNotEmpty) {
       _dashboardCache = data;
       _dashboardFetchedAt = DateTime.now();
+      await _cacheService.write(_dashboardCacheKey(userId), data);
       return data;
     }
     return _dashboardCache ?? const <String, dynamic>{};
   }
 
   Future<Map<String, dynamic>> _getGradesData() async {
+    final userId = await _currentUserId();
+    _restoreGradesCache(userId);
     if (_isFresh(_gradesFetchedAt, _gradesTtl) && _gradesCache != null) {
       return _gradesCache!;
     }
@@ -408,12 +417,15 @@ class RealStudentAnalyticsRepository implements StudentAnalyticsRepository {
     if (data.isNotEmpty) {
       _gradesCache = data;
       _gradesFetchedAt = DateTime.now();
+      await _cacheService.write(_gradesCacheKey(userId), data);
       return data;
     }
     return _gradesCache ?? const <String, dynamic>{};
   }
 
   Future<List<dynamic>> _getGoalsData() async {
+    final userId = await _currentUserId();
+    _restoreGoalsCache(userId);
     if (_isFresh(_goalsFetchedAt, _goalsTtl) && _goalsCache != null) {
       return _goalsCache!;
     }
@@ -428,12 +440,15 @@ class RealStudentAnalyticsRepository implements StudentAnalyticsRepository {
     if (data.isNotEmpty) {
       _goalsCache = data;
       _goalsFetchedAt = DateTime.now();
+      await _cacheService.write(_goalsCacheKey(userId), data);
       return data;
     }
     return _goalsCache ?? const [];
   }
 
   Future<Map<String, dynamic>> _getAttendanceData() async {
+    final userId = await _currentUserId();
+    _restoreAttendanceCache(userId);
     if (_isFresh(_attendanceFetchedAt, _attendanceTtl) &&
         _attendanceCache != null) {
       return _attendanceCache!;
@@ -443,6 +458,9 @@ class RealStudentAnalyticsRepository implements StudentAnalyticsRepository {
     if (inFlight != null) return inFlight;
 
     final studentId = await _resolveStudentId();
+    if (studentId.isEmpty) {
+      return _attendanceCache ?? const <String, dynamic>{};
+    }
     final future = _safeGetMap(ApiConstants.attendanceStudentReport(studentId));
     _attendanceInFlight = future;
     final data = await future;
@@ -450,6 +468,7 @@ class RealStudentAnalyticsRepository implements StudentAnalyticsRepository {
     if (data.isNotEmpty) {
       _attendanceCache = data;
       _attendanceFetchedAt = DateTime.now();
+      await _cacheService.write(_attendanceCacheKey(userId), data);
       return data;
     }
     return _attendanceCache ?? const <String, dynamic>{};
@@ -571,10 +590,59 @@ class RealStudentAnalyticsRepository implements StudentAnalyticsRepository {
 
   Future<String> _resolveStudentId() async {
     final user = await _storage.getUser();
-    final id = (user?['id'] ?? '').toString();
-    if (id.isEmpty) {
-      throw StateError('Student session not found. Please login again.');
-    }
-    return id;
+    return (user?['id'] ?? '').toString();
+  }
+
+  Future<String> _currentUserId() async {
+    final user = await _storage.getUser();
+    return (user?['id'] ?? '').toString();
+  }
+
+  String _dashboardCacheKey(String userId) => userId.isEmpty
+      ? 'student_analytics_dashboard_v1'
+      : 'student_analytics_dashboard_v1_$userId';
+
+  String _gradesCacheKey(String userId) => userId.isEmpty
+      ? 'student_analytics_grades_v1'
+      : 'student_analytics_grades_v1_$userId';
+
+  String _goalsCacheKey(String userId) => userId.isEmpty
+      ? 'student_analytics_goals_v1'
+      : 'student_analytics_goals_v1_$userId';
+
+  String _attendanceCacheKey(String userId) => userId.isEmpty
+      ? 'student_analytics_attendance_v1'
+      : 'student_analytics_attendance_v1_$userId';
+
+  void _restoreDashboardCache(String userId) {
+    if (_dashboardCache != null) return;
+    final entry = _cacheService.read(_dashboardCacheKey(userId));
+    if (entry == null || entry.data is! Map<String, dynamic>) return;
+    _dashboardCache = Map<String, dynamic>.from(entry.data as Map);
+    _dashboardFetchedAt = entry.savedAt;
+  }
+
+  void _restoreGradesCache(String userId) {
+    if (_gradesCache != null) return;
+    final entry = _cacheService.read(_gradesCacheKey(userId));
+    if (entry == null || entry.data is! Map<String, dynamic>) return;
+    _gradesCache = Map<String, dynamic>.from(entry.data as Map);
+    _gradesFetchedAt = entry.savedAt;
+  }
+
+  void _restoreGoalsCache(String userId) {
+    if (_goalsCache != null) return;
+    final entry = _cacheService.read(_goalsCacheKey(userId));
+    if (entry == null || entry.data is! List) return;
+    _goalsCache = List<dynamic>.from(entry.data as List);
+    _goalsFetchedAt = entry.savedAt;
+  }
+
+  void _restoreAttendanceCache(String userId) {
+    if (_attendanceCache != null) return;
+    final entry = _cacheService.read(_attendanceCacheKey(userId));
+    if (entry == null || entry.data is! Map<String, dynamic>) return;
+    _attendanceCache = Map<String, dynamic>.from(entry.data as Map);
+    _attendanceFetchedAt = entry.savedAt;
   }
 }

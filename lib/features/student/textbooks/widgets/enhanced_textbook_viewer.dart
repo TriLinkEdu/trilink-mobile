@@ -28,7 +28,7 @@ class EnhancedTextbookViewer extends StatefulWidget {
 
 class _EnhancedTextbookViewerState extends State<EnhancedTextbookViewer>
     with TickerProviderStateMixin {
-  PdfControllerPinch? _pdfController;
+  PdfController? _pdfController;
   late TextbookReadingState _readingState;
   late AnimationController _overlayController;
   late Timer _readingTimer;
@@ -67,7 +67,7 @@ class _EnhancedTextbookViewerState extends State<EnhancedTextbookViewer>
 
   Future<void> _initializePdfController() async {
     try {
-      _pdfController = PdfControllerPinch(
+      _pdfController = PdfController(
         document: PdfDocument.openFile(widget.localPath),
         initialPage: _readingState.currentPage,
       );
@@ -85,7 +85,6 @@ class _EnhancedTextbookViewerState extends State<EnhancedTextbookViewer>
         _analyzePdfIssues();
       }
       
-      _setupPdfListener();
       _preloadAdjacentPages();
       
       // Show overlay initially
@@ -136,16 +135,6 @@ class _EnhancedTextbookViewerState extends State<EnhancedTextbookViewer>
     } catch (e) {
       print('Error analyzing PDF: $e');
     }
-  }
-
-  void _setupPdfListener() {
-    _pdfController?.addListener(() {
-      final currentPage = _pdfController?.page ?? 1;
-      if (currentPage != _readingState.currentPage) {
-        _updateReadingProgress(currentPage);
-        _preloadAdjacentPages();
-      }
-    });
   }
 
   void _startReadingTimer() {
@@ -325,10 +314,11 @@ class _EnhancedTextbookViewerState extends State<EnhancedTextbookViewer>
                           ]),
                     child: Opacity(
                       opacity: _readingState.brightness,
-                      child: PdfViewPinch(
+                      child: PdfView(
                         controller: _pdfController!,
-                        padding: 0,
-                        builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
+                        scrollDirection: Axis.vertical,
+                        renderer: _renderPage,
+                        builders: PdfViewBuilders<DefaultBuilderOptions>(
                           options: const DefaultBuilderOptions(),
                           documentLoaderBuilder: (_) => const Center(
                             child: Column(
@@ -346,9 +336,15 @@ class _EnhancedTextbookViewerState extends State<EnhancedTextbookViewer>
                         ),
                         onPageChanged: (page) {
                           setState(() {
-                            _readingState = _readingState.copyWith(currentPage: page);
+                            _readingState = _readingState.copyWith(
+                              currentPage: page,
+                            );
                           });
-                          TextbookReadingService.saveReadingState(widget.textbookId, _readingState);
+                          TextbookReadingService.saveReadingState(
+                            widget.textbookId,
+                            _readingState,
+                          );
+                          _preloadAdjacentPages();
                         },
                       ),
                     ),
@@ -691,6 +687,19 @@ class _EnhancedTextbookViewerState extends State<EnhancedTextbookViewer>
             ),
         ],
       ),
+    );
+  }
+
+  Future<PdfPageImage?> _renderPage(PdfPage page) {
+    final aspectRatio = page.width / page.height;
+    final hasIssue = aspectRatio > 2.0 || aspectRatio < 0.3;
+    final renderWidth = page.width * 2;
+    final renderHeight = hasIssue ? renderWidth / 0.707 : page.height * 2;
+    return page.render(
+      width: renderWidth,
+      height: renderHeight,
+      format: PdfPageImageFormat.png,
+      backgroundColor: '#FFFFFF',
     );
   }
 }

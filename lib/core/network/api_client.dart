@@ -1,18 +1,31 @@
 import 'package:dio/dio.dart';
 import '../constants/api_constants.dart';
 import '../services/storage_service.dart';
+import '../services/sync_queue_service.dart';
+import '../services/telemetry_service.dart';
 import 'api_exceptions.dart';
 
 class ApiClient {
-  static final ApiClient _instance = ApiClient._internal();
-  factory ApiClient() => _instance;
+  static ApiClient? _instance;
+  
+  factory ApiClient({
+    StorageService? storageService,
+    SyncQueueService? syncQueue,
+    TelemetryService? telemetry,
+  }) {
+    _instance ??= ApiClient._internal(storageService, syncQueue, telemetry);
+    return _instance!;
+  }
 
-  late final Dio _dio;
-  final StorageService _storage = StorageService();
+  late final Dio dio;
+  final StorageService _storage;
+  final SyncQueueService? _syncQueue;
+  final TelemetryService? _telemetry;
   bool _isRefreshing = false;
 
-  ApiClient._internal() {
-    _dio = Dio(
+  ApiClient._internal(StorageService? storageService, this._syncQueue, this._telemetry) 
+    : _storage = storageService ?? StorageService() {
+    dio = Dio(
       BaseOptions(
         baseUrl: ApiConstants.baseUrl,
         // Keep login and data calls resilient on slower networks.
@@ -23,8 +36,12 @@ class ApiClient {
       ),
     );
 
-    _dio.interceptors.add(
-      InterceptorsWrapper(onRequest: _onRequest, onError: _onError),
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: _onRequest, 
+        onResponse: _onResponse,
+        onError: _onError,
+      ),
     );
   }
 
@@ -36,7 +53,20 @@ class ApiClient {
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
     }
+    options.extra['startTime'] = DateTime.now().millisecondsSinceEpoch;
     handler.next(options);
+  }
+
+  void _onResponse(
+    Response response,
+    ResponseInterceptorHandler handler,
+  ) {
+    final startTime = response.requestOptions.extra['startTime'] as int?;
+    if (startTime != null) {
+      final duration = DateTime.now().millisecondsSinceEpoch - startTime;
+      _telemetry?.recordNetworkHit(response.requestOptions.path, duration);
+    }
+    handler.next(response);
   }
 
   Future<void> _onError(
@@ -62,7 +92,7 @@ class ApiClient {
           _isRefreshing = false;
           final opts = err.requestOptions;
           opts.headers['Authorization'] = 'Bearer ${data['accessToken']}';
-          final retry = await _dio.fetch(opts);
+          final retry = await dio.fetch(opts);
           return handler.resolve(retry);
         }
       } catch (_) {
@@ -70,7 +100,46 @@ class ApiClient {
         await _storage.clearAll();
       }
     }
+
+    // Measure latency even on errors
+    final startTime = err.requestOptions.extra['startTime'] as int?;
+    if (startTime != null) {
+      final duration = DateTime.now().millisecondsSinceEpoch - startTime;
+      _telemetry?.recordNetworkHit(err.requestOptions.path, duration);
+    }
+
+    // Queue failed mutations (Optimistic UI)
+    if (_isNetworkError(err) && _isMutation(err.requestOptions.method)) {
+      await _syncQueue?.enqueue(
+        path: err.requestOptions.path,
+        method: err.requestOptions.method,
+        data: err.requestOptions.data,
+      );
+      
+      // Return a mock success response so UI proceeds optimistically
+      return handler.resolve(
+        Response(
+          requestOptions: err.requestOptions,
+          statusCode: 202, // Accepted for background processing
+          data: {'status': 'queued_offline'},
+        ),
+      );
+    }
+
     handler.next(err);
+  }
+
+  bool _isNetworkError(DioException err) {
+    return err.type == DioExceptionType.connectionTimeout ||
+           err.type == DioExceptionType.sendTimeout ||
+           err.type == DioExceptionType.receiveTimeout ||
+           err.type == DioExceptionType.connectionError ||
+           err.type == DioExceptionType.unknown;
+  }
+
+  bool _isMutation(String method) {
+    final m = method.toUpperCase();
+    return m == 'POST' || m == 'PUT' || m == 'PATCH' || m == 'DELETE';
   }
 
   Future<Map<String, dynamic>> get(
@@ -78,7 +147,7 @@ class ApiClient {
     Map<String, dynamic>? queryParameters,
   }) async {
     try {
-      final res = await _dio.get(path, queryParameters: queryParameters);
+      final res = await dio.get(path, queryParameters: queryParameters);
       return _extractData(res);
     } on DioException catch (e) {
       throw _handleDioError(e);
@@ -90,7 +159,7 @@ class ApiClient {
     Map<String, dynamic>? queryParameters,
   }) async {
     try {
-      final res = await _dio.get(path, queryParameters: queryParameters);
+      final res = await dio.get(path, queryParameters: queryParameters);
       if (res.data is List) return res.data as List<dynamic>;
       return [];
     } on DioException catch (e) {
@@ -100,7 +169,7 @@ class ApiClient {
 
   Future<Map<String, dynamic>> post(String path, {dynamic data}) async {
     try {
-      final res = await _dio.post(path, data: data);
+      final res = await dio.post(path, data: data);
       return _extractData(res);
     } on DioException catch (e) {
       throw _handleDioError(e);
@@ -109,7 +178,7 @@ class ApiClient {
 
   Future<Map<String, dynamic>> patch(String path, {dynamic data}) async {
     try {
-      final res = await _dio.patch(path, data: data);
+      final res = await dio.patch(path, data: data);
       return _extractData(res);
     } on DioException catch (e) {
       throw _handleDioError(e);
@@ -118,16 +187,17 @@ class ApiClient {
 
   Future<Map<String, dynamic>> put(String path, {dynamic data}) async {
     try {
-      final res = await _dio.put(path, data: data);
+      final res = await dio.put(path, data: data);
       return _extractData(res);
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
   }
 
-  Future<void> delete(String path) async {
+  Future<Map<String, dynamic>> delete(String path, {dynamic data}) async {
     try {
-      await _dio.delete(path);
+      final res = await dio.delete(path, data: data);
+      return _extractData(res);
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
@@ -145,7 +215,7 @@ class ApiClient {
         ...?additionalData,
       });
       
-      final res = await _dio.post(
+      final res = await dio.post(
         path,
         data: formData,
         options: Options(

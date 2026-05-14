@@ -1,4 +1,6 @@
 import '../../../../core/network/api_client.dart';
+import '../../../../core/services/local_cache_service.dart';
+import '../../../../core/services/storage_service.dart';
 import '../models/grade_model.dart';
 import 'student_grades_repository.dart';
 
@@ -15,14 +17,21 @@ import 'student_grades_repository.dart';
 ///    returning a hardcoded ["Fall 2023", "Spring 2023"].
 class RealStudentGradesRepository implements StudentGradesRepository {
   final ApiClient _api;
+  final StorageService _storage;
+  final LocalCacheService _cacheService;
 
   static List<GradeModel>? _allGradesCache;
   static DateTime? _fetchedAt;
   static Future<List<GradeModel>>? _inFlight;
   static const Duration _ttl = Duration(seconds: 30);
 
-  RealStudentGradesRepository({ApiClient? apiClient})
-      : _api = apiClient ?? ApiClient();
+  RealStudentGradesRepository({
+    ApiClient? apiClient,
+    required StorageService storageService,
+    required LocalCacheService cacheService,
+  }) : _api = apiClient ?? ApiClient(),
+       _storage = storageService,
+       _cacheService = cacheService;
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
@@ -58,6 +67,8 @@ class RealStudentGradesRepository implements StudentGradesRepository {
   // ── Internals ──────────────────────────────────────────────────────────────
 
   Future<List<GradeModel>> _getAllGrades() async {
+    final userId = await _currentUserId();
+    _restoreCache(userId);
     if (_isCacheValid()) return _allGradesCache!;
     if (_inFlight != null) return _inFlight!;
 
@@ -67,7 +78,14 @@ class RealStudentGradesRepository implements StudentGradesRepository {
       final data = await future;
       _allGradesCache = data;
       _fetchedAt = DateTime.now();
+      await _cacheService.write(
+        _cacheKey(userId),
+        data.map((item) => item.toJson()).toList(),
+      );
       return data;
+    } catch (_) {
+      if (_allGradesCache != null) return _allGradesCache!;
+      rethrow;
     } finally {
       _inFlight = null;
     }
@@ -144,5 +162,24 @@ class RealStudentGradesRepository implements StudentGradesRepository {
     // (e.g. Jan 2024 is "Fall 2023").
     final year = (month == 1) ? date.year - 1 : date.year;
     return isFall ? 'Fall $year' : 'Spring $year';
+  }
+
+  Future<String> _currentUserId() async {
+    final user = await _storage.getUser();
+    return (user?['id'] ?? '').toString();
+  }
+
+  String _cacheKey(String userId) =>
+      userId.isEmpty ? 'student_grades_v1' : 'student_grades_v1_$userId';
+
+  void _restoreCache(String userId) {
+    if (_allGradesCache != null) return;
+    final entry = _cacheService.read(_cacheKey(userId));
+    if (entry == null || entry.data is! List) return;
+    _allGradesCache = (entry.data as List)
+        .whereType<Map<String, dynamic>>()
+        .map(GradeModel.fromJson)
+        .toList();
+    _fetchedAt = entry.savedAt;
   }
 }

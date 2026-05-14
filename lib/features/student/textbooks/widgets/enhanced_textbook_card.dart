@@ -20,15 +20,6 @@ class EnhancedTextbookCard extends StatelessWidget {
     this.isLoading = false,
   });
 
-  /// Format bytes to human-readable format
-  static String _formatBytes(int? bytes) {
-    if (bytes == null || bytes <= 0) return 'Unknown';
-    const suffixes = ['B', 'KB', 'MB', 'GB'];
-    final index = (bytes.toString().length - 1) ~/ 3;
-    final value = bytes / (1000 * (1 << (index * 10)));
-    return '${value.toStringAsFixed(1)} ${suffixes[index]}';
-  }
-
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -176,7 +167,7 @@ class EnhancedTextbookCard extends StatelessWidget {
               _buildMetadataChip(
                 context,
                 icon: Icons.file_present_rounded,
-                label: _formatBytes(textbook.sizeBytes),
+                label: textbook.fileSizeDisplay,
               ),
 
               // Page count chip (if available)

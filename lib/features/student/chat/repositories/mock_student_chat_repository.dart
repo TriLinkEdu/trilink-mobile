@@ -244,9 +244,20 @@ class MockStudentChatRepository implements StudentChatRepository {
   }
 
   @override
-  Future<List<ChatMessageModel>> fetchMessages(String conversationId) async {
+  Future<List<ChatMessageModel>> fetchMessages(
+    String conversationId, {
+    int offset = 0,
+    int limit = 50,
+  }) async {
     await Future<void>.delayed(_latency);
-    return List<ChatMessageModel>.from(_messages[conversationId] ?? []);
+    final messages = List<ChatMessageModel>.from(_messages[conversationId] ?? []);
+    if (offset <= 0 && limit >= messages.length) {
+      return messages;
+    }
+
+    final start = offset.clamp(0, messages.length);
+    final end = (start + limit).clamp(start, messages.length);
+    return messages.sublist(start, end);
   }
 
   @override

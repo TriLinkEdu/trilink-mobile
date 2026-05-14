@@ -1,11 +1,12 @@
 import '../../../../core/network/api_client.dart';
 import '../../../../core/constants/api_constants.dart';
+import '../../../../core/services/local_cache_service.dart';
 import '../models/course_resource_model.dart';
 import 'student_courses_repository.dart';
 
 class RealStudentCoursesRepository implements StudentCoursesRepository {
   final ApiClient _api;
-  final StudentCoursesRepository _fallback;
+  final LocalCacheService _cache;
 
   static const Duration _ttl = Duration(seconds: 30);
 
@@ -15,12 +16,13 @@ class RealStudentCoursesRepository implements StudentCoursesRepository {
 
   RealStudentCoursesRepository({
     ApiClient? apiClient,
-    required StudentCoursesRepository fallback,
+    required LocalCacheService cacheService,
   }) : _api = apiClient ?? ApiClient(),
-       _fallback = fallback;
+       _cache = cacheService;
 
   @override
   Future<List<CourseResourceModel>> fetchCourseResources() async {
+    _restoreCache();
     if (_resourcesCache != null && _resourcesFetchedAt != null) {
       final age = DateTime.now().difference(_resourcesFetchedAt!);
       if (age < _ttl) return _resourcesCache!;
@@ -31,11 +33,17 @@ class RealStudentCoursesRepository implements StudentCoursesRepository {
 
     final future = _fetchFresh();
     _resourcesInFlight = future;
-    final data = await future;
-    _resourcesInFlight = null;
-    _resourcesCache = data;
-    _resourcesFetchedAt = DateTime.now();
-    return data;
+    try {
+      final data = await future;
+      _resourcesCache = data;
+      _resourcesFetchedAt = DateTime.now();
+      return data;
+    } catch (_) {
+      if (_resourcesCache != null) return _resourcesCache!;
+      rethrow;
+    } finally {
+      _resourcesInFlight = null;
+    }
   }
 
   @override
@@ -59,17 +67,31 @@ class RealStudentCoursesRepository implements StudentCoursesRepository {
   }
 
   Future<List<CourseResourceModel>> _fetchFresh() async {
-    try {
-      final rows = await _api.getList(ApiConstants.courseResources);
-      if (rows.isEmpty) return _fallback.fetchCourseResources();
-      
-      return rows
-          .whereType<Map<String, dynamic>>()
-          .map((json) => CourseResourceModel.fromJson(json))
-          .toList();
-    } catch (_) {
-      return _fallback.fetchCourseResources();
-    }
+    final rows = await _api.getList(ApiConstants.courseResources);
+    final resources = rows
+        .whereType<Map<String, dynamic>>()
+        .map((json) => CourseResourceModel.fromJson(json))
+        .toList();
+    await _cache.write(
+      _cacheKey,
+      resources.map((item) => item.toJson()).toList(),
+    );
+    return resources;
+  }
+
+  static const String _cacheKey = 'student_course_resources_v1';
+
+  void _restoreCache() {
+    if (_resourcesCache != null) return;
+    final entry = _cache.read(_cacheKey);
+    if (entry == null) return;
+    final raw = entry.data;
+    if (raw is! List) return;
+    _resourcesCache = raw
+        .whereType<Map<String, dynamic>>()
+        .map((json) => CourseResourceModel.fromJson(json))
+        .toList();
+    _resourcesFetchedAt = entry.savedAt;
   }
 
 }

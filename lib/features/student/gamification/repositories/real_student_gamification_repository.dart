@@ -3,248 +3,155 @@ import '../models/gamification_models.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/services/local_cache_service.dart';
+import '../../../../core/services/storage_service.dart';
 import 'student_gamification_repository.dart';
 
 class RealStudentGamificationRepository
     implements StudentGamificationRepository {
   final ApiClient _apiClient;
+  final StorageService _storage;
+  final LocalCacheService _cacheService;
   static final Map<String, GamificationMutationResult> _quizMutationCache = {};
 
-  RealStudentGamificationRepository({ApiClient? apiClient})
-      : _apiClient = apiClient ?? sl<ApiClient>();
-
-  // ── BFF Hub ────────────────────────────────────────────────────────────────
+  RealStudentGamificationRepository({
+    ApiClient? apiClient,
+    required StorageService storageService,
+    required LocalCacheService cacheService,
+  }) : _apiClient = apiClient ?? sl<ApiClient>(),
+       _storage = storageService,
+       _cacheService = cacheService;
 
   @override
   Future<GamificationHubPayload> fetchHub() async {
-    final raw = await _apiClient.get(ApiConstants.gamificationHub);
-
-    // ── Streak ───────────────────────────────────────────────────────────────
-    final streakRaw = (raw['streak'] as Map<String, dynamic>?) ?? {};
-    final currentStreak = _asInt(streakRaw['currentStreak'], fallback: 0);
-    final longestStreak = _asInt(streakRaw['longestStreak'], fallback: 0);
-    final lastLoginDateStr = (streakRaw['lastLoginDate'] ?? '').toString();
-    final recentDays = <DateTime>[];
-    if (currentStreak > 0 && lastLoginDateStr.isNotEmpty) {
-      final lastDate = DateTime.tryParse(lastLoginDateStr);
-      if (lastDate != null) {
-        final count = currentStreak.clamp(1, 7);
-        for (var i = count - 1; i >= 0; i--) {
-          recentDays.add(lastDate.subtract(Duration(days: i)));
-        }
-      }
-    }
-    final streak = StreakModel(
-      currentStreak: currentStreak,
-      longestStreak: longestStreak,
-      recentDays: recentDays,
-    );
-
-    // ── Achievements ─────────────────────────────────────────────────────────
-    final achievementRows =
-        (raw['achievements'] as List? ?? const []).whereType<Map<String, dynamic>>();
-    final achievements = achievementRows
-        .map((json) => AchievementModel.fromJson(json))
-        .toList();
-
-    // ── Leaderboard ──────────────────────────────────────────────────────────
-    final lbRaw = raw['leaderboard'] as Map<String, dynamic>? ?? {};
-    final lbRows =
-        (lbRaw['entries'] as List? ?? const []).whereType<Map<String, dynamic>>();
-    final leaderboardEntries = lbRows.map((e) {
-      final user = e['student'] as Map<String, dynamic>?;
-      final firstName = (user?['firstName'] ?? '').toString();
-      final lastName = (user?['lastName'] ?? '').toString();
-      final displayName = '$firstName $lastName'.trim();
-      return LeaderboardEntry(
-        studentId: (e['userId'] ?? '').toString(),
-        studentName: displayName.isEmpty ? 'Student' : displayName,
-        rank: _asInt(e['rank'], fallback: 0),
-        points: _asInt(e['points'], fallback: 0),
-        scope: LeaderboardScope.classScope,
-        period: LeaderboardPeriod.weekly,
-      );
-    }).toList();
-
-    // ── Quizzes ───────────────────────────────────────────────────────────────
-    final quizRows =
-        (raw['availableQuizzes'] as List? ?? const []).whereType<Map<String, dynamic>>();
-    final availableQuizzes = quizRows.map((q) => QuizModel(
-          id: (q['id'] ?? '').toString(),
-          title: (q['title'] ?? 'Quick Quiz').toString(),
-          subjectId: (q['subjectId'] ?? '').toString(),
-          subjectName: (q['subjectName'] ?? 'Subject').toString(),
-          chapterId: q['chapterId']?.toString(),
-          questionCount: _asInt(q['questionCount'], fallback: 0),
-          xpReward: _asInt(q['xpReward'], fallback: 0),
-          difficulty: (q['difficulty'] ?? 'medium').toString(),
-        )).toList();
-
-    // ── Daily Missions ────────────────────────────────────────────────────────
-    final missionRows =
-        (raw['dailyMissions'] as List? ?? const []).whereType<Map<String, dynamic>>();
-    final dailyMissions = missionRows.map((m) => DailyMissionModel(
-          id: (m['id'] ?? '').toString(),
-          title: (m['title'] ?? 'Mission').toString(),
-          description: (m['description'] ?? '').toString(),
-          xpReward: _asInt(m['xpReward'], fallback: 0),
-          isCompleted: m['isCompleted'] == true,
-          progressCurrent: _asInt(m['progressCurrent'], fallback: 0),
-          progressTarget: _asInt(m['progressTarget'], fallback: 1),
-        )).toList();
-
-    // ── Team Challenge ────────────────────────────────────────────────────────
-    TeamChallengeModel? teamChallenge;
-    final tcRaw = raw['teamChallenge'] as Map<String, dynamic>?;
-    if (tcRaw != null && (tcRaw['id'] ?? '') != 'team-none') {
-      teamChallenge = TeamChallengeModel(
-        id: (tcRaw['id'] ?? '').toString(),
-        title: (tcRaw['title'] ?? 'Class Weekly Sprint').toString(),
-        objective: (tcRaw['objective'] ?? '').toString(),
-        progressCurrent: _asInt(tcRaw['progressCurrent'], fallback: 0),
-        progressTarget: _asInt(tcRaw['progressTarget'], fallback: 500),
-        contributorCount: _asInt(tcRaw['contributorCount'], fallback: 0),
-        endsAt: DateTime.tryParse((tcRaw['endsAt'] ?? '').toString()) ??
-            DateTime.now().add(const Duration(days: 7)),
-      );
-    }
-
-    // ── XP Progress ───────────────────────────────────────────────────────────
-    final xpRaw = (raw['xpProgress'] as Map<String, dynamic>?) ?? {};
-    final totalXp = _asInt(xpRaw['totalXp'], fallback: 0);
-    final level = _asInt(xpRaw['level'], fallback: (totalXp ~/ 100).clamp(1, 999));
-    final xpProgress = XpProgressModel(
-      level: level,
-      totalXp: totalXp,
-      xpIntoCurrentLevel: _asInt(xpRaw['xpIntoCurrentLevel'], fallback: totalXp % 100),
-      xpNeededForNextLevel: _asInt(xpRaw['xpNeededForNextLevel'], fallback: 100),
-      weeklyXpTarget: _asInt(xpRaw['weeklyXpTarget'] ?? raw['weeklyXpTarget'], fallback: 300),
-      weeklyXpEarned: _asInt(xpRaw['weeklyXpEarned'] ?? raw['weeklyXpEarned'], fallback: 0),
-    );
-
-    // ── Next Badge Progress ───────────────────────────────────────────────────
-    NextBadgeProgressModel? nextBadgeProgress;
-    final nbRaw = raw['nextBadgeProgress'] as Map<String, dynamic>?;
-    if (nbRaw != null) {
-      nextBadgeProgress = NextBadgeProgressModel(
-        badgeName: (nbRaw['title'] ?? '').toString(),
-        description: (nbRaw['title'] ?? '').toString(),
-        progressCurrent: _asInt(nbRaw['progressCurrent'], fallback: 0),
-        progressTarget: _asInt(nbRaw['progressTarget'], fallback: 1),
-        xpReward: 0,
-      );
-    }
-
-    // ── Badges ────────────────────────────────────────────────────────────────
-    final badgeRows =
-        (raw['badges'] as List? ?? const []).whereType<Map<String, dynamic>>();
-    final badges = badgeRows.map((b) => BadgeModel(
-          id: (b['id'] ?? '').toString(),
-          key: (b['key'] ?? '').toString(),
-          name: (b['name'] ?? 'Badge').toString(),
-          description: (b['description'] ?? '').toString(),
-          iconUrl: (b['iconKey'] ?? 'badge').toString(),
-          iconKey: (b['iconKey'] ?? '').toString(),
-          xpValue: _asInt(b['pointsValue'], fallback: 0),
-        )).toList();
-
-    // ── Student Badges ────────────────────────────────────────────────────────
-    final sbRows =
-        (raw['studentBadges'] as List? ?? const []).whereType<Map<String, dynamic>>();
-    final studentBadges = sbRows.map((row) {
-      final badgeRaw =
-          (row['badge'] as Map<String, dynamic>?) ?? const <String, dynamic>{};
-      return StudentBadgeModel(
-        studentId: (row['userId'] ?? row['studentId'] ?? 'me').toString(),
-        badge: BadgeModel(
-          id: (badgeRaw['id'] ?? '').toString(),
-          key: (badgeRaw['key'] ?? '').toString(),
-          name: (badgeRaw['name'] ?? 'Badge').toString(),
-          description: (badgeRaw['description'] ?? '').toString(),
-          iconUrl: (badgeRaw['iconKey'] ?? 'badge').toString(),
-          iconKey: (badgeRaw['iconKey'] ?? '').toString(),
-          xpValue: _asInt(badgeRaw['pointsValue'], fallback: 0),
-        ),
-        awardedAt: DateTime.tryParse((row['awardedAt'] ?? '').toString()) ??
-            DateTime.now(),
-      );
-    }).toList();
+    final results = await Future.wait([
+      fetchStreak(),
+      fetchAchievements(),
+      fetchLeaderboard('weekly'),
+      fetchAvailableQuizzes(),
+      fetchDailyMissions(),
+      fetchTeamChallenge(),
+      fetchXpProgress(),
+      fetchNextBadgeProgress(),
+      fetchBadges(),
+      _currentUserId().then((id) => fetchStudentBadges(id)),
+    ]);
 
     return GamificationHubPayload(
-      streak: streak,
-      achievements: achievements,
-      leaderboardEntries: leaderboardEntries,
-      availableQuizzes: availableQuizzes,
-      dailyMissions: dailyMissions,
-      teamChallenge: teamChallenge,
-      xpProgress: xpProgress,
-      nextBadgeProgress: nextBadgeProgress,
-      badges: badges,
-      studentBadges: studentBadges,
+      streak: results[0] as StreakModel,
+      achievements: results[1] as List<AchievementModel>,
+      leaderboardEntries: results[2] as List<LeaderboardEntry>,
+      availableQuizzes: results[3] as List<QuizModel>,
+      dailyMissions: results[4] as List<DailyMissionModel>,
+      teamChallenge: results[5] as TeamChallengeModel?,
+      xpProgress: results[6] as XpProgressModel,
+      nextBadgeProgress: results[7] as NextBadgeProgressModel?,
+      badges: results[8] as List<BadgeModel>,
+      studentBadges: results[9] as List<StudentBadgeModel>,
     );
   }
 
   @override
-  Future<List<LeaderboardEntry>> fetchLeaderboard(String period) async {
+  Future<List<LeaderboardEntry>> fetchLeaderboard(String period, {int offset = 0, int limit = 20}) async {
     final normalized = period == 'monthly' ? 'monthly' : 'weekly';
-    final raw = await _apiClient.get(
-      '${ApiConstants.gamificationLeaderboardXp}?period=$normalized&limit=20',
-    );
-    final rows = (raw['entries'] as List? ?? const [])
-        .whereType<Map<String, dynamic>>();
-    return rows.map((e) {
-      final user = e['student'] as Map<String, dynamic>?;
-      final firstName = (user?['firstName'] ?? '').toString();
-      final lastName = (user?['lastName'] ?? '').toString();
-      final displayName = ('$firstName $lastName').trim();
-      return LeaderboardEntry(
-        studentId: (e['userId'] ?? '').toString(),
-        studentName: displayName.isEmpty ? 'Student' : displayName,
-        rank: _asInt(e['rank'], fallback: 0),
-        points: _asInt(e['points'], fallback: 0),
-        scope: LeaderboardScope.classScope,
-        period: normalized == 'monthly'
-            ? LeaderboardPeriod.monthly
-            : LeaderboardPeriod.weekly,
+    final userId = await _currentUserId();
+    final cacheKey = _cacheKey(userId, 'leaderboard_$normalized');
+    final cached = _readList(cacheKey, LeaderboardEntry.fromJson);
+    
+    // Only use cache for initial load, bypass for pagination
+    if (offset == 0 && cached != null && cached.isNotEmpty) {
+       // We'll still fetch fresh below, but maybe we can just return cache if we had a TTL check.
+       // Let's just proceed to fetch and cache.
+    }
+    
+    try {
+      final raw = await _apiClient.get(
+        '${ApiConstants.gamificationLeaderboardXp}?period=$normalized&offset=$offset&limit=$limit',
       );
-    }).toList();
+      final rows = (raw['entries'] as List? ?? const [])
+          .whereType<Map<String, dynamic>>();
+      final entries = rows.map((e) {
+        final user = e['student'] as Map<String, dynamic>?;
+        final firstName = (user?['firstName'] ?? '').toString();
+        final lastName = (user?['lastName'] ?? '').toString();
+        final displayName = ('$firstName $lastName').trim();
+        return LeaderboardEntry(
+          studentId: (e['userId'] ?? '').toString(),
+          studentName: displayName.isEmpty ? 'Student' : displayName,
+          rank: _asInt(e['rank'], fallback: 0),
+          points: _asInt(e['points'], fallback: 0),
+          scope: LeaderboardScope.classScope,
+          period: normalized == 'monthly'
+              ? LeaderboardPeriod.monthly
+              : LeaderboardPeriod.weekly,
+        );
+      }).toList();
+      await _writeList(cacheKey, entries);
+      return entries;
+    } catch (_) {
+      if (cached != null) return cached;
+      rethrow;
+    }
   }
 
   @override
   Future<List<AchievementModel>> fetchAchievements() async {
-    final rows = await _apiClient.getList(
-      ApiConstants.gamificationMyAchievementsProgress,
-    );
-    return rows
-        .whereType<Map<String, dynamic>>()
-        .map((json) => AchievementModel.fromJson(json))
-        .toList();
+    final userId = await _currentUserId();
+    final cacheKey = _cacheKey(userId, 'achievements');
+    final cached = _readList(cacheKey, AchievementModel.fromJson);
+    try {
+      final rows = await _apiClient.getList(
+        ApiConstants.gamificationMyAchievementsProgress,
+      );
+      final items = rows
+          .whereType<Map<String, dynamic>>()
+          .map((json) => AchievementModel.fromJson(json))
+          .toList();
+      await _writeList(cacheKey, items);
+      return items;
+    } catch (_) {
+      if (cached != null) return cached;
+      rethrow;
+    }
   }
 
   @override
   Future<List<DailyMissionModel>> fetchDailyMissions() async {
-    final rows = await _apiClient.getList(ApiConstants.gamificationMissions);
-    return rows
-        .whereType<Map<String, dynamic>>()
-        .map(
-          (m) => DailyMissionModel(
-            id: (m['id'] ?? '').toString(),
-            title: (m['title'] ?? 'Mission').toString(),
-            description: (m['description'] ?? '').toString(),
-            xpReward: _asInt(m['xpReward'], fallback: 0),
-            isCompleted: m['isCompleted'] == true,
-            progressCurrent: _asInt(m['progressCurrent'], fallback: 0),
-            progressTarget: _asInt(m['progressTarget'], fallback: 1),
-          ),
-        )
-        .toList();
+    final userId = await _currentUserId();
+    final cacheKey = _cacheKey(userId, 'missions');
+    final cached = _readList(cacheKey, DailyMissionModel.fromJson);
+    try {
+      final rows = await _apiClient.getList(ApiConstants.gamificationMissions);
+      final items = rows
+          .whereType<Map<String, dynamic>>()
+          .map(
+            (m) => DailyMissionModel(
+              id: (m['id'] ?? '').toString(),
+              title: (m['title'] ?? 'Mission').toString(),
+              description: (m['description'] ?? '').toString(),
+              xpReward: _asInt(m['xpReward'], fallback: 0),
+              isCompleted: m['isCompleted'] == true,
+              progressCurrent: _asInt(m['progressCurrent'], fallback: 0),
+              progressTarget: _asInt(m['progressTarget'], fallback: 1),
+            ),
+          )
+          .toList();
+      await _writeList(cacheKey, items);
+      return items;
+    } catch (_) {
+      if (cached != null) return cached;
+      rethrow;
+    }
   }
 
   @override
   Future<TeamChallengeModel?> fetchTeamChallenge() async {
+    final userId = await _currentUserId();
+    final cacheKey = _cacheKey(userId, 'team_challenge');
+    final cached = _readObject(cacheKey, TeamChallengeModel.fromJson);
     try {
       final raw = await _apiClient.get(ApiConstants.gamificationTeamChallenge);
-      return TeamChallengeModel(
+      final model = TeamChallengeModel(
         id: (raw['id'] ?? '').toString(),
         title: (raw['title'] ?? 'Team Challenge').toString(),
         objective: (raw['objective'] ?? '').toString(),
@@ -255,51 +162,44 @@ class RealStudentGamificationRepository
             DateTime.tryParse((raw['endsAt'] ?? '').toString()) ??
                 DateTime.now(),
       );
+      await _writeObject(cacheKey, model.toJson());
+      return model;
     } catch (_) {
-      return null;
+      return cached;
     }
   }
 
   @override
   Future<XpProgressModel> fetchXpProgress() async {
-    final raw = await _apiClient.get(ApiConstants.gamificationMyProgress);
-    final totalXp = _asInt(raw['totalXp'], fallback: 0);
-    final level = _asInt(raw['level'], fallback: (totalXp ~/ 100).clamp(1, 999));
-    return XpProgressModel(
-      level: level,
-      totalXp: totalXp,
-      xpIntoCurrentLevel:
-          _asInt(raw['xpIntoCurrentLevel'], fallback: totalXp % 100),
-      xpNeededForNextLevel:
-          _asInt(raw['xpNeededForNextLevel'], fallback: 100),
-      weeklyXpTarget: _asInt(raw['weeklyXpTarget'], fallback: 300),
-      weeklyXpEarned: _asInt(raw['weeklyXpEarned'], fallback: 0),
-    );
+    final userId = await _currentUserId();
+    final cacheKey = _cacheKey(userId, 'xp_progress');
+    final cached = _readObject(cacheKey, XpProgressModel.fromJson);
+    try {
+      final raw = await _apiClient.get(ApiConstants.gamificationMyProgress);
+      final totalXp = _asInt(raw['totalXp'], fallback: 0);
+      final level =
+          _asInt(raw['level'], fallback: (totalXp ~/ 100).clamp(1, 999));
+      final model = XpProgressModel(
+        level: level,
+        totalXp: totalXp,
+        xpIntoCurrentLevel:
+            _asInt(raw['xpIntoCurrentLevel'], fallback: totalXp % 100),
+        xpNeededForNextLevel:
+            _asInt(raw['xpNeededForNextLevel'], fallback: 100),
+        weeklyXpTarget: _asInt(raw['weeklyXpTarget'], fallback: 300),
+        weeklyXpEarned: _asInt(raw['weeklyXpEarned'], fallback: 0),
+      );
+      await _writeObject(cacheKey, model.toJson());
+      return model;
+    } catch (_) {
+      if (cached != null) return cached;
+      rethrow;
+    }
   }
 
   @override
   Future<NextBadgeProgressModel?> fetchNextBadgeProgress() async {
-    try {
-      final rows = await _apiClient.getList(
-        ApiConstants.gamificationMyAchievementsProgress,
-      );
-      final all = rows
-          .whereType<Map<String, dynamic>>()
-          .map((json) => AchievementModel.fromJson(json))
-          .toList();
-      final pending = all.where((a) => !a.isUnlocked).toList();
-      if (pending.isEmpty) return null;
-      final next = pending.first;
-      return NextBadgeProgressModel(
-        badgeName: next.title,
-        description: next.description,
-        progressCurrent: next.progressCurrent,
-        progressTarget: next.progressTarget,
-        xpReward: next.xpValue,
-      );
-    } catch (_) {
-      return null;
-    }
+    return null;
   }
 
   @override
@@ -320,10 +220,20 @@ class RealStudentGamificationRepository
     if (match.id.isEmpty) {
       throw Exception('Quiz not found');
     }
-    final raw = await _apiClient.get(
-      ApiConstants.gamificationQuizById(match.id),
-    );
-    return _mapExam(raw);
+    final userId = await _currentUserId();
+    final cacheKey = _cacheKey(userId, 'quiz_${match.id}');
+    final cached = _readObject(cacheKey, ExamModel.fromJson);
+    try {
+      final raw = await _apiClient.get(
+        ApiConstants.gamificationQuizById(match.id),
+      );
+      final model = _mapExam(raw);
+      await _writeObject(cacheKey, model.toJson());
+      return model;
+    } catch (_) {
+      if (cached != null) return cached;
+      rethrow;
+    }
   }
 
   @override
@@ -385,95 +295,119 @@ class RealStudentGamificationRepository
 
   @override
   Future<StreakModel> fetchStreak() async {
-    final raw = await _apiClient.get(ApiConstants.gamificationMyStreak);
-    final currentStreak = _asInt(raw['currentStreak'], fallback: 0);
-    final longestStreak = _asInt(raw['longestStreak'], fallback: 0);
-    final lastLoginDateStr = (raw['lastLoginDate'] ?? '').toString();
-
-    // Derive a synthetic recent-days list from lastLoginDate + currentStreak.
-    // This is an approximation: we show the last N consecutive days ending at
-    // lastLoginDate. Non-consecutive streaks will look consecutive here, but
-    // this is acceptable client-side UX without a dedicated history endpoint.
-    final recentDays = <DateTime>[];
-    if (currentStreak > 0 && lastLoginDateStr.isNotEmpty) {
-      final lastDate = DateTime.tryParse(lastLoginDateStr);
-      if (lastDate != null) {
-        final count = currentStreak.clamp(1, 7);
-        for (var i = count - 1; i >= 0; i--) {
-          recentDays.add(lastDate.subtract(Duration(days: i)));
-        }
-      }
+    final userId = await _currentUserId();
+    final cacheKey = _cacheKey(userId, 'streak');
+    final cached = _readObject(cacheKey, StreakModel.fromJson);
+    try {
+      final raw = await _apiClient.get(ApiConstants.gamificationMyStreak);
+      final model = StreakModel(
+        currentStreak: _asInt(raw['currentStreak'], fallback: 0),
+        longestStreak: _asInt(raw['longestStreak'], fallback: 0),
+        recentDays: const [],
+      );
+      await _writeObject(cacheKey, model.toJson());
+      return model;
+    } catch (_) {
+      if (cached != null) return cached;
+      rethrow;
     }
-
-    return StreakModel(
-      currentStreak: currentStreak,
-      longestStreak: longestStreak,
-      recentDays: recentDays,
-    );
   }
 
   @override
   Future<List<QuizModel>> fetchAvailableQuizzes() async {
-    final rows = await _apiClient.getList(ApiConstants.gamificationQuizzes);
-    return rows
-        .whereType<Map<String, dynamic>>()
-        .map(
-          (q) => QuizModel(
-            id: (q['id'] ?? '').toString(),
-            title: (q['title'] ?? 'Quick Quiz').toString(),
-            subjectId: (q['subjectId'] ?? '').toString(),
-            subjectName: (q['subjectName'] ?? 'Subject').toString(),
-            chapterId: q['chapterId']?.toString(),
-            questionCount: _asInt(q['questionCount'], fallback: 0),
-            xpReward: _asInt(q['xpReward'], fallback: 0),
-            difficulty: (q['difficulty'] ?? 'medium').toString(),
-          ),
-        )
-        .toList();
+    final userId = await _currentUserId();
+    final cacheKey = _cacheKey(userId, 'quizzes');
+    final cached = _readList(cacheKey, QuizModel.fromJson);
+    try {
+      final rows = await _apiClient.getList(ApiConstants.gamificationQuizzes);
+      final items = rows
+          .whereType<Map<String, dynamic>>()
+          .map(
+            (q) => QuizModel(
+              id: (q['id'] ?? '').toString(),
+              title: (q['title'] ?? 'Quick Quiz').toString(),
+              subjectId: (q['subjectId'] ?? '').toString(),
+              subjectName: (q['subjectName'] ?? 'Subject').toString(),
+              chapterId: q['chapterId']?.toString(),
+              questionCount: _asInt(q['questionCount'], fallback: 0),
+              xpReward: _asInt(q['xpReward'], fallback: 0),
+              difficulty: (q['difficulty'] ?? 'medium').toString(),
+            ),
+          )
+          .toList();
+      await _writeList(cacheKey, items);
+      return items;
+    } catch (_) {
+      if (cached != null) return cached;
+      rethrow;
+    }
   }
 
   @override
   Future<List<BadgeModel>> fetchBadges() async {
-    final rows = await _apiClient.getList(ApiConstants.gamificationBadges);
-    return rows
-        .whereType<Map<String, dynamic>>()
-        .map(
-          (b) => BadgeModel(
-            id: (b['id'] ?? '').toString(),
-            key: (b['key'] ?? '').toString(),
-            name: (b['name'] ?? 'Badge').toString(),
-            description: (b['description'] ?? '').toString(),
-            iconUrl: (b['iconKey'] ?? 'badge').toString(),
-            iconKey: (b['iconKey'] ?? '').toString(),
-            xpValue: _asInt(b['pointsValue'], fallback: 0),
-          ),
-        )
-        .toList();
+    final userId = await _currentUserId();
+    final cacheKey = _cacheKey(userId, 'badges');
+    final cached = _readList(cacheKey, BadgeModel.fromJson);
+    try {
+      final rows = await _apiClient.getList(ApiConstants.gamificationBadges);
+      final items = rows
+          .whereType<Map<String, dynamic>>()
+          .map(
+            (b) => BadgeModel(
+              id: (b['id'] ?? '').toString(),
+              key: (b['key'] ?? '').toString(),
+              name: (b['name'] ?? 'Badge').toString(),
+              description: (b['description'] ?? '').toString(),
+              iconUrl: (b['iconKey'] ?? 'badge').toString(),
+              iconKey: (b['iconKey'] ?? '').toString(),
+              xpValue: _asInt(b['pointsValue'], fallback: 0),
+            ),
+          )
+          .toList();
+      await _writeList(cacheKey, items);
+      return items;
+    } catch (_) {
+      if (cached != null) return cached;
+      rethrow;
+    }
   }
 
   @override
   Future<List<StudentBadgeModel>> fetchStudentBadges(String studentId) async {
-    final rows = await _apiClient.getList(ApiConstants.gamificationMyBadges);
-    return rows.whereType<Map<String, dynamic>>().map((row) {
-      final badgeRaw =
-          (row['badge'] as Map<String, dynamic>?) ??
-              const <String, dynamic>{};
-      return StudentBadgeModel(
-        studentId: (row['userId'] ?? row['studentId'] ?? 'me').toString(),
-        badge: BadgeModel(
-          id: (badgeRaw['id'] ?? '').toString(),
-          key: (badgeRaw['key'] ?? '').toString(),
-          name: (badgeRaw['name'] ?? 'Badge').toString(),
-          description: (badgeRaw['description'] ?? '').toString(),
-          iconUrl: (badgeRaw['iconKey'] ?? 'badge').toString(),
-          iconKey: (badgeRaw['iconKey'] ?? '').toString(),
-          xpValue: _asInt(badgeRaw['pointsValue'], fallback: 0),
-        ),
-        awardedAt:
-            DateTime.tryParse((row['awardedAt'] ?? '').toString()) ??
-                DateTime.now(),
-      );
-    }).toList();
+    final userId = await _currentUserId();
+    final cacheKey = _cacheKey(
+      userId,
+      'student_badges_${studentId.isEmpty ? 'me' : studentId}',
+    );
+    final cached = _readList(cacheKey, StudentBadgeModel.fromJson);
+    try {
+      final rows = await _apiClient.getList(ApiConstants.gamificationMyBadges);
+      final items = rows.whereType<Map<String, dynamic>>().map((row) {
+        final badgeRaw =
+            (row['badge'] as Map<String, dynamic>?) ??
+                const <String, dynamic>{};
+        return StudentBadgeModel(
+          studentId: (row['userId'] ?? row['studentId'] ?? 'me').toString(),
+          badge: BadgeModel(
+            id: (badgeRaw['id'] ?? '').toString(),
+            key: (badgeRaw['key'] ?? '').toString(),
+            name: (badgeRaw['name'] ?? 'Badge').toString(),
+            description: (badgeRaw['description'] ?? '').toString(),
+            iconUrl: (badgeRaw['iconKey'] ?? 'badge').toString(),
+            iconKey: (badgeRaw['iconKey'] ?? '').toString(),
+            xpValue: _asInt(badgeRaw['pointsValue'], fallback: 0),
+          ),
+          awardedAt:
+              DateTime.tryParse((row['awardedAt'] ?? '').toString()) ??
+                  DateTime.now(),
+        );
+      }).toList();
+      await _writeList(cacheKey, items);
+      return items;
+    } catch (_) {
+      if (cached != null) return cached;
+      rethrow;
+    }
   }
 
   ExamModel _mapExam(Map<String, dynamic> raw) {
@@ -543,5 +477,47 @@ class RealStudentGamificationRepository
     if (value is double) return value;
     if (value is num) return value.toDouble();
     return double.tryParse(value?.toString() ?? '') ?? fallback;
+  }
+
+  Future<String> _currentUserId() async {
+    final user = await _storage.getUser();
+    return (user?['id'] ?? '').toString();
+  }
+
+  String _cacheKey(String userId, String suffix) {
+    if (userId.isEmpty) return 'student_gamification_$suffix';
+    return 'student_gamification_${userId}_$suffix';
+  }
+
+  List<T>? _readList<T>(
+    String key,
+    T Function(Map<String, dynamic>) fromJson,
+  ) {
+    final entry = _cacheService.read(key);
+    if (entry == null || entry.data is! List) return null;
+    return (entry.data as List)
+        .whereType<Map<String, dynamic>>()
+        .map(fromJson)
+        .toList();
+  }
+
+  T? _readObject<T>(
+    String key,
+    T Function(Map<String, dynamic>) fromJson,
+  ) {
+    final entry = _cacheService.read(key);
+    if (entry == null || entry.data is! Map<String, dynamic>) return null;
+    return fromJson(Map<String, dynamic>.from(entry.data as Map));
+  }
+
+  Future<void> _writeList<T>(String key, List<T> items) async {
+    await _cacheService.write(
+      key,
+      items.map((item) => (item as dynamic).toJson()).toList(),
+    );
+  }
+
+  Future<void> _writeObject(String key, Map<String, dynamic> value) async {
+    await _cacheService.write(key, value);
   }
 }

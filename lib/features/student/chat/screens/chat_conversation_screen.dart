@@ -78,6 +78,13 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
   void initState() {
     super.initState();
     _loadCurrentUserId();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels <= _scrollController.position.minScrollExtent + 50) {
+      context.read<ChatConversationCubit>().loadMoreMessages();
+    }
   }
 
   Future<void> _loadCurrentUserId() async {
@@ -90,6 +97,7 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
     _controller.dispose();
     _scrollController.dispose();
     _autoReplyTimer?.cancel();

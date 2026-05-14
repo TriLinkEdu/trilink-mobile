@@ -9,6 +9,7 @@ class ChatConversationState extends Equatable {
   final List<ChatMemberModel> members;
   final bool membersLoading;
   final String? errorMessage;
+  final bool hasReachedMax;
 
   const ChatConversationState({
     this.status = ConversationStatus.initial,
@@ -16,6 +17,7 @@ class ChatConversationState extends Equatable {
     this.members = const [],
     this.membersLoading = false,
     this.errorMessage,
+    this.hasReachedMax = false,
   });
 
   ChatConversationState copyWith({
@@ -24,6 +26,7 @@ class ChatConversationState extends Equatable {
     List<ChatMemberModel>? members,
     bool? membersLoading,
     String? errorMessage,
+    bool? hasReachedMax,
   }) {
     return ChatConversationState(
       status: status ?? this.status,
@@ -31,9 +34,10 @@ class ChatConversationState extends Equatable {
       members: members ?? this.members,
       membersLoading: membersLoading ?? this.membersLoading,
       errorMessage: errorMessage,
+      hasReachedMax: hasReachedMax ?? this.hasReachedMax,
     );
   }
 
   @override
-  List<Object?> get props => [status, messages, members, membersLoading, errorMessage];
+  List<Object?> get props => [status, messages, members, membersLoading, errorMessage, hasReachedMax];
 }
