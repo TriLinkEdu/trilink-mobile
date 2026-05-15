@@ -3,7 +3,6 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
-import '../../../../core/services/storage_service.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../features/auth/services/auth_service.dart';
 import '../../../../core/routes/route_names.dart';
@@ -11,7 +10,9 @@ import '../../../shared/widgets/role_page_background.dart';
 import '../../student_info/screens/parent_student_info_screen.dart';
 
 class ParentProfileScreen extends StatefulWidget {
-  const ParentProfileScreen({super.key});
+  final bool isTabView;
+
+  const ParentProfileScreen({super.key, this.isTabView = false});
 
   @override
   State<ParentProfileScreen> createState() => _ParentProfileScreenState();
@@ -138,14 +139,6 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
     final l = user.lastName;
     return '${f.isNotEmpty ? f[0] : ''}${l.isNotEmpty ? l[0] : ''}'
         .toUpperCase();
-  }
-
-  Future<Map<String, String>?> _getAuthHeaders() async {
-    final token = await StorageService().accessToken;
-    if (token != null) {
-      return {'Authorization': 'Bearer $token'};
-    }
-    return null;
   }
 
   Future<void> _pickImage() async {
@@ -355,69 +348,85 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
     });
   }
 
+  Future<void> _onBackPressed() async {
+    if (_isEditing) {
+      _cancelEdit();
+      return;
+    }
+    if (!widget.isTabView && Navigator.of(context).canPop()) {
+      Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final canPop = Navigator.of(context).canPop();
-    return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        leading: _isEditing
-            ? IconButton(
-                onPressed: _cancelEdit,
-                icon: const Icon(Icons.arrow_back),
-              )
-            : canPop
-                ? IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-                  )
-                : null,
-        title: Text(
-          _isEditing ? 'Edit Profile' : 'My Profile',
-          style: TextStyle(
-            color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          if (!_isEditing)
-            IconButton(
-              onPressed: () {
-                setState(() {
-                  _isEditing = true;
-                  _error = null;
-                  _successMessage = null;
-                });
-              },
-              icon: const Icon(Icons.edit),
+    final canPop = Navigator.of(context).canPop() && !widget.isTabView;
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        await _onBackPressed();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          elevation: 0,
+          automaticallyImplyLeading: false,
+          leading: _isEditing
+              ? IconButton(
+                  onPressed: _cancelEdit,
+                  icon: const Icon(Icons.arrow_back),
+                )
+              : canPop
+                  ? IconButton(
+                      onPressed: _onBackPressed,
+                      icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                    )
+                  : null,
+          title: Text(
+            _isEditing ? 'Edit Profile' : 'My Profile',
+            style: TextStyle(
+              color: theme.colorScheme.onSurface,
+              fontWeight: FontWeight.bold,
             ),
-        ],
-      ),
-      body: RolePageBackground(
-        flavor: RoleThemeFlavor.parent,
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null && !_isEditing
-            ? Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _error!,
-                      style: TextStyle(color: theme.colorScheme.error),
-                    ),
-                    const SizedBox(height: 12),
-                    ElevatedButton(
-                      onPressed: _loadData,
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              )
-            : Form(
+          ),
+          centerTitle: true,
+          actions: [
+            if (!_isEditing)
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    _isEditing = true;
+                    _error = null;
+                    _successMessage = null;
+                  });
+                },
+                icon: const Icon(Icons.edit),
+              ),
+          ],
+        ),
+        body: RolePageBackground(
+          flavor: RoleThemeFlavor.parent,
+          child: _loading
+              ? const Center(child: CircularProgressIndicator())
+              : _error != null && !_isEditing
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _error!,
+                        style: TextStyle(color: theme.colorScheme.error),
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: _loadData,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : Form(
                 key: _formKey,
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(20),
@@ -495,6 +504,7 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
                   ),
                 ),
               ),
+        ),
       ),
     );
   }

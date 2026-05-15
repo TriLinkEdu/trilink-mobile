@@ -5,6 +5,7 @@ import '../../../../core/routes/route_names.dart';
 import '../../../../core/widgets/offline_banner.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/constants/api_constants.dart';
+import '../../../../core/utils/app_exit_helper.dart';
 import '../../../../features/auth/services/auth_service.dart';
 import '../../student_info/screens/parent_student_info_screen.dart';
 import '../../student_info/screens/parent_results_screen.dart';
@@ -178,7 +179,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         if (didPop) return;
         final shouldPop = await _onWillPop();
         if (shouldPop && context.mounted) {
-          Navigator.of(context).maybePop();
+          await AppExitHelper.exitApp();
         }
       },
       child: Scaffold(

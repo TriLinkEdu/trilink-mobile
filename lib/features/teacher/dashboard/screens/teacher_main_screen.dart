@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/routes/route_names.dart';
+import '../../../../core/utils/app_exit_helper.dart';
 import '../../../../features/auth/services/auth_service.dart';
 import '../../../shared/widgets/role_page_background.dart';
 import 'teacher_dashboard_screen.dart';
@@ -81,7 +82,7 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
         if (didPop) return;
         final shouldPop = await _onWillPop();
         if (shouldPop && context.mounted) {
-          Navigator.of(context).maybePop();
+          await AppExitHelper.exitApp();
         }
       },
       child: Scaffold(

@@ -7,7 +7,14 @@ import '../../../../features/auth/services/auth_service.dart';
 import '../../../shared/widgets/role_page_background.dart';
 
 class ParentSettingsScreen extends StatefulWidget {
-  const ParentSettingsScreen({super.key});
+  final bool isTabView;
+  final VoidCallback? onBackToHome;
+
+  const ParentSettingsScreen({
+    super.key,
+    this.isTabView = false,
+    this.onBackToHome,
+  });
 
   @override
   State<ParentSettingsScreen> createState() => _ParentSettingsScreenState();
@@ -166,6 +173,16 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
     ).pushNamedAndRemoveUntil(RouteNames.login, (_) => false);
   }
 
+  void _handleBack() {
+    if (widget.isTabView) {
+      widget.onBackToHome?.call();
+      return;
+    }
+    if (Navigator.of(context).canPop()) {
+      Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -175,22 +192,22 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
     );
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-        leading: Navigator.of(context).canPop()
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-                onPressed: () => Navigator.pop(context),
-              )
-            : null,
-      ),
-      body: RolePageBackground(
-        flavor: _roleFlavor,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
+        appBar: AppBar(
+          title: const Text('Settings'),
+          centerTitle: true,
+          automaticallyImplyLeading: false,
+          leading: widget.isTabView || Navigator.of(context).canPop()
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                  onPressed: _handleBack,
+                )
+              : null,
+        ),
+        body: RolePageBackground(
+          flavor: _roleFlavor,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
             _SectionCard(
               title: _rolePreferencesTitle,
               isDark: isDark,
@@ -267,10 +284,10 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                 minimumSize: const Size.fromHeight(46),
               ),
             ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
+      );
   }
 }
 

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/constants/api_constants.dart';
+import '../../../../core/utils/app_exit_helper.dart';
 import '../../../../features/auth/services/auth_service.dart';
 import '../../../shared/widgets/role_page_background.dart';
 import '../../dashboard/screens/parent_dashboard_screen.dart';
@@ -61,6 +63,28 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
     return 'Good Evening';
   }
 
+  Future<bool> _onWillPop() async {
+    final shouldExit = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Exit App'),
+        content: const Text('Are you sure you want to exit?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Exit'),
+          ),
+        ],
+      ),
+    );
+    return shouldExit ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = AuthService().currentUser;
@@ -68,16 +92,33 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
 
     final screens = <Widget>[
       _buildHomeBody(firstName),
-      const ParentProfileScreen(),
-      const ParentSettingsScreen(),
+      const ParentProfileScreen(isTabView: true),
+      ParentSettingsScreen(
+        isTabView: true,
+        onBackToHome: () => setState(() => _currentIndex = 0),
+      ),
     ];
 
-    return Scaffold(
-      body: RolePageBackground(
-        flavor: RoleThemeFlavor.parent,
-        child: IndexedStack(index: _currentIndex, children: screens),
+    return PopScope(
+      canPop: _currentIndex != 0,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        if (_currentIndex != 0) {
+          setState(() => _currentIndex = 0);
+        } else {
+          final shouldExit = await _onWillPop();
+          if (shouldExit && context.mounted) {
+            await AppExitHelper.exitApp();
+          }
+        }
+      },
+      child: Scaffold(
+        body: RolePageBackground(
+          flavor: RoleThemeFlavor.parent,
+          child: IndexedStack(index: _currentIndex, children: screens),
+        ),
+        bottomNavigationBar: _buildBottomNav(),
       ),
-      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
@@ -100,12 +141,32 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
 
   Widget _buildHeader() {
     final theme = Theme.of(context);
+    final user = AuthService().currentUser;
+    
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const SizedBox(width: 40), // Balance the layout
+          // Profile image
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: theme.colorScheme.primaryContainer,
+            backgroundImage: (user?.profileImageFileId != null &&
+                    user!.profileImageFileId!.isNotEmpty)
+                ? NetworkImage(
+                    '${ApiConstants.fileBaseUrl}/api/files/${user.profileImageFileId}/download',
+                  )
+                : null,
+            child: (user?.profileImageFileId == null ||
+                    user!.profileImageFileId!.isEmpty)
+                ? Icon(
+                    Icons.person,
+                    size: 24,
+                    color: theme.colorScheme.primary,
+                  )
+                : null,
+          ),
           Text(
             'TriLink',
             style: TextStyle(
