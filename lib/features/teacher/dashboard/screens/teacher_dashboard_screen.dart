@@ -461,7 +461,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 label: 'My\nClasses',
                 color: theme.colorScheme.secondary,
                 onTap: onSwitchToClasses,
-              ),
+              ),  
             ),
             const SizedBox(width: 12),
             Expanded(
