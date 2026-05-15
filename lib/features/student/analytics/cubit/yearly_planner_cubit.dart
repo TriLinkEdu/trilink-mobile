@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/constants/api_constants.dart';
+
 import '../../../../core/network/api_client.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/models/student_goal_model.dart';
@@ -31,102 +31,52 @@ class YearlyPlannerCubit extends Cubit<YearlyPlannerState> {
         throw Exception('User session not found');
       }
 
-      // Fetch dashboard data for overall score, attendance, XP
-      final dashboardData = await _safeGetMap(ApiConstants.dashboardStudent);
-      
-      final attendanceSummary = dashboardData['attendanceSummaryLast30Days'] as Map<String, dynamic>? ?? {};
-      final attendanceRaw = _asDouble(attendanceSummary['presentOrLateRate'], fallback: 0.0);
-      final attendanceRate = attendanceRaw > 1 ? attendanceRaw / 100 : attendanceRaw;
-      
-      final stats = dashboardData['stats'] as Map<String, dynamic>? ?? {};
-      final totalXp = _asInt(stats['totalXp'], fallback: 0);
+      final data = await _safeGetMap('/analytics/student/yearly-planner');
 
-      // Fetch goals
-      final goalsData = await _safeGetList(ApiConstants.myGoals);
-      final allGoals = goalsData.whereType<Map<String, dynamic>>().map((g) {
-        return StudentGoalModel(
-          id: (g['id'] ?? '').toString(),
-          studentId: studentId,
-          goalText: (g['title'] ?? g['goalText'] ?? 'Goal').toString(),
-          targetDate: g['targetDate'] != null ? DateTime.tryParse(g['targetDate'].toString()) : null,
-          isAchieved: g['status'] == 'completed' || g['isAchieved'] == true,
-          createdAt: DateTime.now(), // Fallback
+      final academicYear = data['academicYear']?.toString() ?? 'N/A';
+      final overallScore = _asDouble(data['overallScore'], fallback: 0.0);
+      final attendanceRate = _asDouble(data['attendanceRate'], fallback: 0.0);
+      final totalXp = _asInt(data['totalXp'], fallback: 0);
+      final goalsCompleted = _asInt(data['goalsCompleted'], fallback: 0);
+      final goalsTotal = _asInt(data['goalsTotal'], fallback: 0);
+      final currentTermIndex = _asInt(data['currentTermIndex'], fallback: 0);
+
+      final rawTerms = _readList(data['terms']);
+      final terms = rawTerms.map((t) {
+        if (t is! Map) return null;
+        return TermProgress(
+          id: t['id']?.toString() ?? '',
+          name: t['name']?.toString() ?? '',
+          dateRange: t['dateRange']?.toString() ?? '',
+          avgScore: _asDouble(t['avgScore'], fallback: 0.0),
+          attendanceRate: _asDouble(t['attendanceRate'], fallback: 0.0),
+          goalsHit: _asInt(t['goalsHit'], fallback: 0),
+          goalsTotal: _asInt(t['goalsTotal'], fallback: 0),
         );
-      }).toList();
+      }).whereType<TermProgress>().toList();
 
-      final activeGoals = allGoals.where((g) => !g.isAchieved).toList();
-      final completedGoals = allGoals.where((g) => g.isAchieved).length;
-
-      // Fetch grades to calculate overall score
-      final gradesData = await _safeGetMap('/reports/my-grades');
-      final subjects = _readList(gradesData['subjects']);
-      double totalScore = 0;
-      int scoreCount = 0;
-
-      for (final subject in subjects.whereType<Map<String, dynamic>>()) {
-        final exams = _readList(subject['exams']);
-        for (final exam in exams.whereType<Map<String, dynamic>>()) {
-          final score = _asDouble(exam['score'], fallback: 0);
-          final max = _asDouble(exam['maxPoints'], fallback: 100);
-          if (max > 0) {
-            totalScore += (score / max) * 100;
-            scoreCount++;
-          }
-        }
-      }
-
-      final overallScore = scoreCount > 0 ? totalScore / scoreCount : 0.0;
-
-      // Simulate terms for now, as backend doesn't have a specific term endpoint yet
-      // In a real app, this would come from a /terms or /academic-year endpoint
-      final terms = [
-        TermProgress(
-          id: 't1',
-          name: 'Term 1',
-          dateRange: 'Sep - Dec',
-          avgScore: overallScore > 0 ? overallScore - 5 : 75.0, // Slight variation
-          attendanceRate: attendanceRate > 0 ? attendanceRate - 0.05 : 0.85,
-          goalsHit: (completedGoals * 0.3).round(),
-          goalsTotal: (allGoals.length * 0.3).round() + 1,
-        ),
-        TermProgress(
-          id: 't2',
-          name: 'Term 2',
-          dateRange: 'Jan - Apr',
-          avgScore: overallScore > 0 ? overallScore : 80.0,
-          attendanceRate: attendanceRate > 0 ? attendanceRate : 0.90,
-          goalsHit: (completedGoals * 0.5).round(),
-          goalsTotal: (allGoals.length * 0.5).round() + 1,
-        ),
-        TermProgress(
-          id: 't3',
-          name: 'Term 3',
-          dateRange: 'May - Jul',
-          avgScore: overallScore > 0 ? overallScore + 5 : 85.0, // Slight variation
-          attendanceRate: attendanceRate > 0 ? attendanceRate + 0.02 : 0.92,
-          goalsHit: (completedGoals * 0.2).round(),
-          goalsTotal: (allGoals.length * 0.2).round() + 1,
-        ),
-      ];
-
-      // Determine current term based on month
-      final currentMonth = DateTime.now().month;
-      int currentTermIndex = 0;
-      if (currentMonth >= 1 && currentMonth <= 4) {
-        currentTermIndex = 1; // Term 2
-      } else if (currentMonth >= 5 && currentMonth <= 8) {
-        currentTermIndex = 2; // Term 3
-      }
+      final rawGoals = _readList(data['activeGoals']);
+      final activeGoals = rawGoals.map((g) {
+        if (g is! Map) return null;
+        return StudentGoalModel(
+          id: g['id']?.toString() ?? '',
+          studentId: g['studentId']?.toString() ?? '',
+          goalText: g['goalText']?.toString() ?? '',
+          targetDate: g['targetDate'] != null ? DateTime.tryParse(g['targetDate'].toString()) : null,
+          isAchieved: g['isAchieved'] == true,
+          createdAt: g['createdAt'] != null ? DateTime.tryParse(g['createdAt'].toString()) ?? DateTime.now() : DateTime.now(),
+        );
+      }).whereType<StudentGoalModel>().toList();
 
       emit(
         state.copyWith(
           status: YearlyPlannerStatus.loaded,
-          academicYear: '${DateTime.now().year}-${DateTime.now().year + 1}',
+          academicYear: academicYear,
           overallScore: overallScore,
           attendanceRate: attendanceRate,
           totalXp: totalXp,
-          goalsCompleted: completedGoals,
-          goalsTotal: allGoals.length,
+          goalsCompleted: goalsCompleted,
+          goalsTotal: goalsTotal,
           terms: terms,
           currentTermIndex: currentTermIndex,
           activeGoals: activeGoals,
@@ -147,14 +97,6 @@ class YearlyPlannerCubit extends Cubit<YearlyPlannerState> {
       return await _apiClient.get(path);
     } catch (_) {
       return const <String, dynamic>{};
-    }
-  }
-
-  Future<List<dynamic>> _safeGetList(String path) async {
-    try {
-      return await _apiClient.getList(path);
-    } catch (_) {
-      return const [];
     }
   }
 
