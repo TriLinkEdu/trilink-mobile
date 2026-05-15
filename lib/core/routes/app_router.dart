@@ -44,6 +44,7 @@ import '../../features/parent/feedback/screens/parent_feedback_screen.dart';
 import '../../features/parent/reports/screens/weekly_report_screen.dart';
 import '../../features/parent/reports/screens/report_comparison_screen.dart';
 import '../../features/shared/screens/theme_customization_screen.dart';
+import '../../features/shared/screens/route_not_found_screen.dart';
 
 class AppRouter {
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -224,8 +225,9 @@ class AppRouter {
 
       default:
         return MaterialPageRoute(
-          builder: (_) =>
-              const Scaffold(body: Center(child: Text('Route not found'))),
+          builder: (_) => RouteNotFoundScreen(
+            attemptedRoute: settings.name,
+          ),
         );
     }
   }
