@@ -4,10 +4,7 @@ import '../../../core/routes/route_names.dart';
 class RouteNotFoundScreen extends StatelessWidget {
   final String? attemptedRoute;
 
-  const RouteNotFoundScreen({
-    super.key,
-    this.attemptedRoute,
-  });
+  const RouteNotFoundScreen({super.key, this.attemptedRoute});
 
   @override
   Widget build(BuildContext context) {
