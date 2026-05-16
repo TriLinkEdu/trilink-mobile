@@ -630,6 +630,69 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                 const Divider(height: 1),
                 _DrawerSection(title: 'REPORTS'),
                 _DrawerItem(
+                  icon: Icons.upcoming_outlined,
+                  label: 'Upcoming',
+                  onTap: () {
+                    Navigator.pop(context);
+                    final childId = _children.isNotEmpty
+                        ? (_children[_selectedChildIndex]['studentId']
+                                  as String? ??
+                              _children[_selectedChildIndex]['id'] as String? ??
+                              '')
+                        : '';
+                    Navigator.pushNamed(
+                      context,
+                      RouteNames.parentUpcoming,
+                      arguments: <String, String>{
+                        'studentId': childId,
+                        'childName': _childName,
+                      },
+                    );
+                  },
+                ),
+                _DrawerItem(
+                  icon: Icons.assessment_outlined,
+                  label: 'Report Card',
+                  onTap: () {
+                    Navigator.pop(context);
+                    final childId = _children.isNotEmpty
+                        ? (_children[_selectedChildIndex]['studentId']
+                                  as String? ??
+                              _children[_selectedChildIndex]['id'] as String? ??
+                              '')
+                        : '';
+                    Navigator.pushNamed(
+                      context,
+                      RouteNames.parentReportCard,
+                      arguments: <String, String>{
+                        'studentId': childId,
+                        'childName': _childName,
+                      },
+                    );
+                  },
+                ),
+                _DrawerItem(
+                  icon: Icons.insights_outlined,
+                  label: 'Subject Mastery',
+                  onTap: () {
+                    Navigator.pop(context);
+                    final childId = _children.isNotEmpty
+                        ? (_children[_selectedChildIndex]['studentId']
+                                  as String? ??
+                              _children[_selectedChildIndex]['id'] as String? ??
+                              '')
+                        : '';
+                    Navigator.pushNamed(
+                      context,
+                      RouteNames.parentMastery,
+                      arguments: <String, String>{
+                        'studentId': childId,
+                        'childName': _childName,
+                      },
+                    );
+                  },
+                ),
+                _DrawerItem(
                   icon: Icons.assessment_outlined,
                   label: 'Weekly Report',
                   onTap: () {
@@ -1560,7 +1623,6 @@ class _ActivityItem extends StatelessWidget {
   final String title;
   final String subtitle;
   final String time;
-  final String? teacher;
   final String? tag;
 
   const _ActivityItem({
@@ -1570,7 +1632,6 @@ class _ActivityItem extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.time,
-    this.teacher,
     this.tag,
   });
 
@@ -1630,32 +1691,6 @@ class _ActivityItem extends StatelessWidget {
                     height: 1.4,
                   ),
                 ),
-                if (teacher != null) ...[
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 10,
-                        backgroundColor: AppColors.secondary.withValues(
-                          alpha: 0.15,
-                        ),
-                        child: const Icon(
-                          Icons.person,
-                          size: 12,
-                          color: AppColors.secondary,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        teacher!,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
                 if (tag != null) ...[
                   const SizedBox(height: 6),
                   Container(

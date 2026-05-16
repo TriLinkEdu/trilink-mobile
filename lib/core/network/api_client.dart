@@ -159,7 +159,7 @@ class ApiClient {
     }
   }
 
-  Future<void> delete(String path) async {
+  Future<void> delete(String path, {dynamic data}) async {
     if (testMode) {
       throw DioException(
         requestOptions: RequestOptions(path: path),
@@ -167,7 +167,7 @@ class ApiClient {
       );
     }
     try {
-      await _dio.delete(path);
+      await _dio.delete(path, data: data);
     } on DioException catch (e) {
       throw _handleDioError(e);
     }

@@ -108,8 +108,14 @@ class _LoginScreenState extends State<LoginScreen>
         email: 'nebiyumusbah378@gmail.com',
         password: 'Student@123',
       ),
-      _Role.parent => (email: 'musbahyesuf@gmail.com', password: 'Parent@123'),
-      _Role.teacher => (email: 'abduisa@gmail.com', password: 'Teacher@1234'),
+      _Role.parent => (
+        email: 'abdulazizisa980@gmail.com',
+        password: 'Parent@123',
+      ),
+      _Role.teacher => (
+        email: 'nebiyumusbah378@gmail.com',
+        password: 'Teacher@1234',
+      ),
     };
   }
 

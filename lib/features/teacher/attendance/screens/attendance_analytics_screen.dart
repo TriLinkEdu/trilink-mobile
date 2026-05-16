@@ -75,9 +75,25 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
   Future<void> _loadReport() async {
     if (_selectedClassId == null) return;
     try {
+      // Reset all state variables before fetching new data to prevent stale data display
       setState(() {
         _loadingReport = true;
         _error = null;
+        _averageAttendance = 0;
+        _totalAbsences = 0;
+        _lateArrivals = 0;
+        _totalSessions = 0;
+        _totalStudents = 0;
+        _presentCount = 0;
+        _excusedCount = 0;
+        _weeklyData = [];
+        _mostAbsent = [];
+        _mostLate = [];
+        _atRiskStudents = [];
+        _dailyBreakdown = [];
+        _worstDay = null;
+        _bestDay = null;
+        _className = null;
       });
 
       final report = await ApiService().getClassAttendanceReport(
@@ -297,13 +313,34 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
   }
 
   String _labelFor(Map<String, dynamic> offering) {
+    final displayName = offering['displayName']?.toString().trim();
+    if (displayName != null && displayName.isNotEmpty) {
+      return displayName;
+    }
+
     final subject = offering['subject'];
     final grade = offering['grade'];
     final section = offering['section'];
-    final subjectName = subject is Map ? (subject['name'] ?? '') : '';
-    final gradeName = grade is Map ? (grade['name'] ?? '') : '';
-    final sectionName = section is Map ? (section['name'] ?? '') : '';
-    return '$subjectName $gradeName$sectionName'.trim();
+    final className = offering['className'] ?? offering['name'] ?? offering['title'];
+    final subjectName = subject is Map ? (subject['name'] ?? subject['title'] ?? '') : '';
+    final gradeName = grade is Map ? (grade['name'] ?? grade['title'] ?? '') : '';
+    final sectionName = section is Map ? (section['name'] ?? section['title'] ?? '') : '';
+
+    final classPart = [
+      if (gradeName.toString().trim().isNotEmpty) gradeName.toString().trim(),
+      if (sectionName.toString().trim().isNotEmpty) sectionName.toString().trim(),
+    ].join(' ').trim();
+    final subjectPart = subjectName.toString().trim();
+
+    if (classPart.isNotEmpty && subjectPart.isNotEmpty) {
+      return '$classPart | $subjectPart';
+    }
+    if (classPart.isNotEmpty) return classPart;
+    if (subjectPart.isNotEmpty) return subjectPart;
+
+    final label = className?.toString().trim() ?? '';
+
+    return label.isNotEmpty ? label : 'Class ${offering['id'] ?? ''}'.trim();
   }
 
   @override
@@ -436,6 +473,7 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
         border: Border.all(color: theme.colorScheme.outlineVariant),
         borderRadius: BorderRadius.circular(12),
       ),
@@ -443,15 +481,48 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
         child: DropdownButton<String>(
           value: _selectedClassId,
           isExpanded: true,
-          icon: const Icon(Icons.keyboard_arrow_down),
+          icon: Icon(
+            Icons.keyboard_arrow_down,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          dropdownColor: theme.colorScheme.surface,
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
             color: theme.colorScheme.onSurface,
           ),
+          hint: Text(
+            'Select class',
+            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          selectedItemBuilder: (context) {
+            return _classOfferings.map((c) {
+              return Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _labelFor(c),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+              );
+            }).toList();
+          },
           items: _classOfferings.map((c) {
             final id = c['id'] as String;
-            return DropdownMenuItem(value: id, child: Text(_labelFor(c)));
+            return DropdownMenuItem(
+              value: id,
+              child: Text(
+                _labelFor(c),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: theme.colorScheme.onSurface),
+              ),
+            );
           }).toList(),
           onChanged: (val) {
             if (val != null && val != _selectedClassId) {

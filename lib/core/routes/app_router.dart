@@ -25,6 +25,16 @@ import '../../features/teacher/ai_assistant/screens/teacher_ai_assistant_screen.
 import '../../features/teacher/feedback/screens/teacher_feedback_screen.dart';
 import '../../features/teacher/schedule/screens/teacher_schedule_screen.dart';
 import '../../features/teacher/grades/screens/teacher_grade_analytics_screen.dart';
+import '../../features/teacher/homeroom/screens/teacher_homeroom_screen.dart';
+import '../../features/teacher/homeroom/screens/teacher_remark_form_screen.dart';
+import '../../features/teacher/notifications/screens/broadcast_notification_screen.dart';
+import '../../features/teacher/attendance/screens/teacher_all_sessions_screen.dart';
+import '../../features/teacher/assignments/screens/teacher_assignments_screen.dart';
+import '../../features/teacher/assignments/screens/assignment_form_screen.dart';
+import '../../features/teacher/assignments/screens/assignment_submissions_screen.dart';
+import '../../features/teacher/grades/screens/teacher_gradebook_screen.dart';
+import '../../features/teacher/grades/screens/grade_entry_screen.dart';
+import '../../features/teacher/report_cards/screens/class_ranking_screen.dart';
 
 import '../../features/parent/home/screens/parent_home_screen.dart';
 import '../../features/parent/dashboard/screens/parent_dashboard_screen.dart';
@@ -43,8 +53,14 @@ import '../../features/parent/announcements/screens/parent_announcements_screen.
 import '../../features/parent/feedback/screens/parent_feedback_screen.dart';
 import '../../features/parent/reports/screens/weekly_report_screen.dart';
 import '../../features/parent/reports/screens/report_comparison_screen.dart';
+import '../../features/parent/upcoming/screens/parent_upcoming_screen.dart';
+import '../../features/parent/report_cards/screens/parent_report_card_screen.dart';
+import '../../features/parent/report_cards/screens/parent_yearly_report_card_screen.dart';
+import '../../features/parent/student_info/screens/student_mastery_screen.dart';
 import '../../features/shared/screens/theme_customization_screen.dart';
 import '../../features/shared/screens/route_not_found_screen.dart';
+import '../../features/shared/screens/global_search_screen.dart';
+import '../../features/shared/screens/sync_status_screen.dart';
 
 class AppRouter {
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -126,17 +142,86 @@ class AppRouter {
           builder: (_) => const TeacherAiAssistantScreen(),
         );
       case RouteNames.teacherFeedback:
-        return MaterialPageRoute(
-          builder: (_) => const TeacherFeedbackScreen(),
-        );
+        return MaterialPageRoute(builder: (_) => const TeacherFeedbackScreen());
       case RouteNames.teacherSchedule:
-        return MaterialPageRoute(
-          builder: (_) => const TeacherScheduleScreen(),
-        );
+        return MaterialPageRoute(builder: (_) => const TeacherScheduleScreen());
       case RouteNames.teacherGradeAnalytics:
         return MaterialPageRoute(
           builder: (_) => const TeacherGradeAnalyticsScreen(),
         );
+
+      // ── Teacher §4 features ──
+      case RouteNames.teacherHomeroom:
+        return MaterialPageRoute(builder: (_) => const TeacherHomeroomScreen());
+      case RouteNames.teacherHomeroomRemark:
+        final args = settings.arguments as Map<String, dynamic>?;
+        return MaterialPageRoute(
+          builder: (_) => TeacherRemarkFormScreen(
+            studentId: (args?['studentId'] ?? '') as String,
+            studentName: (args?['studentName'] ?? '') as String,
+          ),
+        );
+      case RouteNames.teacherBroadcast:
+        return MaterialPageRoute(
+          builder: (_) => const BroadcastNotificationScreen(),
+        );
+      case RouteNames.teacherSessionsMine:
+        return MaterialPageRoute(
+          builder: (_) => const TeacherAllSessionsScreen(),
+        );
+      case RouteNames.teacherAssignments:
+        return MaterialPageRoute(
+          builder: (_) => const TeacherAssignmentsScreen(),
+        );
+      case RouteNames.teacherAssignmentForm:
+        final args = settings.arguments as Map<String, dynamic>? ?? {};
+        return MaterialPageRoute(
+          builder: (_) => AssignmentFormScreen(
+            existing: args['existing'] as Map<String, dynamic>?,
+            classes: ((args['classes'] as List?) ?? const [])
+                .whereType<Map<String, dynamic>>()
+                .toList(),
+            terms: ((args['terms'] as List?) ?? const [])
+                .whereType<Map<String, dynamic>>()
+                .toList(),
+          ),
+        );
+      case RouteNames.teacherAssignmentSubmissions:
+        final args = settings.arguments as Map<String, dynamic>?;
+        return MaterialPageRoute(
+          builder: (_) => AssignmentSubmissionsScreen(
+            assignmentId: (args?['assignmentId'] ?? '') as String,
+            title: args?['title'] as String?,
+          ),
+        );
+      case RouteNames.teacherGradebook:
+        return MaterialPageRoute(
+          builder: (_) => const TeacherGradebookScreen(),
+        );
+      case RouteNames.teacherGradebookEntry:
+        final args = settings.arguments as Map<String, dynamic>?;
+        return MaterialPageRoute(
+          builder: (_) => GradeEntryScreen(
+            classOfferingId: (args?['classOfferingId'] ?? '') as String,
+            termId: (args?['termId'] ?? '') as String,
+            termLabel: args?['termLabel'] as String?,
+            existingGroup: args?['existingGroup'] as Map<String, dynamic>?,
+          ),
+        );
+      case RouteNames.teacherClassRanking:
+        final args = settings.arguments as Map<String, String>?;
+        return MaterialPageRoute(
+          builder: (_) => ClassRankingScreen(
+            gradeId: args?['gradeId'] ?? '',
+            sectionId: args?['sectionId'] ?? '',
+          ),
+        );
+
+      // ── Shared §4 features ──
+      case RouteNames.globalSearch:
+        return MaterialPageRoute(builder: (_) => const GlobalSearchScreen());
+      case RouteNames.syncStatus:
+        return MaterialPageRoute(builder: (_) => const SyncStatusScreen());
 
       // ── Parent routes ──
       case RouteNames.parentHome:
@@ -218,6 +303,41 @@ class AppRouter {
           ),
         );
 
+      // ── Parent §4 features ──
+      case RouteNames.parentUpcoming:
+        final args = settings.arguments as Map<String, String>?;
+        return MaterialPageRoute(
+          builder: (_) => ParentUpcomingScreen(
+            studentId: args?['studentId'] ?? '',
+            childName: args?['childName'],
+          ),
+        );
+      case RouteNames.parentReportCard:
+        final args = settings.arguments as Map<String, String>?;
+        return MaterialPageRoute(
+          builder: (_) => ParentReportCardScreen(
+            studentId: args?['studentId'] ?? '',
+            childName: args?['childName'],
+          ),
+        );
+      case RouteNames.parentYearlyReportCard:
+        final args = settings.arguments as Map<String, String>?;
+        return MaterialPageRoute(
+          builder: (_) => ParentYearlyReportCardScreen(
+            studentId: args?['studentId'] ?? '',
+            academicYearId: args?['academicYearId'] ?? '',
+            childName: args?['childName'],
+          ),
+        );
+      case RouteNames.parentMastery:
+        final args = settings.arguments as Map<String, String>?;
+        return MaterialPageRoute(
+          builder: (_) => StudentMasteryScreen(
+            studentId: args?['studentId'] ?? '',
+            childName: args?['childName'],
+          ),
+        );
+
       case RouteNames.themeCustomization:
         return MaterialPageRoute(
           builder: (_) => const ThemeCustomizationScreen(),
@@ -225,9 +345,7 @@ class AppRouter {
 
       default:
         return MaterialPageRoute(
-          builder: (_) => RouteNotFoundScreen(
-            attemptedRoute: settings.name,
-          ),
+          builder: (_) => RouteNotFoundScreen(attemptedRoute: settings.name),
         );
     }
   }

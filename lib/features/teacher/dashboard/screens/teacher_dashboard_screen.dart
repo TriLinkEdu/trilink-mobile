@@ -6,9 +6,6 @@ import '../../../../core/widgets/offline_banner.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../auth/services/auth_service.dart';
-import '../../attendance/screens/teacher_attendance_screen.dart';
-import '../../announcements/screens/create_announcement_screen.dart';
-import '../../classes/screens/class_list_screen.dart';
 import '../../notifications/screens/teacher_notifications_screen.dart';
 
 class TeacherDashboardScreen extends StatefulWidget {
@@ -461,7 +458,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 label: 'My\nClasses',
                 color: theme.colorScheme.secondary,
                 onTap: onSwitchToClasses,
-              ),  
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(

@@ -6,12 +6,12 @@ class ApiConstants {
   ApiConstants._();
 
   static ApiEnvironment get environment {
-        // API environment is selected at build time using:
-        // --dart-define=API_ENV=production
-        const env = String.fromEnvironment('API_ENV', defaultValue: 'local');
-        return env.toLowerCase() == 'production'
-                ? ApiEnvironment.production
-                : ApiEnvironment.local;
+    // API environment is selected at build time using:
+    // --dart-define=API_ENV=production
+    const env = String.fromEnvironment('API_ENV', defaultValue: 'local');
+    return env.toLowerCase() == 'production'
+        ? ApiEnvironment.production
+        : ApiEnvironment.local;
   }
 
   // Single switch point for data source mode.
@@ -83,6 +83,8 @@ class ApiConstants {
 
   // Users
   static const String updateProfile = '/users/me';
+  static String userById(String userId) => '/users/$userId';
+  static String userProfile(String userId) => '/users/$userId/profile';
 
   // Dashboard
   static const String dashboardTeacher = '/dashboard/teacher';
@@ -102,17 +104,23 @@ class ApiConstants {
 
   // Attendance
   static const String attendanceSessions = '/attendance-sessions';
+  static const String attendanceSessionsMine = '/attendance-sessions/my';
+  static String attendanceSession(String id) => '/attendance-sessions/$id';
   static String attendanceMarks(String sessionId) =>
       '/attendance-sessions/$sessionId/marks';
+  static String attendanceMark(String markId) => '/attendance-marks/$markId';
   static String attendanceStudentReport(String studentId) =>
       '/reports/attendance/student/$studentId';
   static String attendanceStudentByDay(String studentId, String date) =>
       '/reports/attendance/student/$studentId/by-day?date=$date';
   static String attendanceClassReport(String classOfferingId) =>
       '/reports/attendance/class/$classOfferingId';
+  static String attendanceStudentByTerm(String studentId, String termId) =>
+      '/reports/attendance/student/$studentId/term/$termId';
 
   // Calendar
   static const String calendarEvents = '/calendar-events';
+  static String calendarEvent(String id) => '/calendar-events/$id';
 
   // Announcements
   static const String announcements = '/announcements';
@@ -131,10 +139,23 @@ class ApiConstants {
   static const String questions = '/questions';
 
   // Assignments
+  static const String assignments = '/assignments';
   static const String assignmentsMe = '/assignments/me';
   static String assignmentById(String id) => '/assignments/$id';
+  static String assignmentPublish(String id) => '/assignments/$id/publish';
+  static String assignmentUnpublish(String id) => '/assignments/$id/unpublish';
   static String assignmentSubmission(String id) =>
       '/assignments/$id/submissions';
+  static String assignmentSubmissions(String id) =>
+      '/assignments/$id/submissions';
+  static String assignmentReleaseAll(String id) =>
+      '/assignments/$id/release-all';
+  static String assignmentSubmissionGrade(String submissionId) =>
+      '/assignments/submissions/$submissionId/grade';
+  static String assignmentSubmissionRelease(String submissionId) =>
+      '/assignments/submissions/$submissionId/release';
+  static String assignmentsForStudent(String studentId) =>
+      '/assignments/student/$studentId';
 
   // Attempts
   static String attemptGrade(String id) => '/attempts/$id/grade';
@@ -146,41 +167,46 @@ class ApiConstants {
 
   // Notifications
   static const String notifications = '/notifications';
+  static const String notificationsBroadcast = '/notifications/broadcast';
   static String notificationRead(String id) => '/notifications/$id/read';
   static String notificationUnread(String id) => '/notifications/$id/unread';
   static const String notificationsReadAll = '/notifications/read-all';
 
   // Chat
   static const String chatWsInfo = '/chat/ws-info';
-  static const String chatUpload = '/chat/upload';
+  // Backend route: POST /chat/files/upload
+  static const String chatUpload = '/chat/files/upload';
   static const String conversations = '/conversations';
   static const String conversationsInitiate = '/conversations/initiate';
   static String conversation(String id) => '/conversations/$id';
   static String conversationMessages(String id) =>
       '/conversations/$id/messages';
-  static String conversationMembers(String id) =>
-      '/conversations/$id/members';
+  static String conversationMembers(String id) => '/conversations/$id/members';
   static String conversationMember(String id, String userId) =>
       '/conversations/$id/members/$userId';
   static String conversationMedia(String id) => '/conversations/$id/media';
+  // Backend uses top-level /messages/:id for edit/delete/reactions; conversation
+  // id parameter is kept in our helpers for caller-side context but is unused.
   static String messageReactions(String convId, String msgId) =>
-      '/conversations/$convId/messages/$msgId/reactions';
+      '/messages/$msgId/reactions';
   static String messageRead(String convId, String msgId) =>
-      '/conversations/$convId/messages/$msgId/read';
-  static String messageEdit(String convId, String msgId) =>
-      '/conversations/$convId/messages/$msgId';
+      '/messages/$msgId/read';
+  static String messageEdit(String convId, String msgId) => '/messages/$msgId';
   static String messageReadReceipts(String id) => '/messages/$id/read-receipts';
   static const String usersSearch = '/users/search';
-    static const String usersPresence = '/users/presence';
+  static const String usersPresence = '/users/presence';
   static const String usersBlocked = '/users/blocked';
   static String blockUser(String userId) => '/users/$userId/block';
 
   // Settings
   static const String userSettings = '/me/settings';
   static const String schoolSettings = '/school/settings';
+
+  // Sync / Integrations
   static const String studentSyncStatus = '/sync/student/status';
   static const String studentSyncTrigger = '/sync/student/trigger';
   static const String integrationsSyncHints = '/integrations/sync-hints';
+  static const String integrationsStatus = '/integrations/status';
 
   // Feedback
   static const String feedback = '/feedback';
@@ -303,9 +329,21 @@ class ApiConstants {
   static String gradesBySubject(String studentId, String subjectId) =>
       '/grades/student/$studentId/by-subject/$subjectId';
 
+  // Grades by Term (released entries grouped by subject)
+  static String gradesByTerm(String studentId, String termId) =>
+      '/grades/student/$studentId/term/$termId';
+
   // Grades by Class (teacher)
   static String gradesClass(String classOfferingId) =>
       '/grades/class/$classOfferingId';
+
+  // Grades CRUD (teacher / admin)
+  static const String grades = '/grades';
+  static const String gradesBulk = '/grades/bulk';
+  static const String gradesRelease = '/grades/release';
+  static const String gradesGroup = '/grades/group';
+  static String gradeById(String id) => '/grades/$id';
+  static String gradesStudent(String studentId) => '/grades/student/$studentId';
 
   // Assignments (teacher)
   static const String assignmentsTeacherMine = '/assignments/teacher/mine';
@@ -314,9 +352,49 @@ class ApiConstants {
   static String attendanceBySubject(String studentId, String subjectId) =>
       '/reports/attendance/student/$studentId/by-subject/$subjectId';
 
-  // Chat - Parent reads child's history
+  // Chat - Parent reads child's history.
+  // Backend mounts these at the root (no /chat prefix).
   static String childConversations(String studentId) =>
-      '/chat/children/$studentId/conversations';
+      '/children/$studentId/conversations';
   static String childConversationMessages(String studentId, String convId) =>
-      '/chat/children/$studentId/conversations/$convId/messages';
+      '/children/$studentId/conversations/$convId/messages';
+
+  // Academic terms (per academic year)
+  static String academicYearTerms(String academicYearId) =>
+      '/academic-years/$academicYearId/terms';
+
+  // Homeroom
+  static const String homeroomMyClass = '/homeroom/my-class';
+  static const String homeroomAssign = '/homeroom/assign';
+  static const String homeroomAssignments = '/homeroom/assignments';
+  static String homeroomAssignment(String id) => '/homeroom/assign/$id';
+
+  // Report Cards
+  static const String reportCardsRemarks = '/report-cards/remarks';
+  static String reportCardStudentTerm(String studentId, String termId) =>
+      '/report-cards/student/$studentId/term/$termId';
+  static String reportCardClassTerm(
+    String gradeId,
+    String sectionId,
+    String termId,
+  ) => '/report-cards/class/$gradeId/$sectionId/term/$termId';
+  static String reportCardStudentYear(
+    String studentId,
+    String academicYearId,
+  ) => '/report-cards/student/$studentId/academic-year/$academicYearId';
+
+  // Parent → Child upcoming
+  static String parentChildUpcoming(String studentId) =>
+      '/parent-students/children/$studentId/upcoming';
+
+  // Search (global)
+  static const String globalSearch = '/search';
+
+  // AI — mastery / content / chat (POST variants)
+  static const String aiRecommendationsPost = '/ai/recommendations';
+  static const String aiLearningPathPost = '/ai/learning-path';
+  static const String aiGenerateLesson = '/ai/content/generate-lesson';
+  static const String aiGenerateQuestions = '/ai/content/generate-questions';
+  static String aiContentQuestions(String topicId) =>
+      '/ai/content/questions/$topicId';
 }

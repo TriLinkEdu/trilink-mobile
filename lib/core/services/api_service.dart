@@ -160,6 +160,7 @@ class ApiService {
     String? to,
     String? academicYearId,
     String? classOfferingId,
+    String? termId,
   }) => _tryOr(
     () => _api.getList(
       ApiConstants.calendarEvents,
@@ -168,9 +169,20 @@ class ApiService {
         if (to != null) 'to': to,
         if (academicYearId != null) 'academicYearId': academicYearId,
         if (classOfferingId != null) 'classOfferingId': classOfferingId,
+        if (termId != null) 'termId': termId,
       },
     ),
     DummyData.calendarEvents,
+  );
+
+  Future<Map<String, dynamic>> getCalendarEvent(String id) => _tryOr(
+    () => _api.get(ApiConstants.calendarEvent(id)),
+    DummyData.calendarEvents.firstWhere(
+      (e) => e['id'] == id,
+      orElse: () => DummyData.calendarEvents.isNotEmpty
+          ? DummyData.calendarEvents.first
+          : <String, dynamic>{},
+    ),
   );
 
   Future<Map<String, dynamic>> createCalendarEvent(
@@ -196,6 +208,7 @@ class ApiService {
           'description': data['description'],
           if (data['classOfferingId'] != null)
             'classOfferingId': data['classOfferingId'],
+          if (data['termId'] != null) 'termId': data['termId'],
         },
       ),
       {'id': 'new-event', ...data},
@@ -205,10 +218,10 @@ class ApiService {
   Future<Map<String, dynamic>> updateCalendarEvent(
     String id,
     Map<String, dynamic> data,
-  ) => _tryOr(
-    () => _api.patch('${ApiConstants.calendarEvents}/$id', data: data),
-    {'id': id, ...data},
-  );
+  ) => _tryOr(() => _api.patch(ApiConstants.calendarEvent(id), data: data), {
+    'id': id,
+    ...data,
+  });
 
   Future<void> deleteCalendarEvent(String id) async {
     await _api.delete('${ApiConstants.calendarEvents}/$id');
@@ -222,8 +235,11 @@ class ApiService {
         DummyData.announcements,
       );
 
-  Future<List<dynamic>> getAnnouncementsForMe() => _tryOr(
-    () => _api.getList(ApiConstants.announcementsForMe),
+  Future<List<dynamic>> getAnnouncementsForMe({String? termId}) => _tryOr(
+    () => _api.getList(
+      ApiConstants.announcementsForMe,
+      queryParameters: termId != null ? {'termId': termId} : null,
+    ),
     DummyData.announcements,
   );
 
@@ -554,33 +570,43 @@ class ApiService {
 
   // ── Presence ──────────────────────────────────────────────────────────────
 
+  /// Backend currently does not expose `/users/presence`. We keep this method
+  /// for callers but always return an empty map without making a network call.
+  /// Re-enable the implementation below once the backend ships the endpoint.
   Future<Map<String, dynamic>> getUserPresence(List<String> userIds) async {
-    try {
-      // Only send valid UUIDs to the backend presence endpoint. Passing
-      // non-UUID strings (e.g. legacy IDs like 'teacher-001') can cause
-      // server-side cast errors; filter them out here.
-      final uuidRegex = RegExp(
-        r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12} ',
-      );
-      final uuids = userIds.where((id) => uuidRegex.hasMatch(id)).toList();
-      if (uuids.isEmpty) return {};
-      return await _api.get(
-        ApiConstants.usersPresence,
-        queryParameters: {'userIds': uuids.join(',')},
-      );
-    } catch (_) {
-      return {};
-    }
+    return <String, dynamic>{};
   }
 
   // ── Block / Unblock ───────────────────────────────────────────────────────
+  //
+  // Backend only supports blocking the other party of a *direct* conversation
+  // via POST/DELETE /conversations/:id/block. The /users/:id/block and
+  // /users/blocked routes referenced here are not part of the documented API.
+  // The methods below are kept for backwards compatibility and will silently
+  // no-op when the backend rejects them.
+
+  Future<void> blockConversation(String conversationId) async {
+    await _api.post('/conversations/$conversationId/block');
+  }
+
+  Future<void> unblockConversation(String conversationId) async {
+    await _api.delete('/conversations/$conversationId/block');
+  }
 
   Future<void> blockUser(String userId) async {
-    await _api.post(ApiConstants.blockUser(userId));
+    try {
+      await _api.post(ApiConstants.blockUser(userId));
+    } catch (_) {
+      // Endpoint not part of the public mobile API; ignore.
+    }
   }
 
   Future<void> unblockUser(String userId) async {
-    await _api.delete(ApiConstants.blockUser(userId));
+    try {
+      await _api.delete(ApiConstants.blockUser(userId));
+    } catch (_) {
+      // Endpoint not part of the public mobile API; ignore.
+    }
   }
 
   Future<List<dynamic>> getBlockedUsers() =>
@@ -913,14 +939,33 @@ class ApiService {
   Future<Map<String, dynamic>> getStudentTeachers(String studentId) =>
       _tryOr(() => _api.get(ApiConstants.studentTeachers(studentId)), {});
 
-  /// Get enrollments for a class offering (teacher use)
-  Future<List<dynamic>> getClassEnrollments(String classOfferingId) => _tryOr(
-    () => _api.getList(
-      ApiConstants.enrollments,
-      queryParameters: {'classOfferingId': classOfferingId},
-    ),
-    [],
-  );
+  /// Get enrollments for a class offering (teacher use).
+  /// Backend list endpoint accepts `academicYearId` for scoping; we resolve
+  /// the active year automatically when not provided.
+  Future<List<dynamic>> getClassEnrollments(
+    String classOfferingId, {
+    String? academicYearId,
+  }) async {
+    String? yearId = academicYearId;
+    if (yearId == null || yearId.isEmpty) {
+      try {
+        final year = await getActiveAcademicYear();
+        yearId = (year['id'] ?? year['data']?['id']) as String?;
+      } catch (_) {
+        yearId = null;
+      }
+    }
+    return _tryOr(
+      () => _api.getList(
+        ApiConstants.enrollments,
+        queryParameters: {
+          'classOfferingId': classOfferingId,
+          if (yearId != null && yearId.isNotEmpty) 'academicYearId': yearId,
+        },
+      ),
+      [],
+    );
+  }
 
   /// Get students in a class with enriched data (NEW endpoint)
   Future<Map<String, dynamic>> getClassStudents(String classOfferingId) =>
@@ -931,23 +976,35 @@ class ApiService {
         'students': [],
       });
 
-  /// Get gradebook for a class (teacher)
-  Future<Map<String, dynamic>> getClassGrades(String classOfferingId) => _tryOr(
-    () => _api.get(ApiConstants.gradesClass(classOfferingId)),
-    {'classOfferingId': classOfferingId, 'groups': []},
+  /// Get gradebook for a class (teacher).
+  /// Optionally filters the gradebook by term.
+  Future<Map<String, dynamic>> getClassGrades(
+    String classOfferingId, {
+    String? termId,
+  }) => _tryOr(
+    () => _api.get(
+      ApiConstants.gradesClass(classOfferingId),
+      queryParameters: termId != null ? {'termId': termId} : null,
+    ),
+    {'classOfferingId': classOfferingId, 'termId': termId, 'groups': []},
   );
 
-  /// Get assignments created by current teacher (optionally filtered by class)
-  Future<List<dynamic>> getTeacherAssignments({String? classOfferingId}) =>
-      _tryOr(
-        () => _api.getList(
-          ApiConstants.assignmentsTeacherMine,
-          queryParameters: classOfferingId != null
-              ? {'classOfferingId': classOfferingId}
-              : null,
-        ),
-        [],
-      );
+  /// Get assignments created by current teacher.
+  /// Optionally filter by [classOfferingId] and/or [termId]. Each item
+  /// includes `isOverdue` and nested `subject/grade/section` info.
+  Future<List<dynamic>> getTeacherAssignments({
+    String? classOfferingId,
+    String? termId,
+  }) => _tryOr(
+    () => _api.getList(
+      ApiConstants.assignmentsTeacherMine,
+      queryParameters: {
+        if (classOfferingId != null) 'classOfferingId': classOfferingId,
+        if (termId != null) 'termId': termId,
+      },
+    ),
+    [],
+  );
 
   /// Get my subjects (student)
   Future<List<dynamic>> getMySubjects() =>
@@ -992,6 +1049,58 @@ class ApiService {
     },
   );
 
+  /// Get a student's attendance scoped to a specific term.
+  Future<Map<String, dynamic>> getAttendanceByTerm(
+    String studentId,
+    String termId,
+  ) => _tryOr(
+    () => _api.get(ApiConstants.attendanceStudentByTerm(studentId, termId)),
+    {
+      'studentId': studentId,
+      'termId': termId,
+      'present': 0,
+      'absent': 0,
+      'late': 0,
+      'excused': 0,
+      'total': 0,
+      'attendancePercent': 0,
+      'sessions': [],
+    },
+  );
+
+  /// Get a student's released grade entries for a term, grouped by subject.
+  Future<Map<String, dynamic>> getGradesByTerm(
+    String studentId,
+    String termId,
+  ) => _tryOr(() => _api.get(ApiConstants.gradesByTerm(studentId, termId)), {
+    'studentId': studentId,
+    'termId': termId,
+    'subjects': [],
+  });
+
+  // ─── Academic Terms ─────────────────────────────────────
+  Future<List<dynamic>> getAcademicYearTerms(String academicYearId) => _tryOr(
+    () => _api.getList(ApiConstants.academicYearTerms(academicYearId)),
+    [],
+  );
+
+  // ─── Sync / Integrations ────────────────────────────────
+  Future<Map<String, dynamic>> getSyncHints() =>
+      _tryOr(() => _api.get(ApiConstants.integrationsSyncHints), {});
+
+  Future<Map<String, dynamic>> getIntegrationsStatus() =>
+      _tryOr(() => _api.get(ApiConstants.integrationsStatus), {});
+
+  Future<Map<String, dynamic>> getStudentSyncStatus() => _tryOr(
+    () => _api.get(ApiConstants.studentSyncStatus),
+    {'items': <dynamic>[]},
+  );
+
+  Future<Map<String, dynamic>> triggerStudentSync() => _tryOr(
+    () => _api.post(ApiConstants.studentSyncTrigger),
+    {'accepted': false, 'items': <dynamic>[]},
+  );
+
   /// Get child's conversations (parent)
   Future<List<dynamic>> getChildConversations(String studentId) =>
       _api.getList(ApiConstants.childConversations(studentId));
@@ -1006,6 +1115,16 @@ class ApiService {
     ApiConstants.childConversationMessages(studentId, convId),
     queryParameters: {'limit': limit.toString(), 'skip': skip.toString()},
   );
+
+  // ─── User profile lookups ──────────────────────────────
+  /// Get full user record by id (admin/teacher).
+  Future<Map<String, dynamic>> getUserById(String userId) =>
+      _tryOr(() => _api.get(ApiConstants.userById(userId)), {});
+
+  /// Get the lightweight public user profile (used by chat / parent-info
+  /// modals). Backend route: GET /users/:userId/profile.
+  Future<Map<String, dynamic>> getUserProfile(String userId) =>
+      _tryOr(() => _api.get(ApiConstants.userProfile(userId)), {});
 
   /// Search users (for messaging)
   Future<List<dynamic>> searchUsers({String? role, String? q}) => _tryOr(
@@ -1038,5 +1157,410 @@ class ApiService {
       },
     ),
     [],
+  );
+
+  // ═══════════════════════════════════════════════════════
+  // ─── §4 Phase A: Backend features now wired ─────────────
+  // ═══════════════════════════════════════════════════════
+
+  // ─── 4.2 Homeroom (Teacher) ─────────────────────────────
+  /// Returns the teacher's homeroom assignment + student roster for the
+  /// active academic year. Used to gate the report-card remark form.
+  Future<Map<String, dynamic>> getMyHomeroomClass() => _tryOr(
+    () => _api.get(ApiConstants.homeroomMyClass),
+    {'assignment': null, 'students': <dynamic>[]},
+  );
+
+  // ─── 4.3 Teacher all-sessions feed ──────────────────────
+  /// All attendance sessions across every class the teacher owns. Each item
+  /// has joined `className/subject/grade/section/teacher` info.
+  Future<List<dynamic>> getMyAttendanceSessions() =>
+      _tryOr(() => _api.getList(ApiConstants.attendanceSessionsMine), []);
+
+  // ─── 4.4 Edit a single attendance mark ──────────────────
+  Future<Map<String, dynamic>> updateAttendanceMark(
+    String markId, {
+    String? status,
+    String? note,
+  }) => _api.patch(
+    ApiConstants.attendanceMark(markId),
+    data: {
+      if (status != null) 'status': status,
+      if (note != null) 'note': note,
+    },
+  );
+
+  // ─── 4.5 Assignments — full teacher write flow ──────────
+  Future<Map<String, dynamic>> createAssignment({
+    required String classOfferingId,
+    required String title,
+    required String submissionType, // 'file' | 'text' | 'none'
+    required String deadline, // ISO 8601
+    String? description,
+    String? attachmentFileId,
+    num? maxScore,
+    String? termId,
+  }) => _api.post(
+    ApiConstants.assignments,
+    data: {
+      'classOfferingId': classOfferingId,
+      'title': title,
+      'submissionType': submissionType,
+      'deadline': deadline,
+      if (description != null) 'description': description,
+      if (attachmentFileId != null) 'attachmentFileId': attachmentFileId,
+      if (maxScore != null) 'maxScore': maxScore,
+      if (termId != null) 'termId': termId,
+    },
+  );
+
+  Future<Map<String, dynamic>> updateAssignment(
+    String id,
+    Map<String, dynamic> patch,
+  ) => _api.patch(ApiConstants.assignmentById(id), data: patch);
+
+  Future<Map<String, dynamic>> publishAssignment(String id) =>
+      _api.post(ApiConstants.assignmentPublish(id));
+
+  Future<Map<String, dynamic>> unpublishAssignment(String id) =>
+      _api.post(ApiConstants.assignmentUnpublish(id));
+
+  Future<void> deleteAssignment(String id) async {
+    await _api.delete(ApiConstants.assignmentById(id));
+  }
+
+  Future<Map<String, dynamic>> getAssignment(String id) =>
+      _tryOr(() => _api.get(ApiConstants.assignmentById(id)), {});
+
+  Future<List<dynamic>> getAssignmentSubmissions(String id) =>
+      _tryOr(() => _api.getList(ApiConstants.assignmentSubmissions(id)), []);
+
+  Future<Map<String, dynamic>> gradeSubmission(
+    String submissionId, {
+    required num score,
+    String? feedback,
+  }) => _api.post(
+    ApiConstants.assignmentSubmissionGrade(submissionId),
+    data: {'score': score, if (feedback != null) 'feedback': feedback},
+  );
+
+  Future<Map<String, dynamic>> releaseSubmission(String submissionId) =>
+      _api.post(ApiConstants.assignmentSubmissionRelease(submissionId));
+
+  Future<Map<String, dynamic>> releaseAllSubmissions(String assignmentId) =>
+      _api.post(ApiConstants.assignmentReleaseAll(assignmentId));
+
+  /// Parent / student view of all published assignments for [studentId].
+  Future<List<dynamic>> getStudentAssignments(
+    String studentId, {
+    String? termId,
+  }) => _tryOr(
+    () => _api.getList(
+      ApiConstants.assignmentsForStudent(studentId),
+      queryParameters: termId != null ? {'termId': termId} : null,
+    ),
+    [],
+  );
+
+  // ─── 4.6 Gradebook — teacher write flow ─────────────────
+  Future<Map<String, dynamic>> createGrade({
+    required String classOfferingId,
+    required String studentId,
+    required String title,
+    required String
+    type, // assignment|quiz|exam|midterm|final|project|participation
+    required num maxScore,
+    num? score,
+    String? note,
+    String? termId,
+  }) => _api.post(
+    ApiConstants.grades,
+    data: {
+      'classOfferingId': classOfferingId,
+      'studentId': studentId,
+      'title': title,
+      'type': type,
+      'maxScore': maxScore,
+      if (score != null) 'score': score,
+      if (note != null) 'note': note,
+      if (termId != null) 'termId': termId,
+    },
+  );
+
+  /// Bulk-upsert all student scores for a single assessment.
+  /// `entries` is a list of `{ "studentId": uuid, "score": num | null }` maps.
+  Future<Map<String, dynamic>> createGradesBulk({
+    required String classOfferingId,
+    required String title,
+    required String type,
+    required num maxScore,
+    required List<Map<String, dynamic>> entries,
+    String? note,
+    String? termId,
+  }) => _api.post(
+    ApiConstants.gradesBulk,
+    data: {
+      'classOfferingId': classOfferingId,
+      'title': title,
+      'type': type,
+      'maxScore': maxScore,
+      'entries': entries,
+      if (note != null) 'note': note,
+      if (termId != null) 'termId': termId,
+    },
+  );
+
+  Future<Map<String, dynamic>> updateGrade(
+    String id,
+    Map<String, dynamic> patch,
+  ) => _api.patch(ApiConstants.gradeById(id), data: patch);
+
+  /// Release all entries that share `(classOfferingId, title)`.
+  Future<Map<String, dynamic>> releaseGradesGroup({
+    required String classOfferingId,
+    required String title,
+  }) => _api.post(
+    ApiConstants.gradesRelease,
+    data: {'classOfferingId': classOfferingId, 'title': title},
+  );
+
+  /// Delete every entry that shares `(classOfferingId, title)`.
+  Future<void> deleteGradesGroup({
+    required String classOfferingId,
+    required String title,
+  }) async {
+    await _api.delete(
+      ApiConstants.gradesGroup,
+      data: {'classOfferingId': classOfferingId, 'title': title},
+    );
+  }
+
+  Future<void> deleteGrade(String id) async {
+    await _api.delete(ApiConstants.gradeById(id));
+  }
+
+  /// Released grades for a student (optionally scoped to a class).
+  Future<Map<String, dynamic>> getStudentGrades(
+    String studentId, {
+    String? classOfferingId,
+  }) => _tryOr(
+    () => _api.get(
+      ApiConstants.gradesStudent(studentId),
+      queryParameters: classOfferingId != null
+          ? {'classOfferingId': classOfferingId}
+          : null,
+    ),
+    {'studentId': studentId, 'entries': <dynamic>[]},
+  );
+
+  // ─── 4.7 Report Cards ───────────────────────────────────
+  Future<Map<String, dynamic>> submitRemark({
+    required String studentId,
+    required String termId,
+    String? remark,
+    String? conductGrade,
+  }) => _api.post(
+    ApiConstants.reportCardsRemarks,
+    data: {
+      'studentId': studentId,
+      'termId': termId,
+      if (remark != null) 'remark': remark,
+      if (conductGrade != null) 'conductGrade': conductGrade,
+    },
+  );
+
+  Future<Map<String, dynamic>> getStudentTermReportCard(
+    String studentId,
+    String termId,
+  ) => _tryOr(
+    () => _api.get(ApiConstants.reportCardStudentTerm(studentId, termId)),
+    {},
+  );
+
+  Future<Map<String, dynamic>> getClassTermReportCard({
+    required String gradeId,
+    required String sectionId,
+    required String termId,
+  }) => _tryOr(
+    () =>
+        _api.get(ApiConstants.reportCardClassTerm(gradeId, sectionId, termId)),
+    {
+      'gradeId': gradeId,
+      'sectionId': sectionId,
+      'termId': termId,
+      'students': <dynamic>[],
+    },
+  );
+
+  Future<Map<String, dynamic>> getStudentYearlyReportCard(
+    String studentId,
+    String academicYearId,
+  ) => _tryOr(
+    () =>
+        _api.get(ApiConstants.reportCardStudentYear(studentId, academicYearId)),
+    {},
+  );
+
+  // ─── 4.9 Parent — Upcoming exams & assignments ──────────
+  Future<Map<String, dynamic>> getChildUpcoming(String studentId) =>
+      _tryOr(() => _api.get(ApiConstants.parentChildUpcoming(studentId)), {
+        'student': null,
+        'summary': {
+          'examsTotal': 0,
+          'examsUpcoming': 0,
+          'examsMissed': 0,
+          'assignmentsTotal': 0,
+          'assignmentsPending': 0,
+          'assignmentsOverdue': 0,
+        },
+        'exams': <dynamic>[],
+        'assignments': <dynamic>[],
+      });
+
+  // ─── 4.10 Notification broadcast ────────────────────────
+  /// Broadcast a notification to a class (`audience: 'class'`) or — admin
+  /// only — to all students (`audience: 'all_students'`).
+  Future<Map<String, dynamic>> broadcastNotification({
+    required String title,
+    required String body,
+    required String audience, // 'class' | 'all_students'
+    String? classOfferingId,
+  }) => _api.post(
+    ApiConstants.notificationsBroadcast,
+    data: {
+      'title': title,
+      'body': body,
+      'audience': audience,
+      if (classOfferingId != null) 'classOfferingId': classOfferingId,
+    },
+  );
+
+  // ─── 4.11 AI — mastery / content / chat ─────────────────
+  Future<Map<String, dynamic>> updateMastery({
+    required String studentId,
+    required String topicId,
+    required bool isCorrect,
+  }) => _api.post(
+    ApiConstants.aiMasteryUpdate,
+    data: {
+      'student_id': studentId,
+      'topic_id': topicId,
+      'is_correct': isCorrect,
+    },
+  );
+
+  Future<Map<String, dynamic>> getMastery(String studentId, String topicId) =>
+      _tryOr(() => _api.get(ApiConstants.aiMastery(studentId, topicId)), {});
+
+  Future<Map<String, dynamic>> getWeakTopics(
+    String studentId,
+    String subjectId,
+  ) => _tryOr(() => _api.get(ApiConstants.aiWeakTopics(studentId, subjectId)), {
+    'student_id': studentId,
+    'subject_id': subjectId,
+    'weak_topics': <dynamic>[],
+  });
+
+  Future<Map<String, dynamic>> postAiRecommendations({
+    required String studentId,
+    List<String>? weakTopicIds,
+    String? difficulty,
+    int? limit,
+  }) => _api.post(
+    ApiConstants.aiRecommendationsPost,
+    data: {
+      'student_id': studentId,
+      if (weakTopicIds != null) 'weak_topic_ids': weakTopicIds,
+      if (difficulty != null) 'difficulty': difficulty,
+      if (limit != null) 'limit': limit,
+    },
+  );
+
+  Future<Map<String, dynamic>> postAiLearningPath({
+    required String studentId,
+    String? subjectId,
+  }) => _api.post(
+    ApiConstants.aiLearningPathPost,
+    data: {
+      'student_id': studentId,
+      if (subjectId != null) 'subject_id': subjectId,
+    },
+  );
+
+  Future<Map<String, dynamic>> generateAiLesson(String topicId) =>
+      _api.post(ApiConstants.aiGenerateLesson, data: {'topic_id': topicId});
+
+  Future<Map<String, dynamic>> generateAiQuestions({
+    required String topicId,
+    int count = 5,
+  }) => _api.post(
+    ApiConstants.aiGenerateQuestions,
+    data: {'topic_id': topicId, 'count': count},
+  );
+
+  Future<List<dynamic>> getAiContentQuestions(
+    String topicId, {
+    String? difficulty,
+    int? limit,
+  }) => _tryOr(
+    () => _api.getList(
+      ApiConstants.aiContentQuestions(topicId),
+      queryParameters: {
+        if (difficulty != null) 'difficulty': difficulty,
+        if (limit != null) 'limit': limit.toString(),
+      },
+    ),
+    [],
+  );
+
+  Future<Map<String, dynamic>> getAiNextQuestion(
+    String studentId,
+    String topicId,
+  ) => _tryOr(
+    () => _api.get(ApiConstants.aiNextQuestion(studentId, topicId)),
+    {},
+  );
+
+  Future<Map<String, dynamic>> postAiChat({
+    required String studentId,
+    required String message,
+    int? gradeLevel,
+  }) => _api.post(
+    ApiConstants.aiChat,
+    data: {
+      'student_id': studentId,
+      'message': message,
+      if (gradeLevel != null) 'grade_level': gradeLevel,
+    },
+  );
+
+  Future<List<dynamic>> getAiChatHistory(String studentId, {int? limit}) =>
+      _tryOr(
+        () => _api.getList(
+          ApiConstants.aiChatHistory(studentId),
+          queryParameters: limit != null ? {'limit': limit.toString()} : null,
+        ),
+        [],
+      );
+
+  Future<Map<String, dynamic>> getAiWeeklySummary(String studentId) =>
+      _tryOr(() => _api.get(ApiConstants.aiWeeklySummary(studentId)), {});
+
+  Future<Map<String, dynamic>> getAiEvaluate(String studentId) =>
+      _tryOr(() => _api.get(ApiConstants.aiEvaluate(studentId)), {});
+
+  // ─── 4.12 Mastery snapshot (rules-based report) ─────────
+  Future<Map<String, dynamic>> getStudentMastery(String studentId) =>
+      _tryOr(() => _api.get(ApiConstants.studentMastery(studentId)), {});
+
+  // ─── 4.13 Global search ────────────────────────────────
+  Future<Map<String, dynamic>> globalSearch(String query) => _tryOr(
+    () => _api.get(ApiConstants.globalSearch, queryParameters: {'q': query}),
+    {
+      'users': <dynamic>[],
+      'classOfferings': <dynamic>[],
+      'subjects': <dynamic>[],
+      'totalResults': 0,
+    },
   );
 }

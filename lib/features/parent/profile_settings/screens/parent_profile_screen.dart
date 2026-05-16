@@ -34,6 +34,8 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
   final _countryController = TextEditingController();
   final _cityStateController = TextEditingController();
   final _postalCodeController = TextEditingController();
+  final _childNameController = TextEditingController();
+  final _relationshipController = TextEditingController();
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -65,6 +67,8 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
     _countryController.dispose();
     _cityStateController.dispose();
     _postalCodeController.dispose();
+    _childNameController.dispose();
+    _relationshipController.dispose();
     _currentPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
@@ -89,6 +93,8 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
       _countryController.text = user.country ?? '';
       _cityStateController.text = user.cityState ?? '';
       _postalCodeController.text = user.postalCode ?? '';
+      _childNameController.text = user.childName ?? '';
+      _relationshipController.text = user.relationship ?? '';
 
       print('DEBUG FORM: Form fields updated');
     } else {
@@ -115,11 +121,13 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
                   .trim();
           final grade = student?['grade'] as String? ?? '';
           final studentId =
-              student?['id'] as String? ??
-              child['studentId'] as String? ??
-              '';
+              student?['id'] as String? ?? child['studentId'] as String? ?? '';
           return _LinkedChild(
-              name: name, grade: grade, school: '', studentId: studentId);
+            name: name,
+            grade: grade,
+            school: '',
+            studentId: studentId,
+          );
         }).toList();
         _loading = false;
       });
@@ -259,6 +267,12 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
             'DEBUG: Adding postalCode to update: "${_postalCodeController.text.trim()}"',
           );
         }
+        if (_childNameController.text.trim() != (user.childName ?? '')) {
+          updateData['childName'] = _childNameController.text.trim();
+        }
+        if (_relationshipController.text.trim() != (user.relationship ?? '')) {
+          updateData['relationship'] = _relationshipController.text.trim();
+        }
       }
 
       // Profile image file id
@@ -295,7 +309,9 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
           print('DEBUG: Refreshing user data...');
           await AuthService().fetchMe();
           print('DEBUG: User data refreshed');
-          print('DEBUG: Updated profileImagePath: "${AuthService().currentUser?.profileImagePath}"');
+          print(
+            'DEBUG: Updated profileImagePath: "${AuthService().currentUser?.profileImagePath}"',
+          );
 
           // Force UI rebuild with updated data
           setState(() {
@@ -378,11 +394,11 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
                   icon: const Icon(Icons.arrow_back),
                 )
               : canPop
-                  ? IconButton(
-                      onPressed: _onBackPressed,
-                      icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-                    )
-                  : null,
+              ? IconButton(
+                  onPressed: _onBackPressed,
+                  icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                )
+              : null,
           title: Text(
             _isEditing ? 'Edit Profile' : 'My Profile',
             style: TextStyle(
@@ -427,83 +443,83 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
                   ),
                 )
               : Form(
-                key: _formKey,
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Show messages
-                      if (_error != null) ...[
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Colors.red.withValues(alpha: 0.3),
+                  key: _formKey,
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Show messages
+                        if (_error != null) ...[
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.red.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Text(
+                              _error!,
+                              style: const TextStyle(color: Colors.red),
                             ),
                           ),
-                          child: Text(
-                            _error!,
-                            style: const TextStyle(color: Colors.red),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      if (_successMessage != null) ...[
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.green.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Colors.green.withValues(alpha: 0.3),
+                          const SizedBox(height: 16),
+                        ],
+                        if (_successMessage != null) ...[
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.green.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Text(
+                              _successMessage!,
+                              style: const TextStyle(color: Colors.green),
                             ),
                           ),
-                          child: Text(
-                            _successMessage!,
-                            style: const TextStyle(color: Colors.green),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
+                          const SizedBox(height: 16),
+                        ],
 
-                      _buildAvatarSection(),
-                      const SizedBox(height: 24),
-
-                      if (_isEditing) ...[
-                        _buildEditForm(),
-                      ] else ...[
-                        _buildSectionTitle('Personal Information'),
-                        const SizedBox(height: 12),
-                        _buildPersonalInfoCard(),
+                        _buildAvatarSection(),
                         const SizedBox(height: 24),
-                        _buildSectionTitle('Linked Children'),
-                        const SizedBox(height: 12),
-                        if (_children.isEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            child: Center(
-                              child: Text(
-                                'No children linked',
-                                style: TextStyle(
-                                  color: theme.colorScheme.onSurfaceVariant,
+
+                        if (_isEditing) ...[
+                          _buildEditForm(),
+                        ] else ...[
+                          _buildSectionTitle('Personal Information'),
+                          const SizedBox(height: 12),
+                          _buildPersonalInfoCard(),
+                          const SizedBox(height: 24),
+                          _buildSectionTitle('Linked Children'),
+                          const SizedBox(height: 12),
+                          if (_children.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              child: Center(
+                                child: Text(
+                                  'No children linked',
+                                  style: TextStyle(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ..._children.map(_buildChildCard),
-                        const SizedBox(height: 24),
-                        _buildActionButtons(),
+                          ..._children.map(_buildChildCard),
+                          const SizedBox(height: 24),
+                          _buildActionButtons(),
+                        ],
+                        const SizedBox(height: 20),
                       ],
-                      const SizedBox(height: 20),
-                    ],
+                    ),
                   ),
                 ),
-              ),
         ),
       ),
     );
@@ -538,9 +554,7 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
                 backgroundColor: AppColors.primary.withValues(alpha: 0.12),
                 backgroundImage: _selectedImage != null
                     ? FileImage(_selectedImage!)
-                    : (imageUrl != null
-                        ? NetworkImage(imageUrl)
-                        : null),
+                    : (imageUrl != null ? NetworkImage(imageUrl) : null),
                 onBackgroundImageError: imageUrl != null
                     ? (exception, stackTrace) {
                         print(
@@ -623,6 +637,32 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
             prefixIcon: Icon(Icons.phone),
           ),
           keyboardType: TextInputType.phone,
+        ),
+        const SizedBox(height: 16),
+
+        // Child name (parent-only)
+        TextFormField(
+          controller: _childNameController,
+          decoration: const InputDecoration(
+            labelText: 'Child Name',
+            helperText: "Your child's full name",
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.child_care_outlined),
+          ),
+          textCapitalization: TextCapitalization.words,
+        ),
+        const SizedBox(height: 16),
+
+        // Relationship (parent-only)
+        TextFormField(
+          controller: _relationshipController,
+          decoration: const InputDecoration(
+            labelText: 'Relationship',
+            helperText: 'e.g. Father, Mother, Guardian',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.family_restroom_outlined),
+          ),
+          textCapitalization: TextCapitalization.words,
         ),
         const SizedBox(height: 24),
 
@@ -786,6 +826,18 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
             icon: Icons.markunread_mailbox,
             label: 'Postal Code',
             value: user?.postalCode ?? 'Not provided',
+          ),
+          Divider(height: 1, color: theme.colorScheme.outlineVariant),
+          _buildInfoRow(
+            icon: Icons.child_care_outlined,
+            label: 'Child Name',
+            value: user?.childName ?? 'Not provided',
+          ),
+          Divider(height: 1, color: theme.colorScheme.outlineVariant),
+          _buildInfoRow(
+            icon: Icons.family_restroom_outlined,
+            label: 'Relationship',
+            value: user?.relationship ?? 'Not provided',
           ),
           Divider(height: 1, color: theme.colorScheme.outlineVariant),
           _buildInfoRow(
