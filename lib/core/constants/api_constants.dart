@@ -60,25 +60,20 @@ class ApiConstants {
     return base.endsWith('/api') ? base.substring(0, base.length - 4) : base;
   }
 
-  // Base URL without /api suffix for file downloads
+  // Base URL for file downloads (preserves /api suffix since FilesController is behind it)
   static String get fileBaseUrl {
     const overrideUrl = String.fromEnvironment(
       'API_BASE_URL',
       defaultValue: '',
     );
     if (overrideUrl.isNotEmpty) {
-      // Remove /api suffix if present
-      return overrideUrl.endsWith('/api')
-          ? overrideUrl.substring(0, overrideUrl.length - 4)
-          : overrideUrl;
+      return overrideUrl;
     }
 
     if (environment == ApiEnvironment.production) {
-      return 'https://trilink-backend-ms68.onrender.com';
+      return productionBaseUrl;
     }
-    return localBaseUrl.endsWith('/api')
-        ? localBaseUrl.substring(0, localBaseUrl.length - 4)
-        : localBaseUrl;
+    return localBaseUrl;
   }
 
   // Auth

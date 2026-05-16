@@ -21,6 +21,10 @@ class ChatMessageModel {
   final String? senderRole;
   final String? senderGrade;
 
+  // Optimistic send states
+  final bool isPending;  // true while waiting for server confirmation
+  final bool isFailed;   // true if send failed permanently
+
   const ChatMessageModel({
     required this.id,
     required this.senderId,
@@ -39,6 +43,8 @@ class ChatMessageModel {
     this.senderProfileImage,
     this.senderRole,
     this.senderGrade,
+    this.isPending = false,
+    this.isFailed = false,
   });
 
   factory ChatMessageModel.fromJson(Map<String, dynamic> json) {

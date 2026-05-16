@@ -86,6 +86,7 @@ class StudentShellRoutes {
             title: safeArgs['title']?.toString() ?? 'Chat',
             isGroup: safeArgs['isGroup'] == true,
             avatarPath: safeArgs['avatarPath']?.toString(),
+            partnerId: safeArgs['partnerId']?.toString(),
           ),
           settings,
         );

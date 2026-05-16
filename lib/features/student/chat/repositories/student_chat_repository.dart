@@ -3,11 +3,15 @@ import '../models/chat_models.dart';
 abstract class StudentChatRepository {
   void clearCache() {}
 
+  List<ChatConversationModel>? getCachedConversations();
+  List<ChatMessageModel>? getCachedMessages(String conversationId);
+
   Future<List<ChatConversationModel>> fetchConversations();
   Future<List<ChatMessageModel>> fetchMessages(String conversationId, {String? before, int limit = 50});
   Future<ChatMessageModel> sendMessage(String conversationId, String content);
   Future<ChatMessageModel> sendImageMessage(String conversationId, String imagePath);
   Future<ChatMessageModel> sendFileMessage(String conversationId, String filePath);
+  Future<void> markRead(String conversationId, String messageId);
   Future<ChatConversationModel> createConversation({
     required String title,
     required List<String> participantIds,

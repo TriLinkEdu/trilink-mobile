@@ -10,6 +10,7 @@ class ChatConversationCubit extends Cubit<ChatConversationState> {
   final StudentChatRepository _repository;
   final ChatSocketService? _socket;
   final String conversationId;
+  final String? _currentUserId;
   DateTime? _lastLoadedAt;
 
   static const Duration _ttl = Duration(seconds: 10);
@@ -18,8 +19,15 @@ class ChatConversationCubit extends Cubit<ChatConversationState> {
     this._repository,
     this.conversationId, {
     ChatSocketService? socketService,
+    String? currentUserId,
   })  : _socket = socketService,
-        super(const ChatConversationState()) {
+        _currentUserId = currentUserId,
+        super(ChatConversationState(
+          messages: _repository.getCachedMessages(conversationId) ?? const [],
+          status: _repository.getCachedMessages(conversationId) != null 
+              ? ConversationStatus.loaded 
+              : ConversationStatus.initial,
+        )) {
     _subscribeSocket();
   }
 
@@ -46,6 +54,7 @@ class ChatConversationCubit extends Cubit<ChatConversationState> {
     final last = state.messages.isNotEmpty ? state.messages.last : null;
     if (last == null || last.id.isEmpty) return;
     _socket?.markRead(conversationId, last.id);
+    _repository.markRead(conversationId, last.id);
   }
 
   Future<void> loadIfNeeded() async {
@@ -58,7 +67,7 @@ class ChatConversationCubit extends Cubit<ChatConversationState> {
   }
 
   Future<void> loadMessages({bool showLoading = true}) async {
-    if (showLoading) {
+    if (showLoading && state.messages.isEmpty) {
       emit(state.copyWith(status: ConversationStatus.loading));
     }
     try {
@@ -71,6 +80,7 @@ class ChatConversationCubit extends Cubit<ChatConversationState> {
         ),
       );
       _lastLoadedAt = DateTime.now();
+      markLastRead();
     } catch (e) {
       if (showLoading) {
         emit(
@@ -132,50 +142,139 @@ class ChatConversationCubit extends Cubit<ChatConversationState> {
   }
 
   Future<void> sendMessage(String text) async {
+    // 1. Create a temporary pending message shown immediately
+    final tempId = 'pending_${DateTime.now().millisecondsSinceEpoch}';
+    final optimistic = ChatMessageModel(
+      id: tempId,
+      senderId: _currentUserId ?? '',
+      senderName: 'You',
+      content: text,
+      timestamp: DateTime.now(),
+      isRead: true,
+      isPending: true,
+    );
+    emit(state.copyWith(messages: [...state.messages, optimistic]));
+
     try {
       final sentMessage = await _repository.sendMessage(conversationId, text);
-      emit(
-        state.copyWith(
-          status: ConversationStatus.loaded,
-          messages: [...state.messages, sentMessage],
-        ),
-      );
+      // 2. Replace the pending bubble with the real confirmed message
+      final updated = state.messages
+          .where((m) => m.id != tempId)
+          .toList()
+        ..add(sentMessage);
+      emit(state.copyWith(status: ConversationStatus.loaded, messages: updated));
       _lastLoadedAt = DateTime.now();
     } catch (e) {
-      emit(state.copyWith(errorMessage: 'Unable to send message.'));
+      // 3. Mark the bubble as failed so user sees a retry option
+      final failed = state.messages.map((m) {
+        if (m.id == tempId) {
+          return ChatMessageModel(
+            id: tempId,
+            senderId: m.senderId,
+            senderName: m.senderName,
+            content: m.content,
+            timestamp: m.timestamp,
+            isRead: m.isRead,
+            isPending: false,
+            isFailed: true,
+          );
+        }
+        return m;
+      }).toList();
+      emit(state.copyWith(messages: failed));
       rethrow;
     }
   }
 
+  Future<void> retrySendMessage(String tempId, String text) async {
+    // Remove the failed message and resend
+    final without = state.messages.where((m) => m.id != tempId).toList();
+    emit(state.copyWith(messages: without));
+    await sendMessage(text);
+  }
+
   Future<void> sendImageMessage(String imagePath) async {
+    final tempId = 'pending_img_${DateTime.now().millisecondsSinceEpoch}';
+    final optimistic = ChatMessageModel(
+      id: tempId,
+      senderId: _currentUserId ?? '',
+      senderName: 'You',
+      content: '',
+      timestamp: DateTime.now(),
+      isRead: true,
+      type: MessageType.image,
+      isPending: true,
+    );
+    emit(state.copyWith(messages: [...state.messages, optimistic]));
+
     try {
       final sentMessage = await _repository.sendImageMessage(conversationId, imagePath);
-      emit(
-        state.copyWith(
-          status: ConversationStatus.loaded,
-          messages: [...state.messages, sentMessage],
-        ),
-      );
+      final updated = state.messages
+          .where((m) => m.id != tempId)
+          .toList()
+        ..add(sentMessage);
+      emit(state.copyWith(status: ConversationStatus.loaded, messages: updated));
       _lastLoadedAt = DateTime.now();
     } catch (e) {
-      emit(state.copyWith(errorMessage: 'Unable to send image.'));
+      final failed = state.messages.map((m) {
+        if (m.id == tempId) {
+          return ChatMessageModel(
+            id: tempId,
+            senderId: m.senderId,
+            senderName: m.senderName,
+            content: '[Image failed to send]',
+            timestamp: m.timestamp,
+            isRead: m.isRead,
+            isPending: false,
+            isFailed: true,
+          );
+        }
+        return m;
+      }).toList();
+      emit(state.copyWith(messages: failed));
       rethrow;
     }
   }
 
   Future<void> sendFileMessage(String filePath) async {
+    final tempId = 'pending_file_${DateTime.now().millisecondsSinceEpoch}';
+    final optimistic = ChatMessageModel(
+      id: tempId,
+      senderId: _currentUserId ?? '',
+      senderName: 'You',
+      content: '',
+      timestamp: DateTime.now(),
+      isRead: true,
+      type: MessageType.file,
+      isPending: true,
+    );
+    emit(state.copyWith(messages: [...state.messages, optimistic]));
+
     try {
       final sentMessage = await _repository.sendFileMessage(conversationId, filePath);
-      emit(
-        state.copyWith(
-          status: ConversationStatus.loaded,
-          messages: [...state.messages, sentMessage],
-        ),
-      );
+      final updated = state.messages
+          .where((m) => m.id != tempId)
+          .toList()
+        ..add(sentMessage);
+      emit(state.copyWith(status: ConversationStatus.loaded, messages: updated));
       _lastLoadedAt = DateTime.now();
     } catch (e) {
-      emit(state.copyWith(errorMessage: 'Unable to send file.'));
+      final failed = state.messages.map((m) {
+        if (m.id == tempId) {
+          return ChatMessageModel(
+            id: tempId,
+            senderId: m.senderId,
+            senderName: m.senderName,
+            content: '[File failed to send]',
+            timestamp: m.timestamp,
+            isRead: m.isRead,
+            isPending: false,
+            isFailed: true,
+          );
+        }
+        return m;
+      }).toList();
+      emit(state.copyWith(messages: failed));
       rethrow;
     }
   }
-}

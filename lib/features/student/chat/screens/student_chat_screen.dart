@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -5,6 +6,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_shadows.dart';
 import '../../../../core/theme/app_spacing.dart';
 import 'package:trilink_mobile/core/widgets/branded_refresh.dart';
 import 'package:trilink_mobile/core/widgets/empty_state_widget.dart';
@@ -61,6 +63,18 @@ class _ChatViewState extends State<_ChatView> {
 
   void _openConversation(ChatConversationModel conversation) {
     final cubit = context.read<ChatCubit>();
+    // Optimistically clear unread badge before network round-trip
+    if (conversation.unreadCount > 0) {
+      cubit.clearUnread(conversation.id);
+    }
+    // Determine partnerId for DMs (the other participant)
+    String? partnerId;
+    if (!conversation.isGroup && conversation.participantIds.length == 2) {
+      partnerId = conversation.participantIds.firstWhere(
+        (id) => id != _currentUserId,
+        orElse: () => conversation.participantIds.first,
+      );
+    }
     Navigator.of(context)
         .pushNamed(
           RouteNames.studentChatConversation,
@@ -69,6 +83,7 @@ class _ChatViewState extends State<_ChatView> {
             'title': conversation.title,
             'isGroup': conversation.isGroup,
             'avatarPath': conversation.avatarPath,
+            'partnerId': partnerId,
           },
         )
         .then((_) => cubit.loadConversations());
@@ -359,66 +374,40 @@ class _ChatViewState extends State<_ChatView> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          title: Row(
-            children: [
-              Expanded(
-                child: TabBar(
-                  isScrollable: false,
-                  indicatorSize: TabBarIndicatorSize.label,
-                  tabs: [
-                    Tab(text: 'Groups'),
-                    Tab(text: 'Inbox'),
-                  ],
+        primary: false,
+        backgroundColor: theme.colorScheme.surface,
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: Container(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              border: Border(
+                bottom: BorderSide(
+                  color: theme.colorScheme.outlineVariant.withAlpha(120),
+                  width: 0.5,
                 ),
               ),
-              PopupMenuButton<String>(
-                icon: Icon(Icons.more_vert),
-                onSelected: (value) {
-                  if (value == 'connections') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ConnectionsScreen(),
-                      ),
-                    );
-                  } else if (value == 'blocked') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const BlockedUsersScreen(),
-                      ),
-                    );
-                  }
-                },
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: 'connections',
-                    child: Row(
-                      children: [
-                        Icon(Icons.people_outline),
-                        SizedBox(width: 12),
-                        Text('Connections'),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'blocked',
-                    child: Row(
-                      children: [
-                        Icon(Icons.block),
-                        SizedBox(width: 12),
-                        Text('Blocked Users'),
-                      ],
-                    ),
-                  ),
-                ],
+            ),
+            child: TabBar(
+              indicatorSize: TabBarIndicatorSize.tab,
+              indicatorWeight: 3,
+              indicatorColor: theme.colorScheme.primary,
+              labelStyle: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
               ),
-            ],
+              unselectedLabelStyle: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
+              tabs: const [
+                Tab(text: 'Groups'),
+                Tab(text: 'Inbox'),
+              ],
+            ),
           ),
         ),
         body: StudentPageBackground(
@@ -453,6 +442,7 @@ class _ChatViewState extends State<_ChatView> {
                     child: _ChatList(
                       items: groups,
                       onTapItem: _openConversation,
+                      isGroup: true,
                     ),
                   ),
                   BrandedRefreshIndicator(
@@ -461,6 +451,7 @@ class _ChatViewState extends State<_ChatView> {
                     child: _ChatList(
                       items: inbox,
                       onTapItem: _openConversation,
+                      isGroup: false,
                     ),
                   ),
                 ],
@@ -468,10 +459,24 @@ class _ChatViewState extends State<_ChatView> {
             },
           ),
         ),
-        floatingActionButton: FloatingActionButton(
-          tooltip: 'New message',
-          onPressed: _showComposeOptions,
-          child: const Icon(Icons.message),
+        floatingActionButton: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [theme.colorScheme.primary, theme.colorScheme.tertiary],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            shape: BoxShape.circle,
+            boxShadow: AppShadows.glow(theme.colorScheme.primary),
+          ),
+          child: FloatingActionButton(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            highlightElevation: 0,
+            tooltip: 'New message',
+            onPressed: _showComposeOptions,
+            child: const Icon(Icons.maps_ugc_rounded, color: Colors.white),
+          ),
         ),
       ),
     );
@@ -481,14 +486,15 @@ class _ChatViewState extends State<_ChatView> {
 class _ChatList extends StatelessWidget {
   final List<ChatConversationModel> items;
   final ValueChanged<ChatConversationModel> onTapItem;
+  final bool isGroup;
 
-  const _ChatList({required this.items, required this.onTapItem});
+  const _ChatList({required this.items, required this.onTapItem, this.isGroup = false});
 
   String _previewText(ChatConversationModel conversation) {
     final msg = conversation.lastMessage;
     if (msg == null) return 'No messages yet';
-    if (msg.type == MessageType.image) return 'Image';
-    if (msg.type == MessageType.file) return 'File';
+    if (msg.type == MessageType.image) return '📷 Image';
+    if (msg.type == MessageType.file) return '📎 File';
     return msg.content;
   }
 
@@ -496,10 +502,11 @@ class _ChatList extends StatelessWidget {
     final msg = conversation.lastMessage;
     if (msg == null) return '';
     final diff = DateTime.now().difference(msg.timestamp);
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inMinutes < 1) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m';
+    if (diff.inHours < 24) return '${diff.inHours}h';
     if (diff.inDays == 1) return 'Yesterday';
-    return '${diff.inDays}d ago';
+    return '${diff.inDays}d';
   }
 
   @override
@@ -517,15 +524,20 @@ class _ChatList extends StatelessWidget {
                   child: EmptyStateWidget(
                     illustration: ChatBubblesIllustration(),
                     icon: Icons.chat_bubble_outline_rounded,
-                    title: 'No conversations yet',
-                    subtitle:
-                        'Start a conversation with your classmates or teachers.',
-                    actionLabel: 'Find Connections',
+                    title: isGroup ? 'No groups yet' : 'No messages yet',
+                    subtitle: isGroup 
+                        ? 'Join or create a study group.'
+                        : 'Start a conversation with your classmates or teachers.',
+                    actionLabel: isGroup ? 'Create Group' : 'Find Connections',
                     onAction: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const ConnectionsScreen()),
-                      );
+                      if (isGroup) {
+                        // Action could be showNewGroupDialog, but requires passing from parent.
+                      } else {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const ConnectionsScreen()),
+                        );
+                      }
                     },
                   ),
               ),
@@ -535,66 +547,105 @@ class _ChatList extends StatelessWidget {
       );
     }
 
-    return ListView.separated(
+    return ListView.builder(
       physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.only(bottom: 100),
       itemCount: items.length,
-      separatorBuilder: (_, _) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final item = items[index];
         void openConversation() => onTapItem(item);
-        return StaggeredFadeSlide(
-          index: index,
-          child: Pressable(
-            onTap: openConversation,
-            enableHaptic: false,
-            child: ListTile(
-              onTap: null,
-              leading: Hero(
-                tag: 'chat-avatar-${item.id}',
-                child: Material(
-                  type: MaterialType.transparency,
-                  child: ProfileAvatar(
-                    profileImagePath: item.avatarPath,
-                    fallbackText: item.title,
-                  ),
+        final hasUnread = item.unreadCount > 0;
+        
+        return InkWell(
+          onTap: openConversation,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: theme.colorScheme.outlineVariant.withAlpha(50),
+                  width: 1,
                 ),
               ),
-              title: Text(item.title),
-              subtitle: Text(
-                _previewText(item),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              trailing: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    _timeLabel(item),
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+            ),
+            child: Row(
+              children: [
+                Hero(
+                  tag: 'chat-avatar-${item.id}',
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: ProfileAvatar(
+                      profileImagePath: item.avatarPath,
+                      fallbackText: item.title,
+                      radius: 28,
                     ),
                   ),
-                  AppSpacing.gapXs,
-                  if (item.unreadCount > 0)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
-                        vertical: 2,
+                ),
+                AppSpacing.hGapMd,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              item.title,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: hasUnread ? FontWeight.w800 : FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          AppSpacing.hGapSm,
+                          Text(
+                            _timeLabel(item),
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: hasUnread ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+                              fontWeight: hasUnread ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                        ],
                       ),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary,
-                        borderRadius: AppRadius.borderSm,
+                      AppSpacing.gapXs,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _previewText(item),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: hasUnread ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant,
+                                fontWeight: hasUnread ? FontWeight.w600 : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                          if (hasUnread) ...[
+                            AppSpacing.hGapSm,
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary,
+                                borderRadius: AppRadius.borderFull,
+                                boxShadow: AppShadows.glow(theme.colorScheme.primary),
+                              ),
+                              child: Text(
+                                '${item.unreadCount}',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: theme.colorScheme.onPrimary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                      child: Text(
-                        '${item.unreadCount}',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onPrimary,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         );

@@ -34,6 +34,13 @@ class RealStudentChatRepository implements StudentChatRepository {
     _messagesInFlight.clear();
   }
 
+  @override
+  List<ChatConversationModel>? getCachedConversations() => _conversationsCache;
+
+  @override
+  List<ChatMessageModel>? getCachedMessages(String conversationId) => 
+      _messagesCache[conversationId];
+
   RealStudentChatRepository({
     ApiClient? apiClient,
     required StorageService storageService,
@@ -138,14 +145,52 @@ class RealStudentChatRepository implements StudentChatRepository {
         );
       }
 
+      String? avatarPath;
+      final isGroup = (raw['type'] ?? 'group').toString() != 'direct';
+      if (isGroup) {
+        final fileId = raw['avatarFileId']?.toString();
+        if (fileId != null && fileId.isNotEmpty) {
+          avatarPath = ApiConstants.fileDownload(fileId);
+        }
+      } else {
+        final participants = raw['participants'] as List?;
+        if (participants != null) {
+          for (final p in participants) {
+            if (p is Map<String, dynamic> && p['id'] != me) {
+              final fileId = p['profileImageFileId']?.toString();
+              if (fileId != null && fileId.isNotEmpty) {
+                avatarPath = ApiConstants.fileDownload(fileId);
+              }
+              break;
+            }
+          }
+        }
+      }
+
+      final List<String> pIds = [];
+      if (!isGroup) {
+        final participants = raw['participants'] as List?;
+        if (participants != null) {
+          for (final p in participants) {
+            if (p is Map<String, dynamic>) {
+              final pid = p['id']?.toString();
+              if (pid != null && pid.isNotEmpty) {
+                pIds.add(pid);
+              }
+            }
+          }
+        }
+      }
+
       conversations.add(
         ChatConversationModel(
           id: id,
           title: (raw['title'] ?? 'Conversation').toString(),
-          isGroup: (raw['type'] ?? 'group').toString() != 'direct',
-          participantIds: const [],
+          isGroup: isGroup,
+          participantIds: pIds,
           lastMessage: latest,
           unreadCount: raw['unreadCount'] as int? ?? 0,
+          avatarPath: avatarPath,
         ),
       );
     }
@@ -320,6 +365,17 @@ class RealStudentChatRepository implements StudentChatRepository {
     );
 
     return sent;
+  }
+
+  @override
+  Future<void> markRead(String conversationId, String messageId) async {
+    try {
+      await _api.post(
+        '${ApiConstants.conversations}/$conversationId/messages/$messageId/read',
+      );
+    } catch (_) {
+      // Ignore errors if read receipt fails
+    }
   }
 
   @override

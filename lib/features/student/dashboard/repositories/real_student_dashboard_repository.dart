@@ -1,3 +1,4 @@
+import 'dart:convert';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/services/local_cache_service.dart';
@@ -107,10 +108,24 @@ class RealStudentDashboardRepository implements StudentDashboardRepository {
   }
 
   DashboardAnnouncementSnippet? _toAnnouncement(Map<String, dynamic> raw) {
+    if (raw['type'] != 'announcement') return null;
+    
     final createdAt = DateTime.tryParse((raw['createdAt'] ?? '').toString());
     if (createdAt == null) return null;
+    
+    String id = (raw['id'] ?? '').toString();
+    final payloadJsonStr = raw['payloadJson'];
+    if (payloadJsonStr is String && payloadJsonStr.isNotEmpty) {
+      try {
+        final payload = jsonDecode(payloadJsonStr) as Map<String, dynamic>;
+        if (payload['announcementId'] != null) {
+          id = payload['announcementId'].toString();
+        }
+      } catch (_) {}
+    }
+
     return DashboardAnnouncementSnippet(
-      id: (raw['id'] ?? '').toString(),
+      id: id,
       title: (raw['title'] ?? 'Notification').toString(),
       authorName: 'TriLink',
       snippet: (raw['body'] ?? '').toString(),
@@ -140,7 +155,7 @@ class RealStudentDashboardRepository implements StudentDashboardRepository {
   }
 
   String _cacheKey(String userId) =>
-      userId.isEmpty ? 'student_dashboard_v1' : 'student_dashboard_v1_$userId';
+      userId.isEmpty ? 'student_dashboard_v2' : 'student_dashboard_v2_$userId';
 
   @override
   DashboardDataModel? getCached() => _cache;

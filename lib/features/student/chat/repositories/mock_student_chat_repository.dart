@@ -12,6 +12,16 @@ class MockStudentChatRepository implements StudentChatRepository {
     // Mock implementation: no-op since mock data is always in memory
   }
 
+  @override
+  List<ChatConversationModel>? getCachedConversations() {
+    return List<ChatConversationModel>.from(_conversations);
+  }
+
+  @override
+  List<ChatMessageModel>? getCachedMessages(String conversationId) {
+    return List<ChatMessageModel>.from(_messages[conversationId] ?? []);
+  }
+
   String _nextMessageId() => 'msg${_messageCounter++}';
   String _nextConversationId() => 'conv${_conversationCounter++}';
 
@@ -376,6 +386,56 @@ class MockStudentChatRepository implements StudentChatRepository {
         readAt: now.subtract(const Duration(minutes: 5, seconds: 41)),
       ),
     ];
+  }
+
+  @override
+  Future<void> markRead(String conversationId, String messageId) async {
+    await Future<void>.delayed(_latency);
+    final messages = _messages[conversationId];
+    if (messages == null) return;
+    for (var i = 0; i < messages.length; i++) {
+      final m = messages[i];
+      if (m.id == messageId && m.isRead == false) {
+        messages[i] = ChatMessageModel(
+          id: m.id,
+          senderId: m.senderId,
+          senderName: m.senderName,
+          content: m.content,
+          timestamp: m.timestamp,
+          isRead: true,
+          type: m.type,
+          mediaFileId: m.mediaFileId,
+          mediaUrl: m.mediaUrl,
+          mediaType: m.mediaType,
+          mediaName: m.mediaName,
+          mediaMimeType: m.mediaMimeType,
+          mediaSize: m.mediaSize,
+          readReceipts: m.readReceipts,
+          senderProfileImage: m.senderProfileImage,
+          senderRole: m.senderRole,
+          senderGrade: m.senderGrade,
+        );
+
+        // Update conversation unread count and lastMessage if applicable
+        final convIndex = _conversations.indexWhere((c) => c.id == conversationId);
+        if (convIndex != -1) {
+          final conv = _conversations[convIndex];
+          final newUnread = conv.unreadCount > 0 ? conv.unreadCount - 1 : 0;
+          final updatedLast = conv.lastMessage?.id == messageId ? messages[i] : conv.lastMessage;
+          _conversations[convIndex] = ChatConversationModel(
+            id: conv.id,
+            title: conv.title,
+            isGroup: conv.isGroup,
+            participantIds: conv.participantIds,
+            lastMessage: updatedLast,
+            unreadCount: newUnread,
+            avatarPath: conv.avatarPath,
+          );
+        }
+
+        break;
+      }
+    }
   }
 
   @override

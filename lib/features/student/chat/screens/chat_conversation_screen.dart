@@ -19,12 +19,14 @@ import '../repositories/student_chat_repository.dart';
 import '../widgets/chat_bubble.dart';
 import '../models/chat_models.dart';
 import '../widgets/chat_profile_sheet.dart';
+import '../../../../core/services/chat_socket_service.dart';
 
 class ChatConversationScreen extends StatelessWidget {
   final String conversationId;
   final String title;
   final bool isGroup;
   final String? avatarPath;
+  final String? partnerId;
 
   const ChatConversationScreen({
     super.key,
@@ -32,19 +34,25 @@ class ChatConversationScreen extends StatelessWidget {
     required this.title,
     this.isGroup = false,
     this.avatarPath,
+    this.partnerId,
   });
 
   @override
   Widget build(BuildContext context) {
+    final currentUserId = context.read<AuthCubit>().state.user?.id ?? '';
     return BlocProvider(
-      create: (_) =>
-          ChatConversationCubit(sl<StudentChatRepository>(), conversationId)
-            ..loadIfNeeded(),
+      create: (_) => ChatConversationCubit(
+        sl<StudentChatRepository>(),
+        conversationId,
+        socketService: sl<ChatSocketService>(),
+        currentUserId: currentUserId,
+      )..loadIfNeeded(),
       child: _ChatConversationView(
         conversationId: conversationId,
         title: title,
         isGroup: isGroup,
         avatarPath: avatarPath,
+        partnerId: partnerId,
       ),
     );
   }
@@ -55,12 +63,14 @@ class _ChatConversationView extends StatefulWidget {
   final String title;
   final bool isGroup;
   final String? avatarPath;
+  final String? partnerId;
 
   const _ChatConversationView({
     required this.conversationId,
     required this.title,
     required this.isGroup,
     required this.avatarPath,
+    this.partnerId,
   });
 
   @override
@@ -70,28 +80,43 @@ class _ChatConversationView extends StatefulWidget {
 class _ChatConversationViewState extends State<_ChatConversationView> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  bool _isSending = false;
-  Timer? _autoReplyTimer;
+  bool _showScrollToBottom = false;
+
+  // ── Draft store: static in-memory map persists across navigation ──
+  static final Map<String, String> _drafts = {};
+
   @override
   void initState() {
     super.initState();
+    // Restore saved draft for this conversation
+    final draft = _drafts[widget.conversationId];
+    if (draft != null && draft.isNotEmpty) {
+      _controller.text = draft;
+      _controller.selection = TextSelection.collapsed(offset: draft.length);
+    }
     _scrollController.addListener(_onScroll);
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels <= _scrollController.position.minScrollExtent + 50) {
+    final pos = _scrollController.position;
+    // Load more when near top (reversed list → minScrollExtent is the bottom)
+    if (pos.pixels >= pos.maxScrollExtent - 50) {
       context.read<ChatConversationCubit>().loadMoreMessages();
+    }
+    // Show scroll-to-bottom FAB when scrolled up more than 200px
+    final shouldShow = pos.pixels < pos.maxScrollExtent - 200;
+    if (shouldShow != _showScrollToBottom) {
+      setState(() => _showScrollToBottom = shouldShow);
     }
   }
 
-
-
   @override
   void dispose() {
+    // Save draft before leaving
+    _drafts[widget.conversationId] = _controller.text;
     _scrollController.removeListener(_onScroll);
     _controller.dispose();
     _scrollController.dispose();
-    _autoReplyTimer?.cancel();
     super.dispose();
   }
 
@@ -99,8 +124,8 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 200),
+          0, // reversed list: 0 = bottom
+          duration: const Duration(milliseconds: 250),
           curve: Curves.easeOut,
         );
       }
@@ -109,85 +134,42 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
 
   Future<void> _sendMessage() async {
     final text = _controller.text.trim();
-    if (text.isEmpty || _isSending) return;
-
-    setState(() => _isSending = true);
-
+    if (text.isEmpty) return;
+    _controller.clear();
+    _drafts[widget.conversationId] = '';
+    _scrollToBottom();
     try {
       await context.read<ChatConversationCubit>().sendMessage(text);
-      if (!mounted) return;
-      _controller.clear();
-      setState(() => _isSending = false);
-      _scrollToBottom();
-
-      _autoReplyTimer?.cancel();
-      final cubit = context.read<ChatConversationCubit>();
-      _autoReplyTimer = Timer(const Duration(milliseconds: 1200), () async {
-        if (!mounted) return;
-        await cubit.loadMessages(showLoading: false);
-        if (!mounted) return;
-        _scrollToBottom();
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isSending = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Failed to send message.')));
+    } catch (_) {
+      // Optimistic bubble already shows failed state — no snackbar needed
     }
   }
 
   Future<void> _pickAndSendImage() async {
-    if (_isSending) return;
-
     try {
       final picker = ImagePicker();
-      final image = await picker.pickImage(source: ImageSource.gallery);
-      
+      final image = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
       if (image == null) return;
-
-      setState(() => _isSending = true);
-
-      await context.read<ChatConversationCubit>().sendImageMessage(image.path);
-      
-      if (!mounted) return;
-      setState(() => _isSending = false);
       _scrollToBottom();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Image sent!')),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isSending = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to send image')),
-      );
-    }
+      await context.read<ChatConversationCubit>().sendImageMessage(image.path);
+    } catch (_) {}
   }
 
   Future<void> _pickAndSendFile() async {
-    if (_isSending) return;
-
     try {
       final result = await FilePicker.platform.pickFiles();
       if (result == null || result.files.isEmpty) return;
       final path = result.files.single.path;
       if (path == null || path.isEmpty) return;
-
-      setState(() => _isSending = true);
-      await context.read<ChatConversationCubit>().sendFileMessage(path);
-
-      if (!mounted) return;
-      setState(() => _isSending = false);
       _scrollToBottom();
+      await context.read<ChatConversationCubit>().sendFileMessage(path);
+    } catch (_) {}
+  }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('File sent!')),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isSending = false);
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to send file')),
       );
@@ -240,24 +222,31 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            Hero(
-              tag: 'chat-avatar-${widget.conversationId}',
-              child: Material(
-                type: MaterialType.transparency,
-                child: ProfileAvatar(
-                  radius: 18,
-                  profileImagePath: widget.avatarPath,
-                  fallbackText: widget.title,
+        title: InkWell(
+          onTap: () {
+            if (!widget.isGroup && widget.partnerId != null) {
+              _showProfileSheet(widget.partnerId!, null);
+            }
+          },
+          child: Row(
+            children: [
+              Hero(
+                tag: 'chat-avatar-${widget.conversationId}',
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: ProfileAvatar(
+                    radius: 18,
+                    profileImagePath: widget.avatarPath,
+                    fallbackText: widget.title,
+                  ),
                 ),
               ),
-            ),
-            AppSpacing.hGapSm,
-            Expanded(
-              child: Text(widget.title, overflow: TextOverflow.ellipsis),
-            ),
-          ],
+              AppSpacing.hGapSm,
+              Expanded(
+                child: Text(widget.title, overflow: TextOverflow.ellipsis),
+              ),
+            ],
+          ),
         ),
       ),
       body: StudentPageBackground(

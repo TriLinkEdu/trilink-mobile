@@ -11,7 +11,10 @@ class ChatCubit extends Cubit<ChatState> {
 
   static const Duration _ttl = Duration(seconds: 20);
 
-  ChatCubit(this._repository) : super(const ChatState());
+  ChatCubit(this._repository) : super(ChatState(
+    conversations: _repository.getCachedConversations() ?? const [],
+    status: _repository.getCachedConversations() != null ? ChatStatus.loaded : ChatStatus.initial,
+  ));
 
   Future<void> loadIfNeeded() async {
     if (state.status == ChatStatus.loaded &&
@@ -23,7 +26,9 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   Future<void> loadConversations() async {
-    emit(state.copyWith(status: ChatStatus.loading));
+    if (state.conversations.isEmpty) {
+      emit(state.copyWith(status: ChatStatus.loading));
+    }
     try {
       final conversations = await _repository.fetchConversations();
       emit(ChatState(status: ChatStatus.loaded, conversations: conversations));
@@ -60,5 +65,25 @@ class ChatCubit extends Cubit<ChatState> {
       );
       return null;
     }
+  }
+
+  /// Optimistically zero the unread badge when the user taps a conversation,
+  /// before the server round-trip confirms it.
+  void clearUnread(String conversationId) {
+    final updated = state.conversations.map((c) {
+      if (c.id == conversationId) {
+        return ChatConversationModel(
+          id: c.id,
+          title: c.title,
+          isGroup: c.isGroup,
+          participantIds: c.participantIds,
+          lastMessage: c.lastMessage,
+          unreadCount: 0,
+          avatarPath: c.avatarPath,
+        );
+      }
+      return c;
+    }).toList();
+    emit(state.copyWith(conversations: updated));
   }
 }

@@ -120,9 +120,10 @@ class RealStudentAssignmentsRepository implements StudentAssignmentsRepository {
   }
 
   Future<List<AssignmentModel>> _fetchFresh() async {
-    // Throws on failure — no silent fallback.
-    debugPrint('[AssignmentsRepo] fetching ${ApiConstants.assignmentsMe}');
-    final rows = await _api.getList(ApiConstants.assignmentsMe);
+    final userId = await _currentUserId();
+    final url = '/assignments/student/$userId';
+    debugPrint('[AssignmentsRepo] fetching $url');
+    final rows = await _api.getList(url);
     debugPrint('[AssignmentsRepo] received ${rows.length} items');
     return rows.whereType<Map<String, dynamic>>().map(_mapRemote).toList();
   }

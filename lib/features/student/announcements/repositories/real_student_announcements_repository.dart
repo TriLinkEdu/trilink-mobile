@@ -85,8 +85,8 @@ class RealStudentAnnouncementsRepository
   }
 
   String _cacheKey(String userId) => userId.isEmpty
-      ? 'student_announcements_v1'
-      : 'student_announcements_v1_$userId';
+      ? 'student_announcements_v2'
+      : 'student_announcements_v2_$userId';
 
   @override
   List<AnnouncementModel>? getCached() => _cache;
