@@ -63,41 +63,43 @@ class _ParentYearlyReportCardScreenState
         .toList();
     return Scaffold(
       appBar: AppBar(
-          title: Text(widget.childName?.isNotEmpty == true
+        title: Text(
+          widget.childName?.isNotEmpty == true
               ? 'Year — ${widget.childName}'
-              : 'Yearly transcript')),
+              : 'Yearly transcript',
+        ),
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(child: Text(_error!))
-              : RefreshIndicator(
-                  onRefresh: _load,
-                  child: ListView(
-                    padding: const EdgeInsets.all(12),
-                    children: [
-                      if (terms.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 40),
-                          child: Center(
-                              child: Text(
-                                  'No transcript data for this year yet.')),
+          ? Center(child: Text(_error!))
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView(
+                padding: const EdgeInsets.all(12),
+                children: [
+                  if (terms.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: Center(
+                        child: Text('No transcript data for this year yet.'),
+                      ),
+                    ),
+                  ...terms.map(
+                    (t) => Card(
+                      child: ListTile(
+                        title: Text(t['termName']?.toString() ?? 'Term'),
+                        subtitle: Text(
+                          '${t['averagePercent'] ?? '-'}%  •  '
+                          '${t['letterGrade'] ?? '-'}',
                         ),
-                      ...terms.map((t) => Card(
-                            child: ListTile(
-                              title: Text(
-                                  t['termName']?.toString() ?? 'Term'),
-                              subtitle: Text(
-                                '${t['averagePercent'] ?? '-'}%  •  '
-                                '${t['letterGrade'] ?? '-'}',
-                              ),
-                              trailing: Text(
-                                'Att ${t['attendancePercent'] ?? '-'}%',
-                              ),
-                            ),
-                          )),
-                    ],
+                        trailing: Text('Att ${t['attendancePercent'] ?? '-'}%'),
+                      ),
+                    ),
                   ),
-                ),
+                ],
+              ),
+            ),
     );
   }
 }

@@ -210,8 +210,7 @@ class _GradeEntryScreenState extends State<GradeEntryScreen> {
                         ],
                         onChanged: _isEdit
                             ? null
-                            : (v) =>
-                                  setState(() => _type = _normalizeType(v)),
+                            : (v) => setState(() => _type = _normalizeType(v)),
                       ),
                     ),
                     const SizedBox(width: 12),

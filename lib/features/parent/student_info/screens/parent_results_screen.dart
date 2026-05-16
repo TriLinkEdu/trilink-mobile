@@ -318,7 +318,9 @@ class _ParentResultsScreenState extends State<ParentResultsScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.06),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withOpacity(0.06),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
@@ -405,7 +407,6 @@ class _ParentResultsScreenState extends State<ParentResultsScreen> {
         final teacher = co['teacher'] as Map<String, dynamic>? ?? {};
         final assessments =
             course['assessments'] as Map<String, dynamic>? ?? {};
-        
 
         final subjectId = subject['id'] as String? ?? '';
         final subjectName = subject['name'] as String? ?? 'Unknown';

@@ -143,8 +143,7 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
     if (apiPercent > 0) {
       _averageAttendance = apiPercent;
     } else {
-      final denominator =
-          totalMarks > 0
+      final denominator = totalMarks > 0
           ? totalMarks
           : (_presentCount + _lateArrivals + _totalAbsences + _excusedCount);
       _averageAttendance = denominator > 0
@@ -216,11 +215,16 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
         list.sort((a, b) => _asInt(b['late']).compareTo(_asInt(a['late'])));
         break;
       case _StudentFilter.mostPresent:
-        list.sort((a, b) => _asDouble(b['attendancePercent'])
-            .compareTo(_asDouble(a['attendancePercent'])));
+        list.sort(
+          (a, b) => _asDouble(
+            b['attendancePercent'],
+          ).compareTo(_asDouble(a['attendancePercent'])),
+        );
         break;
       case _StudentFilter.atRisk:
-        list = list.where((s) => _asDouble(s['attendancePercent']) < 75).toList();
+        list = list
+            .where((s) => _asDouble(s['attendancePercent']) < 75)
+            .toList();
         break;
       case _StudentFilter.all:
       default:
@@ -287,11 +291,26 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
               icon: const Icon(Icons.filter_list),
               onSelected: (f) => setState(() => _studentFilter = f),
               itemBuilder: (_) => [
-                const PopupMenuItem(value: _StudentFilter.all, child: Text('All')),
-                const PopupMenuItem(value: _StudentFilter.mostAbsent, child: Text('Most Absent')),
-                const PopupMenuItem(value: _StudentFilter.mostLate, child: Text('Most Late')),
-                const PopupMenuItem(value: _StudentFilter.mostPresent, child: Text('Most Present')),
-                const PopupMenuItem(value: _StudentFilter.atRisk, child: Text('At Risk')),
+                const PopupMenuItem(
+                  value: _StudentFilter.all,
+                  child: Text('All'),
+                ),
+                const PopupMenuItem(
+                  value: _StudentFilter.mostAbsent,
+                  child: Text('Most Absent'),
+                ),
+                const PopupMenuItem(
+                  value: _StudentFilter.mostLate,
+                  child: Text('Most Late'),
+                ),
+                const PopupMenuItem(
+                  value: _StudentFilter.mostPresent,
+                  child: Text('Most Present'),
+                ),
+                const PopupMenuItem(
+                  value: _StudentFilter.atRisk,
+                  child: Text('At Risk'),
+                ),
               ],
             ),
           ],

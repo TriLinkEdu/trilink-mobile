@@ -67,8 +67,10 @@ class _ParentReportCardScreenState extends State<ParentReportCardScreen> {
       _error = null;
     });
     try {
-      final res = await ApiService()
-          .getStudentTermReportCard(widget.studentId, _termId!);
+      final res = await ApiService().getStudentTermReportCard(
+        widget.studentId,
+        _termId!,
+      );
       if (!mounted) return;
       setState(() {
         _data = res;
@@ -94,9 +96,11 @@ class _ParentReportCardScreenState extends State<ParentReportCardScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.childName?.isNotEmpty == true
-            ? 'Report — ${widget.childName}'
-            : 'Report card'),
+        title: Text(
+          widget.childName?.isNotEmpty == true
+              ? 'Report — ${widget.childName}'
+              : 'Report card',
+        ),
         actions: [
           if ((_academicYearId ?? '').isNotEmpty)
             IconButton(
@@ -127,10 +131,12 @@ class _ParentReportCardScreenState extends State<ParentReportCardScreen> {
                   isDense: true,
                 ),
                 items: _terms
-                    .map((t) => DropdownMenuItem(
-                          value: t['id'] as String?,
-                          child: Text(t['name'] as String? ?? 'Term'),
-                        ))
+                    .map(
+                      (t) => DropdownMenuItem(
+                        value: t['id'] as String?,
+                        child: Text(t['name'] as String? ?? 'Term'),
+                      ),
+                    )
                     .toList(),
                 onChanged: (v) {
                   setState(() => _termId = v);
@@ -142,75 +148,73 @@ class _ParentReportCardScreenState extends State<ParentReportCardScreen> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
-                    ? Center(child: Text(_error!))
-                    : RefreshIndicator(
-                        onRefresh: _load,
-                        child: ListView(
-                          padding: const EdgeInsets.all(12),
-                          children: [
-                            Card(
-                              child: Padding(
-                                padding: const EdgeInsets.all(12),
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Overall',
-                                      style: theme.textTheme.labelLarge
-                                          ?.copyWith(
-                                              color:
-                                                  theme.colorScheme.primary),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '${_data['overallPercent'] ?? '-'}%  •  ${_data['overallLetterGrade'] ?? '-'}',
-                                      style: theme.textTheme.titleMedium,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Attendance: ${attendance['attendancePercent'] ?? '-'}%  '
-                                      '(${attendance['present'] ?? 0}/${attendance['total'] ?? 0} days)',
-                                      style: theme.textTheme.bodySmall,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            ...subjects.map(_subjectCard),
-                            const SizedBox(height: 12),
-                            if (remark.isNotEmpty)
-                              Card(
-                                color: theme.colorScheme.surfaceContainerHighest,
-                                child: Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Homeroom remark',
-                                          style: theme.textTheme.labelLarge
-                                              ?.copyWith(
-                                                  color: theme
-                                                      .colorScheme.primary)),
-                                      const SizedBox(height: 4),
-                                      Text(remark['remark']?.toString() ?? '—'),
-                                      if ((remark['conductGrade']?.toString() ?? '')
-                                          .isNotEmpty)
-                                        Padding(
-                                          padding:
-                                              const EdgeInsets.only(top: 8),
-                                          child: Text(
-                                              'Conduct: ${remark['conductGrade']}'),
-                                        ),
-                                    ],
+                ? Center(child: Text(_error!))
+                : RefreshIndicator(
+                    onRefresh: _load,
+                    child: ListView(
+                      padding: const EdgeInsets.all(12),
+                      children: [
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Overall',
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    color: theme.colorScheme.primary,
                                   ),
                                 ),
-                              ),
-                          ],
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${_data['overallPercent'] ?? '-'}%  •  ${_data['overallLetterGrade'] ?? '-'}',
+                                  style: theme.textTheme.titleMedium,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Attendance: ${attendance['attendancePercent'] ?? '-'}%  '
+                                  '(${attendance['present'] ?? 0}/${attendance['total'] ?? 0} days)',
+                                  style: theme.textTheme.bodySmall,
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 12),
+                        ...subjects.map(_subjectCard),
+                        const SizedBox(height: 12),
+                        if (remark.isNotEmpty)
+                          Card(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Homeroom remark',
+                                    style: theme.textTheme.labelLarge?.copyWith(
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(remark['remark']?.toString() ?? '—'),
+                                  if ((remark['conductGrade']?.toString() ?? '')
+                                      .isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: Text(
+                                        'Conduct: ${remark['conductGrade']}',
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
           ),
         ],
       ),
@@ -224,10 +228,13 @@ class _ParentReportCardScreenState extends State<ParentReportCardScreen> {
         .toList();
     return Card(
       child: ExpansionTile(
-        title: Text(s['subjectName']?.toString() ?? '-',
-            style: const TextStyle(fontWeight: FontWeight.w600)),
+        title: Text(
+          s['subjectName']?.toString() ?? '-',
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
         subtitle: Text(
-            'Avg ${summary['averagePercent'] ?? '-'}%  •  ${summary['letterGrade'] ?? '-'}'),
+          'Avg ${summary['averagePercent'] ?? '-'}%  •  ${summary['letterGrade'] ?? '-'}',
+        ),
         children: entries
             .map(
               (e) => ListTile(
@@ -235,8 +242,9 @@ class _ParentReportCardScreenState extends State<ParentReportCardScreen> {
                 title: Text(e['title']?.toString() ?? '-'),
                 subtitle: Text('${e['type'] ?? '-'}'),
                 trailing: Text(
-                    '${e['score'] ?? '—'}/${e['maxScore'] ?? '-'}  '
-                    '(${e['percent'] ?? '-'}%)'),
+                  '${e['score'] ?? '—'}/${e['maxScore'] ?? '-'}  '
+                  '(${e['percent'] ?? '-'}%)',
+                ),
               ),
             )
             .toList(),
