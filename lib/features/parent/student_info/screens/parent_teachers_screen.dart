@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
 import '../../chat/screens/parent_message_view_screen.dart';
+import '../../../shared/widgets/role_page_background.dart';
 
 class ParentTeachersScreen extends StatefulWidget {
   final String studentId;
@@ -21,6 +22,7 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
   bool _loading = true;
   String? _error;
   List<Map<String, dynamic>> _teachers = [];
+  int? _expandedIndex;
 
   @override
   void initState() {
@@ -54,23 +56,26 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              color: AppColors.textPrimary, size: 20),
+          icon: Icon(
+            Icons.arrow_back_ios_new,
+            color: theme.colorScheme.onSurface,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Teachers',
               style: TextStyle(
-                color: AppColors.textPrimary,
+                color: theme.colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
                 fontSize: 17,
               ),
@@ -78,7 +83,7 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
             Text(
               widget.childName,
               style: TextStyle(
-                color: Colors.grey.shade600,
+                color: theme.colorScheme.onSurfaceVariant,
                 fontSize: 12,
                 fontWeight: FontWeight.normal,
               ),
@@ -86,7 +91,10 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
           ],
         ),
       ),
-      body: _buildBody(),
+      body: RolePageBackground(
+        flavor: RoleThemeFlavor.parent,
+        child: _buildBody(),
+      ),
     );
   }
 
@@ -128,185 +136,278 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
     final email = teacher['email'] as String? ?? '';
     final phone = teacher['phone'] as String? ?? '';
     final teacherId = teacher['id'] as String? ?? '';
+    final isExpanded = _expandedIndex == index;
 
     final colors = [
       AppColors.primary,
       AppColors.secondary,
-      const Color(0xFF7C4DFF),
-      const Color(0xFFFF6D00),
-      const Color(0xFF00BFA5),
-      const Color(0xFFE91E63),
+      AppColors.subjectPurple,
+      AppColors.subjectOrange,
+      AppColors.subjectTeal,
+      AppColors.subjectPink,
     ];
     final color = colors[index % colors.length];
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 32,
-                backgroundColor: color.withValues(alpha: 0.12),
-                child: Text(
-                  initials,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      fullName,
-                      style: const TextStyle(
-                        fontSize: 16,
+    return GestureDetector(
+      onTap: () => setState(() => _expandedIndex = isExpanded ? null : index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // Header row — always visible
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: color.withValues(alpha: 0.12),
+                    child: Text(
+                      initials,
+                      style: TextStyle(
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                        color: color,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    if (department.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          department,
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          fullName,
                           style: TextStyle(
-                            fontSize: 11,
-                            color: color,
-                            fontWeight: FontWeight.w500,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if (subjects.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Divider(height: 1, color: Colors.grey.shade100),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Icon(Icons.book_outlined,
-                    size: 16, color: Colors.grey.shade600),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: subjects
-                        .map(
-                          (s) => Container(
+                        if (subjects.isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            subjects.join(', '),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                        if (department.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
+                              horizontal: 7,
+                              vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(8),
+                              color: color.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              s,
+                              department,
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 11,
                                 color: color,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
-                        )
-                        .toList(),
+                        ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ],
-          if (email.isNotEmpty || phone.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Divider(height: 1, color: Colors.grey.shade100),
-            const SizedBox(height: 12),
-            if (email.isNotEmpty)
-              Row(
-                children: [
-                  Icon(Icons.email_outlined,
-                      size: 16, color: Colors.grey.shade600),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      email,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade700,
+                  AnimatedRotation(
+                    turns: isExpanded ? 0.25 : 0,
+                    duration: const Duration(milliseconds: 250),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.chevron_right_rounded,
+                        size: 18,
+                        color: color,
                       ),
                     ),
                   ),
                 ],
               ),
-            if (email.isNotEmpty && phone.isNotEmpty)
-              const SizedBox(height: 8),
-            if (phone.isNotEmpty)
-              Row(
+            ),
+            // Expandable details
+            AnimatedCrossFade(
+              firstChild: const SizedBox.shrink(),
+              secondChild: Column(
                 children: [
-                  Icon(Icons.phone_outlined,
-                      size: 16, color: Colors.grey.shade600),
-                  const SizedBox(width: 8),
-                  Text(
-                    phone,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey.shade700,
+                  Divider(
+                    height: 1,
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Subject chips
+                        if (subjects.isNotEmpty) ...[
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.book_outlined,
+                                size: 16,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Wrap(
+                                  spacing: 6,
+                                  runSpacing: 6,
+                                  children: subjects
+                                      .map(
+                                        (s) => Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: color.withValues(
+                                              alpha: 0.08,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            s,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: color,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Divider(
+                            height: 1,
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                        // Email
+                        if (email.isNotEmpty) ...[
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.email_outlined,
+                                size: 16,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  email,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        // Phone
+                        if (phone.isNotEmpty) ...[
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.phone_outlined,
+                                size: 16,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                phone,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        // Send Message button
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () => _openTeacherChat(
+                              teacherId: teacherId,
+                              teacherName: fullName,
+                              subject: subjects.isNotEmpty
+                                  ? subjects.first
+                                  : '',
+                            ),
+                            icon: const Icon(Icons.send_rounded, size: 16),
+                            label: const Text('Send Message'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-          ],
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () => _openTeacherChat(
-                teacherId: teacherId,
-                teacherName: fullName,
-                subject: subjects.isNotEmpty ? subjects.first : '',
-              ),
-              icon: const Icon(Icons.send_rounded, size: 16),
-              label: const Text('Send Message'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
+              crossFadeState: isExpanded
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
+              duration: const Duration(milliseconds: 250),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -318,21 +419,28 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.grey.shade300),
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 16),
             Text(
               'Failed to load teachers',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               _error!,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+              style: TextStyle(
+                fontSize: 13,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
@@ -358,21 +466,28 @@ class _ParentTeachersScreenState extends State<ParentTeachersScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.people_outline, size: 64, color: Colors.grey.shade300),
+          Icon(
+            Icons.people_outline,
+            size: 64,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(height: 16),
           Text(
             'No teachers found',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.grey.shade600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'No teachers are assigned to this student.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+            style: TextStyle(
+              fontSize: 13,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),

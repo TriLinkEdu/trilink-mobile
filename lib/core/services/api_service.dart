@@ -62,6 +62,11 @@ class ApiService {
     DummyData.childSummary(studentId),
   );
 
+  Future<Map<String, dynamic>> getChildDashboard(String studentId) => _tryOr(
+    () => _api.get(ApiConstants.childDashboard(studentId)),
+    DummyData.childDashboard(studentId),
+  );
+
   // ─── Academic year ──────────────────────────────────────
   Future<Map<String, dynamic>> getActiveAcademicYear() => _tryOr(
     () => _api.get(ApiConstants.activeAcademicYear),
@@ -155,19 +160,18 @@ class ApiService {
     String? to,
     String? academicYearId,
     String? classOfferingId,
-  }) =>
-      _tryOr(
-        () => _api.getList(
-          ApiConstants.calendarEvents,
-          queryParameters: {
-            if (from != null) 'from': from,
-            if (to != null) 'to': to,
-            if (academicYearId != null) 'academicYearId': academicYearId,
-            if (classOfferingId != null) 'classOfferingId': classOfferingId,
-          },
-        ),
-        DummyData.calendarEvents,
-      );
+  }) => _tryOr(
+    () => _api.getList(
+      ApiConstants.calendarEvents,
+      queryParameters: {
+        if (from != null) 'from': from,
+        if (to != null) 'to': to,
+        if (academicYearId != null) 'academicYearId': academicYearId,
+        if (classOfferingId != null) 'classOfferingId': classOfferingId,
+      },
+    ),
+    DummyData.calendarEvents,
+  );
 
   Future<Map<String, dynamic>> createCalendarEvent(
     Map<String, dynamic> data,
@@ -206,6 +210,10 @@ class ApiService {
     {'id': id, ...data},
   );
 
+  Future<void> deleteCalendarEvent(String id) async {
+    await _api.delete('${ApiConstants.calendarEvents}/$id');
+  }
+
   // ─── Announcements ─────────────────────────────────────
   Future<List<dynamic>> getAnnouncements({Map<String, dynamic>? filters}) =>
       _tryOr(
@@ -233,6 +241,13 @@ class ApiService {
     () => _api.patch('${ApiConstants.announcements}/$id', data: data),
     {'id': id, ...data},
   );
+
+  Future<void> deleteAnnouncement(String id) async {
+    await _tryOr(() async {
+      await _api.delete('${ApiConstants.announcements}/$id');
+      return true;
+    }, true);
+  }
 
   // ─── Exams ──────────────────────────────────────────────
   Future<List<dynamic>> getExams({Map<String, dynamic>? filters}) => _tryOr(
@@ -388,6 +403,30 @@ class ApiService {
     DummyData.messages(conversationId),
   );
 
+  /// Cursor-paginated message fetch.
+  /// [before] is the oldest loaded message ID used as the cursor.
+  Future<List<dynamic>> getConversationMessagesPaginated(
+    String conversationId, {
+    String? before,
+    int limit = 50,
+  }) async {
+    try {
+      final response = await _api.get(
+        ApiConstants.conversationMessages(conversationId),
+        queryParameters: {
+          'limit': limit.toString(),
+          if (before != null) 'before': before,
+        },
+      );
+      // Backend returns { messages: [...], hasMore: bool }
+      final messages = response['messages'];
+      if (messages is List) return messages;
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
   Future<Map<String, dynamic>> sendMessage(
     String conversationId,
     Map<String, dynamic> data,
@@ -399,10 +438,153 @@ class ApiService {
     {
       'id': 'new-msg',
       'conversationId': conversationId,
-      ...data,
+      'senderId': 'me',
+      'text': data['text'] ?? '',
       'createdAt': DateTime.now().toIso8601String(),
     },
   );
+
+  // ── Message write operations (errors propagate — no silent fallback) ──────
+
+  Future<Map<String, dynamic>> editMessage(
+    String conversationId,
+    String messageId,
+    String text,
+  ) async {
+    return await _api.patch(
+      ApiConstants.messageEdit(conversationId, messageId),
+      data: {'text': text},
+    );
+  }
+
+  Future<void> deleteMessage(String conversationId, String messageId) async {
+    await _api.delete(ApiConstants.messageEdit(conversationId, messageId));
+  }
+
+  Future<Map<String, dynamic>> toggleReaction(
+    String conversationId,
+    String messageId,
+    String emoji,
+  ) async {
+    return await _api.post(
+      ApiConstants.messageReactions(conversationId, messageId),
+      data: {'emoji': emoji},
+    );
+  }
+
+  Future<void> markMessageRead(String conversationId, String messageId) async {
+    await _api.post(ApiConstants.messageRead(conversationId, messageId));
+  }
+
+  // ── Member management ─────────────────────────────────────────────────────
+
+  Future<List<dynamic>> getConversationMembers(String conversationId) => _tryOr(
+    () => _api.getList(ApiConstants.conversationMembers(conversationId)),
+    [],
+  );
+
+  Future<void> addConversationMember(
+    String conversationId,
+    String userId,
+  ) async {
+    await _api.post(
+      ApiConstants.conversationMembers(conversationId),
+      data: {
+        'userIds': [userId],
+      },
+    );
+  }
+
+  Future<void> removeConversationMember(
+    String conversationId,
+    String userId,
+  ) async {
+    await _api.delete(ApiConstants.conversationMember(conversationId, userId));
+  }
+
+  // ── Media ─────────────────────────────────────────────────────────────────
+
+  Future<List<dynamic>> getConversationMedia(String conversationId) => _tryOr(
+    () => _api.getList(ApiConstants.conversationMedia(conversationId)),
+    [],
+  );
+
+  /// Upload a chat media file. Returns the mediaFileId string.
+  Future<String> uploadChatMedia(dynamic file) async {
+    try {
+      List<int> bytes;
+      String filename = 'attachment';
+
+      if (file is XFile) {
+        bytes = await file.readAsBytes();
+        if (file.name.isNotEmpty) filename = file.name;
+      } else {
+        final dynamic rawBytes = file.bytes;
+        if (rawBytes is List<int> && rawBytes.isNotEmpty) {
+          bytes = rawBytes;
+        } else {
+          final dynamic readAsBytes = file.readAsBytes;
+          if (readAsBytes is! Function) {
+            throw Exception('Selected file cannot be read.');
+          }
+          bytes = await readAsBytes();
+        }
+        final dynamic rawPath = file.path;
+        if (rawPath is String && rawPath.trim().isNotEmpty) {
+          final segments = rawPath.split(RegExp(r'[\\/]'));
+          final last = segments.isNotEmpty ? segments.last : '';
+          if (last.isNotEmpty) filename = last;
+        }
+      }
+
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(bytes, filename: filename),
+      });
+
+      final response = await _api.post(ApiConstants.chatUpload, data: formData);
+
+      return response['fileId'] as String? ??
+          response['id'] as String? ??
+          response['mediaFileId'] as String? ??
+          '';
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // ── Presence ──────────────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> getUserPresence(List<String> userIds) async {
+    try {
+      // Only send valid UUIDs to the backend presence endpoint. Passing
+      // non-UUID strings (e.g. legacy IDs like 'teacher-001') can cause
+      // server-side cast errors; filter them out here.
+      final uuidRegex = RegExp(
+        r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12} ',
+      );
+      final uuids = userIds.where((id) => uuidRegex.hasMatch(id)).toList();
+      if (uuids.isEmpty) return {};
+      return await _api.get(
+        ApiConstants.usersPresence,
+        queryParameters: {'userIds': uuids.join(',')},
+      );
+    } catch (_) {
+      return {};
+    }
+  }
+
+  // ── Block / Unblock ───────────────────────────────────────────────────────
+
+  Future<void> blockUser(String userId) async {
+    await _api.post(ApiConstants.blockUser(userId));
+  }
+
+  Future<void> unblockUser(String userId) async {
+    await _api.delete(ApiConstants.blockUser(userId));
+  }
+
+  Future<List<dynamic>> getBlockedUsers() =>
+      _tryOr(() => _api.getList(ApiConstants.usersBlocked), []);
 
   // ─── Settings ───────────────────────────────────────────
   Future<Map<String, dynamic>> getUserSettings() =>
@@ -508,10 +690,14 @@ class ApiService {
         () => _api.post(ApiConstants.feedback, data: data),
         DummyData.feedbackResponse,
       );
-
   Future<List<dynamic>> getMyFeedback() => _tryOr(
     () => _api.getList(ApiConstants.feedbackMine),
     DummyData.myFeedbackList,
+  );
+
+  Future<List<dynamic>> getTeacherFeedback() => _tryOr(
+    () => _api.getList(ApiConstants.feedbackForTeacher),
+    DummyData.teacherFeedbackList,
   );
 
   // ─── Reports ────────────────────────────────────────────
@@ -556,14 +742,45 @@ class ApiService {
       });
 
   // ─── AI ─────────────────────────────────────────────────
-  Future<Map<String, dynamic>> getAiRecommendations(String studentId) => _tryOr(
-    () => _api.get(ApiConstants.aiRecommendations(studentId)),
-    {'recommendations': []},
+  Future<Map<String, dynamic>> getAiRecommendations(
+    String studentId, {
+    String? subjectId,
+    String? difficulty,
+    int? limit,
+  }) => _tryOr(
+    () => _api.get(
+      ApiConstants.aiRecommendations(studentId),
+      queryParameters: {
+        if (subjectId != null) 'subjectId': subjectId,
+        if (difficulty != null) 'difficulty': difficulty,
+        if (limit != null) 'limit': limit.toString(),
+      },
+    ),
+    {'recommendations': [], 'items': []},
   );
 
   Future<Map<String, dynamic>> getAiLearningPath(String studentId) => _tryOr(
     () => _api.get(ApiConstants.aiLearningPath(studentId)),
     {'learningPath': []},
+  );
+
+  Future<List<dynamic>> getAiAtRiskStudents(String subjectId) =>
+      _tryOr(() => _api.getList(ApiConstants.aiAtRiskStudents(subjectId)), []);
+
+  Future<List<dynamic>> getAiClassPerformance(String subjectId) => _tryOr(
+    () => _api.getList(ApiConstants.aiClassPerformance(subjectId)),
+    [],
+  );
+
+  Future<Map<String, dynamic>> postAiFeedbackAssistant(
+    String context,
+    String audience,
+  ) => _tryOr(
+    () => _api.post(
+      ApiConstants.aiFeedbackAssistant,
+      data: {'context': context, 'audience': audience},
+    ),
+    {'draft': '', 'suggestions': []},
   );
 
   // ═══════════════════════════════════════════════════════
@@ -707,71 +924,77 @@ class ApiService {
 
   /// Get students in a class with enriched data (NEW endpoint)
   Future<Map<String, dynamic>> getClassStudents(String classOfferingId) =>
+      _tryOr(() => _api.get(ApiConstants.classStudents(classOfferingId)), {
+        'classOfferingId': classOfferingId,
+        'className': 'Class',
+        'studentCount': 0,
+        'students': [],
+      });
+
+  /// Get gradebook for a class (teacher)
+  Future<Map<String, dynamic>> getClassGrades(String classOfferingId) => _tryOr(
+    () => _api.get(ApiConstants.gradesClass(classOfferingId)),
+    {'classOfferingId': classOfferingId, 'groups': []},
+  );
+
+  /// Get assignments created by current teacher (optionally filtered by class)
+  Future<List<dynamic>> getTeacherAssignments({String? classOfferingId}) =>
       _tryOr(
-        () => _api.get(ApiConstants.classStudents(classOfferingId)),
-        {
-          'classOfferingId': classOfferingId,
-          'className': 'Class',
-          'studentCount': 0,
-          'students': [],
-        },
+        () => _api.getList(
+          ApiConstants.assignmentsTeacherMine,
+          queryParameters: classOfferingId != null
+              ? {'classOfferingId': classOfferingId}
+              : null,
+        ),
+        [],
       );
 
   /// Get my subjects (student)
-  Future<List<dynamic>> getMySubjects() => _tryOr(
-        () => _api.getList(ApiConstants.mySubjects),
-        [],
-      );
+  Future<List<dynamic>> getMySubjects() =>
+      _tryOr(() => _api.getList(ApiConstants.mySubjects), []);
 
   /// Get child's subjects (parent)
-  Future<List<dynamic>> getChildSubjects(String studentId) => _tryOr(
-        () => _api.getList(ApiConstants.childSubjects(studentId)),
-        [],
-      );
+  Future<List<dynamic>> getChildSubjects(String studentId) =>
+      _tryOr(() => _api.getList(ApiConstants.childSubjects(studentId)), []);
 
   /// Get grades by subject
   Future<Map<String, dynamic>> getGradesBySubject(
     String studentId,
     String subjectId,
-  ) =>
-      _tryOr(
-        () => _api.get(ApiConstants.gradesBySubject(studentId, subjectId)),
-        {
-          'studentId': studentId,
-          'subjectId': subjectId,
-          'summary': {'total': 0, 'withScore': 0, 'averagePercent': 0},
-          'entries': [],
-        },
-      );
+  ) => _tryOr(
+    () => _api.get(ApiConstants.gradesBySubject(studentId, subjectId)),
+    {
+      'studentId': studentId,
+      'subjectId': subjectId,
+      'summary': {'total': 0, 'withScore': 0, 'averagePercent': 0},
+      'entries': [],
+    },
+  );
 
   /// Get attendance by subject
   Future<Map<String, dynamic>> getAttendanceBySubject(
     String studentId,
     String subjectId,
-  ) =>
-      _tryOr(
-        () =>
-            _api.get(ApiConstants.attendanceBySubject(studentId, subjectId)),
-        {
-          'studentId': studentId,
-          'subjectId': subjectId,
-          'summary': {
-            'total': 0,
-            'present': 0,
-            'late': 0,
-            'absent': 0,
-            'excused': 0,
-            'attendanceRate': 0,
-          },
-          'sessions': [],
-        },
-      );
+  ) => _tryOr(
+    () => _api.get(ApiConstants.attendanceBySubject(studentId, subjectId)),
+    {
+      'studentId': studentId,
+      'subjectId': subjectId,
+      'summary': {
+        'total': 0,
+        'present': 0,
+        'late': 0,
+        'absent': 0,
+        'excused': 0,
+        'attendanceRate': 0,
+      },
+      'sessions': [],
+    },
+  );
 
   /// Get child's conversations (parent)
-  Future<List<dynamic>> getChildConversations(String studentId) => _tryOr(
-        () => _api.getList(ApiConstants.childConversations(studentId)),
-        [],
-      );
+  Future<List<dynamic>> getChildConversations(String studentId) =>
+      _api.getList(ApiConstants.childConversations(studentId));
 
   /// Get child's conversation messages (parent)
   Future<Map<String, dynamic>> getChildConversationMessages(
@@ -779,14 +1002,10 @@ class ApiService {
     String convId, {
     int limit = 50,
     int skip = 0,
-  }) =>
-      _tryOr(
-        () => _api.get(
-          ApiConstants.childConversationMessages(studentId, convId),
-          queryParameters: {'limit': limit.toString(), 'skip': skip.toString()},
-        ),
-        {'conversationId': convId, 'messages': []},
-      );
+  }) => _api.get(
+    ApiConstants.childConversationMessages(studentId, convId),
+    queryParameters: {'limit': limit.toString(), 'skip': skip.toString()},
+  );
 
   /// Search users (for messaging)
   Future<List<dynamic>> searchUsers({String? role, String? q}) => _tryOr(
@@ -797,23 +1016,13 @@ class ApiService {
     [],
   );
 
-  /// Initiate conversation with a user
-  Future<Map<String, dynamic>> initiateConversation(String targetUserId) =>
-      _tryOr(
-        () => _api.post(
-          ApiConstants.conversationsInitiate,
-          data: {'targetUserId': targetUserId},
-        ),
-        {
-          'conversation': {
-            'id': 'mock-conversation-id',
-            'type': 'direct',
-            'title': 'Mock Conversation',
-            'createdAt': DateTime.now().toIso8601String(),
-          },
-          'isNew': true,
-        },
-      );
+  /// Initiate conversation with a user — propagates errors (no mock fallback).
+  Future<Map<String, dynamic>> initiateConversation(String targetUserId) async {
+    return await _api.post(
+      ApiConstants.conversationsInitiate,
+      data: {'targetUserId': targetUserId},
+    );
+  }
 
   /// Get messages from conversation
   Future<List<dynamic>> getConversationMessages(

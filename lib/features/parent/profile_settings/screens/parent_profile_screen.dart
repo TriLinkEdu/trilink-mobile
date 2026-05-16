@@ -3,14 +3,16 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
-import '../../../../core/services/storage_service.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../features/auth/services/auth_service.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../shared/widgets/role_page_background.dart';
+import '../../student_info/screens/parent_student_info_screen.dart';
 
 class ParentProfileScreen extends StatefulWidget {
-  const ParentProfileScreen({super.key});
+  final bool isTabView;
+
+  const ParentProfileScreen({super.key, this.isTabView = false});
 
   @override
   State<ParentProfileScreen> createState() => _ParentProfileScreenState();
@@ -112,7 +114,12 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
               '${student?['firstName'] ?? ''} ${student?['lastName'] ?? ''}'
                   .trim();
           final grade = student?['grade'] as String? ?? '';
-          return _LinkedChild(name: name, grade: grade, school: '');
+          final studentId =
+              student?['id'] as String? ??
+              child['studentId'] as String? ??
+              '';
+          return _LinkedChild(
+              name: name, grade: grade, school: '', studentId: studentId);
         }).toList();
         _loading = false;
       });
@@ -132,14 +139,6 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
     final l = user.lastName;
     return '${f.isNotEmpty ? f[0] : ''}${l.isNotEmpty ? l[0] : ''}'
         .toUpperCase();
-  }
-
-  Future<Map<String, String>?> _getAuthHeaders() async {
-    final token = await StorageService().accessToken;
-    if (token != null) {
-      return {'Authorization': 'Bearer $token'};
-    }
-    return null;
   }
 
   Future<void> _pickImage() async {
@@ -349,63 +348,85 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
     });
   }
 
+  Future<void> _onBackPressed() async {
+    if (_isEditing) {
+      _cancelEdit();
+      return;
+    }
+    if (!widget.isTabView && Navigator.of(context).canPop()) {
+      Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        leading: _isEditing
-            ? IconButton(
-                onPressed: _cancelEdit,
-                icon: const Icon(Icons.arrow_back),
-              )
-            : null,
-        title: Text(
-          _isEditing ? 'Edit Profile' : 'My Profile',
-          style: TextStyle(
-            color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          if (!_isEditing)
-            IconButton(
-              onPressed: () {
-                setState(() {
-                  _isEditing = true;
-                  _error = null;
-                  _successMessage = null;
-                });
-              },
-              icon: const Icon(Icons.edit),
+    final canPop = Navigator.of(context).canPop() && !widget.isTabView;
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        await _onBackPressed();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          elevation: 0,
+          automaticallyImplyLeading: false,
+          leading: _isEditing
+              ? IconButton(
+                  onPressed: _cancelEdit,
+                  icon: const Icon(Icons.arrow_back),
+                )
+              : canPop
+                  ? IconButton(
+                      onPressed: _onBackPressed,
+                      icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                    )
+                  : null,
+          title: Text(
+            _isEditing ? 'Edit Profile' : 'My Profile',
+            style: TextStyle(
+              color: theme.colorScheme.onSurface,
+              fontWeight: FontWeight.bold,
             ),
-        ],
-      ),
-      body: RolePageBackground(
-        flavor: RoleThemeFlavor.parent,
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null && !_isEditing
-            ? Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _error!,
-                      style: TextStyle(color: theme.colorScheme.error),
-                    ),
-                    const SizedBox(height: 12),
-                    ElevatedButton(
-                      onPressed: _loadData,
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              )
-            : Form(
+          ),
+          centerTitle: true,
+          actions: [
+            if (!_isEditing)
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    _isEditing = true;
+                    _error = null;
+                    _successMessage = null;
+                  });
+                },
+                icon: const Icon(Icons.edit),
+              ),
+          ],
+        ),
+        body: RolePageBackground(
+          flavor: RoleThemeFlavor.parent,
+          child: _loading
+              ? const Center(child: CircularProgressIndicator())
+              : _error != null && !_isEditing
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _error!,
+                        style: TextStyle(color: theme.colorScheme.error),
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: _loadData,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : Form(
                 key: _formKey,
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(20),
@@ -483,6 +504,7 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
                   ),
                 ),
               ),
+        ),
       ),
     );
   }
@@ -553,9 +575,9 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
                           width: 2,
                         ),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.camera_alt,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         size: 16,
                       ),
                     ),
@@ -818,57 +840,78 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
 
   Widget _buildChildCard(_LinkedChild child) {
     final theme = Theme.of(context);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: AppColors.secondary.withValues(alpha: 0.12),
-            child: Text(
-              child.name
-                  .split(' ')
-                  .map((p) => p.isNotEmpty ? p[0] : '')
-                  .take(2)
-                  .join(),
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-                color: AppColors.secondary,
+    return GestureDetector(
+      onTap: child.studentId.isNotEmpty
+          ? () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ParentStudentInfoScreen(
+                    childName: child.name,
+                    studentUserId: child.studentId,
+                  ),
+                ),
+              );
+            }
+          : null,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 22,
+              backgroundColor: AppColors.secondary.withValues(alpha: 0.12),
+              child: Text(
+                child.name
+                    .split(' ')
+                    .map((p) => p.isNotEmpty ? p[0] : '')
+                    .take(2)
+                    .join(),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: AppColors.secondary,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  child.name,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: theme.colorScheme.onSurface,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    child.name,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: theme.colorScheme.onSurface,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  child.grade,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: theme.colorScheme.onSurfaceVariant,
+                  const SizedBox(height: 2),
+                  Text(
+                    child.grade,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+            if (child.studentId.isNotEmpty)
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 14,
+                color: AppColors.secondary.withValues(alpha: 0.6),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -926,6 +969,12 @@ class _LinkedChild {
   final String name;
   final String grade;
   final String school;
+  final String studentId;
 
-  _LinkedChild({required this.name, required this.grade, required this.school});
+  _LinkedChild({
+    required this.name,
+    required this.grade,
+    required this.school,
+    required this.studentId,
+  });
 }

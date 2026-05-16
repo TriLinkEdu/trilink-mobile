@@ -201,6 +201,7 @@ class AppTheme {
       useMaterial3: true,
       brightness: brightness,
       colorScheme: colorScheme,
+      shadowColor: isDark ? const Color(0xFF020617) : Colors.black12,
       textTheme: AppTextStyles.buildTextTheme(
         fontFamily ?? AppTextStyles.defaultFontFamily,
       ),

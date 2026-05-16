@@ -22,6 +22,9 @@ import '../../features/teacher/notifications/screens/teacher_notifications_scree
 import '../../features/teacher/classes/screens/class_list_screen.dart';
 import '../../features/teacher/classes/screens/teacher_class_detail_screen.dart';
 import '../../features/teacher/ai_assistant/screens/teacher_ai_assistant_screen.dart';
+import '../../features/teacher/feedback/screens/teacher_feedback_screen.dart';
+import '../../features/teacher/schedule/screens/teacher_schedule_screen.dart';
+import '../../features/teacher/grades/screens/teacher_grade_analytics_screen.dart';
 
 import '../../features/parent/home/screens/parent_home_screen.dart';
 import '../../features/parent/dashboard/screens/parent_dashboard_screen.dart';
@@ -41,6 +44,7 @@ import '../../features/parent/feedback/screens/parent_feedback_screen.dart';
 import '../../features/parent/reports/screens/weekly_report_screen.dart';
 import '../../features/parent/reports/screens/report_comparison_screen.dart';
 import '../../features/shared/screens/theme_customization_screen.dart';
+import '../../features/shared/screens/route_not_found_screen.dart';
 
 class AppRouter {
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -120,6 +124,18 @@ class AppRouter {
       case RouteNames.teacherAiAssistant:
         return MaterialPageRoute(
           builder: (_) => const TeacherAiAssistantScreen(),
+        );
+      case RouteNames.teacherFeedback:
+        return MaterialPageRoute(
+          builder: (_) => const TeacherFeedbackScreen(),
+        );
+      case RouteNames.teacherSchedule:
+        return MaterialPageRoute(
+          builder: (_) => const TeacherScheduleScreen(),
+        );
+      case RouteNames.teacherGradeAnalytics:
+        return MaterialPageRoute(
+          builder: (_) => const TeacherGradeAnalyticsScreen(),
         );
 
       // ── Parent routes ──
@@ -209,8 +225,9 @@ class AppRouter {
 
       default:
         return MaterialPageRoute(
-          builder: (_) =>
-              const Scaffold(body: Center(child: Text('Route not found'))),
+          builder: (_) => RouteNotFoundScreen(
+            attemptedRoute: settings.name,
+          ),
         );
     }
   }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
 
 class TeacherNotificationsScreen extends StatefulWidget {
@@ -13,7 +12,7 @@ class TeacherNotificationsScreen extends StatefulWidget {
 class _TeacherNotificationsScreenState
     extends State<TeacherNotificationsScreen> {
   int _selectedFilter = 0;
-  final List<String> _filters = ['All', 'Student Activity', 'System Alerts'];
+  final List<String> _filters = ['All', 'Unread', 'System Alerts'];
 
   bool _loading = true;
   String? _error;
@@ -27,7 +26,6 @@ class _TeacherNotificationsScreenState
 
   Future<void> _loadData() async {
     try {
-      final unreadOnly = _selectedFilter == 1; // index 1 = "Unread"
       final data = await ApiService().getNotifications();
       if (!mounted) return;
       setState(() {
@@ -115,6 +113,7 @@ class _TeacherNotificationsScreenState
       case 'announcement':
         return Icons.announcement;
       case 'exam_result':
+      case 'grade':
         return Icons.grade;
       case 'exam_submission':
         return Icons.assignment_turned_in;
@@ -128,31 +127,32 @@ class _TeacherNotificationsScreenState
     }
   }
 
-  Color _colorForType(String? type) {
+  Color _colorForType(BuildContext context, String? type) {
+    final theme = Theme.of(context);
     switch (type?.toLowerCase()) {
       case 'badge':
         return Colors.amber;
       case 'broadcast':
-        return AppColors.primary;
+        return theme.colorScheme.primary;
       case 'weekly_digest':
         return Colors.blue;
       case 'attendance':
-        return AppColors.secondary;
+        return theme.colorScheme.secondary;
       case 'announcement':
-        return AppColors.accent;
+        return theme.colorScheme.tertiary;
       case 'exam_result':
         return Colors.green;
       case 'exam_submission':
         return Colors.purple;
       case 'assignment':
-        return AppColors.primary;
+        return theme.colorScheme.primary;
       case 'alert':
       case 'system':
-        return AppColors.error;
+        return theme.colorScheme.error;
       case 'grade':
-        return AppColors.secondary;
+        return theme.colorScheme.secondary;
       default:
-        return Colors.grey;
+        return theme.colorScheme.onSurfaceVariant;
     }
   }
 
@@ -160,14 +160,16 @@ class _TeacherNotificationsScreenState
     final filtered = _selectedFilter == 0
         ? _notifications
         : _notifications.where((n) {
-            final type = n['type'] as String? ?? '';
             if (_selectedFilter == 1) {
-              return type == 'assignment' || type == 'student';
+              // Unread filter
+              return n['readAt'] == null;
             }
+            // System Alerts filter
+            final type = n['type'] as String? ?? '';
             return type == 'system' ||
                 type == 'alert' ||
-                type == 'announcement' ||
-                type == 'grade';
+                type == 'broadcast' ||
+                type == 'announcement';
           }).toList();
 
     final Map<String, List<MapEntry<int, Map<String, dynamic>>>> grouped = {};
@@ -216,7 +218,10 @@ class _TeacherNotificationsScreenState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_error!, style: const TextStyle(color: AppColors.error)),
+            Text(
+              _error!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
             const SizedBox(height: 12),
             ElevatedButton(onPressed: _loadData, child: const Text('Retry')),
           ],
@@ -227,36 +232,37 @@ class _TeacherNotificationsScreenState
   }
 
   Widget _buildHeader() {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 16, 20, 0),
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.arrow_back_ios_new,
-              color: AppColors.textPrimary,
+              color: theme.colorScheme.onSurface,
               size: 20,
             ),
             onPressed: () => Navigator.pop(context),
           ),
-          const Expanded(
+          Expanded(
             child: Text(
               'Notifications',
               style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+                color: theme.colorScheme.onSurface,
               ),
             ),
           ),
           GestureDetector(
             onTap: _markAllRead,
-            child: const Text(
+            child: Text(
               'Mark all as read',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppColors.primary,
+                color: theme.colorScheme.primary,
               ),
             ),
           ),
@@ -266,6 +272,7 @@ class _TeacherNotificationsScreenState
   }
 
   Widget _buildFilterChips() {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
@@ -281,12 +288,14 @@ class _TeacherNotificationsScreenState
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.textPrimary : Colors.white,
+                  color: isSelected
+                      ? theme.colorScheme.onSurface
+                      : theme.colorScheme.surface,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: isSelected
-                        ? AppColors.textPrimary
-                        : Colors.grey.shade300,
+                        ? theme.colorScheme.onSurface
+                        : theme.colorScheme.outlineVariant,
                   ),
                 ),
                 child: Text(
@@ -294,7 +303,9 @@ class _TeacherNotificationsScreenState
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: isSelected ? Colors.white : Colors.grey.shade700,
+                    color: isSelected
+                        ? theme.colorScheme.surface
+                        : theme.colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -306,12 +317,16 @@ class _TeacherNotificationsScreenState
   }
 
   Widget _buildNotificationsList() {
+    final theme = Theme.of(context);
     final groups = _groupedNotifications;
     if (groups.isEmpty) {
       return Center(
         child: Text(
           'No notifications',
-          style: TextStyle(color: Colors.grey.shade500, fontSize: 15),
+          style: TextStyle(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontSize: 15,
+          ),
         ),
       );
     }
@@ -330,7 +345,7 @@ class _TeacherNotificationsScreenState
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade500,
+                  color: theme.colorScheme.onSurfaceVariant,
                   letterSpacing: 0.8,
                 ),
               ),
@@ -351,7 +366,7 @@ class _TeacherNotificationsScreenState
                 },
                 child: _NotificationTile(
                   icon: _iconForType(type),
-                  iconBgColor: _colorForType(type),
+                  iconBgColor: _colorForType(context, type),
                   title: n['title'] as String? ?? '',
                   subtitle: n['body'] as String? ?? '',
                   time: _timeAgo(n['createdAt'] as String?),
@@ -363,7 +378,7 @@ class _TeacherNotificationsScreenState
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Divider(
-                  color: Colors.grey.shade200,
+                  color: theme.colorScheme.outlineVariant,
                   thickness: 1,
                   height: 1,
                 ),
@@ -400,6 +415,7 @@ class _NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 14),
       child: Row(
@@ -408,7 +424,7 @@ class _NotificationTile extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: iconBgColor.withValues(alpha: 0.12),
+              color: iconBgColor.withOpacity(0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: iconBgColor, size: 20),
@@ -429,7 +445,7 @@ class _NotificationTile extends StatelessWidget {
                               ? FontWeight.w500
                               : FontWeight.bold,
                           fontSize: 15,
-                          color: AppColors.textPrimary,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                     ),
@@ -437,7 +453,7 @@ class _NotificationTile extends StatelessWidget {
                       time,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade500,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -447,7 +463,7 @@ class _NotificationTile extends StatelessWidget {
                   subtitle,
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey.shade600,
+                    color: theme.colorScheme.onSurfaceVariant,
                     height: 1.4,
                   ),
                 ),
@@ -460,8 +476,8 @@ class _NotificationTile extends StatelessWidget {
               width: 8,
               height: 8,
               margin: const EdgeInsets.only(top: 6),
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary,
                 shape: BoxShape.circle,
               ),
             ),

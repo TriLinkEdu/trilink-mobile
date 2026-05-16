@@ -146,6 +146,13 @@ class ApiClient {
     String path, {
     Map<String, dynamic>? queryParameters,
   }) async {
+    if (testMode) {
+      // Simulate immediate connection failure to trigger fallbacks quickly.
+      throw DioException(
+        requestOptions: RequestOptions(path: path),
+        type: DioExceptionType.connectionError,
+      );
+    }
     try {
       final res = await dio.get(path, queryParameters: queryParameters);
       return _extractData(res);
@@ -158,6 +165,12 @@ class ApiClient {
     String path, {
     Map<String, dynamic>? queryParameters,
   }) async {
+    if (testMode) {
+      throw DioException(
+        requestOptions: RequestOptions(path: path),
+        type: DioExceptionType.connectionError,
+      );
+    }
     try {
       final res = await dio.get(path, queryParameters: queryParameters);
       if (res.data is List) return res.data as List<dynamic>;
@@ -173,6 +186,12 @@ class ApiClient {
   }
 
   Future<Map<String, dynamic>> post(String path, {dynamic data}) async {
+    if (testMode) {
+      throw DioException(
+        requestOptions: RequestOptions(path: path),
+        type: DioExceptionType.connectionError,
+      );
+    }
     try {
       final res = await dio.post(path, data: data);
       return _extractData(res);
@@ -182,6 +201,12 @@ class ApiClient {
   }
 
   Future<Map<String, dynamic>> patch(String path, {dynamic data}) async {
+    if (testMode) {
+      throw DioException(
+        requestOptions: RequestOptions(path: path),
+        type: DioExceptionType.connectionError,
+      );
+    }
     try {
       final res = await dio.patch(path, data: data);
       return _extractData(res);
@@ -191,6 +216,12 @@ class ApiClient {
   }
 
   Future<Map<String, dynamic>> put(String path, {dynamic data}) async {
+    if (testMode) {
+      throw DioException(
+        requestOptions: RequestOptions(path: path),
+        type: DioExceptionType.connectionError,
+      );
+    }
     try {
       final res = await dio.put(path, data: data);
       return _extractData(res);

@@ -91,6 +91,8 @@ class ApiConstants {
   static const String dashboardStudent = '/dashboard/student';
   static String childSummary(String studentId) =>
       '/dashboard/children/$studentId/summary';
+  static String childDashboard(String studentId) =>
+      '/dashboard/children/$studentId';
 
   // Academic years
   static const String activeAcademicYear = '/academic-years/active';
@@ -158,6 +160,17 @@ class ApiConstants {
   static String conversation(String id) => '/conversations/$id';
   static String conversationMessages(String id) =>
       '/conversations/$id/messages';
+  static String conversationMembers(String id) =>
+      '/conversations/$id/members';
+  static String conversationMember(String id, String userId) =>
+      '/conversations/$id/members/$userId';
+  static String conversationMedia(String id) => '/conversations/$id/media';
+  static String messageReactions(String convId, String msgId) =>
+      '/conversations/$convId/messages/$msgId/reactions';
+  static String messageRead(String convId, String msgId) =>
+      '/conversations/$convId/messages/$msgId/read';
+  static String messageEdit(String convId, String msgId) =>
+      '/conversations/$convId/messages/$msgId';
   static String messageReadReceipts(String id) => '/messages/$id/read-receipts';
   static const String usersSearch = '/users/search';
   static String chatInteractionProfile(String userId) =>
@@ -178,6 +191,7 @@ class ApiConstants {
   static const String feedback = '/feedback';
   static const String feedbackMe = '/feedback/me';
   static const String feedbackMine = '/feedback/mine';
+  static const String feedbackForTeacher = '/feedback/for-teacher';
 
   // Reports
   static String studentPerformance(String studentId) =>
@@ -237,6 +251,10 @@ class ApiConstants {
   static String aiLearningPath(String studentId) =>
       '/ai/students/$studentId/learning-path';
   static const String aiFeedbackAssistant = '/ai/feedback-assistant';
+  static String aiAtRiskStudents(String subjectId) =>
+      '/ai/analytics/subject/$subjectId/at-risk';
+  static String aiClassPerformance(String subjectId) =>
+      '/ai/analytics/subject/$subjectId/class-performance';
 
   // Curriculum
   static const String curriculumSubjects = '/curriculum/me/subjects';
@@ -296,6 +314,13 @@ class ApiConstants {
   // Grades by Subject
   static String gradesBySubject(String studentId, String subjectId) =>
       '/grades/student/$studentId/by-subject/$subjectId';
+
+  // Grades by Class (teacher)
+  static String gradesClass(String classOfferingId) =>
+      '/grades/class/$classOfferingId';
+
+  // Assignments (teacher)
+  static const String assignmentsTeacherMine = '/assignments/teacher/mine';
 
   // Attendance by Subject
   static String attendanceBySubject(String studentId, String subjectId) =>

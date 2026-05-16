@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../shared/widgets/role_page_background.dart';
 
@@ -146,7 +145,10 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_error!, style: const TextStyle(color: AppColors.error)),
+            Text(
+              _error!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
             const SizedBox(height: 12),
             ElevatedButton(onPressed: _loadData, child: const Text('Retry')),
           ],
@@ -202,9 +204,12 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
                 width: 14,
                 height: 14,
                 decoration: BoxDecoration(
-                  color: AppColors.secondary,
+                  color: theme.colorScheme.secondary,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
+                  border: Border.all(
+                    color: theme.colorScheme.surface,
+                    width: 2,
+                  ),
                 ),
               ),
             ),
@@ -303,7 +308,7 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
-                              color: AppColors.primary.withValues(alpha: 0.8),
+                              color: theme.colorScheme.primary,
                             ),
                           ),
                         ),
@@ -416,8 +421,9 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: (isDown ? AppColors.error : AppColors.secondary)
-                      .withValues(alpha: 0.1),
+                  color: isDown
+                      ? theme.colorScheme.errorContainer
+                      : theme.colorScheme.secondaryContainer,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -425,7 +431,9 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
                     Icon(
                       isDown ? Icons.trending_down : Icons.trending_up,
                       size: 14,
-                      color: isDown ? AppColors.error : AppColors.secondary,
+                      color: isDown
+                          ? theme.colorScheme.error
+                          : theme.colorScheme.secondary,
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -433,7 +441,9 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: isDown ? AppColors.error : AppColors.secondary,
+                        color: isDown
+                            ? theme.colorScheme.error
+                            : theme.colorScheme.secondary,
                       ),
                     ),
                   ],
@@ -527,16 +537,19 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF8E1),
+        color: theme.colorScheme.tertiaryContainer,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.orange.shade200),
+        border: Border.all(color: theme.colorScheme.tertiary.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700),
+              Icon(
+                Icons.warning_amber_rounded,
+                color: theme.colorScheme.tertiary,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -552,13 +565,13 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.error,
+                  color: theme.colorScheme.error,
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: const Text(
+                child: Text(
                   'INSIGHT',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: theme.colorScheme.onError,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.5,
@@ -608,19 +621,20 @@ class _Tag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.08),
+        color: theme.colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.35)),
       ),
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: AppColors.primary,
+          color: theme.colorScheme.onPrimaryContainer,
         ),
       ),
     );
@@ -705,10 +719,7 @@ class _GradeTrendPainter extends CustomPainter {
     final gradient = LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
-      colors: [
-        accentColor.withValues(alpha: 0.15),
-        accentColor.withValues(alpha: 0.0),
-      ],
+      colors: [accentColor.withOpacity(0.15), accentColor.withOpacity(0.0)],
     );
     final fillPaint = Paint()
       ..shader = gradient.createShader(
