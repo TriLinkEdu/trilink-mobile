@@ -161,6 +161,11 @@ class ApiClient {
     try {
       final res = await dio.get(path, queryParameters: queryParameters);
       if (res.data is List) return res.data as List<dynamic>;
+      // Handle wrapped responses like {"data": [...], "meta": {...}}
+      if (res.data is Map<String, dynamic>) {
+        final payload = res.data['data'];
+        if (payload is List) return payload;
+      }
       return [];
     } on DioException catch (e) {
       throw _handleDioError(e);

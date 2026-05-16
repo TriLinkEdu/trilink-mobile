@@ -80,6 +80,7 @@ class _CalendarEventDetailView extends StatelessWidget {
           if (state.status == CalendarEventDetailStatus.error) {
             return AppErrorWidget(
               message: state.errorMessage ?? 'Unable to load event details.',
+              onRetry: () => context.read<CalendarEventDetailCubit>().loadEvent(),
             );
           }
 

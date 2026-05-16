@@ -12,6 +12,7 @@ import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_shadows.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/subject_visuals.dart';
 import '../../../../core/widgets/pressable.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../../shared/widgets/profile_avatar.dart';
@@ -226,19 +227,8 @@ class _GamificationViewState extends State<_GamificationView> {
     );
   }
 
-  IconData _iconForSubject(String subjectName) {
-    final lower = subjectName.toLowerCase();
-    if (lower.contains('math') || lower.contains('calculus')) {
-      return Icons.calculate_rounded;
-    }
-    if (lower.contains('phys') || lower.contains('mechanic')) {
-      return Icons.science_rounded;
-    }
-    if (lower.contains('liter')) return Icons.menu_book_rounded;
-    if (lower.contains('hist')) return Icons.public_rounded;
-    if (lower.contains('comput')) return Icons.computer_rounded;
-    return Icons.quiz_rounded;
-  }
+  IconData _iconForSubject(String subjectName) =>
+      SubjectVisuals.iconOf(subjectName);
 
   LeaderboardEntry? _entryByRank(List<LeaderboardEntry> entries, int rank) {
     for (final entry in entries) {

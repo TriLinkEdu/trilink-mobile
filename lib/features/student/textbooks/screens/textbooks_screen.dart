@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/subject_visuals.dart';
 import '../../../../core/widgets/empty_state_widget.dart';
 import '../../../../core/widgets/illustrations.dart';
 import '../../../../core/widgets/error_widget.dart';
@@ -58,39 +59,9 @@ class _TextbooksViewState extends State<_TextbooksView> {
     super.dispose();
   }
 
-  Color _colorForSubject(String subject) {
-    switch (subject.toLowerCase()) {
-      case 'mathematics':
-        return AppColors.computerScience;
-      case 'physics':
-        return AppColors.levelPurple;
-      case 'chemistry':
-        return AppColors.success;
-      case 'biology':
-        return AppColors.biology;
-      case 'history':
-        return AppColors.warning;
-      default:
-        return AppColors.info;
-    }
-  }
+  Color _colorForSubject(String subject) => SubjectVisuals.colorOf(subject);
 
-  IconData _iconForSubject(String subject) {
-    switch (subject.toLowerCase()) {
-      case 'mathematics':
-        return Icons.calculate_rounded;
-      case 'physics':
-        return Icons.science_rounded;
-      case 'chemistry':
-        return Icons.biotech_rounded;
-      case 'biology':
-        return Icons.eco_rounded;
-      case 'history':
-        return Icons.menu_book_rounded;
-      default:
-        return Icons.book_rounded;
-    }
-  }
+  IconData _iconForSubject(String subject) => SubjectVisuals.iconOf(subject);
 
   Future<void> _openTextbook(
     BuildContext context,
@@ -216,11 +187,13 @@ class _TextbooksViewState extends State<_TextbooksView> {
                         context.read<TextbookCubit>().loadTextbooks(),
                   )
                 : state.textbooks.isEmpty
-                ? const EmptyStateWidget(
+                ? EmptyStateWidget(
                     illustration: BooksIllustration(),
                     icon: Icons.menu_book_rounded,
                     title: 'No textbooks available',
                     subtitle: 'Textbooks will appear here when added.',
+                    actionLabel: 'Refresh',
+                    onAction: () => context.read<TextbookCubit>().loadTextbooks(),
                   )
                 : Column(
                     children: [

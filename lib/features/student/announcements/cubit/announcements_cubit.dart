@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../repositories/student_announcements_repository.dart';
 import 'announcements_state.dart';
@@ -9,6 +10,10 @@ class AnnouncementsCubit extends Cubit<AnnouncementsState> {
   final StudentAnnouncementsRepository _repository;
   DateTime? _lastLoadedAt;
 
+  /// Timestamp of the most recent successful network refresh, or null if data
+  /// has never loaded from the network in this session.
+  DateTime? get lastLoadedAt => _lastLoadedAt;
+
   static const Duration _ttl = Duration(minutes: 15);
 
   AnnouncementsCubit(this._repository) : super(const AnnouncementsState());
@@ -16,7 +21,9 @@ class AnnouncementsCubit extends Cubit<AnnouncementsState> {
   Future<void> loadIfNeeded() async {
     if (state.status == AnnouncementsStatus.loaded &&
         _lastLoadedAt != null &&
-        DateTime.now().difference(_lastLoadedAt!) < _ttl) return;
+        DateTime.now().difference(_lastLoadedAt!) < _ttl) {
+      return;
+    }
 
     final cached = _repository.getCached();
     if (cached != null) {
@@ -43,9 +50,13 @@ class AnnouncementsCubit extends Cubit<AnnouncementsState> {
       ));
       _lastLoadedAt = DateTime.now();
     } catch (e) {
+      final msg = e.toString();
+      debugPrint('[AnnouncementsCubit] loadAnnouncements failed: $msg');
       emit(state.copyWith(
         status: AnnouncementsStatus.error,
-        errorMessage: 'Unable to load announcements right now.',
+        errorMessage: msg.contains('ApiException')
+            ? msg.replaceFirst('ApiException', 'Error')
+            : 'Unable to load announcements right now.',
       ));
     }
   }

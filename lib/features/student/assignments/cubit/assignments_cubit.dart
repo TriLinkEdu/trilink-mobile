@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../models/assignment_model.dart';
 import '../repositories/student_assignments_repository.dart';
@@ -10,6 +11,10 @@ class AssignmentsCubit extends Cubit<AssignmentsState> {
   final StudentAssignmentsRepository _repository;
   DateTime? _lastLoadedAt;
 
+  /// Timestamp of the most recent successful network refresh, or null if data
+  /// has never loaded from the network in this session.
+  DateTime? get lastLoadedAt => _lastLoadedAt;
+
   static const Duration _ttl = Duration(minutes: 10);
 
   AssignmentsCubit(this._repository) : super(const AssignmentsState());
@@ -19,7 +24,9 @@ class AssignmentsCubit extends Cubit<AssignmentsState> {
   Future<void> loadIfNeeded() async {
     if (state.status == AssignmentsStatus.loaded &&
         _lastLoadedAt != null &&
-        DateTime.now().difference(_lastLoadedAt!) < _ttl) return;
+        DateTime.now().difference(_lastLoadedAt!) < _ttl) {
+      return;
+    }
 
     final cached = _repository.getCached();
     if (cached != null) {
@@ -48,9 +55,13 @@ class AssignmentsCubit extends Cubit<AssignmentsState> {
       ));
       _lastLoadedAt = DateTime.now();
     } catch (e) {
+      final msg = e.toString();
+      debugPrint('[AssignmentsCubit] loadAssignments failed: $msg');
       emit(state.copyWith(
         status: AssignmentsStatus.error,
-        errorMessage: 'Unable to load assignments. Please try again.',
+        errorMessage: msg.contains('ApiException')
+            ? msg.replaceFirst('ApiException', 'Error')
+            : 'Unable to load assignments. Please try again.',
       ));
     }
   }

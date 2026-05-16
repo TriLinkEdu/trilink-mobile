@@ -155,6 +155,7 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<StudentAssignmentsRepository>(
     () => useRealStudentData
         ? RealStudentAssignmentsRepository(
+            apiClient: sl<ApiClient>(),
             storageService: sl<StorageService>(),
             cacheService: sl<LocalCacheService>(),
           )
@@ -210,6 +211,7 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<StudentAnnouncementsRepository>(
     () => useRealStudentData
         ? RealStudentAnnouncementsRepository(
+            apiClient: sl<ApiClient>(),
             storageService: sl<StorageService>(),
             cacheService: sl<LocalCacheService>(),
           )

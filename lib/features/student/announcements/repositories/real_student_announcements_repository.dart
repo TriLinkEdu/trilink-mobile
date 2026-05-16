@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/services/local_cache_service.dart';
@@ -46,7 +47,8 @@ class RealStudentAnnouncementsRepository
         data.map((item) => item.toJson()).toList(),
       );
       return data;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[AnnouncementsRepo] fetchAnnouncements error: $e');
       if (_cache != null) return _cache!;
       rethrow;
     } finally {
@@ -55,7 +57,9 @@ class RealStudentAnnouncementsRepository
   }
 
   Future<List<AnnouncementModel>> _fetchFresh() async {
+    debugPrint('[AnnouncementsRepo] fetching ${ApiConstants.announcementsForMe}');
     final list = await _api.getList(ApiConstants.announcementsForMe);
+    debugPrint('[AnnouncementsRepo] received ${list.length} items');
 
     return list
         .whereType<Map<String, dynamic>>()

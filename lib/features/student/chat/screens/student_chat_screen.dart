@@ -513,14 +513,21 @@ class _ChatList extends StatelessWidget {
             physics: const AlwaysScrollableScrollPhysics(),
             child: ConstrainedBox(
               constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: const Center(
-                child: EmptyStateWidget(
-                  illustration: ChatBubblesIllustration(),
-                  icon: Icons.chat_bubble_outline_rounded,
-                  title: 'No conversations yet',
-                  subtitle:
-                      'Start a conversation with your classmates or teachers.',
-                ),
+              child: Center(
+                  child: EmptyStateWidget(
+                    illustration: ChatBubblesIllustration(),
+                    icon: Icons.chat_bubble_outline_rounded,
+                    title: 'No conversations yet',
+                    subtitle:
+                        'Start a conversation with your classmates or teachers.',
+                    actionLabel: 'Find Connections',
+                    onAction: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ConnectionsScreen()),
+                      );
+                    },
+                  ),
               ),
             ),
           );

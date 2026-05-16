@@ -9,6 +9,10 @@ class GradesCubit extends Cubit<GradesState> {
   final StudentGradesRepository _repository;
   DateTime? _lastLoadedAt;
 
+  /// Timestamp of the most recent successful network refresh, or null if data
+  /// has never loaded from the network in this session.
+  DateTime? get lastLoadedAt => _lastLoadedAt;
+
   static const Duration _ttl = Duration(minutes: 30);
 
   GradesCubit(this._repository) : super(const GradesState());

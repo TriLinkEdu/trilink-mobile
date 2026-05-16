@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../models/assignment_model.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/api_client.dart';
@@ -47,7 +48,8 @@ class RealStudentAssignmentsRepository implements StudentAssignmentsRepository {
       _fetchedAt = DateTime.now();
       await _persistCache(userId);
       return data;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[AssignmentsRepo] fetchAssignments error: $e');
       if (_cache != null) return _cache!;
       rethrow;
     } finally {
@@ -119,7 +121,9 @@ class RealStudentAssignmentsRepository implements StudentAssignmentsRepository {
 
   Future<List<AssignmentModel>> _fetchFresh() async {
     // Throws on failure — no silent fallback.
+    debugPrint('[AssignmentsRepo] fetching ${ApiConstants.assignmentsMe}');
     final rows = await _api.getList(ApiConstants.assignmentsMe);
+    debugPrint('[AssignmentsRepo] received ${rows.length} items');
     return rows.whereType<Map<String, dynamic>>().map(_mapRemote).toList();
   }
 

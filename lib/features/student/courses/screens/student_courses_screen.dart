@@ -3,8 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/models/curriculum_models.dart';
 import '../../../../core/routes/route_names.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/subject_visuals.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/branded_refresh.dart';
 import '../../../../core/widgets/empty_state_widget.dart';
@@ -34,27 +34,9 @@ class StudentCoursesScreen extends StatelessWidget {
 class _StudentCoursesView extends StatelessWidget {
   const _StudentCoursesView();
 
-  static const _subjectColors = <String, Color>{
-    'mathematics': AppColors.mathematics,
-    'physics': AppColors.physics,
-    'literature': AppColors.literature,
-    'history': AppColors.history,
-    'computer_science': AppColors.computerScience,
-  };
+  Color _colorFor(String subjectId) => SubjectVisuals.colorOf(subjectId);
 
-  static const _subjectIcons = <String, IconData>{
-    'mathematics': Icons.calculate_rounded,
-    'physics': Icons.science_rounded,
-    'literature': Icons.menu_book_rounded,
-    'history': Icons.history_edu_rounded,
-    'computer_science': Icons.computer_rounded,
-  };
-
-  Color _colorFor(String subjectId) =>
-      _subjectColors[subjectId] ?? AppColors.primary;
-
-  IconData _iconFor(String subjectId) =>
-      _subjectIcons[subjectId] ?? Icons.school_rounded;
+  IconData _iconFor(String subjectId) => SubjectVisuals.iconOf(subjectId);
 
   @override
   Widget build(BuildContext context) {
@@ -85,11 +67,13 @@ class _StudentCoursesView extends StatelessWidget {
     }
 
     if (state.subjects.isEmpty) {
-      return const EmptyStateWidget(
+      return EmptyStateWidget(
         illustration: BooksIllustration(),
         icon: Icons.school_rounded,
         title: 'No courses enrolled',
         subtitle: 'Your enrolled courses will appear here.',
+        actionLabel: 'Refresh',
+        onAction: () => context.read<CourseListCubit>().loadCourses(),
       );
     }
 

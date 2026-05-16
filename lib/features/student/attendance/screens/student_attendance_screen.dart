@@ -10,6 +10,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/subject_visuals.dart';
 import '../../../../core/theme/app_shadows.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
@@ -239,11 +240,13 @@ class _AttendanceViewState extends State<_AttendanceView> {
 
                     final records = state.records;
                     if (records.isEmpty) {
-                      return const EmptyStateWidget(
+                      return EmptyStateWidget(
                         illustration: ClipboardIllustration(),
                         icon: Icons.fact_check_rounded,
                         title: 'No attendance records',
                         subtitle: 'Your attendance records will appear here.',
+                        actionLabel: 'Refresh',
+                        onAction: () => context.read<AttendanceCubit>().loadAttendance(),
                       );
                     }
 
@@ -545,23 +548,11 @@ class _AttendanceViewState extends State<_AttendanceView> {
     }).toList()..sort((a, b) => b.percentage.compareTo(a.percentage));
   }
 
-  IconData _iconForSubject(String subjectName) {
-    return switch (subjectName.toLowerCase()) {
-      'mathematics' => Icons.calculate_rounded,
-      'physics' => Icons.science_rounded,
-      'english literature' || 'literature' => Icons.auto_stories_rounded,
-      _ => Icons.school_rounded,
-    };
-  }
+  IconData _iconForSubject(String subjectName) =>
+      SubjectVisuals.iconOf(subjectName);
 
-  Color _colorForSubject(String subjectName) {
-    return switch (subjectName.toLowerCase()) {
-      'mathematics' => AppColors.mathematics,
-      'physics' => AppColors.physics,
-      'english literature' || 'literature' => AppColors.literature,
-      _ => Theme.of(context).colorScheme.onSurfaceVariant,
-    };
-  }
+  Color _colorForSubject(String subjectName) =>
+      SubjectVisuals.colorOf(subjectName);
 }
 
 class _SubjectAttendanceSummary {

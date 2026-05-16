@@ -246,13 +246,17 @@ class _CalendarViewState extends State<_CalendarView> {
                                   constraints: BoxConstraints(
                                     minHeight: constraints.maxHeight,
                                   ),
-                                  child: const Center(
+                                  child: Center(
                                     child: EmptyStateWidget(
                                       illustration: CalendarIllustration(),
                                       icon: Icons.event_available_rounded,
                                       title: 'No events today',
                                       subtitle:
                                           'Nothing scheduled for this day. Enjoy!',
+                                      actionLabel: 'View All Events',
+                                      onAction: () {
+                                        // Navigate to full calendar view or show all events
+                                      },
                                     ),
                                   ),
                                 ),
