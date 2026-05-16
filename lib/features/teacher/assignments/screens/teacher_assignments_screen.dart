@@ -106,8 +106,9 @@ class _TeacherAssignmentsScreenState extends State<TeacherAssignmentsScreen> {
       _refresh();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Failed: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed: $e')));
     }
   }
 
@@ -119,11 +120,13 @@ class _TeacherAssignmentsScreenState extends State<TeacherAssignmentsScreen> {
         content: Text('Delete "${a['title'] ?? ''}"? This cannot be undone.'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton.tonal(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Delete')),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
         ],
       ),
     );
@@ -133,8 +136,9 @@ class _TeacherAssignmentsScreenState extends State<TeacherAssignmentsScreen> {
       _refresh();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Delete failed: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
     }
   }
 
@@ -176,40 +180,44 @@ class _TeacherAssignmentsScreenState extends State<TeacherAssignmentsScreen> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
-                    ? Center(child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Text(_error!, textAlign: TextAlign.center),
-                      ))
-                    : _items.isEmpty
-                        ? const Center(
-                            child: Text('No assignments match your filters.'))
-                        : RefreshIndicator(
-                            onRefresh: _refresh,
-                            child: ListView.separated(
-                              padding: const EdgeInsets.all(12),
-                              itemCount: _items.length,
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 6),
-                              itemBuilder: (_, i) {
-                                final a = _items[i];
-                                return _AssignmentTile(
-                                  data: a,
-                                  onTap: () => Navigator.pushNamed(
-                                    context,
-                                    RouteNames.teacherAssignmentSubmissions,
-                                    arguments: <String, dynamic>{
-                                      'assignmentId': a['id'],
-                                      'title': a['title'],
-                                    },
-                                  ),
-                                  onEdit: () => _openForm(existing: a),
-                                  onPublish: () => _publish(
-                                      a, !((a['published'] as bool?) ?? false)),
-                                  onDelete: () => _delete(a),
-                                );
-                              },
-                            ),
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(_error!, textAlign: TextAlign.center),
+                    ),
+                  )
+                : _items.isEmpty
+                ? const Center(
+                    child: Text('No assignments match your filters.'),
+                  )
+                : RefreshIndicator(
+                    onRefresh: _refresh,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.all(12),
+                      itemCount: _items.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 6),
+                      itemBuilder: (_, i) {
+                        final a = _items[i];
+                        return _AssignmentTile(
+                          data: a,
+                          onTap: () => Navigator.pushNamed(
+                            context,
+                            RouteNames.teacherAssignmentSubmissions,
+                            arguments: <String, dynamic>{
+                              'assignmentId': a['id'],
+                              'title': a['title'],
+                            },
                           ),
+                          onEdit: () => _openForm(existing: a),
+                          onPublish: () => _publish(
+                            a,
+                            !((a['published'] as bool?) ?? false),
+                          ),
+                          onDelete: () => _delete(a),
+                        );
+                      },
+                    ),
+                  ),
           ),
         ],
       ),
@@ -359,9 +367,11 @@ class _Filters extends StatelessWidget {
     final subj = c['subjectName'] ?? c['subject']?['name'] ?? '';
     final grade = c['gradeName'] ?? c['grade']?['name'] ?? '';
     final section = c['sectionName'] ?? c['section']?['name'] ?? '';
-    return [subj, grade, if ((section as String).isNotEmpty) 'Sec $section']
-        .where((e) => (e as String).isNotEmpty)
-        .join(' • ');
+    return [
+      subj,
+      grade,
+      if ((section as String).isNotEmpty) 'Sec $section',
+    ].where((e) => (e as String).isNotEmpty).join(' • ');
   }
 }
 
@@ -393,9 +403,13 @@ class _AssignmentTile extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text([subj, grade, if ((section as String).isNotEmpty) 'Sec $section']
-                .where((e) => (e as String).isNotEmpty)
-                .join(' • ')),
+            Text(
+              [
+                subj,
+                grade,
+                if ((section as String).isNotEmpty) 'Sec $section',
+              ].where((e) => (e as String).isNotEmpty).join(' • '),
+            ),
             const SizedBox(height: 4),
             Wrap(
               spacing: 6,
@@ -407,10 +421,7 @@ class _AssignmentTile extends StatelessWidget {
                       : theme.colorScheme.outline,
                 ),
                 if (overdue)
-                  _Chip(
-                    label: 'Overdue',
-                    color: theme.colorScheme.error,
-                  ),
+                  _Chip(label: 'Overdue', color: theme.colorScheme.error),
                 if ((data['deadline']?.toString() ?? '').isNotEmpty)
                   _Chip(
                     label:
@@ -468,7 +479,10 @@ class _Chip extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-            color: color, fontSize: 11, fontWeight: FontWeight.w600),
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
