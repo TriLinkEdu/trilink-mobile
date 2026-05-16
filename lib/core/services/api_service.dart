@@ -12,6 +12,14 @@ class ApiService {
   factory ApiService() => _instance;
   ApiService._internal();
 
+  static const Set<String> _allowedGradeTypes = {
+    'exam',
+    'assignment',
+    'quiz',
+    'project',
+    'other',
+  };
+
   final ApiClient _api = ApiClient();
 
   Future<T> _tryOr<T>(Future<T> Function() apiCall, T fallback) async {
@@ -152,6 +160,13 @@ class ApiService {
   ) => _tryOr(
     () => _api.get(ApiConstants.attendanceClassReport(classOfferingId)),
     DummyData.classAttendanceReport,
+  );
+
+  Future<Map<String, dynamic>> getClassAttendanceAnalytics(
+    String classOfferingId,
+  ) => _tryOr(
+    () => _api.get(ApiConstants.attendanceClassAnalytics(classOfferingId)),
+    DummyData.classAttendanceAnalytics,
   );
 
   // ─── Calendar ───────────────────────────────────────────
@@ -1267,8 +1282,7 @@ class ApiService {
     required String classOfferingId,
     required String studentId,
     required String title,
-    required String
-    type, // assignment|quiz|exam|midterm|final|project|participation
+    required String type, // assignment|quiz|exam|project|other
     required num maxScore,
     num? score,
     String? note,
@@ -1279,7 +1293,7 @@ class ApiService {
       'classOfferingId': classOfferingId,
       'studentId': studentId,
       'title': title,
-      'type': type,
+      'type': _normalizeGradeType(type),
       'maxScore': maxScore,
       if (score != null) 'score': score,
       if (note != null) 'note': note,
@@ -1302,13 +1316,19 @@ class ApiService {
     data: {
       'classOfferingId': classOfferingId,
       'title': title,
-      'type': type,
+      'type': _normalizeGradeType(type),
       'maxScore': maxScore,
       'entries': entries,
       if (note != null) 'note': note,
       if (termId != null) 'termId': termId,
     },
   );
+
+  String _normalizeGradeType(String raw) {
+    final value = raw.trim().toLowerCase();
+    if (_allowedGradeTypes.contains(value)) return value;
+    return 'other';
+  }
 
   Future<Map<String, dynamic>> updateGrade(
     String id,

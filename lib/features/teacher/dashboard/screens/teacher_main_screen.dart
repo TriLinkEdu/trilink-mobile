@@ -313,14 +313,7 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                     Navigator.pushNamed(context, RouteNames.teacherHomeroom);
                   },
                 ),
-                _DrawerItem(
-                  icon: Icons.campaign_outlined,
-                  label: 'Broadcast',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushNamed(context, RouteNames.teacherBroadcast);
-                  },
-                ),
+
                 const Divider(height: 1),
                 _DrawerSection(title: 'COMMUNICATION'),
                 _DrawerItem(
@@ -363,14 +356,6 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                 ),
                 const Divider(height: 1),
                 _DrawerSection(title: 'TOOLS'),
-                _DrawerItem(
-                  icon: Icons.people_outline,
-                  label: 'Student Analytics',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushNamed(context, RouteNames.teacherStudentList);
-                  },
-                ),
                 _DrawerItem(
                   icon: Icons.smart_toy_outlined,
                   label: 'AI Assistant',

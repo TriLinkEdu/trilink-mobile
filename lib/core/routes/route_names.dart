@@ -81,7 +81,7 @@ class RouteNames {
   // Teacher — §4 features
   static const String teacherHomeroom = '/teacher/homeroom';
   static const String teacherHomeroomRemark = '/teacher/homeroom/remark';
-  static const String teacherBroadcast = '/teacher/notifications/broadcast';
+
   static const String teacherAssignments = '/teacher/assignments';
   static const String teacherAssignmentForm = '/teacher/assignments/form';
   static const String teacherAssignmentSubmissions =

@@ -26,6 +26,14 @@ class GradeEntryScreen extends StatefulWidget {
 }
 
 class _GradeEntryScreenState extends State<GradeEntryScreen> {
+  static const Set<String> _allowedTypes = {
+    'exam',
+    'assignment',
+    'quiz',
+    'project',
+    'other',
+  };
+
   bool _loading = true;
   bool _saving = false;
   String? _error;
@@ -76,7 +84,7 @@ class _GradeEntryScreenState extends State<GradeEntryScreen> {
       if (eg != null) {
         _titleCtrl.text = eg['title']?.toString() ?? '';
         _maxScoreCtrl.text = (eg['maxScore'] ?? 100).toString();
-        _type = (eg['type'] as String?) ?? 'assignment';
+        _type = _normalizeType((eg['type'] as String?) ?? 'assignment');
         for (final e in (eg['entries'] as List? ?? const [])) {
           if (e is! Map) continue;
           final sid = e['studentId'] as String?;
@@ -120,7 +128,7 @@ class _GradeEntryScreenState extends State<GradeEntryScreen> {
       await ApiService().createGradesBulk(
         classOfferingId: widget.classOfferingId,
         title: title,
-        type: _type,
+        type: _normalizeType(_type),
         maxScore: maxScore,
         entries: entries,
         note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
@@ -192,25 +200,18 @@ class _GradeEntryScreenState extends State<GradeEntryScreen> {
                           DropdownMenuItem(value: 'quiz', child: Text('Quiz')),
                           DropdownMenuItem(value: 'exam', child: Text('Exam')),
                           DropdownMenuItem(
-                            value: 'midterm',
-                            child: Text('Midterm'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'final',
-                            child: Text('Final'),
-                          ),
-                          DropdownMenuItem(
                             value: 'project',
                             child: Text('Project'),
                           ),
                           DropdownMenuItem(
-                            value: 'participation',
-                            child: Text('Participation'),
+                            value: 'other',
+                            child: Text('Other'),
                           ),
                         ],
                         onChanged: _isEdit
                             ? null
-                            : (v) => setState(() => _type = v ?? 'assignment'),
+                            : (v) =>
+                                  setState(() => _type = _normalizeType(v)),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -277,6 +278,12 @@ class _GradeEntryScreenState extends State<GradeEntryScreen> {
               ],
             ),
     );
+  }
+
+  String _normalizeType(String? raw) {
+    final value = (raw ?? '').trim().toLowerCase();
+    if (_allowedTypes.contains(value)) return value;
+    return 'other';
   }
 }
 

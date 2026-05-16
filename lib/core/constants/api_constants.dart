@@ -115,6 +115,8 @@ class ApiConstants {
       '/reports/attendance/student/$studentId/by-day?date=$date';
   static String attendanceClassReport(String classOfferingId) =>
       '/reports/attendance/class/$classOfferingId';
+  static String attendanceClassAnalytics(String classOfferingId) =>
+      '/reports/attendance/class/$classOfferingId/analytics';
   static String attendanceStudentByTerm(String studentId, String termId) =>
       '/reports/attendance/student/$studentId/term/$termId';
 

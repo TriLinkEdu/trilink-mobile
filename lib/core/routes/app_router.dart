@@ -27,7 +27,7 @@ import '../../features/teacher/schedule/screens/teacher_schedule_screen.dart';
 import '../../features/teacher/grades/screens/teacher_grade_analytics_screen.dart';
 import '../../features/teacher/homeroom/screens/teacher_homeroom_screen.dart';
 import '../../features/teacher/homeroom/screens/teacher_remark_form_screen.dart';
-import '../../features/teacher/notifications/screens/broadcast_notification_screen.dart';
+
 import '../../features/teacher/attendance/screens/teacher_all_sessions_screen.dart';
 import '../../features/teacher/assignments/screens/teacher_assignments_screen.dart';
 import '../../features/teacher/assignments/screens/assignment_form_screen.dart';
@@ -161,10 +161,7 @@ class AppRouter {
             studentName: (args?['studentName'] ?? '') as String,
           ),
         );
-      case RouteNames.teacherBroadcast:
-        return MaterialPageRoute(
-          builder: (_) => const BroadcastNotificationScreen(),
-        );
+
       case RouteNames.teacherSessionsMine:
         return MaterialPageRoute(
           builder: (_) => const TeacherAllSessionsScreen(),

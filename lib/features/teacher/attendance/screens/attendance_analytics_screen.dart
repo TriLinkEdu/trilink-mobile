@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
 
+enum _StudentFilter { all, mostAbsent, mostLate, mostPresent, atRisk }
+
 class AttendanceAnalyticsScreen extends StatefulWidget {
   const AttendanceAnalyticsScreen({super.key});
 
@@ -25,6 +27,9 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
   int _totalStudents = 0;
   int _presentCount = 0;
   int _excusedCount = 0;
+  List<Map<String, dynamic>> _studentSummaries = [];
+  String _searchQuery = '';
+  _StudentFilter _studentFilter = _StudentFilter.all;
   List<_WeekData> _weeklyData = [];
   List<_AbsentStudent> _mostAbsent = [];
   List<_AbsentStudent> _mostLate = [];
@@ -96,51 +101,18 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
         _className = null;
       });
 
-      final report = await ApiService().getClassAttendanceReport(
+      final report = await ApiService().getClassAttendanceAnalytics(
         _selectedClassId!,
       );
 
       if (!mounted) return;
 
+      _applyClassAnalytics(report);
+
       // Try to derive insights from real backend shape (sessions[].marks[])
       final sessions = report['sessions'] as List<dynamic>?;
       if (sessions != null && sessions.isNotEmpty) {
         _deriveFromSessions(report, sessions);
-      } else {
-        // Fallback to flat dummy/legacy shape
-        _averageAttendance =
-            (report['averageAttendance'] as num?)?.toDouble() ?? 0;
-        _totalAbsences = (report['totalAbsences'] as num?)?.toInt() ?? 0;
-        _lateArrivals = (report['lateArrivals'] as num?)?.toInt() ?? 0;
-        _className = report['className'] as String?;
-
-        final weekly = report['weeklyTrends'] as List<dynamic>? ?? [];
-        _weeklyData = weekly.map((w) {
-          final m = w as Map<String, dynamic>;
-          return _WeekData(
-            label: m['label']?.toString() ?? '',
-            percentage: (m['percentage'] as num?)?.toDouble() ?? 0,
-          );
-        }).toList();
-
-        final absent = report['mostAbsent'] as List<dynamic>? ?? [];
-        _mostAbsent = absent.map((a) {
-          final m = a as Map<String, dynamic>;
-          return _AbsentStudent(
-            name: m['name']?.toString() ?? 'Unknown',
-            absences: (m['absences'] as num?)?.toInt() ?? 0,
-            totalDays: (m['totalDays'] as num?)?.toInt() ?? 1,
-          );
-        }).toList();
-
-        final daily = report['dailyBreakdown'] as List<dynamic>? ?? [];
-        _dailyBreakdown = daily.map((d) {
-          final m = d as Map<String, dynamic>;
-          return _DayAttendance(
-            day: m['day']?.toString() ?? '',
-            percentage: (m['percentage'] as num?)?.toInt() ?? 0,
-          );
-        }).toList();
       }
 
       setState(() {
@@ -153,6 +125,285 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
         _loadingReport = false;
       });
     }
+  }
+
+  void _applyClassAnalytics(Map<String, dynamic> report) {
+    _className = (report['className'] as String?)?.trim().isNotEmpty == true
+        ? report['className'] as String
+        : _className;
+
+    _totalSessions = _asInt(report['totalSessions']);
+    final totalMarks = _asInt(report['totalMarks']);
+    _presentCount = _asInt(report['present']);
+    _totalAbsences = _asInt(report['absent']);
+    _lateArrivals = _asInt(report['late']);
+    _excusedCount = _asInt(report['excused']);
+
+    final apiPercent = _asDouble(report['attendancePercent']);
+    if (apiPercent > 0) {
+      _averageAttendance = apiPercent;
+    } else {
+      final denominator =
+          totalMarks > 0
+          ? totalMarks
+          : (_presentCount + _lateArrivals + _totalAbsences + _excusedCount);
+      _averageAttendance = denominator > 0
+          ? ((_presentCount + _lateArrivals) / denominator) * 100
+          : 0;
+    }
+
+    final absentList = (report['mostAbsences'] as List<dynamic>? ?? [])
+        .whereType<Map>()
+        .map((m) {
+          final data = Map<String, dynamic>.from(m);
+          return _AbsentStudent(
+            name: _studentName(data),
+            absences: _asInt(data['absent']),
+            totalDays: _asInt(data['total']),
+          );
+        })
+        .where((s) => s.absences > 0)
+        .toList();
+    _mostAbsent = absentList;
+
+    final lateList = (report['mostLates'] as List<dynamic>? ?? [])
+        .whereType<Map>()
+        .map((m) {
+          final data = Map<String, dynamic>.from(m);
+          return _AbsentStudent(
+            name: _studentName(data),
+            absences: _asInt(data['late']),
+            totalDays: _asInt(data['total']),
+          );
+        })
+        .where((s) => s.absences > 0)
+        .toList();
+    _mostLate = lateList;
+
+    final summaries = (report['studentSummaries'] as List<dynamic>? ?? [])
+        .whereType<Map>()
+        .map((m) => Map<String, dynamic>.from(m))
+        .toList();
+    _totalStudents = summaries.length;
+    _studentSummaries = summaries;
+    _atRiskStudents = summaries
+        .where((s) => _asDouble(s['attendancePercent']) < 75)
+        .map(
+          (s) => _AbsentStudent(
+            name: _studentName(s),
+            absences: _asInt(s['absent']),
+            totalDays: _asInt(s['total']),
+          ),
+        )
+        .toList();
+  }
+
+  List<Map<String, dynamic>> _filteredStudents() {
+    final q = _searchQuery.trim().toLowerCase();
+    var list = _studentSummaries.toList();
+    if (q.isNotEmpty) {
+      list = list.where((s) {
+        final name = _studentName(s).toLowerCase();
+        return name.contains(q);
+      }).toList();
+    }
+
+    switch (_studentFilter) {
+      case _StudentFilter.mostAbsent:
+        list.sort((a, b) => _asInt(b['absent']).compareTo(_asInt(a['absent'])));
+        break;
+      case _StudentFilter.mostLate:
+        list.sort((a, b) => _asInt(b['late']).compareTo(_asInt(a['late'])));
+        break;
+      case _StudentFilter.mostPresent:
+        list.sort((a, b) => _asDouble(b['attendancePercent'])
+            .compareTo(_asDouble(a['attendancePercent'])));
+        break;
+      case _StudentFilter.atRisk:
+        list = list.where((s) => _asDouble(s['attendancePercent']) < 75).toList();
+        break;
+      case _StudentFilter.all:
+      default:
+        break;
+    }
+
+    return list;
+  }
+
+  Color _colorForPercentage(double pct) {
+    if (pct < 75) return AppColors.error;
+    if (pct < 90) return AppColors.accent;
+    return AppColors.success;
+  }
+
+  Widget _buildStudentListSection() {
+    final theme = Theme.of(context);
+    final students = _filteredStudents();
+    if (students.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'STUDENTS',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurfaceVariant,
+            letterSpacing: 0.8,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: theme.colorScheme.outlineVariant),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.search, size: 18, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        decoration: const InputDecoration(
+                          hintText: 'Search students',
+                          border: InputBorder.none,
+                          isDense: true,
+                        ),
+                        onChanged: (v) => setState(() => _searchQuery = v),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            PopupMenuButton<_StudentFilter>(
+              icon: const Icon(Icons.filter_list),
+              onSelected: (f) => setState(() => _studentFilter = f),
+              itemBuilder: (_) => [
+                const PopupMenuItem(value: _StudentFilter.all, child: Text('All')),
+                const PopupMenuItem(value: _StudentFilter.mostAbsent, child: Text('Most Absent')),
+                const PopupMenuItem(value: _StudentFilter.mostLate, child: Text('Most Late')),
+                const PopupMenuItem(value: _StudentFilter.mostPresent, child: Text('Most Present')),
+                const PopupMenuItem(value: _StudentFilter.atRisk, child: Text('At Risk')),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        ...students.map((s) {
+          final name = _studentName(s);
+          final attended = _asInt(s['total']) - _asInt(s['absent']);
+          final pct = _asDouble(s['attendancePercent']);
+          final color = _colorForPercentage(pct);
+          return Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: color.withOpacity(0.12),
+                  child: Text(
+                    name
+                        .split(' ')
+                        .where((w) => w.isNotEmpty)
+                        .map((w) => w[0])
+                        .take(2)
+                        .join()
+                        .toUpperCase(),
+                    style: TextStyle(color: color, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '${_asInt(s['present'])} present • ${_asInt(s['late'])} late • ${_asInt(s['absent'])} absent',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${pct.toStringAsFixed(0)}%',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${_asInt(s['total'])} sessions',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
+
+  String _studentName(Map<String, dynamic> data) {
+    final first = (data['firstName'] as String?)?.trim() ?? '';
+    final last = (data['lastName'] as String?)?.trim() ?? '';
+    final full = '$first $last'.trim();
+    if (full.isNotEmpty) return full;
+    return (data['studentName'] as String?)?.trim().isNotEmpty == true
+        ? data['studentName'] as String
+        : ((data['name'] as String?)?.trim().isNotEmpty == true
+              ? data['name'] as String
+              : 'Student');
+  }
+
+  int _asInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
+  }
+
+  double _asDouble(dynamic value) {
+    if (value is double) return value;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0;
+    return 0;
   }
 
   void _deriveFromSessions(
@@ -487,6 +738,10 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
               _buildAtRiskSection(),
               const SizedBox(height: 24),
             ],
+            if (_studentSummaries.isNotEmpty) ...[
+              _buildStudentListSection(),
+              const SizedBox(height: 24),
+            ],
             if (_dailyBreakdown.isNotEmpty) ...[
               _buildDailyBreakdownSection(),
               const SizedBox(height: 32),
@@ -565,33 +820,50 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
   }
 
   Widget _buildOverviewCards() {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: _OverviewCard(
-            title: 'Average\nAttendance',
-            value: '${_averageAttendance.round()}%',
-            icon: Icons.trending_up,
-            color: AppColors.secondary,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _OverviewCard(
+                title: 'Average\nAttendance',
+                value: '${_averageAttendance.round()}%',
+                icon: Icons.trending_up,
+                color: AppColors.secondary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _OverviewCard(
+                title: 'Total\nAbsences',
+                value: '$_totalAbsences',
+                icon: Icons.person_off_outlined,
+                color: AppColors.error,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _OverviewCard(
-            title: 'Total\nAbsences',
-            value: '$_totalAbsences',
-            icon: Icons.person_off_outlined,
-            color: AppColors.error,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _OverviewCard(
-            title: 'Late\nArrivals',
-            value: '$_lateArrivals',
-            icon: Icons.schedule,
-            color: AppColors.accent,
-          ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _OverviewCard(
+                title: 'Late\nArrivals',
+                value: '$_lateArrivals',
+                icon: Icons.schedule,
+                color: AppColors.accent,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _OverviewCard(
+                title: 'Excused\nMarks',
+                value: '$_excusedCount',
+                icon: Icons.verified_outlined,
+                color: AppColors.info,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -727,6 +999,31 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
   Widget _buildInsightsCard() {
     final theme = Theme.of(context);
     final insights = <String>[];
+    final totalTracked =
+        _presentCount + _lateArrivals + _totalAbsences + _excusedCount;
+
+    if (totalTracked > 0) {
+      if (_averageAttendance >= 95) {
+        insights.add(
+          'Excellent attendance at ${_averageAttendance.toStringAsFixed(1)}% across $totalTracked marks.',
+        );
+      } else if (_averageAttendance >= 85) {
+        insights.add(
+          'Attendance is stable at ${_averageAttendance.toStringAsFixed(1)}%, with room to reduce absences.',
+        );
+      } else {
+        insights.add(
+          'Attendance is low at ${_averageAttendance.toStringAsFixed(1)}% and needs intervention.',
+        );
+      }
+    }
+
+    if (_totalAbsences > 0 || _lateArrivals > 0 || _excusedCount > 0) {
+      insights.add(
+        'Breakdown: $_totalAbsences absent, $_lateArrivals late, $_excusedCount excused.',
+      );
+    }
+
     if (_worstDay != null) {
       insights.add(
         'Most absences happen on $_worstDay. Consider checking in with students that day.',
@@ -743,6 +1040,11 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
     if (_mostLate.isNotEmpty) {
       insights.add(
         '${_mostLate.first.name} has been late ${_mostLate.first.absences} times — most in the class.',
+      );
+    }
+    if (_mostAbsent.isNotEmpty) {
+      insights.add(
+        '${_mostAbsent.first.name} has the highest absences (${_mostAbsent.first.absences}).',
       );
     }
     if (insights.isEmpty) {

@@ -262,13 +262,7 @@ class _ParentResultsScreenState extends State<ParentResultsScreen> {
     final exams = _report['exams'] as Map<String, dynamic>? ?? {};
     final releasedCount = exams['releasedAttempts'] as int? ?? 0;
 
-    final avgColor = avgPct == null
-        ? Colors.grey
-        : avgPct >= 80
-        ? AppColors.success
-        : avgPct >= 60
-        ? AppColors.warning
-        : AppColors.error;
+    // avgColor removed — summary card now uses a neutral theme gradient.
 
     return SizedBox(
       width: double.infinity,
@@ -276,15 +270,19 @@ class _ParentResultsScreenState extends State<ParentResultsScreen> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [avgColor, avgColor.withValues(alpha: 0.75)],
+            // Use a neutral, subtle gradient instead of a solid semantic color.
+            colors: [
+              Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.12),
+              Theme.of(context).colorScheme.surface.withOpacity(0.04),
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: avgColor.withValues(alpha: 0.3),
-              blurRadius: 12,
+              color: Theme.of(context).shadowColor.withOpacity(0.06),
+              blurRadius: 10,
               offset: const Offset(0, 4),
             ),
           ],
@@ -295,15 +293,15 @@ class _ParentResultsScreenState extends State<ParentResultsScreen> {
             Text(
               'Overall Performance',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.9),
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 14,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               avgPct != null ? '${avgPct.toStringAsFixed(0)}%' : '--',
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 48,
                 fontWeight: FontWeight.bold,
               ),
@@ -312,7 +310,7 @@ class _ParentResultsScreenState extends State<ParentResultsScreen> {
             Text(
               'Average across $courses subject${courses == 1 ? '' : 's'}',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.85),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 13,
               ),
             ),
@@ -320,21 +318,24 @@ class _ParentResultsScreenState extends State<ParentResultsScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.06),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.assignment_outlined,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onSurface,
                     size: 14,
                   ),
                   const SizedBox(width: 6),
                   Text(
                     '$releasedCount exam${releasedCount == 1 ? '' : 's'} released',
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
@@ -404,8 +405,7 @@ class _ParentResultsScreenState extends State<ParentResultsScreen> {
         final teacher = co['teacher'] as Map<String, dynamic>? ?? {};
         final assessments =
             course['assessments'] as Map<String, dynamic>? ?? {};
-        final attendance = course['attendance'] as Map<String, dynamic>? ?? {};
-        final totals = attendance['totals'] as Map<String, dynamic>? ?? {};
+        
 
         final subjectId = subject['id'] as String? ?? '';
         final subjectName = subject['name'] as String? ?? 'Unknown';
@@ -701,28 +701,5 @@ class _SubjectResultCardState extends State<_SubjectResultCard> {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value, Color color) {
-    return Row(
-      children: [
-        Icon(icon, size: 14, color: color),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const Spacer(),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: color,
-          ),
-        ),
-      ],
-    );
-  }
+  // Local _buildInfoRow removed — duplicate helper exists elsewhere in the codebase.
 }

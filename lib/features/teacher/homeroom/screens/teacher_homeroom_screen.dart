@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/services/api_service.dart';
 import '../../../../core/routes/route_names.dart';
+import '../../../parent/report_cards/screens/parent_report_card_screen.dart';
 
 /// Teacher → Homeroom class screen.
 ///
@@ -63,6 +64,44 @@ class _TeacherHomeroomScreenState extends State<TeacherHomeroomScreen> {
     );
   }
 
+  void _openStudentReportCard(Map<String, dynamic> student) {
+    final id = student['id'] as String? ?? '';
+    if (id.isEmpty) return;
+    final name = '${student['firstName'] ?? ''} ${student['lastName'] ?? ''}'
+        .trim();
+    // Reuse the role-neutral term-report-card screen. It calls
+    // `GET /report-cards/student/:studentId/term/:termId` internally.
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ParentReportCardScreen(
+          studentId: id,
+          childName: name.isEmpty ? null : name,
+        ),
+      ),
+    );
+  }
+
+  void _openClassReportCard() {
+    final a = _assignment;
+    if (a == null) return;
+    final gradeId = a['gradeId'] as String? ?? '';
+    final sectionId = a['sectionId'] as String? ?? '';
+    if (gradeId.isEmpty || sectionId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Homeroom assignment is missing grade/section.'),
+        ),
+      );
+      return;
+    }
+    Navigator.pushNamed(
+      context,
+      RouteNames.teacherClassRanking,
+      arguments: <String, String>{'gradeId': gradeId, 'sectionId': sectionId},
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -81,91 +120,121 @@ class _TeacherHomeroomScreenState extends State<TeacherHomeroomScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? _ErrorBanner(message: _error!, onRetry: _load)
-              : RefreshIndicator(
-                  onRefresh: _load,
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      _AssignmentCard(assignment: _assignment),
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Students (${_students.length})',
-                            style: theme.textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.w700),
-                          ),
-                        ],
+          ? _ErrorBanner(message: _error!, onRetry: _load)
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _AssignmentCard(assignment: _assignment),
+                  if (_assignment != null) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.tonalIcon(
+                        onPressed: _openClassReportCard,
+                        icon: const Icon(Icons.assessment_outlined),
+                        label: const Text('Class report card'),
                       ),
-                      const SizedBox(height: 8),
-                      if (_students.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 32),
-                          child: Center(
-                            child: Text(
-                              _assignment == null
-                                  ? 'You are not assigned as a homeroom teacher.'
-                                  : 'No students enrolled yet.',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                        )
-                      else
-                        ..._students.map(
-                          (s) => Card(
-                            margin: const EdgeInsets.symmetric(vertical: 4),
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor:
-                                    theme.colorScheme.primaryContainer,
-                                child: Text(
-                                  _initials(s),
-                                  style: TextStyle(
-                                    color: theme.colorScheme.onPrimaryContainer,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                              title: Text(
-                                '${s['firstName'] ?? ''} ${s['lastName'] ?? ''}'
-                                    .trim(),
-                              ),
-                              subtitle: Text(
-                                [
-                                  if ((s['grade'] as String?)?.isNotEmpty ??
-                                      false)
-                                    s['grade'],
-                                  if ((s['section'] as String?)?.isNotEmpty ??
-                                      false)
-                                    'Section ${s['section']}',
-                                ].whereType<String>().join(' • '),
-                              ),
-                              trailing: TextButton.icon(
-                                onPressed: () => _openRemarkForm(s),
-                                icon: const Icon(Icons.rate_review_outlined),
-                                label: const Text('Remark'),
-                              ),
-                            ),
-                          ),
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Students (${_students.length})',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
                         ),
+                      ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  if (_students.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 32),
+                      child: Center(
+                        child: Text(
+                          _assignment == null
+                              ? 'You are not assigned as a homeroom teacher.'
+                              : 'No students enrolled yet.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    ..._students.map(
+                      (s) => Container(
+                        margin: const EdgeInsets.symmetric(vertical: 6),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: theme.colorScheme.outlineVariant,
+                          ),
+                        ),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          leading: Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.person_outline,
+                              color: theme.colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                          title: Text(
+                            '${s['firstName'] ?? ''} ${s['lastName'] ?? ''}'
+                                .trim(),
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          subtitle: Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Wrap(
+                              spacing: 8,
+                              runSpacing: 6,
+                              children: [
+                                if ((s['grade'] as String?)?.isNotEmpty ??
+                                    false)
+                                  _Pill(label: '${s['grade']}'),
+                                if ((s['section'] as String?)?.isNotEmpty ??
+                                    false)
+                                  _Pill(label: 'Section ${s['section']}'),
+                              ],
+                            ),
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                tooltip: 'Report card',
+                                onPressed: () => _openStudentReportCard(s),
+                                icon: const Icon(Icons.assessment_outlined),
+                              ),
+                              IconButton(
+                                tooltip: 'Remark',
+                                onPressed: () => _openRemarkForm(s),
+                                icon: const Icon(Icons.rate_review_outlined),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
     );
-  }
-
-  String _initials(Map<String, dynamic> s) {
-    final f = (s['firstName'] as String? ?? '').trim();
-    final l = (s['lastName'] as String? ?? '').trim();
-    final parts = [
-      if (f.isNotEmpty) f[0],
-      if (l.isNotEmpty) l[0],
-    ];
-    return parts.join().toUpperCase();
   }
 }
 
@@ -200,35 +269,97 @@ class _AssignmentCard extends StatelessWidget {
     }
 
     return Card(
-      child: Padding(
+      elevation: 0,
+      color: theme.colorScheme.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              theme.colorScheme.primary.withValues(alpha: 0.08),
+              theme.colorScheme.surface,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+        ),
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Active assignment',
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: theme.colorScheme.primary,
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.class_outlined,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Active assignment',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.4,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Homeroom class details for the current academic year',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.45,
+                ),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: theme.colorScheme.outlineVariant),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.verified_outlined,
+                    size: 18,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Homeroom assignment is active for the current academic year.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                        height: 1.25,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
-            _kv('Assignment ID', assignment!['id']),
-            _kv('Academic year', assignment!['academicYearId']),
-            _kv('Grade ID', assignment!['gradeId']),
-            _kv('Section ID', assignment!['sectionId']),
-            _kv('Created at', assignment!['createdAt']),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _kv(String k, dynamic v) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Text(
-        '$k: ${v ?? '-'}',
-        style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
       ),
     );
   }
@@ -253,6 +384,32 @@ class _ErrorBanner extends StatelessWidget {
             const SizedBox(height: 12),
             ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Pill extends StatelessWidget {
+  final String label;
+
+  const _Pill({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: theme.colorScheme.primary,
         ),
       ),
     );

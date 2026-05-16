@@ -262,6 +262,57 @@ class DummyData {
         ],
       };
 
+  static Map<String, dynamic> get classAttendanceAnalytics => {
+        'className': 'Grade 9 A | Mathematics',
+        'overview': {
+          'totalSessions': 24,
+          'totalMarks': 720,
+          'statusCounts': {
+            'present': 648,
+            'absent': 40,
+            'late': 22,
+            'excused': 10,
+          },
+        },
+        'attendancePercentage': 93.1,
+        'mostAbsences': [
+          {'studentName': 'Yusuf Omar', 'absenceCount': 6, 'lateCount': 1},
+          {'studentName': 'Meron Tesfaye', 'absenceCount': 5, 'lateCount': 0},
+          {'studentName': 'Daniel Tadesse', 'absenceCount': 4, 'lateCount': 2},
+        ],
+        'mostLates': [
+          {'studentName': 'Daniel Tadesse', 'lateCount': 4, 'absenceCount': 2},
+          {'studentName': 'Hana Girma', 'lateCount': 3, 'absenceCount': 1},
+          {'studentName': 'Ali Hassan', 'lateCount': 2, 'absenceCount': 0},
+        ],
+        'studentSummaries': [
+          {
+            'studentName': 'Ali Hassan',
+            'presentCount': 23,
+            'absentCount': 0,
+            'lateCount': 2,
+            'excusedCount': 0,
+            'attendancePercentage': 95.8,
+          },
+          {
+            'studentName': 'Yusuf Omar',
+            'presentCount': 18,
+            'absentCount': 6,
+            'lateCount': 1,
+            'excusedCount': 0,
+            'attendancePercentage': 79.2,
+          },
+          {
+            'studentName': 'Meron Tesfaye',
+            'presentCount': 19,
+            'absentCount': 5,
+            'lateCount': 0,
+            'excusedCount': 1,
+            'attendancePercentage': 79.2,
+          },
+        ],
+      };
+
   static Map<String, dynamic> studentAttendanceReport(String studentId) => {
         'studentId': studentId,
         'attendanceRate': '95',

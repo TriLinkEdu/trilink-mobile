@@ -164,7 +164,7 @@ class _ParentReportCardScreenState extends State<ParentReportCardScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      'GPA ${_data['overallGpa'] ?? '-'}  •  ${_data['overallPercent'] ?? '-'}%  •  ${_data['overallLetterGrade'] ?? '-'}',
+                                      '${_data['overallPercent'] ?? '-'}%  •  ${_data['overallLetterGrade'] ?? '-'}',
                                       style: theme.textTheme.titleMedium,
                                     ),
                                     const SizedBox(height: 8),

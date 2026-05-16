@@ -87,7 +87,6 @@ class _ParentYearlyReportCardScreenState
                               title: Text(
                                   t['termName']?.toString() ?? 'Term'),
                               subtitle: Text(
-                                'GPA ${t['gpa'] ?? '-'}  •  '
                                 '${t['averagePercent'] ?? '-'}%  •  '
                                 '${t['letterGrade'] ?? '-'}',
                               ),
