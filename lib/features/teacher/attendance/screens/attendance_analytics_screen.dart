@@ -180,7 +180,8 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
       for (final m in marks) {
         final mark = m as Map<String, dynamic>;
         final status = (mark['status'] as String? ?? '').toLowerCase();
-        final studentId = (mark['studentId'] ?? mark['studentUserId']) as String?;
+        final studentId =
+            (mark['studentId'] ?? mark['studentUserId']) as String?;
         final firstName = (mark['studentFirstName'] ?? mark['firstName']) ?? '';
         final lastName = (mark['studentLastName'] ?? mark['lastName']) ?? '';
         final fullName = '$firstName $lastName'.trim().isEmpty
@@ -193,7 +194,10 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
         if (status == 'excused') excused++;
 
         final key = studentId ?? fullName;
-        final agg = perStudent.putIfAbsent(key, () => _StudentAgg(name: fullName));
+        final agg = perStudent.putIfAbsent(
+          key,
+          () => _StudentAgg(name: fullName),
+        );
         agg.total++;
         if (status == 'present') agg.present++;
         if (status == 'late') agg.late++;
@@ -210,11 +214,9 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
           final wkKey =
               '${weekStart.year}-${weekStart.month.toString().padLeft(2, '0')}-${weekStart.day.toString().padLeft(2, '0')}';
           final w = weeklyMap.putIfAbsent(
-              wkKey,
-              () => _WeekAgg(
-                    label:
-                        'Wk ${weekStart.month}/${weekStart.day}',
-                  ));
+            wkKey,
+            () => _WeekAgg(label: 'Wk ${weekStart.month}/${weekStart.day}'),
+          );
           w.total++;
           if (status == 'present' || status == 'late') w.attended++;
         }
@@ -227,8 +229,9 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
     _totalAbsences = absent;
     _excusedCount = excused;
     _totalStudents = perStudent.length;
-    _averageAttendance =
-        totalMarks > 0 ? ((present + late) / totalMarks) * 100 : 0;
+    _averageAttendance = totalMarks > 0
+        ? ((present + late) / totalMarks) * 100
+        : 0;
 
     // Most absent (top 5 sorted desc)
     final byAbsent = perStudent.values.toList()
@@ -236,11 +239,13 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
     _mostAbsent = byAbsent
         .where((a) => a.absent > 0)
         .take(5)
-        .map((a) => _AbsentStudent(
-              name: a.name,
-              absences: a.absent,
-              totalDays: a.total,
-            ))
+        .map(
+          (a) => _AbsentStudent(
+            name: a.name,
+            absences: a.absent,
+            totalDays: a.total,
+          ),
+        )
         .toList();
 
     // Most late
@@ -249,31 +254,35 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
     _mostLate = byLate
         .where((a) => a.late > 0)
         .take(5)
-        .map((a) => _AbsentStudent(
-              name: a.name,
-              absences: a.late,
-              totalDays: a.total,
-            ))
+        .map(
+          (a) => _AbsentStudent(
+            name: a.name,
+            absences: a.late,
+            totalDays: a.total,
+          ),
+        )
         .toList();
 
     // At-risk (<75% attendance)
-    final atRisk = perStudent.values.where((a) {
-      if (a.total == 0) return false;
-      final rate = (a.present + a.late) / a.total;
-      return rate < 0.75;
-    }).toList()
-      ..sort((a, b) {
-        final ra = (a.present + a.late) / a.total;
-        final rb = (b.present + b.late) / b.total;
-        return ra.compareTo(rb);
-      });
+    final atRisk =
+        perStudent.values.where((a) {
+          if (a.total == 0) return false;
+          final rate = (a.present + a.late) / a.total;
+          return rate < 0.75;
+        }).toList()..sort((a, b) {
+          final ra = (a.present + a.late) / a.total;
+          final rb = (b.present + b.late) / b.total;
+          return ra.compareTo(rb);
+        });
     _atRiskStudents = atRisk
         .take(8)
-        .map((a) => _AbsentStudent(
-              name: a.name,
-              absences: a.absent,
-              totalDays: a.total,
-            ))
+        .map(
+          (a) => _AbsentStudent(
+            name: a.name,
+            absences: a.absent,
+            totalDays: a.total,
+          ),
+        )
         .toList();
 
     // Day-of-week breakdown
@@ -287,7 +296,9 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
       final agg = perDayOfWeek[i];
       if (agg == null) continue;
       final pct = agg.total > 0 ? (agg.attended / agg.total) * 100 : 0.0;
-      _dailyBreakdown.add(_DayAttendance(day: dayLabels[i - 1], percentage: pct.round()));
+      _dailyBreakdown.add(
+        _DayAttendance(day: dayLabels[i - 1], percentage: pct.round()),
+      );
       if (pct < worstRate) {
         worstRate = pct;
         worstDay = dayLabels[i - 1];
@@ -321,14 +332,22 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
     final subject = offering['subject'];
     final grade = offering['grade'];
     final section = offering['section'];
-    final className = offering['className'] ?? offering['name'] ?? offering['title'];
-    final subjectName = subject is Map ? (subject['name'] ?? subject['title'] ?? '') : '';
-    final gradeName = grade is Map ? (grade['name'] ?? grade['title'] ?? '') : '';
-    final sectionName = section is Map ? (section['name'] ?? section['title'] ?? '') : '';
+    final className =
+        offering['className'] ?? offering['name'] ?? offering['title'];
+    final subjectName = subject is Map
+        ? (subject['name'] ?? subject['title'] ?? '')
+        : '';
+    final gradeName = grade is Map
+        ? (grade['name'] ?? grade['title'] ?? '')
+        : '';
+    final sectionName = section is Map
+        ? (section['name'] ?? section['title'] ?? '')
+        : '';
 
     final classPart = [
       if (gradeName.toString().trim().isNotEmpty) gradeName.toString().trim(),
-      if (sectionName.toString().trim().isNotEmpty) sectionName.toString().trim(),
+      if (sectionName.toString().trim().isNotEmpty)
+        sectionName.toString().trim(),
     ].join(' ').trim();
     final subjectPart = subjectName.toString().trim();
 
@@ -377,7 +396,11 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, size: 48, color: theme.colorScheme.onSurfaceVariant),
+              Icon(
+                Icons.error_outline,
+                size: 48,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
               const SizedBox(height: 16),
               Text(
                 'Failed to load data',
@@ -391,7 +414,10 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
               Text(
                 _error ?? '',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurfaceVariant),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 20),
               ElevatedButton.icon(
@@ -416,7 +442,10 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
       return Center(
         child: Text(
           'No classes found.',
-          style: TextStyle(fontSize: 14, color: theme.colorScheme.onSurfaceVariant),
+          style: TextStyle(
+            fontSize: 14,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
       );
     }
@@ -608,7 +637,9 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
               _buildHeaderStat('Students', '$_totalStudents'),
               const SizedBox(width: 16),
               _buildHeaderStat(
-                  'Rate', '${_averageAttendance.toStringAsFixed(0)}%'),
+                'Rate',
+                '${_averageAttendance.toStringAsFixed(0)}%',
+              ),
             ],
           ),
         ],
@@ -630,10 +661,7 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
         ),
         Text(
           label,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.8),
-            fontSize: 11,
-          ),
+          style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 11),
         ),
       ],
     );
@@ -641,7 +669,8 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
 
   Widget _buildStatusBreakdown() {
     final theme = Theme.of(context);
-    final total = _presentCount + _lateArrivals + _totalAbsences + _excusedCount;
+    final total =
+        _presentCount + _lateArrivals + _totalAbsences + _excusedCount;
     if (total == 0) return const SizedBox.shrink();
     return Container(
       padding: const EdgeInsets.all(14),
@@ -666,24 +695,28 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
           Row(
             children: [
               _StatusChip(
-                  label: 'Present',
-                  count: _presentCount,
-                  color: AppColors.success),
+                label: 'Present',
+                count: _presentCount,
+                color: AppColors.success,
+              ),
               const SizedBox(width: 8),
               _StatusChip(
-                  label: 'Late',
-                  count: _lateArrivals,
-                  color: AppColors.accent),
+                label: 'Late',
+                count: _lateArrivals,
+                color: AppColors.accent,
+              ),
               const SizedBox(width: 8),
               _StatusChip(
-                  label: 'Absent',
-                  count: _totalAbsences,
-                  color: AppColors.error),
+                label: 'Absent',
+                count: _totalAbsences,
+                color: AppColors.error,
+              ),
               const SizedBox(width: 8),
               _StatusChip(
-                  label: 'Excused',
-                  count: _excusedCount,
-                  color: AppColors.info),
+                label: 'Excused',
+                count: _excusedCount,
+                color: AppColors.info,
+              ),
             ],
           ),
         ],
@@ -728,8 +761,11 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.lightbulb_outline,
-                  color: AppColors.info, size: 18),
+              const Icon(
+                Icons.lightbulb_outline,
+                color: AppColors.info,
+                size: 18,
+              ),
               const SizedBox(width: 8),
               Text(
                 'INSIGHTS',
@@ -809,8 +845,11 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
                 CircleAvatar(
                   radius: 18,
                   backgroundColor: AppColors.accent.withOpacity(0.12),
-                  child: const Icon(Icons.schedule,
-                      color: AppColors.accent, size: 18),
+                  child: const Icon(
+                    Icons.schedule,
+                    color: AppColors.accent,
+                    size: 18,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -825,7 +864,9 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.accent.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(10),
@@ -877,8 +918,11 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.warning_amber,
-                    color: AppColors.error, size: 18),
+                const Icon(
+                  Icons.warning_amber,
+                  color: AppColors.error,
+                  size: 18,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -1114,7 +1158,8 @@ class _AttendanceAnalyticsScreenState extends State<AttendanceAnalyticsScreen> {
                         child: LinearProgressIndicator(
                           value: day.percentage / 100,
                           minHeight: 14,
-                          backgroundColor: theme.colorScheme.surfaceContainerLowest,
+                          backgroundColor:
+                              theme.colorScheme.surfaceContainerLowest,
                           valueColor: AlwaysStoppedAnimation<Color>(
                             day.percentage >= 95
                                 ? AppColors.secondary

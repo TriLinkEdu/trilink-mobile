@@ -59,8 +59,7 @@ class _GradeEntryScreenState extends State<GradeEntryScreen> {
 
   Future<void> _bootstrap() async {
     try {
-      final res =
-          await ApiService().getClassStudents(widget.classOfferingId);
+      final res = await ApiService().getClassStudents(widget.classOfferingId);
       final students = ((res['students'] as List?) ?? const [])
           .whereType<Map<String, dynamic>>()
           .toList();
@@ -131,8 +130,9 @@ class _GradeEntryScreenState extends State<GradeEntryScreen> {
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Save failed: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Save failed: $e')));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -147,116 +147,135 @@ class _GradeEntryScreenState extends State<GradeEntryScreen> {
           TextButton.icon(
             onPressed: _saving || _loading ? null : _save,
             icon: const Icon(Icons.save, color: Colors.white),
-            label: Text(_saving ? 'Saving…' : 'Save',
-                style: const TextStyle(color: Colors.white)),
+            label: Text(
+              _saving ? 'Saving…' : 'Save',
+              style: const TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(_error!, textAlign: TextAlign.center),
-                ))
-              : ListView(
-                  padding: const EdgeInsets.all(12),
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(_error!, textAlign: TextAlign.center),
+              ),
+            )
+          : ListView(
+              padding: const EdgeInsets.all(12),
+              children: [
+                TextField(
+                  controller: _titleCtrl,
+                  enabled: !_isEdit,
+                  decoration: const InputDecoration(
+                    labelText: 'Title (e.g. "Quiz 1")',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
                   children: [
-                    TextField(
-                      controller: _titleCtrl,
-                      enabled: !_isEdit,
-                      decoration: const InputDecoration(
-                        labelText: 'Title (e.g. "Quiz 1")',
-                        border: OutlineInputBorder(),
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        value: _type,
+                        decoration: const InputDecoration(
+                          labelText: 'Type',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'assignment',
+                            child: Text('Assignment'),
+                          ),
+                          DropdownMenuItem(value: 'quiz', child: Text('Quiz')),
+                          DropdownMenuItem(value: 'exam', child: Text('Exam')),
+                          DropdownMenuItem(
+                            value: 'midterm',
+                            child: Text('Midterm'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'final',
+                            child: Text('Final'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'project',
+                            child: Text('Project'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'participation',
+                            child: Text('Participation'),
+                          ),
+                        ],
+                        onChanged: _isEdit
+                            ? null
+                            : (v) => setState(() => _type = v ?? 'assignment'),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            value: _type,
-                            decoration: const InputDecoration(
-                              labelText: 'Type',
-                              border: OutlineInputBorder(),
-                            ),
-                            items: const [
-                              DropdownMenuItem(value: 'assignment', child: Text('Assignment')),
-                              DropdownMenuItem(value: 'quiz', child: Text('Quiz')),
-                              DropdownMenuItem(value: 'exam', child: Text('Exam')),
-                              DropdownMenuItem(value: 'midterm', child: Text('Midterm')),
-                              DropdownMenuItem(value: 'final', child: Text('Final')),
-                              DropdownMenuItem(value: 'project', child: Text('Project')),
-                              DropdownMenuItem(value: 'participation', child: Text('Participation')),
-                            ],
-                            onChanged:
-                                _isEdit ? null : (v) => setState(() => _type = v ?? 'assignment'),
-                          ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: _maxScoreCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Max score',
+                          border: OutlineInputBorder(),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _noteCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Note (optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                InputDecorator(
+                  decoration: const InputDecoration(
+                    labelText: 'Term',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  child: Text(
+                    widget.termLabel ?? widget.termId,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text('Scores', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                ..._rows.entries.map((kv) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        Expanded(child: Text(kv.value.name)),
+                        SizedBox(
+                          width: 90,
                           child: TextField(
-                            controller: _maxScoreCtrl,
-                            keyboardType: TextInputType.number,
+                            controller: kv.value.scoreCtrl,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            textAlign: TextAlign.right,
                             decoration: const InputDecoration(
-                              labelText: 'Max score',
+                              isDense: true,
                               border: OutlineInputBorder(),
+                              hintText: '—',
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _noteCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Note (optional)',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'Term',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      child: Text(
-                        widget.termLabel ?? widget.termId,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text('Scores',
-                        style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 8),
-                    ..._rows.entries.map((kv) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          children: [
-                            Expanded(child: Text(kv.value.name)),
-                            SizedBox(
-                              width: 90,
-                              child: TextField(
-                                controller: kv.value.scoreCtrl,
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                        decimal: true),
-                                textAlign: TextAlign.right,
-                                decoration: const InputDecoration(
-                                  isDense: true,
-                                  border: OutlineInputBorder(),
-                                  hintText: '—',
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                  ],
-                ),
+                  );
+                }),
+              ],
+            ),
     );
   }
 }

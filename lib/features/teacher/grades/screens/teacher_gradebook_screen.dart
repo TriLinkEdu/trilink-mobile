@@ -38,7 +38,9 @@ class _TeacherGradebookScreenState extends State<TeacherGradebookScreen> {
       ]);
       _classes = results[0].whereType<Map<String, dynamic>>().toList();
       _terms = results[1].whereType<Map<String, dynamic>>().toList();
-      _classOfferingId = _classes.isNotEmpty ? _classes.first['id'] as String? : null;
+      _classOfferingId = _classes.isNotEmpty
+          ? _classes.first['id'] as String?
+          : null;
       _termId = _terms.isNotEmpty ? _terms.first['id'] as String? : null;
       await _loadGradebook();
     } catch (e) {
@@ -87,12 +89,14 @@ class _TeacherGradebookScreenState extends State<TeacherGradebookScreen> {
         classOfferingId: _classOfferingId!,
         title: group['title'] as String,
       );
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Released.')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Released.')));
       _loadGradebook();
     } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Release failed: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Release failed: $e')));
     }
   }
 
@@ -102,14 +106,17 @@ class _TeacherGradebookScreenState extends State<TeacherGradebookScreen> {
       builder: (_) => AlertDialog(
         title: const Text('Delete assessment?'),
         content: Text(
-            'Delete every entry of "${group['title']}"? This cannot be undone.'),
+          'Delete every entry of "${group['title']}"? This cannot be undone.',
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton.tonal(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Delete')),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
         ],
       ),
     );
@@ -121,12 +128,15 @@ class _TeacherGradebookScreenState extends State<TeacherGradebookScreen> {
       );
       _loadGradebook();
     } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Delete failed: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
     }
   }
 
-  Future<void> _addOrEditAssessment({Map<String, dynamic>? existingGroup}) async {
+  Future<void> _addOrEditAssessment({
+    Map<String, dynamic>? existingGroup,
+  }) async {
     if (_classOfferingId == null || _termId == null) return;
     final saved = await Navigator.pushNamed(
       context,
@@ -135,7 +145,10 @@ class _TeacherGradebookScreenState extends State<TeacherGradebookScreen> {
         'classOfferingId': _classOfferingId,
         'termId': _termId,
         'termLabel': _termLabel(
-          _terms.firstWhere((t) => t['id'] == _termId, orElse: () => const <String, dynamic>{}),
+          _terms.firstWhere(
+            (t) => t['id'] == _termId,
+            orElse: () => const <String, dynamic>{},
+          ),
         ),
         if (existingGroup != null) 'existingGroup': existingGroup,
       },
@@ -179,13 +192,15 @@ class _TeacherGradebookScreenState extends State<TeacherGradebookScreen> {
                     isDense: true,
                   ),
                   items: _terms
-                      .map((t) => DropdownMenuItem(
-                            value: t['id'] as String?,
-                            child: Text(
-                              _termLabel(t),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ))
+                      .map(
+                        (t) => DropdownMenuItem(
+                          value: t['id'] as String?,
+                          child: Text(
+                            _termLabel(t),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      )
                       .toList(),
                   onChanged: _terms.isEmpty
                       ? null
@@ -204,11 +219,15 @@ class _TeacherGradebookScreenState extends State<TeacherGradebookScreen> {
                     isDense: true,
                   ),
                   items: _classes
-                      .map((c) => DropdownMenuItem(
-                            value: c['id'] as String?,
-                            child: Text(_classLabel(c),
-                                overflow: TextOverflow.ellipsis),
-                          ))
+                      .map(
+                        (c) => DropdownMenuItem(
+                          value: c['id'] as String?,
+                          child: Text(
+                            _classLabel(c),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      )
                       .toList(),
                   onChanged: (v) {
                     if (v == _classOfferingId) return;
@@ -232,29 +251,33 @@ class _TeacherGradebookScreenState extends State<TeacherGradebookScreen> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
-                    ? Center(child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Text(_error!, textAlign: TextAlign.center),
-                      ))
-                    : groups.isEmpty
-                        ? const Center(
-                            child: Text('No assessments yet for this class.'),
-                          )
-                        : RefreshIndicator(
-                            onRefresh: _loadGradebook,
-                            child: ListView(
-                              padding: const EdgeInsets.all(12),
-                              children: groups
-                                  .map((g) => _GroupCard(
-                                        group: g,
-                                        onRelease: () => _release(g),
-                                        onDelete: () => _deleteGroup(g),
-                                        onEdit: () => _addOrEditAssessment(
-                                            existingGroup: g),
-                                      ))
-                                  .toList(),
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(_error!, textAlign: TextAlign.center),
+                    ),
+                  )
+                : groups.isEmpty
+                ? const Center(
+                    child: Text('No assessments yet for this class.'),
+                  )
+                : RefreshIndicator(
+                    onRefresh: _loadGradebook,
+                    child: ListView(
+                      padding: const EdgeInsets.all(12),
+                      children: groups
+                          .map(
+                            (g) => _GroupCard(
+                              group: g,
+                              onRelease: () => _release(g),
+                              onDelete: () => _deleteGroup(g),
+                              onEdit: () =>
+                                  _addOrEditAssessment(existingGroup: g),
                             ),
-                          ),
+                          )
+                          .toList(),
+                    ),
+                  ),
           ),
         ],
       ),
@@ -265,9 +288,11 @@ class _TeacherGradebookScreenState extends State<TeacherGradebookScreen> {
     final subj = c['subjectName'] ?? c['subject']?['name'] ?? '';
     final grade = c['gradeName'] ?? c['grade']?['name'] ?? '';
     final section = c['sectionName'] ?? c['section']?['name'] ?? '';
-    return [subj, grade, if ((section as String).isNotEmpty) 'Sec $section']
-        .where((e) => (e as String).isNotEmpty)
-        .join(' • ');
+    return [
+      subj,
+      grade,
+      if ((section as String).isNotEmpty) 'Sec $section',
+    ].where((e) => (e as String).isNotEmpty).join(' • ');
   }
 
   static String _termLabel(Map<String, dynamic> term) {
@@ -306,7 +331,8 @@ class _GroupCard extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         subtitle: Text(
-            'Type: ${group['type'] ?? '-'}  •  Max ${group['maxScore'] ?? '-'}  •  ${released ? 'Released' : 'Draft'}'),
+          'Type: ${group['type'] ?? '-'}  •  Max ${group['maxScore'] ?? '-'}  •  ${released ? 'Released' : 'Draft'}',
+        ),
         children: [
           ...entries.map(
             (e) => ListTile(
@@ -314,7 +340,9 @@ class _GroupCard extends StatelessWidget {
               title: Text('${e['firstName'] ?? ''} ${e['lastName'] ?? ''}'),
               trailing: Text(
                 e['score'] == null ? '—' : '${e['score']}/${e['maxScore']}',
-                style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()]),
+                style: const TextStyle(
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
               ),
             ),
           ),
