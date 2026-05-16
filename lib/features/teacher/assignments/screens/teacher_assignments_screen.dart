@@ -235,49 +235,123 @@ class _Filters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: DropdownButtonFormField<String?>(
-              value: classId,
-              decoration: const InputDecoration(
-                labelText: 'Class',
-                isDense: true,
-                border: OutlineInputBorder(),
-              ),
-              items: [
-                const DropdownMenuItem(value: null, child: Text('All classes')),
-                ...classes.map((c) => DropdownMenuItem(
-                      value: c['id'] as String?,
-                      child: Text(_classLabel(c), overflow: TextOverflow.ellipsis),
-                    )),
-              ],
-              onChanged: onClassChanged,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: DropdownButtonFormField<String?>(
-              value: termId,
-              decoration: const InputDecoration(
-                labelText: 'Term',
-                isDense: true,
-                border: OutlineInputBorder(),
-              ),
-              items: [
-                const DropdownMenuItem(value: null, child: Text('All terms')),
-                ...terms.map((t) => DropdownMenuItem(
-                      value: t['id'] as String?,
-                      child: Text(t['name'] as String? ?? 'Term'),
-                    )),
-              ],
-              onChanged: onTermChanged,
-            ),
-          ),
-        ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 420;
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+          child: isNarrow
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildFilterDropdown(
+                      value: classId,
+                      labelText: 'Class',
+                      hintText: 'All classes',
+                      items: [
+                        ...classes.map(
+                          (c) => DropdownMenuItem(
+                            value: c['id'] as String?,
+                            child: Text(
+                              _classLabel(c),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                      ],
+                      onChanged: onClassChanged,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildFilterDropdown(
+                      value: termId,
+                      labelText: 'Term',
+                      hintText: 'All terms',
+                      items: [
+                        ...terms.map(
+                          (t) => DropdownMenuItem(
+                            value: t['id'] as String?,
+                            child: Text(
+                              t['name'] as String? ?? 'Term',
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                      ],
+                      onChanged: onTermChanged,
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(
+                      child: _buildFilterDropdown(
+                        value: classId,
+                        labelText: 'Class',
+                        hintText: 'All classes',
+                        items: [
+                          ...classes.map(
+                            (c) => DropdownMenuItem(
+                              value: c['id'] as String?,
+                              child: Text(
+                                _classLabel(c),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        ],
+                        onChanged: onClassChanged,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildFilterDropdown(
+                        value: termId,
+                        labelText: 'Term',
+                        hintText: 'All terms',
+                        items: [
+                          ...terms.map(
+                            (t) => DropdownMenuItem(
+                              value: t['id'] as String?,
+                              child: Text(
+                                t['name'] as String? ?? 'Term',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        ],
+                        onChanged: onTermChanged,
+                      ),
+                    ),
+                  ],
+                ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFilterDropdown({
+    required String? value,
+    required String labelText,
+    required String hintText,
+    required List<DropdownMenuItem<String?>> items,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return DropdownButtonFormField<String?>(
+      value: value,
+      isExpanded: true,
+      decoration: InputDecoration(
+        labelText: labelText,
+        isDense: true,
+        border: const OutlineInputBorder(),
       ),
+      items: [
+        DropdownMenuItem(
+          value: null,
+          child: Text(hintText, overflow: TextOverflow.ellipsis),
+        ),
+        ...items,
+      ],
+      onChanged: onChanged,
     );
   }
 
