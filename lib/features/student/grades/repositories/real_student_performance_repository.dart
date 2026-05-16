@@ -3,26 +3,35 @@ import '../../../../core/models/performance_report_model.dart';
 import '../../../../core/models/student_goal_model.dart';
 import '../../../../core/models/topic_mastery_model.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/services/local_cache_service.dart';
+import '../../../../core/services/storage_service.dart';
 import 'student_performance_repository.dart';
 
 class RealStudentPerformanceRepository implements StudentPerformanceRepository {
   final ApiClient _api;
+  final StorageService _storage;
+  final LocalCacheService _cacheService;
 
-  static const Duration _goalsTtl = Duration(seconds: 20);
-  static const Duration _reportTtl = Duration(seconds: 30);
+  static const Duration _goalsTtl = Duration(minutes: 30);
+  static const Duration _reportTtl = Duration(hours: 1);
 
-  static List<StudentGoalModel>? _goalsCache;
-  static DateTime? _goalsFetchedAt;
-  static Future<List<StudentGoalModel>>? _goalsInFlight;
+  List<StudentGoalModel>? _goalsCache;
+  DateTime? _goalsFetchedAt;
+  Future<List<StudentGoalModel>>? _goalsInFlight;
 
-  static final Map<String, PerformanceReportModel> _reportCache =
+  final Map<String, PerformanceReportModel> _reportCache =
       <String, PerformanceReportModel>{};
-  static final Map<String, DateTime> _reportFetchedAt = <String, DateTime>{};
-  static final Map<String, Future<PerformanceReportModel>> _reportInFlight =
+  final Map<String, DateTime> _reportFetchedAt = <String, DateTime>{};
+  final Map<String, Future<PerformanceReportModel>> _reportInFlight =
       <String, Future<PerformanceReportModel>>{};
 
-  RealStudentPerformanceRepository({ApiClient? apiClient})
-    : _api = apiClient ?? ApiClient();
+  RealStudentPerformanceRepository({
+    ApiClient? apiClient,
+    required StorageService storageService,
+    required LocalCacheService cacheService,
+  }) : _api = apiClient ?? ApiClient(),
+       _storage = storageService,
+       _cacheService = cacheService;
 
   @override
   Future<List<TopicMasteryModel>> fetchMasteryLevels(String studentId) async {
@@ -43,6 +52,8 @@ class RealStudentPerformanceRepository implements StudentPerformanceRepository {
 
   @override
   Future<List<StudentGoalModel>> fetchGoals(String studentId) async {
+    final resolvedId = await _resolveStudentId(studentId);
+    _restoreGoalsCache(resolvedId);
     if (_goalsCache != null && _goalsFetchedAt != null) {
       final age = DateTime.now().difference(_goalsFetchedAt!);
       if (age < _goalsTtl) return _goalsCache!;
@@ -53,11 +64,21 @@ class RealStudentPerformanceRepository implements StudentPerformanceRepository {
 
     final future = _fetchGoalsFresh();
     _goalsInFlight = future;
-    final data = await future;
-    _goalsInFlight = null;
-    _goalsCache = data;
-    _goalsFetchedAt = DateTime.now();
-    return data;
+    try {
+      final data = await future;
+      _goalsCache = data;
+      _goalsFetchedAt = DateTime.now();
+      await _cacheService.write(
+        _goalsCacheKey(resolvedId),
+        data.map((item) => item.toJson()).toList(),
+      );
+      return data;
+    } catch (_) {
+      if (_goalsCache != null) return _goalsCache!;
+      rethrow;
+    } finally {
+      _goalsInFlight = null;
+    }
   }
 
   Future<List<StudentGoalModel>> _fetchGoalsFresh() async {
@@ -100,23 +121,35 @@ class RealStudentPerformanceRepository implements StudentPerformanceRepository {
 
   @override
   Future<PerformanceReportModel> fetchLatestReport(String studentId) async {
-    final fetchedAt = _reportFetchedAt[studentId];
-    final cached = _reportCache[studentId];
+    final resolvedId = await _resolveStudentId(studentId);
+    _restoreReportCache(resolvedId);
+    final fetchedAt = _reportFetchedAt[resolvedId];
+    final cached = _reportCache[resolvedId];
     if (cached != null && fetchedAt != null) {
       final age = DateTime.now().difference(fetchedAt);
       if (age < _reportTtl) return cached;
     }
 
-    final inFlight = _reportInFlight[studentId];
+    final inFlight = _reportInFlight[resolvedId];
     if (inFlight != null) return inFlight;
 
-    final future = _fetchLatestReportFresh(studentId);
-    _reportInFlight[studentId] = future;
-    final data = await future;
-    _reportInFlight.remove(studentId);
-    _reportCache[studentId] = data;
-    _reportFetchedAt[studentId] = DateTime.now();
-    return data;
+    final future = _fetchLatestReportFresh(resolvedId);
+    _reportInFlight[resolvedId] = future;
+    try {
+      final data = await future;
+      _reportCache[resolvedId] = data;
+      _reportFetchedAt[resolvedId] = DateTime.now();
+      await _cacheService.write(
+        _reportCacheKey(resolvedId),
+        data.toJson(),
+      );
+      return data;
+    } catch (_) {
+      if (cached != null) return cached;
+      rethrow;
+    } finally {
+      _reportInFlight.remove(resolvedId);
+    }
   }
 
   Future<PerformanceReportModel> _fetchLatestReportFresh(
@@ -196,5 +229,53 @@ class RealStudentPerformanceRepository implements StudentPerformanceRepository {
   double _asDouble(dynamic value, {required double fallback}) {
     if (value is num) return value.toDouble();
     return double.tryParse(value?.toString() ?? '') ?? fallback;
+  }
+
+  Future<String> _resolveStudentId(String studentId) async {
+    if (studentId.isNotEmpty) return studentId;
+    final user = await _storage.getUser();
+    return (user?['id'] ?? '').toString();
+  }
+
+  String _goalsCacheKey(String studentId) => studentId.isEmpty
+      ? 'student_goals_v1'
+      : 'student_goals_v1_$studentId';
+
+  String _reportCacheKey(String studentId) => studentId.isEmpty
+      ? 'student_performance_report_v1'
+      : 'student_performance_report_v1_$studentId';
+
+  void _restoreGoalsCache(String studentId) {
+    if (_goalsCache != null) return;
+    final entry = _cacheService.read(_goalsCacheKey(studentId));
+    if (entry == null || entry.data is! List) return;
+    _goalsCache = (entry.data as List)
+        .whereType<Map<String, dynamic>>()
+        .map(StudentGoalModel.fromJson)
+        .toList();
+    _goalsFetchedAt = entry.savedAt;
+  }
+
+  void _restoreReportCache(String studentId) {
+    if (_reportCache.containsKey(studentId)) return;
+    final entry = _cacheService.read(_reportCacheKey(studentId));
+    if (entry == null || entry.data is! Map<String, dynamic>) return;
+    _reportCache[studentId] = PerformanceReportModel.fromJson(
+      Map<String, dynamic>.from(entry.data as Map),
+    );
+    _reportFetchedAt[studentId] = entry.savedAt;
+  }
+
+  @override
+  List<StudentGoalModel>? getCached() => _goalsCache;
+
+  @override
+  void clearCache() {
+    _goalsCache = null;
+    _goalsFetchedAt = null;
+    _goalsInFlight = null;
+    _reportCache.clear();
+    _reportFetchedAt.clear();
+    _reportInFlight.clear();
   }
 }

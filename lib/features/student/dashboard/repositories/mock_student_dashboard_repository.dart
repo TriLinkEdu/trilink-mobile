@@ -58,4 +58,10 @@ class MockStudentDashboardRepository implements StudentDashboardRepository {
       ],
     );
   }
+
+  @override
+  DashboardDataModel? getCached() => null;
+
+  @override
+  void clearCache() {}
 }

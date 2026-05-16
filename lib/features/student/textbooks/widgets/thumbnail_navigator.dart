@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 
 class ThumbnailNavigator extends StatefulWidget {
-  final PdfControllerPinch pdfController;
+  final PdfController pdfController;
   final int currentPage;
   final Function(int) onPageSelected;
 

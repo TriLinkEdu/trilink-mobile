@@ -242,4 +242,10 @@ class MockStudentExamsRepository implements StudentExamsRepository {
     _attempts[idx] = updated;
     return updated;
   }
+
+  @override
+  List<ExamModel>? getCached() => null;
+
+  @override
+  void clearCache() {}
 }

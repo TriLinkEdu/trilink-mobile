@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:trilink_mobile/core/widgets/animated_counter.dart';
 import 'package:trilink_mobile/core/widgets/empty_state_widget.dart';
 import 'package:trilink_mobile/core/widgets/illustrations.dart';
@@ -75,12 +79,178 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
 
   Future<void> _downloadReport() async {
     setState(() => _isDownloading = true);
-    await Future<void>.delayed(const Duration(milliseconds: 1500));
-    if (!mounted) return;
-    setState(() => _isDownloading = false);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Report saved')));
+    try {
+      final bytes = await _buildPdfBytes();
+      final dir = await getApplicationDocumentsDirectory();
+      final fileName =
+          '${widget.subjectName.replaceAll(RegExp(r'[^\w]'), '_')}_grade_report.pdf';
+      final file = File('${dir.path}/$fileName');
+      await file.writeAsBytes(bytes);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Report saved to $fileName'),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to generate report: $e'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isDownloading = false);
+    }
+  }
+
+  Future<List<int>> _buildPdfBytes() async {
+    final document = PdfDocument();
+    final page = document.pages.add();
+    final content = page.graphics;
+    final pageWidth = page.getClientSize().width;
+
+    // ── Fonts ──────────────────────────────────────────────────────────────
+    final titleFont = PdfStandardFont(PdfFontFamily.helvetica, 18,
+        style: PdfFontStyle.bold);
+    final headingFont = PdfStandardFont(PdfFontFamily.helvetica, 12,
+        style: PdfFontStyle.bold);
+    final bodyFont = PdfStandardFont(PdfFontFamily.helvetica, 10);
+    final smallFont = PdfStandardFont(PdfFontFamily.helvetica, 9);
+
+    double y = 20;
+
+    // ── Header ─────────────────────────────────────────────────────────────
+    content.drawString(
+      'TriLink — Grade Report',
+      titleFont,
+      brush: PdfSolidBrush(PdfColor(67, 97, 238)),
+      bounds: Rect.fromLTWH(0, y, pageWidth, 30),
+    );
+    y += 32;
+
+    content.drawString(
+      widget.subjectName,
+      headingFont,
+      brush: PdfSolidBrush(PdfColor(30, 30, 30)),
+      bounds: Rect.fromLTWH(0, y, pageWidth, 20),
+    );
+    y += 22;
+
+    content.drawString(
+      'Generated: ${_formatDate(DateTime.now())}',
+      smallFont,
+      brush: PdfSolidBrush(PdfColor(100, 100, 100)),
+      bounds: Rect.fromLTWH(0, y, pageWidth, 16),
+    );
+    y += 22;
+
+    // ── Divider ────────────────────────────────────────────────────────────
+    content.drawLine(
+      PdfPen(PdfColor(200, 200, 200)),
+      Offset(0, y),
+      Offset(pageWidth, y),
+    );
+    y += 12;
+
+    // ── Summary stats ──────────────────────────────────────────────────────
+    final avg = _average;
+    final summaryText =
+        'Overall Average: ${avg.toStringAsFixed(1)}%   '  
+        'Letter Grade: ${_letterGradeForAverage(avg)}   '
+        'Assessments: ${_subjectGrades.length}   '
+        'Highest: ${_highest.toStringAsFixed(0)}%   '
+        'Lowest: ${_lowest.toStringAsFixed(0)}%';
+
+    content.drawString(
+      summaryText,
+      bodyFont,
+      brush: PdfSolidBrush(PdfColor(40, 40, 40)),
+      bounds: Rect.fromLTWH(0, y, pageWidth, 30),
+      format: PdfStringFormat(wordWrap: PdfWordWrapType.word),
+    );
+    y += 40;
+
+    // ── Table header ───────────────────────────────────────────────────────
+    content.drawRectangle(
+      brush: PdfSolidBrush(PdfColor(67, 97, 238)),
+      bounds: Rect.fromLTWH(0, y, pageWidth, 20),
+    );
+    content.drawString('Assessment', headingFont,
+        brush: PdfSolidBrush(PdfColor(255, 255, 255)),
+        bounds: Rect.fromLTWH(4, y + 4, pageWidth * 0.5, 14));
+    content.drawString('Date', headingFont,
+        brush: PdfSolidBrush(PdfColor(255, 255, 255)),
+        bounds: Rect.fromLTWH(pageWidth * 0.5, y + 4, pageWidth * 0.25, 14));
+    content.drawString('Score', headingFont,
+        brush: PdfSolidBrush(PdfColor(255, 255, 255)),
+        bounds: Rect.fromLTWH(pageWidth * 0.75, y + 4, pageWidth * 0.15, 14));
+    content.drawString('Grade', headingFont,
+        brush: PdfSolidBrush(PdfColor(255, 255, 255)),
+        bounds: Rect.fromLTWH(pageWidth * 0.9, y + 4, pageWidth * 0.1, 14));
+    y += 22;
+
+    // ── Table rows ─────────────────────────────────────────────────────────
+    final sorted = List<GradeModel>.from(_subjectGrades)
+      ..sort((a, b) => b.date.compareTo(a.date));
+
+    for (int i = 0; i < sorted.length; i++) {
+      final g = sorted[i];
+      if (i.isEven) {
+        content.drawRectangle(
+          brush: PdfSolidBrush(PdfColor(245, 247, 255)),
+          bounds: Rect.fromLTWH(0, y, pageWidth, 18),
+        );
+      }
+      content.drawString(g.assessmentName, bodyFont,
+          brush: PdfSolidBrush(PdfColor(30, 30, 30)),
+          bounds: Rect.fromLTWH(4, y + 3, pageWidth * 0.5, 14));
+      content.drawString(_formatDate(g.date), bodyFont,
+          brush: PdfSolidBrush(PdfColor(80, 80, 80)),
+          bounds: Rect.fromLTWH(pageWidth * 0.5, y + 3, pageWidth * 0.25, 14));
+      content.drawString(
+          '${g.percentage.toStringAsFixed(0)}%', bodyFont,
+          brush: PdfSolidBrush(PdfColor(30, 30, 30)),
+          bounds:
+              Rect.fromLTWH(pageWidth * 0.75, y + 3, pageWidth * 0.15, 14));
+      content.drawString(g.letterGrade, bodyFont,
+          brush: PdfSolidBrush(PdfColor(67, 97, 238)),
+          bounds:
+              Rect.fromLTWH(pageWidth * 0.9, y + 3, pageWidth * 0.1, 14));
+      y += 20;
+
+      // Add a new page if we're running out of space
+      if (y > page.getClientSize().height - 30 &&
+          i < sorted.length - 1) {
+        document.pages.add();
+        y = 20;
+        content.save();
+      }
+    }
+
+    // ── Footer ─────────────────────────────────────────────────────────────
+    y += 12;
+    content.drawLine(
+      PdfPen(PdfColor(200, 200, 200)),
+      Offset(0, y),
+      Offset(pageWidth, y),
+    );
+    y += 8;
+    content.drawString(
+      'TriLink Intelligent Tutoring System — Confidential',
+      smallFont,
+      brush: PdfSolidBrush(PdfColor(150, 150, 150)),
+      bounds: Rect.fromLTWH(0, y, pageWidth, 14),
+    );
+
+    final bytes = await document.save();
+    document.dispose();
+    return bytes;
   }
 
   @override

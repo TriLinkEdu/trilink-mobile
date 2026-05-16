@@ -717,11 +717,10 @@ class MockStudentGamificationRepository
   };
 
   @override
-  Future<List<LeaderboardEntry>> fetchLeaderboard(String period) async {
+  Future<List<LeaderboardEntry>> fetchLeaderboard(String period, {int offset = 0, int limit = 50}) async {
     await Future<void>.delayed(_latency);
-    return List<LeaderboardEntry>.from(
-      _leaderboards[period] ?? _leaderboards['weekly']!,
-    );
+    final entries = _leaderboards[period] ?? _leaderboards['weekly']!;
+    return entries.skip(offset).take(limit).toList();
   }
 
   @override
@@ -850,6 +849,35 @@ class MockStudentGamificationRepository
       xpDelta: result.xpEarned,
       quizSubjectId: subjectId,
       quizScore: result.score,
+    );
+  }
+
+  @override
+  Future<GamificationHubPayload> fetchHub() async {
+    // Delegate to individual methods so mock data stays consistent and DRY.
+    final results = await Future.wait([
+      fetchStreak(),
+      fetchAchievements(),
+      fetchLeaderboard('weekly'),
+      fetchAvailableQuizzes(),
+      fetchDailyMissions(),
+      fetchTeamChallenge(),
+      fetchXpProgress(),
+      fetchNextBadgeProgress(),
+      fetchBadges(),
+      fetchStudentBadges('mock-student-id'),
+    ]);
+    return GamificationHubPayload(
+      streak             : results[0] as StreakModel,
+      achievements       : results[1] as List<AchievementModel>,
+      leaderboardEntries : results[2] as List<LeaderboardEntry>,
+      availableQuizzes   : results[3] as List<QuizModel>,
+      dailyMissions      : results[4] as List<DailyMissionModel>,
+      teamChallenge      : results[5] as TeamChallengeModel?,
+      xpProgress         : results[6] as XpProgressModel,
+      nextBadgeProgress  : results[7] as NextBadgeProgressModel?,
+      badges             : results[8] as List<BadgeModel>,
+      studentBadges      : results[9] as List<StudentBadgeModel>,
     );
   }
 
@@ -1181,4 +1209,7 @@ class MockStudentGamificationRepository
       _studentBadgesById[studentId] ?? const <StudentBadgeModel>[],
     );
   }
+
+  @override
+  void clearCache() {}
 }

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:pdfx/pdfx.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../../core/services/storage_service.dart';
@@ -55,33 +56,47 @@ class TextbookFileCacheService {
     ProgressCallback? onProgress,
     CancelCallback? shouldCancel,
   }) async {
-    final root = await getApplicationDocumentsDirectory();
-    final dir = Directory('${root.path}/textbook_cache');
-    if (!await dir.exists()) {
-      await dir.create(recursive: true);
-    }
-
-    final safeId = textbook.fileRecordId.isEmpty
-        ? textbook.id
-        : textbook.fileRecordId;
-    final file = File('${dir.path}/$safeId.pdf');
-
-    final index = _readIndex();
-    final entry = index[safeId];
-    if (entry is Map<String, dynamic> && await file.exists()) {
-      final cachedKey = (entry['cacheKey'] ?? '').toString();
-      if (cachedKey == textbook.cacheKey) {
-        entry['lastAccessedAt'] = DateTime.now().toIso8601String();
-        index[safeId] = entry;
-        await _writeIndex(index);
-        return TextbookOpenResult(localPath: file.path, fromCache: true);
+    late final Directory dir;
+    late final String safeId;
+    late final File file;
+    late final Map<String, dynamic> index;
+    
+    try {
+      final root = await getApplicationDocumentsDirectory();
+      dir = Directory('${root.path}/textbook_cache');
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
       }
+
+      safeId = textbook.fileRecordId.isEmpty
+          ? textbook.id
+          : textbook.fileRecordId;
+      file = File('${dir.path}/$safeId.pdf');
+
+      index = _readIndex();
+      final entry = index[safeId];
+      if (entry is Map<String, dynamic> && await file.exists()) {
+        // Validate PDF integrity before using cached file
+        if (await _validatePdfIntegrity(file)) {
+          final cachedKey = (entry['cacheKey'] ?? '').toString();
+          if (cachedKey == textbook.cacheKey) {
+            entry['lastAccessedAt'] = DateTime.now().toIso8601String();
+            index[safeId] = entry;
+            await _writeIndex(index);
+            return TextbookOpenResult(localPath: file.path, fromCache: true);
+          }
+        } else {
+          // Corrupted file, delete and re-download
+          print('Corrupted PDF detected, re-downloading...');
+          await file.delete();
+        }
+      }
+    } catch (e) {
+      print('Error accessing storage: $e');
+      throw Exception('Failed to access device storage. Please restart the app.');
     }
 
-    // The textbook model already carries the Cloudinary CDN URL — no extra
-    // round-trip to /files/{id}/access needed. Cloudinary raw URLs are
-    // permanent and don't require signing, so we can use them directly.
-    final accessUrl = textbook.accessUrl;
+    final accessUrl = textbook.resolvedAccessUrl;
     if (accessUrl.isEmpty) {
       throw StateError('Missing file access URL for textbook');
     }
@@ -198,5 +213,34 @@ class TextbookFileCacheService {
 
   Future<void> _writeIndex(Map<String, dynamic> index) {
     return _storage.setString(_indexKey, jsonEncode(index));
+  }
+
+  /// Validate PDF file integrity
+  Future<bool> _validatePdfIntegrity(File file) async {
+    try {
+      // Check file size
+      final size = await file.length();
+      if (size < 1024) {
+        // File too small to be a valid PDF
+        return false;
+      }
+
+      // Check PDF header
+      final bytes = await file.openRead(0, 5).first;
+      final header = String.fromCharCodes(bytes);
+      if (!header.startsWith('%PDF-')) {
+        return false;
+      }
+
+      // Try to open with PDF library
+      final document = await PdfDocument.openFile(file.path);
+      final isValid = document.pagesCount > 0;
+      await document.close();
+      
+      return isValid;
+    } catch (e) {
+      print('PDF validation failed: $e');
+      return false;
+    }
   }
 }

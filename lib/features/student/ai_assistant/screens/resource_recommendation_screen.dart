@@ -85,7 +85,7 @@ class _ResourceListPage extends StatefulWidget {
 class _ResourceListPageState extends State<_ResourceListPage> {
   Future<void> _openResource(ResourceRecommendationModel resource) async {
     final urlValue = resource.url;
-    if (urlValue == null || urlValue.isEmpty) {
+    if (urlValue.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('No link is available for this resource yet.'),

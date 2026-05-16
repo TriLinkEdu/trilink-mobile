@@ -4,7 +4,9 @@ import 'package:trilink_mobile/core/widgets/empty_state_widget.dart';
 import 'package:trilink_mobile/core/widgets/illustrations.dart';
 import 'package:trilink_mobile/core/widgets/error_widget.dart';
 import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
+import '../../../../core/constants/api_constants.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_shadows.dart';
@@ -40,18 +42,20 @@ class _StudentFeedbackView extends StatefulWidget {
 
 class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
   int _selectedRating = 4;
-  String _selectedSubject = 'Mathematics 101';
   bool _showBanner = true;
   final _whatWentWellController = TextEditingController();
   final _whatCouldImproveController = TextEditingController();
+  final ApiClient _api = ApiClient();
+  List<_SubjectOption> _subjects = const [];
+  _SubjectOption? _selectedSubject;
+  bool _subjectsLoading = true;
+  String? _subjectsError;
 
-  final List<String> _subjects = [
-    'Mathematics 101',
-    'Physics',
-    'Literature',
-    'History',
-    'Computer Science',
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadSubjects();
+  }
 
   @override
   void dispose() {
@@ -60,9 +64,56 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
     super.dispose();
   }
 
+  Future<void> _loadSubjects() async {
+    setState(() {
+      _subjectsLoading = true;
+      _subjectsError = null;
+    });
+    try {
+      final rows = await _api.getList(ApiConstants.mySubjects);
+      final byId = <String, _SubjectOption>{};
+      for (final raw in rows.whereType<Map<String, dynamic>>()) {
+        final id = (raw['subjectId'] ?? '').toString();
+        final name = (raw['subjectName'] ?? '').toString();
+        final code = (raw['subjectCode'] ?? '').toString();
+        if (id.isEmpty || name.isEmpty) continue;
+        byId[id] = _SubjectOption(id: id, name: name, code: code);
+      }
+      final subjects = byId.values.toList()
+        ..sort((a, b) => a.name.compareTo(b.name));
+      if (!mounted) return;
+      setState(() {
+        _subjects = subjects;
+        _subjectsLoading = false;
+        if (_selectedSubject == null && subjects.isNotEmpty) {
+          _selectedSubject = subjects.first;
+        } else if (_selectedSubject != null) {
+          _selectedSubject = subjects.firstWhere(
+            (s) => s.id == _selectedSubject!.id,
+            orElse: () => subjects.isNotEmpty ? subjects.first : _selectedSubject!,
+          );
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _subjectsLoading = false;
+        _subjectsError = 'Unable to load subjects.';
+      });
+    }
+  }
+
   void _submitFeedback() {
     final positive = _whatWentWellController.text.trim();
     final improvement = _whatCouldImproveController.text.trim();
+    final selected = _selectedSubject;
+
+    if (selected == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a subject.')),
+      );
+      return;
+    }
 
     if (positive.isEmpty && improvement.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -79,8 +130,8 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
     ].join('\n');
 
     context.read<FeedbackCubit>().submitFeedback(
-      subjectId: _selectedSubject.toLowerCase().replaceAll(' ', '_'),
-      subjectName: _selectedSubject,
+      subjectId: selected.id,
+      subjectName: selected.name,
       rating: _selectedRating,
       comment: comment,
     );
@@ -161,7 +212,9 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
           _whatCouldImproveController.clear();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Feedback submitted for $_selectedSubject.'),
+              content: Text(
+                'Feedback submitted for ${_selectedSubject?.name ?? 'your subject'}.'
+              ),
             ),
           );
           context.read<FeedbackCubit>().clearSubmissionStatus();
@@ -324,56 +377,114 @@ class _StudentFeedbackViewState extends State<_StudentFeedbackView> {
                             ),
                           ),
                           AppSpacing.gapSm,
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surface,
-                              borderRadius: AppRadius.borderMd,
-                              border: Border.all(
-                                color: theme.colorScheme.outlineVariant,
+                          if (_subjectsLoading)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
                               ),
-                            ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: _selectedSubject,
-                                isExpanded: true,
-                                icon: Icon(
-                                  Icons.keyboard_arrow_down_rounded,
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surface,
+                                borderRadius: AppRadius.borderMd,
+                                border: Border.all(
+                                  color: theme.colorScheme.outlineVariant,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  const SizedBox(
+                                    height: 16,
+                                    width: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                  AppSpacing.hGapSm,
+                                  Text(
+                                    'Loading subjects...',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else if (_subjectsError != null)
+                            AppErrorWidget(
+                              message: _subjectsError!,
+                              onRetry: _loadSubjects,
+                            )
+                          else if (_subjects.isEmpty)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surface,
+                                borderRadius: AppRadius.borderMd,
+                                border: Border.all(
+                                  color: theme.colorScheme.outlineVariant,
+                                ),
+                              ),
+                              child: Text(
+                                'No subjects available.',
+                                style: theme.textTheme.bodyMedium?.copyWith(
                                   color: theme.colorScheme.onSurfaceVariant,
                                 ),
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.colorScheme.onSurface,
+                              ),
+                            )
+                          else
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surface,
+                                borderRadius: AppRadius.borderMd,
+                                border: Border.all(
+                                  color: theme.colorScheme.outlineVariant,
                                 ),
-                                items: _subjects
-                                    .map(
-                                      (s) => DropdownMenuItem(
-                                        value: s,
-                                        child: Text(s),
-                                      ),
-                                    )
-                                    .toList(),
-                                onChanged: (v) {
-                                  if (v != null) {
-                                    setState(() => _selectedSubject = v);
-                                  }
-                                },
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<_SubjectOption>(
+                                  value: _selectedSubject,
+                                  isExpanded: true,
+                                  icon: Icon(
+                                    Icons.keyboard_arrow_down_rounded,
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.colorScheme.onSurface,
+                                  ),
+                                  items: _subjects
+                                      .map(
+                                        (s) => DropdownMenuItem(
+                                          value: s,
+                                          child: Text(s.name),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onChanged: (v) {
+                                    if (v != null) {
+                                      setState(() => _selectedSubject = v);
+                                    }
+                                  },
+                                ),
                               ),
                             ),
-                          ),
                           AppSpacing.gapMd,
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton.icon(
                               onPressed: () async {
+                                final selected = _selectedSubject;
+                                if (selected == null) return;
                                 final cubit = context.read<FeedbackCubit>();
                                 final result = await Navigator.of(context)
                                     .pushNamed<bool>(
                                       RouteNames.studentSubmitFeedback,
                                       arguments: {
-                                        'subjectId': _selectedSubject
-                                            .toLowerCase()
-                                            .replaceAll(' ', '_'),
-                                        'subjectName': _selectedSubject,
+                                        'subjectId': selected.id,
+                                        'subjectName': selected.name,
                                       },
                                     );
                                 if (result == true && mounted) {
@@ -790,4 +901,16 @@ class _FeedbackHistoryTile extends StatelessWidget {
       ),
     );
   }
+}
+
+class _SubjectOption {
+  final String id;
+  final String name;
+  final String code;
+
+  const _SubjectOption({
+    required this.id,
+    required this.name,
+    required this.code,
+  });
 }

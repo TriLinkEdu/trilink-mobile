@@ -54,25 +54,26 @@ class ApiConstants {
         : localBaseUrl;
   }
 
-  // Base URL without /api suffix for file downloads
+  // WebSocket base URL (no /api suffix — Socket.IO connects at root)
+  static String get wsBaseUrl {
+    final base = baseUrl;
+    return base.endsWith('/api') ? base.substring(0, base.length - 4) : base;
+  }
+
+  // Base URL for file downloads (preserves /api suffix since FilesController is behind it)
   static String get fileBaseUrl {
     const overrideUrl = String.fromEnvironment(
       'API_BASE_URL',
       defaultValue: '',
     );
     if (overrideUrl.isNotEmpty) {
-      // Remove /api suffix if present
-      return overrideUrl.endsWith('/api')
-          ? overrideUrl.substring(0, overrideUrl.length - 4)
-          : overrideUrl;
+      return overrideUrl;
     }
 
     if (environment == ApiEnvironment.production) {
-      return 'https://trilink-backend-ms68.onrender.com';
+      return productionBaseUrl;
     }
-    return localBaseUrl.endsWith('/api')
-        ? localBaseUrl.substring(0, localBaseUrl.length - 4)
-        : localBaseUrl;
+    return localBaseUrl;
   }
 
   // Auth
@@ -152,8 +153,9 @@ class ApiConstants {
 
   // Chat
   static const String chatWsInfo = '/chat/ws-info';
-  static const String chatUpload = '/chat/upload';
+    static const String chatUpload = '/chat/upload';
   static const String conversations = '/conversations';
+  static String conversationMembers(String id) => '/conversations/$id/members';
   static const String conversationsInitiate = '/conversations/initiate';
   static String conversation(String id) => '/conversations/$id';
   static String conversationMessages(String id) =>
@@ -171,9 +173,8 @@ class ApiConstants {
       '/conversations/$convId/messages/$msgId';
   static String messageReadReceipts(String id) => '/messages/$id/read-receipts';
   static const String usersSearch = '/users/search';
-    static const String usersPresence = '/users/presence';
-  static const String usersBlocked = '/users/blocked';
-  static String blockUser(String userId) => '/users/$userId/block';
+  static String chatInteractionProfile(String userId) =>
+      '/users/$userId/interaction-profile';
 
   // Settings
   static const String userSettings = '/me/settings';
@@ -181,6 +182,10 @@ class ApiConstants {
   static const String studentSyncStatus = '/sync/student/status';
   static const String studentSyncTrigger = '/sync/student/trigger';
   static const String integrationsSyncHints = '/integrations/sync-hints';
+
+  // Files
+  static const String filesUpload = '/files/upload';
+  static String fileDownload(String id) => '/files/$id/download';
 
   // Feedback
   static const String feedback = '/feedback';
@@ -202,15 +207,20 @@ class ApiConstants {
   static const String parentWeeklySummary = '/reports/parent/weekly-summary';
 
   // Files
-  static const String filesUpload = '/files/upload';
   static String file(String id) => '/files/$id';
   static String fileAccess(String id) => '/files/$id/access';
 
   // Gamification
   static const String gamificationBadges = '/gamification/badges';
+  static const String gamificationHub = '/gamification/hub';
   static const String gamificationMyBadges = '/gamification/me/badges';
   static const String gamificationMyPoints = '/gamification/me/badge-points';
   static const String gamificationMyProgress = '/gamification/me/progress';
+  static const String gamificationMyStreak = '/gamification/me/streak';
+    static const String gamificationAchievements = '/gamification/achievements';
+    static const String gamificationMyAchievements = '/gamification/my-achievements';
+    static const String gamificationMyAchievementsProgress =
+            '/gamification/my-achievements/progress';
   static const String gamificationMissions = '/gamification/me/missions';
   static String gamificationMissionComplete(String missionId) =>
       '/gamification/me/missions/$missionId/complete';
@@ -220,6 +230,8 @@ class ApiConstants {
   static String gamificationQuizById(String id) => '/gamification/quizzes/$id';
   static String gamificationQuizSubmit(String id) =>
       '/gamification/quizzes/$id/submit';
+  static const String gamificationLeaderboardXp =
+      '/gamification/leaderboard/xp';
   static const String gamificationLeaderboard =
       '/gamification/leaderboard/exam-average';
   static const String gamificationStreakLeaderboard =

@@ -139,4 +139,7 @@ class MockStudentNotificationsRepository
       }
     }
   }
+
+  @override
+  void clearCache() {}
 }

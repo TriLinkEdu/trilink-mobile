@@ -1,5 +1,7 @@
+import 'dart:convert';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/services/local_cache_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../shared/repositories/student_progress_repository.dart';
 import '../models/dashboard_data_model.dart';
@@ -9,22 +11,27 @@ class RealStudentDashboardRepository implements StudentDashboardRepository {
   final ApiClient _api;
   final StudentProgressRepository _progressRepository;
   final StorageService _storage;
+  final LocalCacheService _cacheService;
 
-  static DashboardDataModel? _cache;
-  static DateTime? _fetchedAt;
-  static Future<DashboardDataModel>? _inFlight;
-  static const Duration _ttl = Duration(seconds: 30);
+  DashboardDataModel? _cache;
+  DateTime? _fetchedAt;
+  Future<DashboardDataModel>? _inFlight;
+  static const Duration _ttl = Duration(minutes: 10);
 
   RealStudentDashboardRepository({
     ApiClient? apiClient,
     required StudentProgressRepository progressRepository,
     required StorageService storageService,
+    required LocalCacheService cacheService,
   }) : _api = apiClient ?? ApiClient(),
        _progressRepository = progressRepository,
-       _storage = storageService;
+       _storage = storageService,
+       _cacheService = cacheService;
 
   @override
   Future<DashboardDataModel> fetchDashboardData() async {
+    final userId = await _currentUserId();
+    _restoreCache(userId);
     if (_cache != null && _fetchedAt != null) {
       final age = DateTime.now().difference(_fetchedAt!);
       if (age < _ttl) return _cache!;
@@ -34,11 +41,18 @@ class RealStudentDashboardRepository implements StudentDashboardRepository {
 
     final future = _fetchFresh();
     _inFlight = future;
-    final data = await future;
-    _inFlight = null;
-    _cache = data;
-    _fetchedAt = DateTime.now();
-    return data;
+    try {
+      final data = await future;
+      _cache = data;
+      _fetchedAt = DateTime.now();
+      await _cacheService.write(_cacheKey(userId), data.toJson());
+      return data;
+    } catch (_) {
+      if (_cache != null) return _cache!;
+      rethrow;
+    } finally {
+      _inFlight = null;
+    }
   }
 
   Future<DashboardDataModel> _fetchFresh() async {
@@ -94,10 +108,24 @@ class RealStudentDashboardRepository implements StudentDashboardRepository {
   }
 
   DashboardAnnouncementSnippet? _toAnnouncement(Map<String, dynamic> raw) {
+    if (raw['type'] != 'announcement') return null;
+    
     final createdAt = DateTime.tryParse((raw['createdAt'] ?? '').toString());
     if (createdAt == null) return null;
+    
+    String id = (raw['id'] ?? '').toString();
+    final payloadJsonStr = raw['payloadJson'];
+    if (payloadJsonStr is String && payloadJsonStr.isNotEmpty) {
+      try {
+        final payload = jsonDecode(payloadJsonStr) as Map<String, dynamic>;
+        if (payload['announcementId'] != null) {
+          id = payload['announcementId'].toString();
+        }
+      } catch (_) {}
+    }
+
     return DashboardAnnouncementSnippet(
-      id: (raw['id'] ?? '').toString(),
+      id: id,
       title: (raw['title'] ?? 'Notification').toString(),
       authorName: 'TriLink',
       snippet: (raw['body'] ?? '').toString(),
@@ -119,5 +147,33 @@ class RealStudentDashboardRepository implements StudentDashboardRepository {
     final grade = (user?['grade'] ?? '').toString().trim();
     if (grade.isNotEmpty) return grade;
     return 'Student';
+  }
+
+  Future<String> _currentUserId() async {
+    final user = await _storage.getUser();
+    return (user?['id'] ?? '').toString();
+  }
+
+  String _cacheKey(String userId) =>
+      userId.isEmpty ? 'student_dashboard_v2' : 'student_dashboard_v2_$userId';
+
+  @override
+  DashboardDataModel? getCached() => _cache;
+
+  @override
+  void clearCache() {
+    _cache = null;
+    _fetchedAt = null;
+    _inFlight = null;
+  }
+
+  void _restoreCache(String userId) {
+    if (_cache != null) return;
+    final entry = _cacheService.read(_cacheKey(userId));
+    if (entry == null || entry.data is! Map<String, dynamic>) return;
+    _cache = DashboardDataModel.fromJson(
+      Map<String, dynamic>.from(entry.data as Map),
+    );
+    _fetchedAt = entry.savedAt;
   }
 }

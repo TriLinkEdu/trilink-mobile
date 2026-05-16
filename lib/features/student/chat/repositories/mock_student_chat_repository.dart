@@ -7,6 +7,21 @@ class MockStudentChatRepository implements StudentChatRepository {
   int _messageCounter = 100;
   int _conversationCounter = 100;
 
+  @override
+  void clearCache() {
+    // Mock implementation: no-op since mock data is always in memory
+  }
+
+  @override
+  List<ChatConversationModel>? getCachedConversations() {
+    return List<ChatConversationModel>.from(_conversations);
+  }
+
+  @override
+  List<ChatMessageModel>? getCachedMessages(String conversationId) {
+    return List<ChatMessageModel>.from(_messages[conversationId] ?? []);
+  }
+
   String _nextMessageId() => 'msg${_messageCounter++}';
   String _nextConversationId() => 'conv${_conversationCounter++}';
 
@@ -244,9 +259,20 @@ class MockStudentChatRepository implements StudentChatRepository {
   }
 
   @override
-  Future<List<ChatMessageModel>> fetchMessages(String conversationId) async {
+  Future<List<ChatMessageModel>> fetchMessages(
+    String conversationId, {
+    String? before,
+    int limit = 50,
+  }) async {
     await Future<void>.delayed(_latency);
-    return List<ChatMessageModel>.from(_messages[conversationId] ?? []);
+    final messages = List<ChatMessageModel>.from(_messages[conversationId] ?? []);
+    if (before == null || before.isEmpty) {
+      return messages.length <= limit ? messages : messages.sublist(messages.length - limit);
+    }
+    final idx = messages.indexWhere((m) => m.id == before);
+    if (idx <= 0) return [];
+    final start = (idx - limit).clamp(0, idx);
+    return messages.sublist(start, idx);
   }
 
   @override
@@ -278,6 +304,46 @@ class MockStudentChatRepository implements StudentChatRepository {
       _messages[conversationId]!.add(reply);
     });
 
+    return message;
+  }
+
+  @override
+  Future<ChatMessageModel> sendImageMessage(
+    String conversationId,
+    String imagePath,
+  ) async {
+    await Future<void>.delayed(_latency);
+    final message = ChatMessageModel(
+      id: _nextMessageId(),
+      senderId: 'student1',
+      senderName: 'You',
+      content: '[Image]',
+      timestamp: DateTime.now(),
+      isRead: true,
+      type: MessageType.image,
+    );
+    _messages.putIfAbsent(conversationId, () => []);
+    _messages[conversationId]!.add(message);
+    return message;
+  }
+
+  @override
+  Future<ChatMessageModel> sendFileMessage(
+    String conversationId,
+    String filePath,
+  ) async {
+    await Future<void>.delayed(_latency);
+    final message = ChatMessageModel(
+      id: _nextMessageId(),
+      senderId: 'student1',
+      senderName: 'You',
+      content: '[File]',
+      timestamp: DateTime.now(),
+      isRead: true,
+      type: MessageType.file,
+    );
+    _messages.putIfAbsent(conversationId, () => []);
+    _messages[conversationId]!.add(message);
     return message;
   }
 
@@ -323,6 +389,64 @@ class MockStudentChatRepository implements StudentChatRepository {
   }
 
   @override
+  Future<void> markRead(String conversationId, String messageId) async {
+    await Future<void>.delayed(_latency);
+    final messages = _messages[conversationId];
+    if (messages == null) return;
+    for (var i = 0; i < messages.length; i++) {
+      final m = messages[i];
+      if (m.id == messageId && m.isRead == false) {
+        messages[i] = ChatMessageModel(
+          id: m.id,
+          senderId: m.senderId,
+          senderName: m.senderName,
+          content: m.content,
+          timestamp: m.timestamp,
+          isRead: true,
+          type: m.type,
+          mediaFileId: m.mediaFileId,
+          mediaUrl: m.mediaUrl,
+          mediaType: m.mediaType,
+          mediaName: m.mediaName,
+          mediaMimeType: m.mediaMimeType,
+          mediaSize: m.mediaSize,
+          readReceipts: m.readReceipts,
+          senderProfileImage: m.senderProfileImage,
+          senderRole: m.senderRole,
+          senderGrade: m.senderGrade,
+        );
+
+        // Update conversation unread count and lastMessage if applicable
+        final convIndex = _conversations.indexWhere((c) => c.id == conversationId);
+        if (convIndex != -1) {
+          final conv = _conversations[convIndex];
+          final newUnread = conv.unreadCount > 0 ? conv.unreadCount - 1 : 0;
+          final updatedLast = conv.lastMessage?.id == messageId ? messages[i] : conv.lastMessage;
+          _conversations[convIndex] = ChatConversationModel(
+            id: conv.id,
+            title: conv.title,
+            isGroup: conv.isGroup,
+            participantIds: conv.participantIds,
+            lastMessage: updatedLast,
+            unreadCount: newUnread,
+            avatarPath: conv.avatarPath,
+          );
+        }
+
+        break;
+      }
+    }
+  }
+
+  @override
+  Future<List<ChatMemberModel>> fetchConversationMembers(
+    String conversationId,
+  ) async {
+    await Future<void>.delayed(_latency);
+    return const [];
+  }
+
+  @override
   Future<List<ChatContactModel>> searchUsers(String query) async {
     await Future.delayed(const Duration(milliseconds: 300));
     return [
@@ -341,5 +465,60 @@ class MockStudentChatRepository implements StudentChatRepository {
         grade: '9',
       ),
     ];
+  }
+
+  @override
+  Future<ConnectionModel> requestConnection(String recipientId) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<ConnectionModel> acceptConnection(String connectionId) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<ConnectionModel> rejectConnection(String connectionId) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> cancelConnection(String connectionId) async {
+    await Future<void>.delayed(_latency);
+  }
+
+  @override
+  Future<Map<String, List<ConnectionModel>>> fetchConnections() async {
+    return {'sent': [], 'received': []};
+  }
+
+  @override
+  Future<BlockedUserModel> blockUser(String blockedId) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> unblockUser(String blockedId) async {}
+
+  @override
+  Future<List<BlockedUserModel>> fetchBlockedUsers() async {
+    return [];
+  }
+
+  @override
+  Future<ChatInteractionProfile> fetchInteractionProfile(String userId) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    return ChatInteractionProfile(
+      id: userId,
+      firstName: 'Mock',
+      lastName: 'User',
+      role: 'student',
+      grade: '10',
+      section: 'A',
+      totalXp: 1500,
+      connectionStatus: 'none',
+      connectionId: null,
+      isBlocked: false,
+    );
   }
 }

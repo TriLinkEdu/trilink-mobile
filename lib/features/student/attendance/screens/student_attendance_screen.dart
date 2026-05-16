@@ -10,6 +10,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/subject_visuals.dart';
 import '../../../../core/theme/app_shadows.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
@@ -239,15 +240,18 @@ class _AttendanceViewState extends State<_AttendanceView> {
 
                     final records = state.records;
                     if (records.isEmpty) {
-                      return const EmptyStateWidget(
+                      return EmptyStateWidget(
                         illustration: ClipboardIllustration(),
                         icon: Icons.fact_check_rounded,
                         title: 'No attendance records',
                         subtitle: 'Your attendance records will appear here.',
+                        actionLabel: 'Refresh',
+                        onAction: () => context.read<AttendanceCubit>().loadAttendance(),
                       );
                     }
 
                     final subjectSummaries = _subjectSummaries(records);
+                    final overallAttendance = _overallAttendance(records);
 
                     return SingleChildScrollView(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -272,13 +276,35 @@ class _AttendanceViewState extends State<_AttendanceView> {
                                 ),
                                 AppSpacing.gapSm,
                                 Text(
-                                  '${_overallAttendance(records).toStringAsFixed(0)}%',
+                                    '${overallAttendance.toStringAsFixed(0)}%',
                                   style: theme.textTheme.displayLarge?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: theme.colorScheme.onPrimary,
                                   ),
                                 ),
+                                  AppSpacing.gapXs,
+                                  Text(
+                                    'Based on ${records.length} recorded classes',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onPrimary
+                                          .withAlpha(180),
+                                    ),
+                                  ),
                                 AppSpacing.gapSm,
+                                  ClipRRect(
+                                    borderRadius: AppRadius.borderXl,
+                                    child: LinearProgressIndicator(
+                                      value: overallAttendance / 100,
+                                      minHeight: 8,
+                                      backgroundColor:
+                                          Colors.white.withAlpha(28),
+                                      valueColor:
+                                          const AlwaysStoppedAnimation<Color>(
+                                        AppColors.success,
+                                      ),
+                                    ),
+                                  ),
+                                  AppSpacing.gapMd,
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 12,
@@ -309,7 +335,7 @@ class _AttendanceViewState extends State<_AttendanceView> {
                                     ],
                                   ),
                                 ),
-                                AppSpacing.gapXl,
+                                AppSpacing.gapLg,
                                 Wrap(
                                   spacing: 8,
                                   runSpacing: 8,
@@ -403,6 +429,7 @@ class _AttendanceViewState extends State<_AttendanceView> {
                                 ),
                                 name: subjectSummaries[index].name,
                                 totalClasses: subjectSummaries[index].total,
+                                progress: subjectSummaries[index].percentage,
                                 percentage:
                                     subjectSummaries[index].percentageLabel,
                                 dots: subjectSummaries[index].dots,
@@ -521,23 +548,11 @@ class _AttendanceViewState extends State<_AttendanceView> {
     }).toList()..sort((a, b) => b.percentage.compareTo(a.percentage));
   }
 
-  IconData _iconForSubject(String subjectName) {
-    return switch (subjectName.toLowerCase()) {
-      'mathematics' => Icons.calculate_rounded,
-      'physics' => Icons.science_rounded,
-      'english literature' || 'literature' => Icons.auto_stories_rounded,
-      _ => Icons.school_rounded,
-    };
-  }
+  IconData _iconForSubject(String subjectName) =>
+      SubjectVisuals.iconOf(subjectName);
 
-  Color _colorForSubject(String subjectName) {
-    return switch (subjectName.toLowerCase()) {
-      'mathematics' => AppColors.mathematics,
-      'physics' => AppColors.physics,
-      'english literature' || 'literature' => AppColors.literature,
-      _ => Theme.of(context).colorScheme.onSurfaceVariant,
-    };
-  }
+  Color _colorForSubject(String subjectName) =>
+      SubjectVisuals.colorOf(subjectName);
 }
 
 class _SubjectAttendanceSummary {
@@ -607,6 +622,7 @@ class _SubjectAttendanceRow extends StatelessWidget {
   final Color iconColor;
   final String name;
   final int totalClasses;
+  final double progress;
   final String percentage;
   final List<_DotStatus> dots;
 
@@ -615,6 +631,7 @@ class _SubjectAttendanceRow extends StatelessWidget {
     required this.iconColor,
     required this.name,
     required this.totalClasses,
+    required this.progress,
     required this.percentage,
     required this.dots,
   });
@@ -676,6 +693,16 @@ class _SubjectAttendanceRow extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+          AppSpacing.gapMd,
+          ClipRRect(
+            borderRadius: AppRadius.borderXl,
+            child: LinearProgressIndicator(
+              value: progress / 100,
+              minHeight: 7,
+              backgroundColor: theme.colorScheme.surfaceContainerHighest,
+              valueColor: AlwaysStoppedAnimation<Color>(iconColor),
+            ),
           ),
           AppSpacing.gapMd,
           Wrap(

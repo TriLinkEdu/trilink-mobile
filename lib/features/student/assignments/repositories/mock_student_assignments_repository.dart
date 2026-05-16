@@ -81,6 +81,15 @@ class MockStudentAssignmentsRepository implements StudentAssignmentsRepository {
 
   @override
   Future<void> submitAssignment(String id, String content) async {
+    await submitAssignmentWithFile(id, content);
+  }
+
+  @override
+  Future<void> submitAssignmentWithFile(
+    String id,
+    String content, {
+    String? filePath,
+  }) async {
     await Future<void>.delayed(_latency);
     final index = _assignments.indexWhere((a) => a.id == id);
     if (index != -1) {
@@ -91,4 +100,16 @@ class MockStudentAssignmentsRepository implements StudentAssignmentsRepository {
       );
     }
   }
+
+  @override
+  Future<List<AssignmentModel>> refresh() async {
+    await Future<void>.delayed(_latency);
+    return List<AssignmentModel>.from(_assignments);
+  }
+
+  @override
+  List<AssignmentModel>? getCached() => null;
+
+  @override
+  void clearCache() {}
 }

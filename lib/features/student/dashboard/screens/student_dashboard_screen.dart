@@ -185,11 +185,11 @@ class _DashboardContent extends StatelessWidget {
                   ],
 
                   _SectionHeader(
-                    title: 'This Week',
+                    title: 'Insights & Plans',
                     actionLabel: 'Details',
                     onAction: () => Navigator.of(
                       context,
-                    ).pushNamed(RouteNames.studentWeeklySnapshot),
+                    ).pushNamed(RouteNames.studentYearlyPlanner),
                   ),
                   AppSpacing.gapMd,
                   _WeeklySnapshotCard(
@@ -202,6 +202,12 @@ class _DashboardContent extends StatelessWidget {
                     onTap: () => Navigator.of(
                       context,
                     ).pushNamed(RouteNames.studentActionPlan),
+                  ),
+                  AppSpacing.gapMd,
+                  _YearlyPlannerPreviewCard(
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(RouteNames.studentYearlyPlanner),
                   ),
                   AppSpacing.gapXxl,
 
@@ -371,6 +377,68 @@ class _ActionPlanPreviewCard extends StatelessWidget {
                   AppSpacing.gapXxs,
                   Text(
                     'Get focused tasks and mark progress as done.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _YearlyPlannerPreviewCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _YearlyPlannerPreviewCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Pressable(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: AppRadius.borderLg,
+          boxShadow: AppShadows.subtle(theme.shadowColor),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: Colors.deepPurple.withAlpha(16),
+                borderRadius: AppRadius.borderMd,
+              ),
+              child: const Icon(Icons.calendar_month_rounded, color: Colors.deepPurple),
+            ),
+            AppSpacing.hGapMd,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Yearly Planner',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  AppSpacing.gapXxs,
+                  Text(
+                    'View term progress and academic goals.',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -928,6 +996,7 @@ class _AnnouncementCard extends StatelessWidget {
           children: [
             ProfileAvatar(
               radius: 18,
+              
               fallbackText: authorName,
             ),
             AppSpacing.hGapMd,

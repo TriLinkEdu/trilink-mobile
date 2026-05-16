@@ -5,6 +5,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/subject_visuals.dart';
 import '../../../../core/theme/app_shadows.dart';
 import '../../../../core/theme/app_spacing.dart';
 import 'package:trilink_mobile/core/widgets/empty_state_widget.dart';
@@ -12,6 +13,7 @@ import 'package:trilink_mobile/core/widgets/illustrations.dart';
 import 'package:trilink_mobile/core/widgets/error_widget.dart';
 import 'package:trilink_mobile/core/widgets/animated_counter.dart';
 import 'package:trilink_mobile/core/widgets/branded_refresh.dart';
+import 'package:trilink_mobile/core/widgets/last_updated_chip.dart';
 import 'package:trilink_mobile/core/widgets/celebration_overlay.dart';
 import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
 import 'package:trilink_mobile/core/widgets/pressable.dart';
@@ -85,21 +87,38 @@ class _GradesViewState extends State<_GradesView> {
                       top: AppSpacing.xs,
                     ),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        IconButton(
-                          tooltip: 'Switch term view',
-                          onPressed: () {
-                            final next = state.selectedTerm == 'Fall 2023'
-                                ? 'Spring 2023'
-                                : 'Fall 2023';
-                            context.read<GradesCubit>().switchTerm(next);
-                          },
-                          icon: Icon(
-                            Icons.more_horiz,
-                            color: theme.colorScheme.onSurface,
-                          ),
+                        LastUpdatedChip(
+                          timestamp: context.read<GradesCubit>().lastLoadedAt,
                         ),
+                        if (state.availableTerms.length > 1)
+                          DropdownButton<String>(
+                            value: state.availableTerms.contains(state.selectedTerm)
+                                ? state.selectedTerm
+                                : null,
+                            underline: const SizedBox.shrink(),
+                            icon: Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: theme.colorScheme.primary,
+                            ),
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            borderRadius: AppRadius.borderMd,
+                            items: state.availableTerms
+                                .map((t) => DropdownMenuItem(
+                                      value: t,
+                                      child: Text(t),
+                                    ))
+                                .toList(),
+                            onChanged: (t) {
+                              if (t != null) {
+                                context.read<GradesCubit>().switchTerm(t);
+                              }
+                            },
+                          ),
                       ],
                     ),
                   ),
@@ -128,13 +147,15 @@ class _GradesViewState extends State<_GradesView> {
                                       constraints: BoxConstraints(
                                         minHeight: constraints.maxHeight,
                                       ),
-                                      child: const EmptyStateWidget(
+                                      child: EmptyStateWidget(
                                         illustration:
                                             GraduationCapIllustration(),
                                         icon: Icons.school_rounded,
                                         title: 'No grades yet',
                                         subtitle:
                                             'Your academic grades will appear here once teachers post them.',
+                                        actionLabel: 'Refresh',
+                                        onAction: () => context.read<GradesCubit>().loadGrades(),
                                       ),
                                     ),
                                   ),
@@ -238,9 +259,9 @@ class _GradesViewState extends State<_GradesView> {
                                         MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        state.selectedTerm == 'Fall 2023'
-                                            ? 'Fall Semester 2023'
-                                            : 'Spring Semester 2023',
+                                        state.selectedTerm.isEmpty
+                                            ? 'All Grades'
+                                            : state.selectedTerm,
                                         style: theme.textTheme.titleSmall
                                             ?.copyWith(
                                               fontWeight: FontWeight.w700,
@@ -377,20 +398,11 @@ String _trendLabel(double trend) {
   return '$sign${trend.toStringAsFixed(1)}%';
 }
 
-IconData _iconForSubject(String subjectName) {
-  return switch (subjectName.toLowerCase()) {
-    'mathematics' => Icons.calculate_rounded,
-    'physics' => Icons.science_rounded,
-    'literature' || 'english literature' => Icons.auto_stories_rounded,
-    'history' => Icons.history_edu_rounded,
-    'computer science' => Icons.computer_rounded,
-    _ => Icons.school_rounded,
-  };
-}
+IconData _iconForSubject(String subjectName) =>
+    SubjectVisuals.iconOf(subjectName);
 
-Color _colorForSubject(String subjectName) {
-  return AppColors.subjectColor(subjectName);
-}
+Color _colorForSubject(String subjectName) =>
+    SubjectVisuals.colorOf(subjectName);
 
 class _SubjectSummary {
   final String subjectId;

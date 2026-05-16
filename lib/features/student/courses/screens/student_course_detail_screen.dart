@@ -5,6 +5,7 @@ import '../../../../core/models/curriculum_models.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/subject_visuals.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/branded_refresh.dart';
 import '../../../../core/widgets/empty_state_widget.dart';
@@ -44,24 +45,8 @@ class _CourseDetailView extends StatelessWidget {
 
   const _CourseDetailView({required this.subjectId, required this.subjectName});
 
-  static const _subjectColors = <String, Color>{
-    'mathematics': AppColors.mathematics,
-    'physics': AppColors.physics,
-    'literature': AppColors.literature,
-    'history': AppColors.history,
-    'computer_science': AppColors.computerScience,
-  };
-
-  static const _subjectIcons = <String, IconData>{
-    'mathematics': Icons.calculate_rounded,
-    'physics': Icons.science_rounded,
-    'literature': Icons.menu_book_rounded,
-    'history': Icons.history_edu_rounded,
-    'computer_science': Icons.computer_rounded,
-  };
-
-  Color get _color => _subjectColors[subjectId] ?? AppColors.primary;
-  IconData get _icon => _subjectIcons[subjectId] ?? Icons.school_rounded;
+  Color get _color => SubjectVisuals.colorOf(subjectId);
+  IconData get _icon => SubjectVisuals.iconOf(subjectId);
 
   Color _difficultyColor(DifficultyTier tier) {
     switch (tier) {

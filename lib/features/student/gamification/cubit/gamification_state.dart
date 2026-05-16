@@ -6,6 +6,7 @@ enum GamificationStatus { initial, loading, loaded, error }
 
 class GamificationState extends Equatable {
   final GamificationStatus status;
+  final String currentUserId;
   final StreakModel? streak;
   final List<AchievementModel> achievements;
   final List<LeaderboardEntry> leaderboardEntries;
@@ -24,6 +25,7 @@ class GamificationState extends Equatable {
 
   const GamificationState({
     this.status = GamificationStatus.initial,
+    this.currentUserId = '',
     this.streak,
     this.achievements = const [],
     this.leaderboardEntries = const [],
@@ -43,6 +45,7 @@ class GamificationState extends Equatable {
 
   GamificationState copyWith({
     GamificationStatus? status,
+    String? currentUserId,
     StreakModel? streak,
     List<AchievementModel>? achievements,
     List<LeaderboardEntry>? leaderboardEntries,
@@ -61,6 +64,7 @@ class GamificationState extends Equatable {
   }) {
     return GamificationState(
       status: status ?? this.status,
+      currentUserId: currentUserId ?? this.currentUserId,
       streak: streak ?? this.streak,
       achievements: achievements ?? this.achievements,
       leaderboardEntries: leaderboardEntries ?? this.leaderboardEntries,
@@ -84,6 +88,7 @@ class GamificationState extends Equatable {
   @override
   List<Object?> get props => [
     status,
+    currentUserId,
     streak,
     achievements,
     leaderboardEntries,

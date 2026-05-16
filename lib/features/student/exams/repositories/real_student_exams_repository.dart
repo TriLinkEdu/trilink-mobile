@@ -2,29 +2,40 @@ import 'dart:convert';
 
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/services/local_cache_service.dart';
+import '../../../../core/services/storage_service.dart';
 import '../models/exam_model.dart';
 import 'student_exams_repository.dart';
 
 class RealStudentExamsRepository implements StudentExamsRepository {
   final ApiClient _api;
+  final StorageService _storage;
+  final LocalCacheService _cacheService;
 
-  static const Duration _listTtl = Duration(seconds: 20);
-  static const Duration _examTtl = Duration(seconds: 30);
+  static const Duration _listTtl = Duration(minutes: 30);
+  static const Duration _examTtl = Duration(hours: 1);
 
-  static List<ExamModel>? _listCache;
-  static DateTime? _listFetchedAt;
-  static Future<List<ExamModel>>? _listInFlight;
+  List<ExamModel>? _listCache;
+  DateTime? _listFetchedAt;
+  Future<List<ExamModel>>? _listInFlight;
 
-  static final Map<String, ExamModel> _examCache = <String, ExamModel>{};
-  static final Map<String, DateTime> _examFetchedAt = <String, DateTime>{};
-  static final Map<String, Future<ExamModel>> _examInFlight =
+  final Map<String, ExamModel> _examCache = <String, ExamModel>{};
+  final Map<String, DateTime> _examFetchedAt = <String, DateTime>{};
+  final Map<String, Future<ExamModel>> _examInFlight =
       <String, Future<ExamModel>>{};
 
-  RealStudentExamsRepository({ApiClient? apiClient})
-    : _api = apiClient ?? ApiClient();
+  RealStudentExamsRepository({
+    ApiClient? apiClient,
+    required StorageService storageService,
+    required LocalCacheService cacheService,
+  }) : _api = apiClient ?? ApiClient(),
+       _storage = storageService,
+       _cacheService = cacheService;
 
   @override
   Future<List<ExamModel>> fetchAvailableExams() async {
+    final userId = await _currentUserId();
+    _restoreListCache(userId);
     if (_listCache != null && _listFetchedAt != null) {
       final age = DateTime.now().difference(_listFetchedAt!);
       if (age < _listTtl) return _listCache!;
@@ -35,11 +46,21 @@ class RealStudentExamsRepository implements StudentExamsRepository {
 
     final future = _fetchAvailableExamsFresh();
     _listInFlight = future;
-    final data = await future;
-    _listInFlight = null;
-    _listCache = data;
-    _listFetchedAt = DateTime.now();
-    return data;
+    try {
+      final data = await future;
+      _listCache = data;
+      _listFetchedAt = DateTime.now();
+      await _cacheService.write(
+        _listCacheKey(userId),
+        data.map((item) => item.toJson()).toList(),
+      );
+      return data;
+    } catch (_) {
+      if (_listCache != null) return _listCache!;
+      rethrow;
+    } finally {
+      _listInFlight = null;
+    }
   }
 
   Future<List<ExamModel>> _fetchAvailableExamsFresh() async {
@@ -53,6 +74,8 @@ class RealStudentExamsRepository implements StudentExamsRepository {
 
   @override
   Future<ExamModel> fetchExamQuestions(String examId) async {
+    final userId = await _currentUserId();
+    _restoreExamCache(userId, examId);
     final cached = _examCache[examId];
     final fetchedAt = _examFetchedAt[examId];
     if (cached != null && fetchedAt != null) {
@@ -65,11 +88,21 @@ class RealStudentExamsRepository implements StudentExamsRepository {
 
     final future = _fetchExamQuestionsFresh(examId);
     _examInFlight[examId] = future;
-    final data = await future;
-    _examInFlight.remove(examId);
-    _examCache[examId] = data;
-    _examFetchedAt[examId] = DateTime.now();
-    return data;
+    try {
+      final data = await future;
+      _examCache[examId] = data;
+      _examFetchedAt[examId] = DateTime.now();
+      await _cacheService.write(
+        _examCacheKey(userId, examId),
+        data.toJson(),
+      );
+      return data;
+    } catch (_) {
+      if (cached != null) return cached;
+      rethrow;
+    } finally {
+      _examInFlight.remove(examId);
+    }
   }
 
   Future<ExamModel> _fetchExamQuestionsFresh(String examId) async {
@@ -256,5 +289,52 @@ class RealStudentExamsRepository implements StudentExamsRepository {
     if (value == null) return null;
     if (value is num) return value.toDouble();
     return double.tryParse(value.toString());
+  }
+
+  Future<String> _currentUserId() async {
+    final user = await _storage.getUser();
+    return (user?['id'] ?? '').toString();
+  }
+
+  String _listCacheKey(String userId) =>
+      userId.isEmpty ? 'student_exams_list_v1' : 'student_exams_list_v1_$userId';
+
+  String _examCacheKey(String userId, String examId) {
+    if (userId.isEmpty) return 'student_exam_v1_$examId';
+    return 'student_exam_v1_${userId}_$examId';
+  }
+
+  void _restoreListCache(String userId) {
+    if (_listCache != null) return;
+    final entry = _cacheService.read(_listCacheKey(userId));
+    if (entry == null || entry.data is! List) return;
+    _listCache = (entry.data as List)
+        .whereType<Map<String, dynamic>>()
+        .map(ExamModel.fromJson)
+        .toList();
+    _listFetchedAt = entry.savedAt;
+  }
+
+  void _restoreExamCache(String userId, String examId) {
+    if (_examCache.containsKey(examId)) return;
+    final entry = _cacheService.read(_examCacheKey(userId, examId));
+    if (entry == null || entry.data is! Map<String, dynamic>) return;
+    _examCache[examId] = ExamModel.fromJson(
+      Map<String, dynamic>.from(entry.data as Map),
+    );
+    _examFetchedAt[examId] = entry.savedAt;
+  }
+
+  @override
+  List<ExamModel>? getCached() => _listCache;
+
+  @override
+  void clearCache() {
+    _listCache = null;
+    _listFetchedAt = null;
+    _listInFlight = null;
+    _examCache.clear();
+    _examFetchedAt.clear();
+    _examInFlight.clear();
   }
 }

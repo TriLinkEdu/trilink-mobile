@@ -168,6 +168,7 @@ class _CourseResourceDetailViewState extends State<_CourseResourceDetailView> {
             appBar: AppBar(title: const Text('Resource'), centerTitle: true),
             body: AppErrorWidget(
               message: state.errorMessage ?? 'Unable to load resource details.',
+              onRetry: () => context.read<CourseResourceDetailCubit>().loadResource(),
             ),
           );
         }

@@ -66,7 +66,7 @@ class _SimpleTextbookViewer extends StatefulWidget {
 }
 
 class _SimpleTextbookViewerState extends State<_SimpleTextbookViewer> {
-  PdfControllerPinch? _controller;
+  PdfController? _controller;
   String? _error;
 
   @override
@@ -88,7 +88,7 @@ class _SimpleTextbookViewerState extends State<_SimpleTextbookViewer> {
         throw Exception('PDF file is empty');
       }
 
-      _controller = PdfControllerPinch(
+      _controller = PdfController(
         document: PdfDocument.openFile(widget.localPath),
       );
       if (mounted) setState(() {});
@@ -147,8 +147,25 @@ class _SimpleTextbookViewerState extends State<_SimpleTextbookViewer> {
               ),
             )
           : _controller != null
-              ? PdfViewPinch(controller: _controller!)
+              ? PdfView(
+                  controller: _controller!,
+                  scrollDirection: Axis.vertical,
+                  renderer: _renderPage,
+                )
               : const Center(child: CircularProgressIndicator()),
+    );
+  }
+
+  Future<PdfPageImage?> _renderPage(PdfPage page) {
+    final aspectRatio = page.width / page.height;
+    final hasIssue = aspectRatio > 2.0 || aspectRatio < 0.3;
+    final renderWidth = page.width * 2;
+    final renderHeight = hasIssue ? renderWidth / 0.707 : page.height * 2;
+    return page.render(
+      width: renderWidth,
+      height: renderHeight,
+      format: PdfPageImageFormat.png,
+      backgroundColor: '#FFFFFF',
     );
   }
 }

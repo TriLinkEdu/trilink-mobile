@@ -39,6 +39,7 @@ import '../../features/student/analytics/screens/student_action_plan_screen.dart
 import '../../features/student/analytics/screens/student_performance_trends_screen.dart';
 import '../../features/student/analytics/screens/student_attendance_insights_screen.dart';
 import '../../features/student/textbooks/screens/textbooks_screen.dart';
+import '../../features/student/analytics/screens/student_yearly_planner_screen.dart';
 
 /// Handles all student sub-page routing within the nested shell navigator.
 /// This keeps the bottom nav visible for every student screen.
@@ -83,6 +84,9 @@ class StudentShellRoutes {
           ChatConversationScreen(
             conversationId: safeArgs['conversationId']?.toString() ?? '',
             title: safeArgs['title']?.toString() ?? 'Chat',
+            isGroup: safeArgs['isGroup'] == true,
+            avatarPath: safeArgs['avatarPath']?.toString(),
+            partnerId: safeArgs['partnerId']?.toString(),
           ),
           settings,
         );
@@ -175,6 +179,8 @@ class StudentShellRoutes {
         return _page(const StudentSyncStatusScreen(), settings);
       case RouteNames.studentWeeklySnapshot:
         return _page(const StudentWeeklySnapshotScreen(), settings);
+      case RouteNames.studentYearlyPlanner:
+        return _page(const StudentYearlyPlannerScreen(), settings);
       case RouteNames.studentActionPlan:
         return _page(const StudentActionPlanScreen(), settings);
       case RouteNames.studentGoals:

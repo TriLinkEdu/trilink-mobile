@@ -12,7 +12,8 @@ import 'package:trilink_mobile/core/widgets/illustrations.dart';
 import 'package:trilink_mobile/core/widgets/error_widget.dart';
 import 'package:trilink_mobile/core/widgets/staggered_animation.dart';
 
-import '../../../../core/widgets/pressable.dart';
+import 'package:trilink_mobile/core/widgets/pressable.dart';
+import 'package:trilink_mobile/core/widgets/last_updated_chip.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../../shared/widgets/student_page_background.dart';
 import '../cubit/announcements_cubit.dart';
@@ -133,38 +134,37 @@ class _StudentAnnouncementsViewState extends State<_StudentAnnouncementsView> {
                                   ),
                                 );
                               },
-                              icon: Icon(
+                              icon: const Icon(
                                 Icons.notifications_outlined,
-                                color: theme.colorScheme.primary,
+                                size: 22,
                               ),
                             ),
                             if (count > 0)
                               Positioned(
-                                right: 6,
-                                top: 6,
+                                right: 8,
+                                top: 8,
                                 child: Container(
                                   padding: const EdgeInsets.all(4),
-                                  decoration: const BoxDecoration(
+                                  decoration: BoxDecoration(
                                     color: AppColors.danger,
                                     shape: BoxShape.circle,
                                   ),
-                                  constraints: const BoxConstraints(
-                                    minWidth: 18,
-                                    minHeight: 18,
-                                  ),
                                   child: Text(
-                                    '$count',
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: theme.colorScheme.onError,
+                                    count > 9 ? '9+' : '$count',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
                                       fontWeight: FontWeight.bold,
                                     ),
-                                    textAlign: TextAlign.center,
                                   ),
                                 ),
                               ),
                           ],
                         );
                       },
+                    ),
+                    LastUpdatedChip(
+                      timestamp: context.read<AnnouncementsCubit>().lastLoadedAt,
                     ),
                   ],
                 ),
@@ -257,6 +257,8 @@ class _StudentAnnouncementsViewState extends State<_StudentAnnouncementsView> {
                               title: 'No announcements yet',
                               subtitle:
                                   'Announcements for this category will appear here.',
+                              actionLabel: 'Refresh',
+                              onAction: () => context.read<AnnouncementsCubit>().loadAnnouncements(),
                             ),
                             AppSpacing.gapHuge,
                           ] else ...[

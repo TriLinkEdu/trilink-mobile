@@ -45,4 +45,10 @@ class MockStudentAttendanceRepository implements StudentAttendanceRepository {
       );
     });
   }
+
+  @override
+  List<AttendanceModel>? getCached() => null;
+
+  @override
+  void clearCache() {}
 }

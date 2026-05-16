@@ -1,215 +1,183 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+import 'dart:isolate';
+import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
+import 'package:pdfx/pdfx.dart';
 
-/// Performance and memory optimization for PDF viewer
+/// Manages PDF rendering performance with memory optimization
 class PdfPerformanceManager {
-  /// Cache size limits
-  static const int maxCachePages = 5;
-  static const int maxMemoryMB = 100;
-
-  /// Lazy-load pages around current page
-  static List<int> getPageRangeToLoad({
-    required int currentPage,
-    required int totalPages,
-    int preloadDistance = 2,
-  }) {
-    final pages = <int>[];
+  static const int _maxCachedPages = 5;
+  static const int _prefetchDistance = 2;
+  static const double _highResScale = 2.0;
+  static const double _lowResScale = 1.0;
+  
+  final Map<int, ui.Image?> _highResCache = {};
+  final Map<int, ui.Image?> _lowResCache = {};
+  final Set<int> _renderingPages = {};
+  
+  PdfDocument? _document;
+  int _currentPage = 1;
+  
+  /// Initialize with PDF document
+  Future<void> initialize(String path) async {
+    _document = await PdfDocument.openFile(path);
+  }
+  
+  /// Update current page and trigger pre-fetching
+  void updateCurrentPage(int page) {
+    _currentPage = page;
+    _prefetchAdjacentPages();
+    _evictDistantPages();
+  }
+  
+  /// Get page image with fallback to low-res if high-res fails
+  Future<ui.Image?> getPageImage(int pageNumber) async {
+    // Return cached high-res if available
+    if (_highResCache.containsKey(pageNumber)) {
+      return _highResCache[pageNumber];
+    }
     
-    // Add current page
-    pages.add(currentPage);
+    // Return cached low-res while loading high-res
+    if (_lowResCache.containsKey(pageNumber)) {
+      _renderHighRes(pageNumber); // Async upgrade
+      return _lowResCache[pageNumber];
+    }
     
-    // Add preload distance pages before and after
-    for (int i = 1; i <= preloadDistance; i++) {
-      if (currentPage - i >= 1) {
-        pages.add(currentPage - i);
+    // Render low-res first for immediate display
+    return await _renderLowRes(pageNumber);
+  }
+  
+  /// Render low-resolution page (fast, for immediate display)
+  Future<ui.Image?> _renderLowRes(int pageNumber) async {
+    if (_document == null || _renderingPages.contains(pageNumber)) {
+      return null;
+    }
+    
+    _renderingPages.add(pageNumber);
+    
+    try {
+      final page = await _document!.getPage(pageNumber);
+      final pageImage = await page.render(
+        width: (page.width * _lowResScale).toInt().toDouble(),
+        height: (page.height * _lowResScale).toInt().toDouble(),
+        format: PdfPageImageFormat.png,
+      );
+      await page.close();
+      
+      if (pageImage != null) {
+        final image = await _bytesToImage(pageImage.bytes);
+        _lowResCache[pageNumber] = image;
+        
+        // Start high-res rendering in background
+        _renderHighRes(pageNumber);
+        
+        return image;
       }
-      if (currentPage + i <= totalPages) {
-        pages.add(currentPage + i);
+    } catch (e) {
+      debugPrint('Error rendering low-res page $pageNumber: $e');
+    } finally {
+      _renderingPages.remove(pageNumber);
+    }
+    
+    return null;
+  }
+  
+  /// Render high-resolution page in background
+  Future<void> _renderHighRes(int pageNumber) async {
+    if (_document == null || 
+        _renderingPages.contains(pageNumber) ||
+        _highResCache.containsKey(pageNumber)) {
+      return;
+    }
+    
+    _renderingPages.add(pageNumber);
+    
+    try {
+      // Run in compute isolate to avoid blocking UI
+      final result = await compute(_renderPageIsolate, {
+        'path': _document!.sourceName,
+        'pageNumber': pageNumber,
+        'scale': _highResScale,
+      });
+      
+      if (result != null) {
+        final image = await _bytesToImage(result);
+        _highResCache[pageNumber] = image;
+      }
+    } catch (e) {
+      debugPrint('Error rendering high-res page $pageNumber: $e');
+    } finally {
+      _renderingPages.remove(pageNumber);
+    }
+  }
+  
+  /// Pre-fetch adjacent pages based on scroll direction
+  void _prefetchAdjacentPages() {
+    for (int i = 1; i <= _prefetchDistance; i++) {
+      final nextPage = _currentPage + i;
+      final prevPage = _currentPage - i;
+      
+      if (nextPage <= (_document?.pagesCount ?? 0)) {
+        _renderLowRes(nextPage);
+      }
+      if (prevPage > 0) {
+        _renderLowRes(prevPage);
+      }
+    }
+  }
+  
+  /// Evict pages far from current view to free memory
+  void _evictDistantPages() {
+    final pagesToKeep = <int>{};
+    
+    // Keep current page and nearby pages
+    for (int i = -_maxCachedPages ~/ 2; i <= _maxCachedPages ~/ 2; i++) {
+      final page = _currentPage + i;
+      if (page > 0 && page <= (_document?.pagesCount ?? 0)) {
+        pagesToKeep.add(page);
       }
     }
     
-    return pages;
+    // Remove distant pages from cache
+    _highResCache.removeWhere((page, _) => !pagesToKeep.contains(page));
+    _lowResCache.removeWhere((page, _) => !pagesToKeep.contains(page));
   }
-
-  /// Throttle expensive operations
-  static Future<T> throttle<T>({
-    required Duration duration,
-    required Future<T> Function() operation,
-  }) async {
-    return operation();
+  
+  /// Convert bytes to UI image
+  Future<ui.Image> _bytesToImage(Uint8List bytes) async {
+    final codec = await ui.instantiateImageCodec(bytes);
+    final frame = await codec.getNextFrame();
+    return frame.image;
   }
-
-  /// Memory management check
-  static bool shouldEvictCache({
-    required int currentMemorySizeBytes,
-    required int maxMemorySizeBytes,
-    required double threshold,
-  }) {
-    final percentage = (currentMemorySizeBytes / maxMemorySizeBytes) * 100;
-    return percentage >= (threshold * 100);
+  
+  /// Dispose resources
+  void dispose() {
+    _highResCache.clear();
+    _lowResCache.clear();
+    _renderingPages.clear();
+    _document?.close();
   }
 }
 
-/// Enhanced PDF page renderer with better aspect ratio handling
-class EnhancedPdfPageRenderer extends StatelessWidget {
-  final double pageWidth;
-  final double pageHeight;
-  final Widget pdfPageWidget;
-  final double zoom;
-  final ScrollController scrollController;
-  final bool preserveAspectRatio;
-
-  const EnhancedPdfPageRenderer({
-    super.key,
-    required this.pageWidth,
-    required this.pageHeight,
-    required this.pdfPageWidget,
-    this.zoom = 1.0,
-    required this.scrollController,
-    this.preserveAspectRatio = true,
-  });
-
-  /// Calculate optimal fit for the page
-  BoxFit _calculateFit() {
-    // If page is landscape and viewport is portrait, use fitHeight
-    if (pageWidth > pageHeight) {
-      return BoxFit.fitHeight;
-    }
-    // If page is portrait and viewport is landscape, use fitWidth
-    return BoxFit.fitWidth;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final screenWidth = mediaQuery.size.width;
-    final screenHeight = mediaQuery.size.height;
-
-    // Calculate ideal scaling
-    final scaleX = screenWidth / pageWidth;
-    final scaleY = screenHeight / pageHeight;
+/// Isolate function for rendering pages in background
+Future<Uint8List?> _renderPageIsolate(Map<String, dynamic> params) async {
+  try {
+    final document = await PdfDocument.openFile(params['path'] as String);
+    final page = await document.getPage(params['pageNumber'] as int);
+    final scale = params['scale'] as double;
     
-    // Use appropriate scaling based on orientation
-    final fit = _calculateFit();
-    final scale = fit == BoxFit.fitWidth ? scaleX : scaleY;
-    final effectiveScale = scale * zoom;
-
-    return SingleChildScrollView(
-      controller: scrollController,
-      scrollDirection: Axis.vertical,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Transform.scale(
-          scale: effectiveScale,
-          alignment: Alignment.topCenter,
-          child: SizedBox(
-            width: pageWidth,
-            height: pageHeight,
-            child: AspectRatio(
-              aspectRatio: pageWidth / pageHeight,
-              child: pdfPageWidget,
-            ),
-          ),
-        ),
-      ),
+    final pageImage = await page.render(
+      width: (page.width * scale).toInt().toDouble(),
+      height: (page.height * scale).toInt().toDouble(),
+      format: PdfPageImageFormat.png,
     );
-  }
-}
-
-/// Adaptive page fitting strategy
-class AdaptivePageFitter {
-  /// Determine the best strategy for rendering a PDF page
-  static BoxFit getAdaptiveFit({
-    required double pageWidth,
-    required double pageHeight,
-    required Orientation orientation,
-    required double viewportWidth,
-    required double viewportHeight,
-  }) {
-    final pageAspectRatio = pageWidth / pageHeight;
-    final viewportAspectRatio = viewportWidth / viewportHeight;
     
-    // Calculate aspect ratio difference
-    final aspectRatioDiff = (pageAspectRatio - viewportAspectRatio).abs();
+    await page.close();
+    await document.close();
     
-    // Very similar aspect ratios - use cover
-    if (aspectRatioDiff < 0.05) {
-      return BoxFit.cover;
-    }
-    
-    // Page is wider (landscape) or viewport is narrower
-    if (pageAspectRatio > viewportAspectRatio) {
-      return BoxFit.fitWidth;
-    }
-    
-    // Page is taller (portrait) or viewport is wider
-    return BoxFit.fitHeight;
+    return pageImage?.bytes;
+  } catch (e) {
+    debugPrint('Isolate rendering error: $e');
+    return null;
   }
-
-  /// Calculate optimal zoom to fit with minimum white space
-  static double getOptimalZoom({
-    required double pageWidth,
-    required double pageHeight,
-    required double viewportWidth,
-    required double viewportHeight,
-    bool fillViewport = true,
-  }) {
-    final scaleX = viewportWidth / pageWidth;
-    final scaleY = viewportHeight / pageHeight;
-    
-    // Choose the larger scale to fill viewport
-    // Choose the smaller scale to fit within viewport
-    return fillViewport ? ([scaleX, scaleY].reduce((a, b) => a > b ? a : b))
-        : ([scaleX, scaleY].reduce((a, b) => a < b ? a : b));
-  }
-}
-
-/// Handles caching and memory management for PDF pages
-class PdfPageCache {
-  final int maxPages;
-  final Map<int, CachedPdfPage> _cache = {};
-
-  PdfPageCache({this.maxPages = 5});
-
-  /// Cache a page
-  void cachePage(int pageNumber, CachedPdfPage page) {
-    if (_cache.length >= maxPages && !_cache.containsKey(pageNumber)) {
-      // Remove oldest page
-      _cache.remove(_cache.keys.first);
-    }
-    _cache[pageNumber] = page;
-  }
-
-  /// Get cached page
-  CachedPdfPage? getPage(int pageNumber) => _cache[pageNumber];
-
-  /// Check if page is cached
-  bool isCached(int pageNumber) => _cache.containsKey(pageNumber);
-
-  /// Clear cache
-  void clear() => _cache.clear();
-
-  /// Get cache hit rate
-  double getCacheHitRate() {
-    return _cache.isNotEmpty ? (_cache.length / maxPages) : 0.0;
-  }
-
-  /// Estimate memory usage
-  int estimateMemoryUsage() {
-    return _cache.values.fold(0, (sum, page) => sum + page.estimatedMemoryBytes);
-  }
-}
-
-/// Represents a cached PDF page
-class CachedPdfPage {
-  final int pageNumber;
-  final int estimatedMemoryBytes;
-  final DateTime cachedAt;
-
-  CachedPdfPage({
-    required this.pageNumber,
-    required this.estimatedMemoryBytes,
-    DateTime? cachedAt,
-  }) : cachedAt = cachedAt ?? DateTime.now();
-
-  bool isExpired(Duration ttl) => DateTime.now().difference(cachedAt) > ttl;
 }

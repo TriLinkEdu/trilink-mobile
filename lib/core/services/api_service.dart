@@ -28,7 +28,7 @@ class ApiService {
       await Future.delayed(Duration(milliseconds: FeatureFlags.networkDelayMs));
     }
 
-    // Try real API, fallback to mock on error
+    // Try real API and surface failures to the UI
     try {
       if (FeatureFlags.verboseLogging) {
         print('[API] Attempting real API call...');
@@ -40,9 +40,9 @@ class ApiService {
       return result;
     } catch (e) {
       if (FeatureFlags.verboseLogging) {
-        print('[API] Real API call failed: $e, using mock data');
+        print('[API] Real API call failed: $e');
       }
-      return fallback;
+      rethrow;
     }
   }
 

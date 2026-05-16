@@ -55,6 +55,7 @@ class _AnnouncementDetailView extends StatelessWidget {
             appBar: AppBar(title: const Text('Announcement'), centerTitle: true),
             body: AppErrorWidget(
               message: state.errorMessage ?? 'Unable to load announcement.',
+              onRetry: () => context.read<AnnouncementDetailCubit>().loadAnnouncement(),
             ),
           );
         }
@@ -85,6 +86,7 @@ class _AnnouncementDetailView extends StatelessWidget {
             children: [
               ProfileAvatar(
                 radius: 16,
+                
                 fallbackText: a.authorName,
               ),
               AppSpacing.hGapSm,

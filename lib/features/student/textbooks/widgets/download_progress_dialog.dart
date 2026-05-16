@@ -308,12 +308,16 @@ Future<T?> showDownloadProgressDialog<T>(
   required String downloadId,
   VoidCallback? onCancel,
 }) {
+  final cubit = context.read<DownloadProgressCubit>();
   return showDialog<T>(
     context: context,
     barrierDismissible: false,
-    builder: (context) => DownloadProgressDialog(
-      downloadId: downloadId,
-      onCancel: onCancel,
+    builder: (dialogContext) => BlocProvider.value(
+      value: cubit,
+      child: DownloadProgressDialog(
+        downloadId: downloadId,
+        onCancel: onCancel,
+      ),
     ),
   );
 }
