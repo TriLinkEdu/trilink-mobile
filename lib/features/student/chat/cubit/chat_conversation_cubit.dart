@@ -278,3 +278,4 @@ class ChatConversationCubit extends Cubit<ChatConversationState> {
       rethrow;
     }
   }
+}

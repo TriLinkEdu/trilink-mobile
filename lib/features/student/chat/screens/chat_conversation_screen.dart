@@ -166,13 +166,11 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
       if (path == null || path.isEmpty) return;
       _scrollToBottom();
       await context.read<ChatConversationCubit>().sendFileMessage(path);
-    } catch (_) {}
-  }
-
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to send file')),
-      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to send file')));
     }
   }
 
@@ -284,19 +282,21 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
                     padding: AppSpacing.paddingMd,
                     itemCount: messages.length,
                     itemBuilder: (context, index) {
-                      final currentUserId = context.read<AuthCubit>().state.user?.id ?? '';
+                      final currentUserId =
+                          context.read<AuthCubit>().state.user?.id ?? '';
                       final message = messages[index];
                       final isMine = message.senderId == currentUserId;
                       final member = membersById[message.senderId];
-                      final avatarPath = member?.profileImagePath ??
+                      final avatarPath =
+                          member?.profileImagePath ??
                           message.senderProfileImage;
-                      final role =
-                          (member?.role ?? message.senderRole ?? '').toLowerCase();
+                      final role = (member?.role ?? message.senderRole ?? '')
+                          .toLowerCase();
                       final roleLabel = role == 'teacher'
                           ? 'Teacher'
                           : role == 'student'
-                              ? 'Classmate'
-                              : null;
+                          ? 'Classmate'
+                          : null;
 
                       return ChatBubble(
                         message: message,
@@ -307,11 +307,13 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
                         avatarPath: avatarPath,
                         onAvatarTap: () =>
                             _showProfileSheet(message.senderId, member),
-                        onImageTap: message.type == MessageType.image &&
+                        onImageTap:
+                            message.type == MessageType.image &&
                                 message.mediaUrl != null
                             ? () => _openImageViewer(message.mediaUrl!)
                             : null,
-                        onAttachmentTap: message.type == MessageType.file &&
+                        onAttachmentTap:
+                            message.type == MessageType.file &&
                                 message.mediaUrl != null
                             ? () => _openAttachment(message.mediaUrl!)
                             : null,
@@ -362,14 +364,8 @@ class _ChatConversationViewState extends State<_ChatConversationView> {
                     AppSpacing.hGapSm,
                     FloatingActionButton.small(
                       tooltip: 'Send message',
-                      onPressed: _isSending ? null : _sendMessage,
-                      child: _isSending
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.send_rounded),
+                      onPressed: _sendMessage,
+                      child: const Icon(Icons.send_rounded),
                     ),
                   ],
                 ),

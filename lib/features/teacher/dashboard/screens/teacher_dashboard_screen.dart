@@ -6,9 +6,6 @@ import '../../../../core/widgets/offline_banner.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/routes/route_names.dart';
 import '../../../auth/services/auth_service.dart';
-import '../../attendance/screens/teacher_attendance_screen.dart';
-import '../../announcements/screens/create_announcement_screen.dart';
-import '../../classes/screens/class_list_screen.dart';
 import '../../notifications/screens/teacher_notifications_screen.dart';
 
 class TeacherDashboardScreen extends StatefulWidget {
@@ -33,8 +30,6 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   int _classesToday = 0;
   int _pendingGrading = 0;
   int _unreadNotifications = 0;
-  double _attendanceRate = 0;
-  int _publishedExams = 0;
   List<Map<String, dynamic>> _notifications = [];
 
   @override
@@ -96,8 +91,6 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         _pendingGrading = backendPending + pendingFromAssignments;
         _unreadNotifications =
             (data['unreadNotifications'] as num?)?.toInt() ?? 0;
-        _attendanceRate = (data['attendanceRate'] as num?)?.toDouble() ?? 0.0;
-        _publishedExams = (data['publishedExams'] as num?)?.toInt() ?? 0;
         _notifications = notifs.cast<Map<String, dynamic>>();
         _loading = false;
       });
@@ -368,7 +361,6 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
 
   Widget _buildStatsRow() {
     final theme = Theme.of(context);
-    final ratePct = (_attendanceRate * 100).clamp(0.0, 100.0);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -393,32 +385,6 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 value: '$_pendingGrading',
                 subtitle: 'to grade',
                 subtitleColor: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _InfoChip(
-                icon: Icons.fact_check_outlined,
-                label: 'Attendance',
-                value: '${ratePct.toStringAsFixed(0)}%',
-                color: ratePct >= 80
-                    ? Colors.green
-                    : ratePct >= 60
-                    ? Colors.orange
-                    : Colors.red,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _InfoChip(
-                icon: Icons.quiz_outlined,
-                label: 'Exams Published',
-                value: '$_publishedExams',
-                color: theme.colorScheme.tertiary,
               ),
             ),
           ],
@@ -461,7 +427,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 label: 'My\nClasses',
                 color: theme.colorScheme.secondary,
                 onTap: onSwitchToClasses,
-              ),  
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -735,61 +701,6 @@ class _StatCard extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-
-  const _InfoChip({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.25)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 18),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-              ],
-            ),
           ),
         ],
       ),

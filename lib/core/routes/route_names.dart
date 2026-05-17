@@ -79,6 +79,23 @@ class RouteNames {
   static const String teacherSchedule = '/teacher/schedule';
   static const String teacherGradeAnalytics = '/teacher/grades/analytics';
 
+  // Teacher — §4 features
+  static const String teacherHomeroom = '/teacher/homeroom';
+  static const String teacherHomeroomRemark = '/teacher/homeroom/remark';
+
+  static const String teacherAssignments = '/teacher/assignments';
+  static const String teacherAssignmentForm = '/teacher/assignments/form';
+  static const String teacherAssignmentSubmissions =
+      '/teacher/assignments/submissions';
+  static const String teacherGradebook = '/teacher/gradebook';
+  static const String teacherGradebookEntry = '/teacher/gradebook/entry';
+  static const String teacherClassRanking = '/teacher/report-cards/ranking';
+  static const String teacherSessionsMine = '/teacher/attendance/all-sessions';
+
+  // Shared
+  static const String globalSearch = '/search';
+  static const String syncStatus = '/settings/sync-status';
+
   // Parent
   static const String parentHome = '/parent/home';
   static const String parentDashboard = '/parent/dashboard';
@@ -96,7 +113,14 @@ class RouteNames {
   static const String parentSubjectList = '/parent/subject-list';
   static const String parentSubjectDetail = '/parent/subject-detail';
   static const String parentChildChatHistory = '/parent/child-chat-history';
-  static const String parentChildConversationView = '/parent/child-conversation-view';
+  static const String parentChildConversationView =
+      '/parent/child-conversation-view';
+
+  // Parent — §4 features
+  static const String parentUpcoming = '/parent/upcoming';
+  static const String parentReportCard = '/parent/report-card';
+  static const String parentYearlyReportCard = '/parent/report-card/yearly';
+  static const String parentMastery = '/parent/mastery';
 
   // Shared
   static const String themeCustomization = '/settings/theme-customization';

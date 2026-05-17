@@ -5,9 +5,14 @@ import '../services/sync_queue_service.dart';
 import '../services/telemetry_service.dart';
 import 'api_exceptions.dart';
 
+/// When true, all network calls short-circuit to a connection error so that
+/// `_tryOr` fallbacks in [ApiService] kick in immediately. Used by tests and
+/// when running fully offline.
+bool testMode = false;
+
 class ApiClient {
   static ApiClient? _instance;
-  
+
   factory ApiClient({
     StorageService? storageService,
     SyncQueueService? syncQueue,
@@ -23,8 +28,11 @@ class ApiClient {
   final TelemetryService? _telemetry;
   bool _isRefreshing = false;
 
-  ApiClient._internal(StorageService? storageService, this._syncQueue, this._telemetry) 
-    : _storage = storageService ?? StorageService() {
+  ApiClient._internal(
+    StorageService? storageService,
+    this._syncQueue,
+    this._telemetry,
+  ) : _storage = storageService ?? StorageService() {
     dio = Dio(
       BaseOptions(
         baseUrl: ApiConstants.baseUrl,
@@ -38,7 +46,7 @@ class ApiClient {
 
     dio.interceptors.add(
       InterceptorsWrapper(
-        onRequest: _onRequest, 
+        onRequest: _onRequest,
         onResponse: _onResponse,
         onError: _onError,
       ),
@@ -57,10 +65,7 @@ class ApiClient {
     handler.next(options);
   }
 
-  void _onResponse(
-    Response response,
-    ResponseInterceptorHandler handler,
-  ) {
+  void _onResponse(Response response, ResponseInterceptorHandler handler) {
     final startTime = response.requestOptions.extra['startTime'] as int?;
     if (startTime != null) {
       final duration = DateTime.now().millisecondsSinceEpoch - startTime;
@@ -115,7 +120,7 @@ class ApiClient {
         method: err.requestOptions.method,
         data: err.requestOptions.data,
       );
-      
+
       // Return a mock success response so UI proceeds optimistically
       return handler.resolve(
         Response(
@@ -131,10 +136,10 @@ class ApiClient {
 
   bool _isNetworkError(DioException err) {
     return err.type == DioExceptionType.connectionTimeout ||
-           err.type == DioExceptionType.sendTimeout ||
-           err.type == DioExceptionType.receiveTimeout ||
-           err.type == DioExceptionType.connectionError ||
-           err.type == DioExceptionType.unknown;
+        err.type == DioExceptionType.sendTimeout ||
+        err.type == DioExceptionType.receiveTimeout ||
+        err.type == DioExceptionType.connectionError ||
+        err.type == DioExceptionType.unknown;
   }
 
   bool _isMutation(String method) {
@@ -231,6 +236,12 @@ class ApiClient {
   }
 
   Future<Map<String, dynamic>> delete(String path, {dynamic data}) async {
+    if (testMode) {
+      throw DioException(
+        requestOptions: RequestOptions(path: path),
+        type: DioExceptionType.connectionError,
+      );
+    }
     try {
       final res = await dio.delete(path, data: data);
       return _extractData(res);
@@ -245,18 +256,22 @@ class ApiClient {
     String fieldName = 'file',
     Map<String, dynamic>? additionalData,
   }) async {
+    if (testMode) {
+      throw DioException(
+        requestOptions: RequestOptions(path: path),
+        type: DioExceptionType.connectionError,
+      );
+    }
     try {
       final formData = FormData.fromMap({
         fieldName: await MultipartFile.fromFile(filePath),
         ...?additionalData,
       });
-      
+
       final res = await dio.post(
         path,
         data: formData,
-        options: Options(
-          headers: {'Content-Type': 'multipart/form-data'},
-        ),
+        options: Options(headers: {'Content-Type': 'multipart/form-data'}),
       );
       return _extractData(res);
     } on DioException catch (e) {

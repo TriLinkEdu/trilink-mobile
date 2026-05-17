@@ -43,6 +43,12 @@ class AppColors {
   static const Color biology = Color(0xFF43AA8B);
   static const Color chemistry = Color(0xFF9B59B6);
 
+  // Generic subject accent colors used by parent/teacher dashboards and lists.
+  static const Color subjectPurple = Color(0xFF8B5CF6);
+  static const Color subjectOrange = Color(0xFFF97316);
+  static const Color subjectTeal = Color(0xFF14B8A6);
+  static const Color subjectPink = Color(0xFFEC4899);
+
   static Color subjectColor(String name) {
     final lower = name.toLowerCase();
     if (lower.contains('math') || lower.contains('calculus')) {
