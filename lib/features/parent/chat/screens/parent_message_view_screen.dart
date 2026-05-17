@@ -516,10 +516,23 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
     });
   }
 
+  static const int _maxMessageLength = 4000;
+
   Future<void> _sendMessage({String? mediaFileId}) async {
     final text = _messageController.text.trim();
     if (text.isEmpty && mediaFileId == null) return;
     if (_sending) return;
+    if (text.length > _maxMessageLength) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Message is too long (max $_maxMessageLength characters).',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
     final replyToId = _replyTo?.id;
     _messageController.clear();
@@ -1881,6 +1894,7 @@ class _ParentMessageViewScreenState extends State<ParentMessageViewScreen> {
                     ),
                     enabled: !isBlocked,
                     maxLines: null,
+                    maxLength: _maxMessageLength,
                     textCapitalization: TextCapitalization.sentences,
                     style: const TextStyle(fontSize: 14.5),
                     onChanged: isBlocked ? null : _handleTyping,

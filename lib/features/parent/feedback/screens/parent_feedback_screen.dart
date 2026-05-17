@@ -68,12 +68,25 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
     }
   }
 
+  static const int _maxFeedbackLength = 2000;
+
   Future<void> _sendFeedback() async {
     final msg = _messageController.text.trim();
     if (msg.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter a message'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    if (msg.length > _maxFeedbackLength) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Message is too long (max $_maxFeedbackLength characters).',
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -308,6 +321,7 @@ class _ParentFeedbackScreenState extends State<ParentFeedbackScreen> {
                 child: TextField(
                   controller: _messageController,
                   maxLines: 6,
+                  maxLength: _maxFeedbackLength,
                   style: TextStyle(
                     fontSize: 14,
                     color: Theme.of(context).colorScheme.onSurface,

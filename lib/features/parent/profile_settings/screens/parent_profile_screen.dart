@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/validation/validators.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../features/auth/services/auth_service.dart';
 import '../../../../core/routes/route_names.dart';
@@ -637,6 +638,7 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
             prefixIcon: Icon(Icons.phone),
           ),
           keyboardType: TextInputType.phone,
+          validator: Validators.phone(),
         ),
         const SizedBox(height: 16),
 
@@ -650,6 +652,12 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
             prefixIcon: Icon(Icons.child_care_outlined),
           ),
           textCapitalization: TextCapitalization.words,
+          maxLength: 80,
+          validator: Validators.text(
+            label: 'Child name',
+            max: 80,
+            requiredField: false,
+          ),
         ),
         const SizedBox(height: 16),
 
@@ -663,6 +671,12 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
             prefixIcon: Icon(Icons.family_restroom_outlined),
           ),
           textCapitalization: TextCapitalization.words,
+          maxLength: 40,
+          validator: Validators.text(
+            label: 'Relationship',
+            max: 40,
+            requiredField: false,
+          ),
         ),
         const SizedBox(height: 24),
 

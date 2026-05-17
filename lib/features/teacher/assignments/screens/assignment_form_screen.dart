@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/services/api_service.dart';
+import '../../../../core/validation/validators.dart';
 
 /// Teacher → Create or edit a draft assignment (`POST /assignments` or
 /// `PATCH /assignments/:id`).
@@ -20,6 +21,7 @@ class AssignmentFormScreen extends StatefulWidget {
 }
 
 class _AssignmentFormScreenState extends State<AssignmentFormScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _maxScoreCtrl = TextEditingController(text: '100');
@@ -76,17 +78,36 @@ class _AssignmentFormScreenState extends State<AssignmentFormScreen> {
     if (time == null) return;
     setState(() {
       _deadline = DateTime(
-          date.year, date.month, date.day, time.hour, time.minute);
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
     });
   }
 
   Future<void> _save() async {
-    if (_titleCtrl.text.trim().isEmpty ||
-        _classOfferingId == null ||
-        _deadline == null) {
+    if (!(_formKey.currentState?.validate() ?? false)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Title, class and deadline are required.')),
+        const SnackBar(content: Text('Please fix the highlighted fields.')),
       );
+      return;
+    }
+    if (_classOfferingId == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Pick a class.')));
+      return;
+    }
+    final deadlineError = Validators.dateNotInPast(
+      _deadline,
+      label: 'Deadline',
+    );
+    if (deadlineError != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(deadlineError)));
       return;
     }
     setState(() => _saving = true);
@@ -120,8 +141,9 @@ class _AssignmentFormScreenState extends State<AssignmentFormScreen> {
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Save failed: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Save failed: $e')));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -133,116 +155,143 @@ class _AssignmentFormScreenState extends State<AssignmentFormScreen> {
       appBar: AppBar(
         title: Text(_isEdit ? 'Edit assignment' : 'New assignment'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          DropdownButtonFormField<String>(
-            value: _classOfferingId,
-            decoration: const InputDecoration(
-              labelText: 'Class',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.class_outlined),
-            ),
-            items: widget.classes
-                .map((c) => DropdownMenuItem(
+      body: Form(
+        key: _formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            DropdownButtonFormField<String>(
+              value: _classOfferingId,
+              decoration: const InputDecoration(
+                labelText: 'Class',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.class_outlined),
+              ),
+              items: widget.classes
+                  .map(
+                    (c) => DropdownMenuItem(
                       value: c['id'] as String?,
                       child: Text(_classLabel(c)),
-                    ))
-                .toList(),
-            onChanged:
-                _isEdit ? null : (v) => setState(() => _classOfferingId = v),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _titleCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Title',
-              border: OutlineInputBorder(),
+                    ),
+                  )
+                  .toList(),
+              onChanged: _isEdit
+                  ? null
+                  : (v) => setState(() => _classOfferingId = v),
             ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _descCtrl,
-            maxLines: 4,
-            decoration: const InputDecoration(
-              labelText: 'Description (optional)',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            value: _submissionType,
-            decoration: const InputDecoration(
-              labelText: 'Submission type',
-              border: OutlineInputBorder(),
-            ),
-            items: const [
-              DropdownMenuItem(value: 'file', child: Text('File upload')),
-              DropdownMenuItem(value: 'text', child: Text('Text answer')),
-              DropdownMenuItem(value: 'none', child: Text('No submission')),
-            ],
-            onChanged: (v) => setState(() => _submissionType = v ?? 'file'),
-          ),
-          const SizedBox(height: 12),
-          ListTile(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(4),
-              side: BorderSide(
-                  color: Theme.of(context).colorScheme.outlineVariant),
-            ),
-            title: Text(_deadline == null
-                ? 'Pick a deadline'
-                : 'Deadline: $_deadline'),
-            leading: const Icon(Icons.event),
-            onTap: _pickDeadline,
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _maxScoreCtrl,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: 'Max score',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.scoreboard),
-            ),
-          ),
-          const SizedBox(height: 12),
-          if (widget.terms.isNotEmpty)
-            DropdownButtonFormField<String?>(
-              value: _termId,
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _titleCtrl,
               decoration: const InputDecoration(
-                labelText: 'Term (optional)',
+                labelText: 'Title',
                 border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.event_note),
               ),
-              items: [
-                const DropdownMenuItem(value: null, child: Text('No term')),
-                ...widget.terms.map(
-                  (t) => DropdownMenuItem(
-                    value: t['id'] as String?,
-                    child: Text(t['name'] as String? ?? 'Term'),
-                  ),
-                ),
-              ],
-              onChanged: (v) => setState(() => _termId = v),
+              validator: Validators.text(label: 'Title', min: 3, max: 200),
             ),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: _saving ? null : _save,
-            icon: _saving
-                ? const SizedBox(
-                    height: 16,
-                    width: 16,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white))
-                : const Icon(Icons.save),
-            label: Text(_saving
-                ? 'Saving…'
-                : _isEdit
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _descCtrl,
+              maxLines: 4,
+              maxLength: 2000,
+              decoration: const InputDecoration(
+                labelText: 'Description (optional)',
+                border: OutlineInputBorder(),
+              ),
+              validator: Validators.text(
+                label: 'Description',
+                max: 2000,
+                requiredField: false,
+              ),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: _submissionType,
+              decoration: const InputDecoration(
+                labelText: 'Submission type',
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(value: 'file', child: Text('File upload')),
+                DropdownMenuItem(value: 'text', child: Text('Text answer')),
+                DropdownMenuItem(value: 'none', child: Text('No submission')),
+              ],
+              onChanged: (v) => setState(() => _submissionType = v ?? 'file'),
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4),
+                side: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
+              ),
+              title: Text(
+                _deadline == null ? 'Pick a deadline' : 'Deadline: $_deadline',
+              ),
+              leading: const Icon(Icons.event),
+              onTap: _pickDeadline,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _maxScoreCtrl,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(
+                labelText: 'Max score',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.scoreboard),
+              ),
+              validator: Validators.number(
+                label: 'Max score',
+                min: 0.01,
+                max: 10000,
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (widget.terms.isNotEmpty)
+              DropdownButtonFormField<String?>(
+                value: _termId,
+                decoration: const InputDecoration(
+                  labelText: 'Term (optional)',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.event_note),
+                ),
+                items: [
+                  const DropdownMenuItem(value: null, child: Text('No term')),
+                  ...widget.terms.map(
+                    (t) => DropdownMenuItem(
+                      value: t['id'] as String?,
+                      child: Text(t['name'] as String? ?? 'Term'),
+                    ),
+                  ),
+                ],
+                onChanged: (v) => setState(() => _termId = v),
+              ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: _saving ? null : _save,
+              icon: _saving
+                  ? const SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.save),
+              label: Text(
+                _saving
+                    ? 'Saving…'
+                    : _isEdit
                     ? 'Save changes'
-                    : 'Create draft'),
-          ),
-        ],
+                    : 'Create draft',
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -251,8 +300,10 @@ class _AssignmentFormScreenState extends State<AssignmentFormScreen> {
     final subj = c['subjectName'] ?? c['subject']?['name'] ?? '';
     final grade = c['gradeName'] ?? c['grade']?['name'] ?? '';
     final section = c['sectionName'] ?? c['section']?['name'] ?? '';
-    return [subj, grade, if ((section as String).isNotEmpty) 'Sec $section']
-        .where((e) => (e as String).isNotEmpty)
-        .join(' • ');
+    return [
+      subj,
+      grade,
+      if ((section as String).isNotEmpty) 'Sec $section',
+    ].where((e) => (e as String).isNotEmpty).join(' • ');
   }
 }

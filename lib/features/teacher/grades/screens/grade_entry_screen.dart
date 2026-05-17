@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/services/api_service.dart';
+import '../../../../core/validation/validators.dart';
 
 /// Bulk grade-entry screen.
 ///
@@ -38,6 +39,7 @@ class _GradeEntryScreenState extends State<GradeEntryScreen> {
   bool _saving = false;
   String? _error;
 
+  final _formKey = GlobalKey<FormState>();
   final _titleCtrl = TextEditingController();
   final _maxScoreCtrl = TextEditingController(text: '100');
   final _noteCtrl = TextEditingController();
@@ -108,14 +110,15 @@ class _GradeEntryScreenState extends State<GradeEntryScreen> {
   }
 
   Future<void> _save() async {
-    final title = _titleCtrl.text.trim();
-    final maxScore = num.tryParse(_maxScoreCtrl.text.trim());
-    if (title.isEmpty || maxScore == null) {
+    // Field-level validation (title, type, maxScore, per-student score ≤ max).
+    if (!(_formKey.currentState?.validate() ?? false)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Title and max score are required.')),
+        const SnackBar(content: Text('Please fix the highlighted fields.')),
       );
       return;
     }
+    final title = _titleCtrl.text.trim();
+    final maxScore = num.parse(_maxScoreCtrl.text.trim());
     setState(() => _saving = true);
     try {
       final entries = _rows.entries.map((kv) {
@@ -171,110 +174,156 @@ class _GradeEntryScreenState extends State<GradeEntryScreen> {
                 child: Text(_error!, textAlign: TextAlign.center),
               ),
             )
-          : ListView(
-              padding: const EdgeInsets.all(12),
-              children: [
-                TextField(
-                  controller: _titleCtrl,
-                  enabled: !_isEdit,
-                  decoration: const InputDecoration(
-                    labelText: 'Title (e.g. "Quiz 1")',
-                    border: OutlineInputBorder(),
+          : Form(
+              key: _formKey,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              child: ListView(
+                padding: const EdgeInsets.all(12),
+                children: [
+                  TextFormField(
+                    controller: _titleCtrl,
+                    enabled: !_isEdit,
+                    decoration: const InputDecoration(
+                      labelText: 'Title (e.g. "Quiz 1")',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: Validators.text(
+                      label: 'Title',
+                      min: 2,
+                      max: 100,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _type,
-                        decoration: const InputDecoration(
-                          labelText: 'Type',
-                          border: OutlineInputBorder(),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: _type,
+                          decoration: const InputDecoration(
+                            labelText: 'Type',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'assignment',
+                              child: Text('Assignment'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'quiz',
+                              child: Text('Quiz'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'exam',
+                              child: Text('Exam'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'project',
+                              child: Text('Project'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'other',
+                              child: Text('Other'),
+                            ),
+                          ],
+                          onChanged: _isEdit
+                              ? null
+                              : (v) =>
+                                    setState(() => _type = _normalizeType(v)),
                         ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: 'assignment',
-                            child: Text('Assignment'),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _maxScoreCtrl,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
                           ),
-                          DropdownMenuItem(value: 'quiz', child: Text('Quiz')),
-                          DropdownMenuItem(value: 'exam', child: Text('Exam')),
-                          DropdownMenuItem(
-                            value: 'project',
-                            child: Text('Project'),
+                          decoration: const InputDecoration(
+                            labelText: 'Max score',
+                            border: OutlineInputBorder(),
                           ),
-                          DropdownMenuItem(
-                            value: 'other',
-                            child: Text('Other'),
+                          onChanged: (_) =>
+                              // Re-validate every score row when the cap changes.
+                              _formKey.currentState?.validate(),
+                          validator: Validators.number(
+                            label: 'Max score',
+                            min: 0.01,
+                            max: 10000,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _noteCtrl,
+                    maxLength: 500,
+                    decoration: const InputDecoration(
+                      labelText: 'Note (optional)',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: Validators.text(
+                      label: 'Note',
+                      max: 500,
+                      requiredField: false,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: 'Term',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    child: Text(
+                      widget.termLabel ?? widget.termId,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Scores',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  ..._rows.entries.map((kv) {
+                    final maxScore =
+                        num.tryParse(_maxScoreCtrl.text.trim()) ?? 0;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 14),
+                              child: Text(kv.value.name),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 110,
+                            child: TextFormField(
+                              controller: kv.value.scoreCtrl,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              textAlign: TextAlign.right,
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                border: OutlineInputBorder(),
+                                hintText: '—',
+                              ),
+                              // Bounded by current Max score field, re-checked on change.
+                              validator: Validators.scoreAgainstMax(maxScore),
+                            ),
                           ),
                         ],
-                        onChanged: _isEdit
-                            ? null
-                            : (v) => setState(() => _type = _normalizeType(v)),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextField(
-                        controller: _maxScoreCtrl,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Max score',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _noteCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Note (optional)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'Term',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  child: Text(
-                    widget.termLabel ?? widget.termId,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text('Scores', style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 8),
-                ..._rows.entries.map((kv) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      children: [
-                        Expanded(child: Text(kv.value.name)),
-                        SizedBox(
-                          width: 90,
-                          child: TextField(
-                            controller: kv.value.scoreCtrl,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            textAlign: TextAlign.right,
-                            decoration: const InputDecoration(
-                              isDense: true,
-                              border: OutlineInputBorder(),
-                              hintText: '—',
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-              ],
+                    );
+                  }),
+                ],
+              ),
             ),
     );
   }
