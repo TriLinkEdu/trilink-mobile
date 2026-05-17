@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:pdfx/pdfx.dart';
 import '../models/textbook_reading_models.dart';
 import '../services/textbook_reading_service.dart';
+import '../services/pdf_toc_extractor.dart';
 import '../widgets/thumbnail_navigator.dart';
 import '../widgets/table_of_contents.dart';
 
@@ -27,7 +28,7 @@ class EnhancedTextbookViewer extends StatefulWidget {
 
 class _EnhancedTextbookViewerState extends State<EnhancedTextbookViewer>
     with TickerProviderStateMixin {
-  PdfControllerPinch? _pdfController;
+  PdfController? _pdfController;
   late TextbookReadingState _readingState;
   late AnimationController _overlayController;
   late Timer _readingTimer;
@@ -66,7 +67,7 @@ class _EnhancedTextbookViewerState extends State<EnhancedTextbookViewer>
 
   Future<void> _initializePdfController() async {
     try {
-      _pdfController = PdfControllerPinch(
+      _pdfController = PdfController(
         document: PdfDocument.openFile(widget.localPath),
         initialPage: _readingState.currentPage,
       );
@@ -79,9 +80,11 @@ class _EnhancedTextbookViewerState extends State<EnhancedTextbookViewer>
             totalPages: document.pagesCount,
           );
         });
+        
+        // Analyze PDF for bounding box issues
+        _analyzePdfIssues();
       }
       
-      _setupPdfListener();
       _preloadAdjacentPages();
       
       // Show overlay initially
@@ -113,14 +116,25 @@ class _EnhancedTextbookViewerState extends State<EnhancedTextbookViewer>
     super.dispose();
   }
 
-  void _setupPdfListener() {
-    _pdfController?.addListener(() {
-      final currentPage = _pdfController?.page ?? 1;
-      if (currentPage != _readingState.currentPage) {
-        _updateReadingProgress(currentPage);
-        _preloadAdjacentPages();
+  Future<void> _analyzePdfIssues() async {
+    try {
+      final document = await _pdfController?.document;
+      if (document == null) return;
+      
+      // Check first page for dimension issues
+      final page = await document.getPage(1);
+      final aspectRatio = page.width / page.height;
+      
+      // Log if there are bounding box issues
+      if (aspectRatio > 2.0 || aspectRatio < 0.3) {
+        print('⚠️ PDF has bounding box issues: aspect ratio = $aspectRatio');
+        print('   Page dimensions: ${page.width}x${page.height}');
       }
-    });
+      
+      await page.close();
+    } catch (e) {
+      print('Error analyzing PDF: $e');
+    }
   }
 
   void _startReadingTimer() {
@@ -300,8 +314,38 @@ class _EnhancedTextbookViewerState extends State<EnhancedTextbookViewer>
                           ]),
                     child: Opacity(
                       opacity: _readingState.brightness,
-                      child: PdfViewPinch(
+                      child: PdfView(
                         controller: _pdfController!,
+                        scrollDirection: Axis.vertical,
+                        renderer: _renderPage,
+                        builders: PdfViewBuilders<DefaultBuilderOptions>(
+                          options: const DefaultBuilderOptions(),
+                          documentLoaderBuilder: (_) => const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                CircularProgressIndicator(),
+                                SizedBox(height: 16),
+                                Text('Loading document...'),
+                              ],
+                            ),
+                          ),
+                          pageLoaderBuilder: (_) => const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                        onPageChanged: (page) {
+                          setState(() {
+                            _readingState = _readingState.copyWith(
+                              currentPage: page,
+                            );
+                          });
+                          TextbookReadingService.saveReadingState(
+                            widget.textbookId,
+                            _readingState,
+                          );
+                          _preloadAdjacentPages();
+                        },
                       ),
                     ),
                   )
@@ -448,9 +492,22 @@ class _EnhancedTextbookViewerState extends State<EnhancedTextbookViewer>
                               ),
                             ),
                             IconButton(
-                              onPressed: () {
-                                // Generate mock TOC for now
-                                final toc = MockTocGenerator.generateMockToc(_readingState.totalPages);
+                              onPressed: () async {
+                                // Extract real TOC from PDF
+                                final toc = await PdfTocExtractor.extractToc(widget.localPath);
+                                
+                                if (toc.isEmpty) {
+                                  if (!mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('This PDF has no table of contents'),
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                
+                                if (!mounted) return;
                                 showModalBottomSheet(
                                   context: context,
                                   isScrollControlled: true,
@@ -630,6 +687,19 @@ class _EnhancedTextbookViewerState extends State<EnhancedTextbookViewer>
             ),
         ],
       ),
+    );
+  }
+
+  Future<PdfPageImage?> _renderPage(PdfPage page) {
+    final aspectRatio = page.width / page.height;
+    final hasIssue = aspectRatio > 2.0 || aspectRatio < 0.3;
+    final renderWidth = page.width * 2;
+    final renderHeight = hasIssue ? renderWidth / 0.707 : page.height * 2;
+    return page.render(
+      width: renderWidth,
+      height: renderHeight,
+      format: PdfPageImageFormat.png,
+      backgroundColor: '#FFFFFF',
     );
   }
 }

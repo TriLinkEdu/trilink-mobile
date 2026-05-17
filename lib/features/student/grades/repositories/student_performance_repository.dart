@@ -8,4 +8,7 @@ abstract class StudentPerformanceRepository {
   Future<StudentGoalModel> createGoal(StudentGoalModel goal);
   Future<StudentGoalModel> updateGoal(StudentGoalModel goal);
   Future<PerformanceReportModel> fetchLatestReport(String studentId);
+
+  List<StudentGoalModel>? getCached() => null;
+  void clearCache() {}
 }

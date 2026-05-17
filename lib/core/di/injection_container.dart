@@ -1,9 +1,14 @@
 import 'package:get_it/get_it.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+import '../network/api_client.dart';
 import '../services/sound_service.dart';
 import '../services/storage_service.dart';
 import '../services/feature_flags.dart';
+import '../services/sync_queue_service.dart';
+import '../services/telemetry_service.dart';
+import '../services/local_cache_service.dart';
+import '../services/chat_socket_service.dart';
 import '../theme/theme_notifier.dart';
 import '../../features/auth/cubit/auth_cubit.dart';
 import '../../features/auth/repositories/auth_repository.dart';
@@ -39,7 +44,6 @@ import '../../features/student/feedback/repositories/student_feedback_repository
 import '../../features/student/feedback/repositories/mock_student_feedback_repository.dart';
 import '../../features/student/feedback/repositories/real_student_feedback_repository.dart';
 import '../../features/student/gamification/repositories/student_gamification_repository.dart';
-import '../../features/student/gamification/repositories/mock_student_gamification_repository.dart';
 import '../../features/student/gamification/repositories/real_student_gamification_repository.dart';
 import '../../features/student/exams/repositories/student_exams_repository.dart';
 import '../../features/student/exams/repositories/mock_student_exams_repository.dart';
@@ -81,6 +85,23 @@ Future<void> initDependencies() async {
   // ── Core services ──
   final settingsBox = await Hive.openBox('settings');
   sl.registerLazySingleton<StorageService>(() => StorageService(settingsBox));
+  sl.registerLazySingleton<TelemetryService>(() => TelemetryService());
+  sl.registerLazySingleton<LocalCacheService>(
+    () => LocalCacheService(sl<StorageService>(), telemetry: sl<TelemetryService>()),
+  );
+  sl.registerLazySingleton<SyncQueueService>(
+    () => SyncQueueService(
+      cacheService: sl<LocalCacheService>(),
+    ),
+  );
+  sl.registerLazySingleton<ApiClient>(
+    () => ApiClient(
+      storageService: sl<StorageService>(),
+      syncQueue: sl<SyncQueueService>(),
+      telemetry: sl<TelemetryService>(),
+    ),
+  );
+  
   final themeNotifier = ThemeNotifier(sl<StorageService>());
   ThemeNotifier.instance = themeNotifier;
   sl.registerLazySingleton<ThemeNotifier>(() => themeNotifier);
@@ -88,11 +109,12 @@ Future<void> initDependencies() async {
     () => SoundService(sl<StorageService>()),
   );
 
+  sl.registerLazySingleton<ChatSocketService>(
+    () => ChatSocketService(storageService: sl<StorageService>()),
+  );
+
   // ── Auth ──
   sl.registerLazySingleton<AuthRepository>(() => RealAuthRepository());
-  sl.registerLazySingleton<AuthCubit>(
-    () => AuthCubit(repository: sl<AuthRepository>()),
-  );
 
   // ── Student repositories ──
   final useRealStudentData = FeatureFlags.useRealApi;
@@ -102,124 +124,196 @@ Future<void> initDependencies() async {
         ? RealStudentDashboardRepository(
             progressRepository: sl<StudentProgressRepository>(),
             storageService: sl<StorageService>(),
+            cacheService: sl<LocalCacheService>(),
           )
         : MockStudentDashboardRepository(sl<StudentProgressRepository>()),
   );
   sl.registerLazySingleton<StudentGradesRepository>(
     () => useRealStudentData
-        ? RealStudentGradesRepository()
+        ? RealStudentGradesRepository(
+            storageService: sl<StorageService>(),
+            cacheService: sl<LocalCacheService>(),
+          )
         : MockStudentGradesRepository(),
   );
   sl.registerLazySingleton<StudentAttendanceRepository>(
     () => useRealStudentData
-        ? RealStudentAttendanceRepository(storageService: sl<StorageService>())
+        ? RealStudentAttendanceRepository(
+            storageService: sl<StorageService>(),
+            cacheService: sl<LocalCacheService>(),
+          )
         : MockStudentAttendanceRepository(),
   );
   sl.registerLazySingleton<StudentProfileRepository>(
     () => useRealStudentData
-        ? RealStudentProfileRepository(storageService: sl<StorageService>())
+        ? RealStudentProfileRepository(
+            storageService: sl<StorageService>(),
+            cacheService: sl<LocalCacheService>(),
+          )
         : MockStudentProfileRepository(),
   );
   sl.registerLazySingleton<StudentAssignmentsRepository>(
     () => useRealStudentData
         ? RealStudentAssignmentsRepository(
-            fallback: MockStudentAssignmentsRepository(),
+            apiClient: sl<ApiClient>(),
+            storageService: sl<StorageService>(),
+            cacheService: sl<LocalCacheService>(),
           )
         : MockStudentAssignmentsRepository(),
   );
   sl.registerLazySingleton<StudentChatRepository>(
     () => useRealStudentData
-        ? RealStudentChatRepository(storageService: sl<StorageService>())
+        ? RealStudentChatRepository(
+            storageService: sl<StorageService>(),
+            cacheService: sl<LocalCacheService>(),
+          )
         : MockStudentChatRepository(),
+  );
+  sl.registerLazySingleton<AuthCubit>(
+    () => AuthCubit(
+      repository: sl<AuthRepository>(),
+      chatSocketService: sl<ChatSocketService>(),
+      onLogout: [
+        () => sl<StudentChatRepository>().clearCache(),
+        () => sl<StudentDashboardRepository>().clearCache(),
+        () => sl<StudentGradesRepository>().clearCache(),
+        () => sl<StudentAttendanceRepository>().clearCache(),
+        () => sl<StudentAssignmentsRepository>().clearCache(),
+        () => sl<StudentAnnouncementsRepository>().clearCache(),
+        () => sl<StudentNotificationsRepository>().clearCache(),
+        () => sl<StudentCalendarRepository>().clearCache(),
+        () => sl<StudentAnalyticsRepository>().clearCache(),
+        () => sl<StudentCoursesRepository>().clearCache(),
+        () => sl<StudentCurriculumRepository>().clearCache(),
+        () => sl<StudentExamsRepository>().clearCache(),
+        () => sl<StudentGamificationRepository>().clearCache(),
+        () => sl<StudentPerformanceRepository>().clearCache(),
+        () => sl<TextbookRepository>().clearCache(),
+      ],
+    ),
   );
   sl.registerLazySingleton<StudentCalendarRepository>(
     () => useRealStudentData
-        ? RealStudentCalendarRepository()
+        ? RealStudentCalendarRepository(
+            storageService: sl<StorageService>(),
+            cacheService: sl<LocalCacheService>(),
+          )
         : MockStudentCalendarRepository(),
   );
   sl.registerLazySingleton<StudentNotificationsRepository>(
     () => useRealStudentData
-        ? RealStudentNotificationsRepository()
+        ? RealStudentNotificationsRepository(
+            storageService: sl<StorageService>(),
+            cacheService: sl<LocalCacheService>(),
+          )
         : MockStudentNotificationsRepository(),
   );
   sl.registerLazySingleton<StudentAnnouncementsRepository>(
     () => useRealStudentData
-        ? RealStudentAnnouncementsRepository()
+        ? RealStudentAnnouncementsRepository(
+            apiClient: sl<ApiClient>(),
+            storageService: sl<StorageService>(),
+            cacheService: sl<LocalCacheService>(),
+          )
         : MockStudentAnnouncementsRepository(),
   );
   sl.registerLazySingleton<StudentFeedbackRepository>(
     () => useRealStudentData
-        ? RealStudentFeedbackRepository()
+        ? RealStudentFeedbackRepository(
+            storageService: sl<StorageService>(),
+            cacheService: sl<LocalCacheService>(),
+          )
         : MockStudentFeedbackRepository(),
   );
   sl.registerLazySingleton<StudentGamificationRepository>(
-    () => useRealStudentData
-        ? RealStudentGamificationRepository(
-            progressRepository: sl<StudentProgressRepository>(),
-            fallback: MockStudentGamificationRepository(
-              sl<StudentProgressRepository>(),
-            ),
-          )
-        : MockStudentGamificationRepository(sl<StudentProgressRepository>()),
+    () => RealStudentGamificationRepository(
+      storageService: sl<StorageService>(),
+      cacheService: sl<LocalCacheService>(),
+    ),
   );
   sl.registerLazySingleton<StudentExamsRepository>(
     () => useRealStudentData
-        ? RealStudentExamsRepository()
+        ? RealStudentExamsRepository(
+            storageService: sl<StorageService>(),
+            cacheService: sl<LocalCacheService>(),
+          )
         : MockStudentExamsRepository(),
   );
   sl.registerLazySingleton<StudentCoursesRepository>(
     () => useRealStudentData
-        ? RealStudentCoursesRepository(
-            fallback: MockStudentCoursesRepository(),
-          )
+        ? RealStudentCoursesRepository(cacheService: sl<LocalCacheService>())
         : MockStudentCoursesRepository(),
   );
   sl.registerLazySingleton<StudentCurriculumRepository>(
     () => useRealStudentData
-        ? RealStudentCurriculumRepository(
-            fallback: MockStudentCurriculumRepository(),
-          )
+        ? RealStudentCurriculumRepository(cacheService: sl<LocalCacheService>())
         : MockStudentCurriculumRepository(),
   );
   sl.registerLazySingleton<StudentPerformanceRepository>(
     () => useRealStudentData
-        ? RealStudentPerformanceRepository()
+        ? RealStudentPerformanceRepository(
+            storageService: sl<StorageService>(),
+            cacheService: sl<LocalCacheService>(),
+          )
         : MockStudentPerformanceRepository(),
   );
   sl.registerLazySingleton<StudentSyncRepository>(
     () => useRealStudentData
-        ? RealStudentSyncRepository()
+        ? RealStudentSyncRepository(
+            storageService: sl<StorageService>(),
+            cacheService: sl<LocalCacheService>(),
+          )
         : MockStudentSyncRepository(),
   );
   sl.registerLazySingleton<StudentAiAssistantRepository>(
     () {
       if (!useRealStudentData) return MockStudentAiAssistantRepository();
-      
+
       // Get current user ID from AuthCubit
       final authCubit = sl<AuthCubit>();
       final userId = authCubit.state.user?.id ?? '';
-      
-      return RealStudentAiAssistantRepository(studentId: userId);
+
+      final gradeStr = authCubit.state.user?.grade ?? '';
+      final gradeLevel = int.tryParse(
+            RegExp(r'\d+').firstMatch(gradeStr)?.group(0) ?? '',
+          ) ??
+          9;
+      return RealStudentAiAssistantRepository(
+        studentId: userId,
+        cacheService: sl<LocalCacheService>(),
+        gradeLevel: gradeLevel,
+      );
     },
   );
   sl.registerLazySingleton<StudentSettingsRepository>(
     () => useRealStudentData
-        ? RealStudentSettingsRepository()
+        ? RealStudentSettingsRepository(
+            storageService: sl<StorageService>(),
+            cacheService: sl<LocalCacheService>(),
+          )
         : MockStudentSettingsRepository(),
   );
   sl.registerLazySingleton<StudentAnalyticsRepository>(
     () => useRealStudentData
-        ? RealStudentAnalyticsRepository(storageService: sl<StorageService>())
+        ? RealStudentAnalyticsRepository(
+            storageService: sl<StorageService>(),
+            cacheService: sl<LocalCacheService>(),
+          )
         : MockStudentAnalyticsRepository(),
   );
   sl.registerLazySingleton<StudentProgressRepository>(
     () => useRealStudentData
-        ? RealStudentProgressRepository()
+        ? RealStudentProgressRepository(
+            storageService: sl<StorageService>(),
+            cacheService: sl<LocalCacheService>(),
+          )
         : MockStudentProgressRepository(),
   );
   sl.registerLazySingleton<TextbookRepository>(
     () => useRealStudentData
-        ? RealTextbookRepository()
+        ? RealTextbookRepository(
+            cacheService: sl<LocalCacheService>(),
+          )
         : MockTextbookRepository(),
   );
   sl.registerLazySingleton<TextbookFileCacheService>(

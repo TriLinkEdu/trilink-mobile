@@ -1,6 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../exams/models/exam_model.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/services/storage_service.dart';
 import '../models/gamification_models.dart';
 import '../repositories/student_gamification_repository.dart';
 import 'gamification_state.dart';
@@ -9,11 +11,17 @@ export 'gamification_state.dart';
 
 class GamificationCubit extends Cubit<GamificationState> {
   final StudentGamificationRepository _repository;
+  final StorageService _storage = sl<StorageService>();
   DateTime? _lastLoadedAt;
 
   static const Duration _ttl = Duration(seconds: 30);
 
   GamificationCubit(this._repository) : super(const GamificationState());
+
+  Future<String> _currentUserId() async {
+    final user = await _storage.getUser();
+    return (user?['id'] ?? '').toString();
+  }
 
   Future<void> loadIfNeeded() async {
     if (state.status == GamificationStatus.loaded &&
@@ -25,36 +33,25 @@ class GamificationCubit extends Cubit<GamificationState> {
   }
 
   Future<void> loadAll() async {
-    emit(state.copyWith(status: GamificationStatus.loading));
+    emit(state.copyWith(status: GamificationStatus.loading, errorMessage: null));
     try {
-      final results = await Future.wait([
-        _repository.fetchStreak(),
-        _repository.fetchAchievements(),
-        _repository.fetchLeaderboard(
-          state.isWeeklyRanking ? 'weekly' : 'monthly',
-        ),
-        _repository.fetchAvailableQuizzes(),
-        _repository.fetchDailyMissions(),
-        _repository.fetchTeamChallenge(),
-        _repository.fetchXpProgress(),
-        _repository.fetchNextBadgeProgress(),
-        _repository.fetchBadges(),
-        _repository.fetchStudentBadges('s1'),
-      ]);
+      final userId = await _currentUserId();
+      final hub = await _repository.fetchHub();
+
       emit(
-        GamificationState(
+        state.copyWith(
           status: GamificationStatus.loaded,
-          streak: results[0] as StreakModel,
-          achievements: results[1] as List<AchievementModel>,
-          leaderboardEntries: results[2] as List<LeaderboardEntry>,
-          availableQuizzes: results[3] as List<QuizModel>,
-          dailyMissions: results[4] as List<DailyMissionModel>,
-          teamChallenge: results[5] as TeamChallengeModel?,
-          xpProgress: results[6] as XpProgressModel,
-          nextBadgeProgress: results[7] as NextBadgeProgressModel?,
-          badges: results[8] as List<BadgeModel>,
-          studentBadges: results[9] as List<StudentBadgeModel>,
-          isWeeklyRanking: state.isWeeklyRanking,
+          currentUserId: userId,
+          streak: hub.streak,
+          xpProgress: hub.xpProgress,
+          nextBadgeProgress: hub.nextBadgeProgress,
+          dailyMissions: hub.dailyMissions,
+          achievements: hub.achievements,
+          leaderboardEntries: hub.leaderboardEntries,
+          availableQuizzes: hub.availableQuizzes,
+          teamChallenge: hub.teamChallenge,
+          badges: hub.badges,
+          studentBadges: hub.studentBadges,
         ),
       );
       _lastLoadedAt = DateTime.now();
@@ -89,24 +86,28 @@ class GamificationCubit extends Cubit<GamificationState> {
   Future<void> completeMission(String missionId) async {
     try {
       final mutation = await _repository.markMissionCompleted(missionId);
-      final refreshed = await Future.wait([
-        _repository.fetchDailyMissions(),
-        _repository.fetchXpProgress(),
-        _repository.fetchNextBadgeProgress(),
-        _repository.fetchAchievements(),
-        _repository.fetchStudentBadges('s1'),
-        _repository.fetchLeaderboard(
+      final userId = await _currentUserId();
+      final dailyMissions = await _safeFetch(_repository.fetchDailyMissions);
+      final xpProgress = await _safeFetch(_repository.fetchXpProgress);
+      final nextBadge = await _safeFetch(_repository.fetchNextBadgeProgress);
+      final achievements = await _safeFetch(_repository.fetchAchievements);
+      final studentBadges = await _safeFetch(
+        () => _repository.fetchStudentBadges(userId),
+      );
+      final leaderboard = await _safeFetch(
+        () => _repository.fetchLeaderboard(
           state.isWeeklyRanking ? 'weekly' : 'monthly',
         ),
-      ]);
+      );
+
       emit(
         state.copyWith(
-          dailyMissions: refreshed[0] as List<DailyMissionModel>,
-          xpProgress: refreshed[1] as XpProgressModel,
-          nextBadgeProgress: refreshed[2] as NextBadgeProgressModel?,
-          achievements: refreshed[3] as List<AchievementModel>,
-          studentBadges: refreshed[4] as List<StudentBadgeModel>,
-          leaderboardEntries: refreshed[5] as List<LeaderboardEntry>,
+          dailyMissions: dailyMissions ?? state.dailyMissions,
+          xpProgress: xpProgress ?? state.xpProgress,
+          nextBadgeProgress: nextBadge ?? state.nextBadgeProgress,
+          achievements: achievements ?? state.achievements,
+          studentBadges: studentBadges ?? state.studentBadges,
+          leaderboardEntries: leaderboard ?? state.leaderboardEntries,
           newlyUnlockedAchievementIds: mutation.newAchievementIds,
           newlyUnlockedBadgeIds: mutation.newBadgeIds,
           leaderboardDelta:
@@ -144,26 +145,28 @@ class GamificationCubit extends Cubit<GamificationState> {
           answerMap: answerMap,
         ),
       );
-
-      final refreshed = await Future.wait([
-        _repository.fetchAchievements(),
-        _repository.fetchDailyMissions(),
-        _repository.fetchXpProgress(),
-        _repository.fetchNextBadgeProgress(),
-        _repository.fetchStudentBadges('s1'),
-        _repository.fetchLeaderboard(
+      final userId = await _currentUserId();
+      final achievements = await _safeFetch(_repository.fetchAchievements);
+      final dailyMissions = await _safeFetch(_repository.fetchDailyMissions);
+      final xpProgress = await _safeFetch(_repository.fetchXpProgress);
+      final nextBadge = await _safeFetch(_repository.fetchNextBadgeProgress);
+      final studentBadges = await _safeFetch(
+        () => _repository.fetchStudentBadges(userId),
+      );
+      final leaderboard = await _safeFetch(
+        () => _repository.fetchLeaderboard(
           state.isWeeklyRanking ? 'weekly' : 'monthly',
         ),
-      ]);
+      );
 
       emit(
         state.copyWith(
-          achievements: refreshed[0] as List<AchievementModel>,
-          dailyMissions: refreshed[1] as List<DailyMissionModel>,
-          xpProgress: refreshed[2] as XpProgressModel,
-          nextBadgeProgress: refreshed[3] as NextBadgeProgressModel?,
-          studentBadges: refreshed[4] as List<StudentBadgeModel>,
-          leaderboardEntries: refreshed[5] as List<LeaderboardEntry>,
+          achievements: achievements ?? state.achievements,
+          dailyMissions: dailyMissions ?? state.dailyMissions,
+          xpProgress: xpProgress ?? state.xpProgress,
+          nextBadgeProgress: nextBadge ?? state.nextBadgeProgress,
+          studentBadges: studentBadges ?? state.studentBadges,
+          leaderboardEntries: leaderboard ?? state.leaderboardEntries,
           newlyUnlockedAchievementIds: mutation.newAchievementIds,
           newlyUnlockedBadgeIds: mutation.newBadgeIds,
           leaderboardDelta:
@@ -175,6 +178,14 @@ class GamificationCubit extends Cubit<GamificationState> {
       );
     } catch (e) {
       emit(state.copyWith(errorMessage: 'Unable to update progress: $e'));
+    }
+  }
+
+  Future<T?> _safeFetch<T>(Future<T> Function() task) async {
+    try {
+      return await task();
+    } catch (_) {
+      return null;
     }
   }
 }

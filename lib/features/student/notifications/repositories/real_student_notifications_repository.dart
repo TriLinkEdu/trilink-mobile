@@ -3,23 +3,34 @@ import 'dart:convert';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/routes/route_names.dart';
+import '../../../../core/services/local_cache_service.dart';
+import '../../../../core/services/storage_service.dart';
 import '../models/notification_model.dart';
 import 'student_notifications_repository.dart';
 
 class RealStudentNotificationsRepository
     implements StudentNotificationsRepository {
   final ApiClient _api;
+  final StorageService _storage;
+  final LocalCacheService _cacheService;
 
-  static List<NotificationModel>? _cache;
-  static DateTime? _fetchedAt;
-  static Future<List<NotificationModel>>? _inFlight;
-  static const Duration _ttl = Duration(seconds: 20);
+  List<NotificationModel>? _cache;
+  DateTime? _fetchedAt;
+  Future<List<NotificationModel>>? _inFlight;
+  static const Duration _ttl = Duration(minutes: 2);
 
-  RealStudentNotificationsRepository({ApiClient? apiClient})
-    : _api = apiClient ?? ApiClient();
+  RealStudentNotificationsRepository({
+    ApiClient? apiClient,
+    required StorageService storageService,
+    required LocalCacheService cacheService,
+  }) : _api = apiClient ?? ApiClient(),
+       _storage = storageService,
+       _cacheService = cacheService;
 
   @override
   Future<List<NotificationModel>> fetchNotifications() async {
+    final userId = await _currentUserId();
+    _restoreCache(userId);
     if (_cache != null && _fetchedAt != null) {
       final age = DateTime.now().difference(_fetchedAt!);
       if (age < _ttl) return _cache!;
@@ -29,17 +40,33 @@ class RealStudentNotificationsRepository
 
     final future = _fetchFresh();
     _inFlight = future;
-    final data = await future;
-    _inFlight = null;
-    _cache = data;
-    _fetchedAt = DateTime.now();
-    return data;
+    try {
+      final data = await future;
+      _cache = data;
+      _fetchedAt = DateTime.now();
+      await _persistCache(userId);
+      return data;
+    } catch (_) {
+      if (_cache != null) return _cache!;
+      rethrow;
+    } finally {
+      _inFlight = null;
+    }
   }
 
   Future<List<NotificationModel>> _fetchFresh() async {
     final list = await _api.getList(ApiConstants.notifications);
-
-    return list.whereType<Map<String, dynamic>>().map(_toNotification).toList();
+    final results = <NotificationModel>[];
+    
+    for (final raw in list.whereType<Map>()) {
+      try {
+        final map = Map<String, dynamic>.from(raw);
+        results.add(_toNotification(map));
+      } catch (e) {
+        print('Skipping malformed notification: $e');
+      }
+    }
+    return results;
   }
 
   @override
@@ -49,6 +76,7 @@ class RealStudentNotificationsRepository
         ?.map((item) => item.id == id ? item.copyWith(isRead: true) : item)
         .toList();
     _fetchedAt = DateTime.now();
+    await _persistCache(await _currentUserId());
   }
 
   @override
@@ -58,6 +86,7 @@ class RealStudentNotificationsRepository
         ?.map((item) => item.id == id ? item.copyWith(isRead: false) : item)
         .toList();
     _fetchedAt = DateTime.now();
+    await _persistCache(await _currentUserId());
   }
 
   @override
@@ -65,6 +94,7 @@ class RealStudentNotificationsRepository
     await _api.post(ApiConstants.notificationsReadAll);
     _cache = _cache?.map((item) => item.copyWith(isRead: true)).toList();
     _fetchedAt = DateTime.now();
+    await _persistCache(await _currentUserId());
   }
 
   NotificationModel _toNotification(Map<String, dynamic> raw) {
@@ -117,5 +147,40 @@ class RealStudentNotificationsRepository
       return {'announcementId': announcementId};
     }
     return null;
+  }
+
+  Future<String> _currentUserId() async {
+    final user = await _storage.getUser();
+    return (user?['id'] ?? '').toString();
+  }
+
+  String _cacheKey(String userId) => userId.isEmpty
+      ? 'student_notifications_v1'
+      : 'student_notifications_v1_$userId';
+
+  @override
+  void clearCache() {
+    _cache = null;
+    _fetchedAt = null;
+    _inFlight = null;
+  }
+
+  void _restoreCache(String userId) {
+    if (_cache != null) return;
+    final entry = _cacheService.read(_cacheKey(userId));
+    if (entry == null || entry.data is! List) return;
+    _cache = (entry.data as List)
+        .whereType<Map<String, dynamic>>()
+        .map(NotificationModel.fromJson)
+        .toList();
+    _fetchedAt = entry.savedAt;
+  }
+
+  Future<void> _persistCache(String userId) async {
+    if (_cache == null) return;
+    await _cacheService.write(
+      _cacheKey(userId),
+      _cache!.map((item) => item.toJson()).toList(),
+    );
   }
 }

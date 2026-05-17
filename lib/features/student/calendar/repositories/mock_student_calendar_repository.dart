@@ -145,4 +145,7 @@ class MockStudentCalendarRepository implements StudentCalendarRepository {
     await Future<void>.delayed(_latency);
     return _buildEvents().firstWhere((e) => e.id == id);
   }
+
+  @override
+  void clearCache() {}
 }

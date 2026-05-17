@@ -66,34 +66,43 @@ class LeaderboardEntry {
 
 class BadgeModel {
   final String id;
+  final String? key;
   final String name;
   final String description;
   final String iconUrl;
+  final String? iconKey;
   final int xpValue;
 
   const BadgeModel({
     required this.id,
+    this.key,
     required this.name,
     required this.description,
     required this.iconUrl,
+    this.iconKey,
     required this.xpValue,
   });
 
   factory BadgeModel.fromJson(Map<String, dynamic> json) {
+    final iconValue = (json['iconUrl'] ?? json['iconKey'] ?? '').toString();
     return BadgeModel(
       id: json['id'] as String,
+      key: json['key'] as String?,
       name: json['name'] as String,
       description: json['description'] as String,
-      iconUrl: json['iconUrl'] as String,
+      iconUrl: iconValue,
+      iconKey: json['iconKey'] as String?,
       xpValue: json['xpValue'] as int,
     );
   }
 
   Map<String, dynamic> toJson() => {
     'id': id,
+    'key': key,
     'name': name,
     'description': description,
     'iconUrl': iconUrl,
+    'iconKey': iconKey,
     'xpValue': xpValue,
   };
 }
@@ -186,7 +195,7 @@ class AchievementModel {
       id: json['id'] as String,
       title: json['title'] as String,
       description: json['description'] as String,
-      iconUrl: json['iconUrl'] as String,
+      iconUrl: (json['iconUrl'] ?? '').toString(),
       xpValue: json['xpValue'] as int? ?? 0,
       isUnlocked: json['isUnlocked'] as bool,
       unlockedAt: json['unlockedAt'] != null
@@ -259,6 +268,28 @@ class DailyMissionModel {
     if (progressTarget <= 0) return 0;
     return (progressCurrent / progressTarget).clamp(0, 1).toDouble();
   }
+
+  factory DailyMissionModel.fromJson(Map<String, dynamic> json) {
+    return DailyMissionModel(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      description: json['description'] as String,
+      xpReward: json['xpReward'] as int,
+      isCompleted: json['isCompleted'] as bool,
+      progressCurrent: json['progressCurrent'] as int,
+      progressTarget: json['progressTarget'] as int,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'description': description,
+    'xpReward': xpReward,
+    'isCompleted': isCompleted,
+    'progressCurrent': progressCurrent,
+    'progressTarget': progressTarget,
+  };
 }
 
 class TeamChallengeModel {
@@ -284,6 +315,28 @@ class TeamChallengeModel {
     if (progressTarget <= 0) return 0;
     return (progressCurrent / progressTarget).clamp(0, 1).toDouble();
   }
+
+  factory TeamChallengeModel.fromJson(Map<String, dynamic> json) {
+    return TeamChallengeModel(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      objective: json['objective'] as String,
+      progressCurrent: json['progressCurrent'] as int,
+      progressTarget: json['progressTarget'] as int,
+      contributorCount: json['contributorCount'] as int,
+      endsAt: DateTime.parse(json['endsAt'] as String),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'objective': objective,
+    'progressCurrent': progressCurrent,
+    'progressTarget': progressTarget,
+    'contributorCount': contributorCount,
+    'endsAt': endsAt.toIso8601String(),
+  };
 }
 
 class XpProgressModel {
@@ -312,6 +365,26 @@ class XpProgressModel {
     if (weeklyXpTarget <= 0) return 0;
     return (weeklyXpEarned / weeklyXpTarget).clamp(0, 1).toDouble();
   }
+
+  factory XpProgressModel.fromJson(Map<String, dynamic> json) {
+    return XpProgressModel(
+      level: json['level'] as int,
+      totalXp: json['totalXp'] as int,
+      xpIntoCurrentLevel: json['xpIntoCurrentLevel'] as int,
+      xpNeededForNextLevel: json['xpNeededForNextLevel'] as int,
+      weeklyXpTarget: json['weeklyXpTarget'] as int,
+      weeklyXpEarned: json['weeklyXpEarned'] as int,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'level': level,
+    'totalXp': totalXp,
+    'xpIntoCurrentLevel': xpIntoCurrentLevel,
+    'xpNeededForNextLevel': xpNeededForNextLevel,
+    'weeklyXpTarget': weeklyXpTarget,
+    'weeklyXpEarned': weeklyXpEarned,
+  };
 }
 
 class NextBadgeProgressModel {
@@ -333,6 +406,24 @@ class NextBadgeProgressModel {
     if (progressTarget <= 0) return 0;
     return (progressCurrent / progressTarget).clamp(0, 1).toDouble();
   }
+
+  factory NextBadgeProgressModel.fromJson(Map<String, dynamic> json) {
+    return NextBadgeProgressModel(
+      badgeName: json['badgeName'] as String,
+      description: json['description'] as String,
+      progressCurrent: json['progressCurrent'] as int,
+      progressTarget: json['progressTarget'] as int,
+      xpReward: json['xpReward'] as int,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'badgeName': badgeName,
+    'description': description,
+    'progressCurrent': progressCurrent,
+    'progressTarget': progressTarget,
+    'xpReward': xpReward,
+  };
 }
 
 class GamificationMutationResult {

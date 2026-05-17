@@ -123,4 +123,10 @@ class MockTextbookRepository implements TextbookRepository {
     }
     return null;
   }
+
+  @override
+  List<TextbookModel>? getCached() => null;
+
+  @override
+  void clearCache() {}
 }

@@ -8,4 +8,6 @@ abstract class StudentAnalyticsRepository {
   Future<StudentAttendanceInsight> fetchAttendanceInsight();
 
   Future<List<StudentActionItem>> fetchActionPlan();
+
+  void clearCache() {}
 }

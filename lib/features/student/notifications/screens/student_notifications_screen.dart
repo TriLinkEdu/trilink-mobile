@@ -181,6 +181,12 @@ class _NotificationsViewState extends State<_NotificationsView> {
                                     subtitle: _filterIndex == 1
                                         ? 'All caught up   nothing new!'
                                         : 'You are all caught up!',
+                                    actionLabel: _filterIndex == 1 ? 'Show All' : null,
+                                    onAction: _filterIndex == 1 ? () {
+                                      setState(() {
+                                        _filterIndex = 0;
+                                      });
+                                    } : null,
                                   ),
                                 ),
                               );

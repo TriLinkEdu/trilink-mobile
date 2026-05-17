@@ -18,7 +18,7 @@ class FeatureFlags {
   static bool verboseLogging = false;
 
   /// Set to true to simulate slow network (adds delay to API calls)
-  static bool simulateSlowNetwork = true;
+  static const bool simulateSlowNetwork = false;
 
   /// Network delay in milliseconds (only if simulateSlowNetwork is true)
   static int networkDelayMs = 1000;

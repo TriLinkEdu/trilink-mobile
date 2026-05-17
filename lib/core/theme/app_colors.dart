@@ -41,12 +41,13 @@ class AppColors {
   static const Color history = Color(0xFFF4A261);
   static const Color computerScience = Color(0xFF00B894);
   static const Color biology = Color(0xFF43AA8B);
-  
-  // Additional subject palette used across parent/teacher screens
-  static const Color subjectPurple = Color(0xFF7C4DFF);
-  static const Color subjectOrange = Color(0xFFFF6D00);
-  static const Color subjectTeal = Color(0xFF00BFA5);
-  static const Color subjectPink = Color(0xFFE91E63);
+  static const Color chemistry = Color(0xFF9B59B6);
+
+  // Generic subject accent colors used by parent/teacher dashboards and lists.
+  static const Color subjectPurple = Color(0xFF8B5CF6);
+  static const Color subjectOrange = Color(0xFFF97316);
+  static const Color subjectTeal = Color(0xFF14B8A6);
+  static const Color subjectPink = Color(0xFFEC4899);
 
   static Color subjectColor(String name) {
     final lower = name.toLowerCase();
@@ -55,6 +56,9 @@ class AppColors {
     }
     if (lower.contains('phys')) {
       return physics;
+    }
+    if (lower.contains('chem')) {
+      return chemistry;
     }
     if (lower.contains('liter') || lower.contains('english')) {
       return literature;

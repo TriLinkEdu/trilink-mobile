@@ -139,4 +139,25 @@ class MockStudentGradesRepository implements StudentGradesRepository {
     await Future<void>.delayed(_latency);
     return _grades.where((grade) => grade.subjectId == subjectId).toList();
   }
+
+  @override
+  Future<List<String>> fetchAvailableTerms() async {
+    await Future<void>.delayed(_latency);
+    final seen = <String>{};
+    final terms = <String>[];
+    // Sort grades newest-first so most recent term appears first
+    final sorted = List<GradeModel>.from(_grades)
+      ..sort((a, b) => b.date.compareTo(a.date));
+    for (final g in sorted) {
+      final t = g.term;
+      if (t != null && seen.add(t)) terms.add(t);
+    }
+    return terms;
+  }
+
+  @override
+  List<GradeModel>? getCached() => null;
+
+  @override
+  void clearCache() {}
 }

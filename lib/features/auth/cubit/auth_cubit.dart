@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/models/user_model.dart';
+import '../../../core/services/chat_socket_service.dart';
 import '../repositories/auth_repository.dart';
 import 'auth_state.dart';
 
@@ -7,9 +8,16 @@ export 'auth_state.dart';
 
 class AuthCubit extends Cubit<AuthState> {
   final AuthRepository _repository;
+  final ChatSocketService? _chatSocket;
+  final List<void Function()> _onLogout;
 
-  AuthCubit({required AuthRepository repository})
-      : _repository = repository,
+  AuthCubit({
+    required AuthRepository repository,
+    ChatSocketService? chatSocketService,
+    List<void Function()> onLogout = const [],
+  })  : _repository = repository,
+        _chatSocket = chatSocketService,
+        _onLogout = onLogout,
         super(const AuthState());
 
   UserModel? get currentUser => state.user;
@@ -95,6 +103,8 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   Future<void> logout() async {
+    _chatSocket?.disconnect();
+    for (final cb in _onLogout) { cb(); }
     await _repository.logout();
     emit(const AuthState(status: AuthStatus.unauthenticated));
   }

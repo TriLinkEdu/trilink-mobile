@@ -53,4 +53,10 @@ class MockStudentAnnouncementsRepository
     await Future<void>.delayed(_latency);
     return List<AnnouncementModel>.from(_announcements);
   }
+
+  @override
+  List<AnnouncementModel>? getCached() => null;
+
+  @override
+  void clearCache() {}
 }

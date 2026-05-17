@@ -1,14 +1,24 @@
+class AiChatSource {
+  final String title;
+  final String? topicId;
+  final double? score;
+
+  const AiChatSource({required this.title, this.topicId, this.score});
+}
+
 class AiChatMessage {
   final String text;
   final bool isUser;
   final DateTime timestamp;
-  final List<String>? sources;
+  final List<AiChatSource>? sources;
+  final bool isError;
 
   const AiChatMessage({
     required this.text,
     required this.isUser,
     required this.timestamp,
     this.sources,
+    this.isError = false,
   });
 
   factory AiChatMessage.fromBackendResponse(Map<String, dynamic> json) {
@@ -16,7 +26,6 @@ class AiChatMessage {
       text: json['answer'] as String,
       isUser: false,
       timestamp: DateTime.now(),
-      sources: (json['sources'] as List?)?.cast<String>(),
     );
   }
 }
@@ -40,14 +49,29 @@ class LearningPathItemModel {
     this.explanation,
   });
 
-  // Legacy getters for backward compatibility
+  // Derived helpers used by widgets.
   int get step => sequenceOrder;
   String get title => topicName;
-  String get subject => '';
-  String get duration => '';
-  double get progress => currentMastery;
+  double get progress =>
+      targetMastery > 0 ? (currentMastery / targetMastery).clamp(0, 1) : 0;
   bool get isActive => !isCompleted;
   bool get isBookmarked => false;
+  /// Subject is not part of the AI response — fall back to a readable placeholder.
+  String get subject => 'Topic';
+  /// Duration estimate derived from mastery gap (rough heuristic).
+  String get duration {
+    final gap = (targetMastery - currentMastery).clamp(0.0, 1.0);
+    final minutes = (gap * 60).round();
+    if (minutes < 10) return '~10 min';
+    return '~$minutes min';
+  }
+
+  /// Human-readable mastery summary, e.g. "62% mastery · target 80%".
+  String get masterySummary {
+    final current = (currentMastery * 100).round();
+    final target = (targetMastery * 100).round();
+    return '$current% mastery · target $target%';
+  }
 
   LearningPathItemModel copyWith({
     String? topicId,
@@ -107,10 +131,18 @@ class ResourceRecommendationModel {
     this.description,
   });
 
-  // Legacy getters for backward compatibility
+  // Derived helpers.
   String get id => url;
-  String get estimatedTime => '15 min';
   String get level => difficulty;
+  /// Estimated read/watch time based on resource type.
+  String get estimatedTime {
+    return switch (type.toLowerCase()) {
+      'video' => '~10 min',
+      'article' => '~5 min',
+      'worksheet' => '~15 min',
+      _ => '~10 min',
+    };
+  }
 
   factory ResourceRecommendationModel.fromJson(Map<String, dynamic> json) {
     return ResourceRecommendationModel(

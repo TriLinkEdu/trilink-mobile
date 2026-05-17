@@ -12,6 +12,7 @@ import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_shadows.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/subject_visuals.dart';
 import '../../../../core/widgets/pressable.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../../shared/widgets/profile_avatar.dart';
@@ -45,6 +46,9 @@ class _GamificationView extends StatefulWidget {
 
 class _GamificationViewState extends State<_GamificationView> {
   static final _celebratedKeys = <String>{};
+
+  int? _prevLevel;
+  int? _prevTotalXp;
 
   bool _notifyQuizReminders = true;
   bool _notifyLeaderboard = true;
@@ -223,19 +227,8 @@ class _GamificationViewState extends State<_GamificationView> {
     );
   }
 
-  IconData _iconForSubject(String subjectName) {
-    final lower = subjectName.toLowerCase();
-    if (lower.contains('math') || lower.contains('calculus')) {
-      return Icons.calculate_rounded;
-    }
-    if (lower.contains('phys') || lower.contains('mechanic')) {
-      return Icons.science_rounded;
-    }
-    if (lower.contains('liter')) return Icons.menu_book_rounded;
-    if (lower.contains('hist')) return Icons.public_rounded;
-    if (lower.contains('comput')) return Icons.computer_rounded;
-    return Icons.quiz_rounded;
-  }
+  IconData _iconForSubject(String subjectName) =>
+      SubjectVisuals.iconOf(subjectName);
 
   LeaderboardEntry? _entryByRank(List<LeaderboardEntry> entries, int rank) {
     for (final entry in entries) {
@@ -300,7 +293,34 @@ class _GamificationViewState extends State<_GamificationView> {
               ),
 
               Expanded(
-                child: BlocBuilder<GamificationCubit, GamificationState>(
+                child: BlocConsumer<GamificationCubit, GamificationState>(
+                  listener: (context, state) {
+                    if (state.status != GamificationStatus.loaded) return;
+                    final xp = state.xpProgress;
+                    if (xp == null) return;
+                    final prevLevel = _prevLevel;
+                    final prevXp = _prevTotalXp;
+                    _prevLevel = xp.level;
+                    _prevTotalXp = xp.totalXp;
+                    if (prevLevel == null || prevXp == null) return;
+                    if (xp.level > prevLevel) {
+                      CelebrationOverlay.maybeOf(context)?.celebrate(
+                        type: CelebrationType.levelUp,
+                        message: '⚡ Level ${xp.level} Reached!',
+                        subtext: 'Keep earning XP to unlock more rewards!',
+                      );
+                    } else if (xp.totalXp > prevXp) {
+                      final gained = xp.totalXp - prevXp;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('+$gained XP earned!'),
+                          duration: const Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating,
+                          width: 160,
+                        ),
+                      );
+                    }
+                  },
                   builder: (context, state) {
                     final loading =
                         state.status == GamificationStatus.initial ||
@@ -322,6 +342,84 @@ class _GamificationViewState extends State<_GamificationView> {
                         if (!mounted) return;
                         _maybeCelebrateStreakMilestone(streak);
                       });
+                    }
+
+                    // Celebrate newly unlocked achievements
+                    for (final id in state.newlyUnlockedAchievementIds) {
+                      final aKey = 'achievement_$id';
+                      if (_celebratedKeys.contains(aKey)) continue;
+                      _celebratedKeys.add(aKey);
+                      final title =
+                          _resolveAchievementTitle(id, state.achievements) ??
+                              'Achievement';
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted) return;
+                        CelebrationOverlay.maybeOf(context)?.celebrate(
+                          type: CelebrationType.achievement,
+                          message: '🏆 $title Unlocked!',
+                          subtext: 'Great work — keep going!',
+                        );
+                      });
+                    }
+
+                    // Celebrate newly unlocked badges
+                    for (final id in state.newlyUnlockedBadgeIds) {
+                      final bKey = 'badge_$id';
+                      if (_celebratedKeys.contains(bKey)) continue;
+                      _celebratedKeys.add(bKey);
+                      final name =
+                          _resolveBadgeName(id, state.badges) ?? 'Badge';
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted) return;
+                        CelebrationOverlay.maybeOf(context)?.celebrate(
+                          type: CelebrationType.achievement,
+                          message: '🎖️ $name Earned!',
+                          subtext: 'New badge added to your collection',
+                        );
+                      });
+                    }
+
+                    if (state.status == GamificationStatus.error) {
+                      return Center(
+                        child: Padding(
+                          padding: AppSpacing.paddingXxl,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.cloud_off_rounded,
+                                size: 64,
+                                color: theme.colorScheme.onSurfaceVariant
+                                    .withAlpha(100),
+                              ),
+                              AppSpacing.gapMd,
+                              Text(
+                                'Could not load your hub',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              AppSpacing.gapSm,
+                              Text(
+                                state.errorMessage ??
+                                    'Check your connection and try again.',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              AppSpacing.gapLg,
+                              FilledButton.icon(
+                                onPressed: () =>
+                                    context.read<GamificationCubit>().loadAll(),
+                                icon: const Icon(Icons.refresh_rounded),
+                                label: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
                     }
 
                     return SingleChildScrollView(
@@ -355,6 +453,7 @@ class _GamificationViewState extends State<_GamificationView> {
                           _buildLeaderboardSection(
                             state.leaderboardEntries,
                             state.isWeeklyRanking,
+                            state.currentUserId,
                           ),
                           AppSpacing.gapXxl,
                         ],
@@ -912,15 +1011,16 @@ class _GamificationViewState extends State<_GamificationView> {
   Widget _buildLeaderboardSection(
     List<LeaderboardEntry> leaderboardEntries,
     bool isWeeklyRanking,
+    String currentUserId,
   ) {
     final theme = Theme.of(context);
     final sortedEntries = [...leaderboardEntries]
       ..sort((a, b) => a.rank.compareTo(b.rank));
     final topEntries = sortedEntries.take(3).toList();
     final myEntry = leaderboardEntries.firstWhere(
-      (entry) => entry.studentId == 's1',
+      (entry) => entry.studentId == currentUserId,
       orElse: () => const LeaderboardEntry(
-        studentId: 's1',
+        studentId: '',
         studentName: 'You',
         rank: 0,
         points: 0,

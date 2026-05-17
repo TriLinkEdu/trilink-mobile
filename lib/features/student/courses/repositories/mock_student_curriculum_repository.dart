@@ -314,4 +314,10 @@ class MockStudentCurriculumRepository implements StudentCurriculumRepository {
     final topics = _topicsBySubject[subjectId] ?? const <TopicModel>[];
     return List<TopicModel>.from(topics);
   }
+
+  @override
+  List<SubjectModel>? getCached() => null;
+
+  @override
+  void clearCache() {}
 }
