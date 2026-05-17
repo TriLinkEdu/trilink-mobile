@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/validation/validators.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../features/auth/services/auth_service.dart';
 import '../../../../core/routes/route_names.dart';
@@ -549,15 +550,28 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
       children: [
         _buildSectionTitle('Personal Details', theme),
         const SizedBox(height: 16),
-        _buildField(_firstNameController, 'First Name', Icons.person_outline),
+        _buildField(
+          _firstNameController,
+          'First Name',
+          Icons.person_outline,
+          maxLength: 60,
+          validator: Validators.text(label: 'First name', min: 1, max: 60),
+        ),
         const SizedBox(height: 12),
-        _buildField(_lastNameController, 'Last Name', Icons.person_outline),
+        _buildField(
+          _lastNameController,
+          'Last Name',
+          Icons.person_outline,
+          maxLength: 60,
+          validator: Validators.text(label: 'Last name', min: 1, max: 60),
+        ),
         const SizedBox(height: 12),
         _buildField(
           _phoneController,
           'Phone Number',
           Icons.phone_outlined,
           keyboardType: TextInputType.phone,
+          validator: Validators.phone(),
         ),
         const SizedBox(height: 24),
         _buildSectionTitle('Professional Details', theme),
@@ -566,30 +580,74 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
           _experienceController,
           'Experience (e.g. 5 years)',
           Icons.workspace_premium_outlined,
+          maxLength: 60,
+          validator: Validators.text(
+            label: 'Experience',
+            max: 60,
+            requiredField: false,
+          ),
         ),
         const SizedBox(height: 12),
         _buildField(
           _homeroomClassController,
           'Homeroom Class',
           Icons.class_outlined,
+          maxLength: 60,
+          validator: Validators.text(
+            label: 'Homeroom class',
+            max: 60,
+            requiredField: false,
+          ),
         ),
         const SizedBox(height: 12),
         _buildField(
           _officeRoomController,
           'Office Room',
           Icons.meeting_room_outlined,
+          maxLength: 30,
+          validator: Validators.text(
+            label: 'Office room',
+            max: 30,
+            requiredField: false,
+          ),
         ),
         const SizedBox(height: 24),
         _buildSectionTitle('Address', theme),
         const SizedBox(height: 16),
-        _buildField(_countryController, 'Country', Icons.public),
+        _buildField(
+          _countryController,
+          'Country',
+          Icons.public,
+          maxLength: 60,
+          validator: Validators.text(
+            label: 'Country',
+            max: 60,
+            requiredField: false,
+          ),
+        ),
         const SizedBox(height: 12),
-        _buildField(_cityStateController, 'City / State', Icons.location_city),
+        _buildField(
+          _cityStateController,
+          'City / State',
+          Icons.location_city,
+          maxLength: 80,
+          validator: Validators.text(
+            label: 'City / State',
+            max: 80,
+            requiredField: false,
+          ),
+        ),
         const SizedBox(height: 12),
         _buildField(
           _postalCodeController,
           'Postal Code',
           Icons.markunread_mailbox_outlined,
+          maxLength: 16,
+          validator: Validators.text(
+            label: 'Postal code',
+            max: 16,
+            requiredField: false,
+          ),
         ),
         const SizedBox(height: 24),
         _buildSectionTitle('Change Password (Optional)', theme),
@@ -667,10 +725,14 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
     String label,
     IconData icon, {
     TextInputType keyboardType = TextInputType.text,
+    String? Function(String?)? validator,
+    int? maxLength,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
+      maxLength: maxLength,
+      validator: validator,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, size: 20),

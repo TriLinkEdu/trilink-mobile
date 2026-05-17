@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/services/api_service.dart';
+import '../../../../core/validation/validators.dart';
 
 /// Teacher → Add / update a homeroom remark (`POST /report-cards/remarks`).
 ///
@@ -21,6 +22,7 @@ class TeacherRemarkFormScreen extends StatefulWidget {
 }
 
 class _TeacherRemarkFormScreenState extends State<TeacherRemarkFormScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _remarkCtrl = TextEditingController();
   final _conductCtrl = TextEditingController();
   bool _loading = true;
@@ -45,8 +47,7 @@ class _TeacherRemarkFormScreenState extends State<TeacherRemarkFormScreen> {
   Future<void> _bootstrap() async {
     try {
       final year = await ApiService().getActiveAcademicYear();
-      final yearId =
-          (year['id'] ?? (year['data'] as Map?)?['id']) as String?;
+      final yearId = (year['id'] ?? (year['data'] as Map?)?['id']) as String?;
       if (yearId == null || yearId.isEmpty) {
         throw Exception('No active academic year.');
       }
@@ -67,9 +68,23 @@ class _TeacherRemarkFormScreenState extends State<TeacherRemarkFormScreen> {
   }
 
   Future<void> _submit() async {
-    if (_termId == null || _termId!.isEmpty) {
+    if (!(_formKey.currentState?.validate() ?? false)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pick a term first.')),
+        const SnackBar(content: Text('Please fix the highlighted fields.')),
+      );
+      return;
+    }
+    if (_termId == null || _termId!.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Pick a term first.')));
+      return;
+    }
+    if (_remarkCtrl.text.trim().isEmpty && _conductCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Enter a remark or a conduct grade before saving.'),
+        ),
       );
       return;
     }
@@ -78,18 +93,23 @@ class _TeacherRemarkFormScreenState extends State<TeacherRemarkFormScreen> {
       await ApiService().submitRemark(
         studentId: widget.studentId,
         termId: _termId!,
-        remark: _remarkCtrl.text.trim().isEmpty ? null : _remarkCtrl.text.trim(),
-        conductGrade:
-            _conductCtrl.text.trim().isEmpty ? null : _conductCtrl.text.trim(),
+        remark: _remarkCtrl.text.trim().isEmpty
+            ? null
+            : _remarkCtrl.text.trim(),
+        conductGrade: _conductCtrl.text.trim().isEmpty
+            ? null
+            : _conductCtrl.text.trim(),
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Remark saved.')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Remark saved.')));
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Save failed: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Save failed: $e')));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -102,70 +122,84 @@ class _TeacherRemarkFormScreenState extends State<TeacherRemarkFormScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(_error!, textAlign: TextAlign.center),
-                ))
-              : Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      DropdownButtonFormField<String>(
-                        value: _termId,
-                        decoration: const InputDecoration(
-                          labelText: 'Term',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.event_note),
-                        ),
-                        items: _terms
-                            .map(
-                              (t) => DropdownMenuItem(
-                                value: t['id'] as String?,
-                                child: Text(t['name'] as String? ?? 'Term'),
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(_error!, textAlign: TextAlign.center),
+              ),
+            )
+          : Form(
+              key: _formKey,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: _termId,
+                      decoration: const InputDecoration(
+                        labelText: 'Term',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.event_note),
+                      ),
+                      items: _terms
+                          .map(
+                            (t) => DropdownMenuItem(
+                              value: t['id'] as String?,
+                              child: Text(t['name'] as String? ?? 'Term'),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) => setState(() => _termId = v),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _remarkCtrl,
+                      maxLines: 6,
+                      maxLength: 1000,
+                      decoration: const InputDecoration(
+                        labelText: 'Homeroom remark',
+                        hintText:
+                            'Excellent student, keep it up! Watch out for...',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: Validators.text(
+                        label: 'Remark',
+                        max: 1000,
+                        requiredField: false,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _conductCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Conduct grade',
+                        hintText: 'A / B+ / C- / 0–100',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.grade_outlined),
+                      ),
+                      validator: Validators.conductGrade(),
+                    ),
+                    const SizedBox(height: 24),
+                    FilledButton.icon(
+                      onPressed: _saving ? null : _submit,
+                      icon: _saving
+                          ? const SizedBox(
+                              height: 16,
+                              width: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
                               ),
                             )
-                            .toList(),
-                        onChanged: (v) => setState(() => _termId = v),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _remarkCtrl,
-                        maxLines: 6,
-                        decoration: const InputDecoration(
-                          labelText: 'Homeroom remark',
-                          hintText:
-                              'Excellent student, keep it up! Watch out for...',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _conductCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Conduct grade',
-                          hintText: 'A / B / C / …',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.grade_outlined),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      FilledButton.icon(
-                        onPressed: _saving ? null : _submit,
-                        icon: _saving
-                            ? const SizedBox(
-                                height: 16,
-                                width: 16,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white),
-                              )
-                            : const Icon(Icons.save),
-                        label: Text(_saving ? 'Saving…' : 'Save remark'),
-                      ),
-                    ],
-                  ),
+                          : const Icon(Icons.save),
+                      label: Text(_saving ? 'Saving…' : 'Save remark'),
+                    ),
+                  ],
                 ),
+              ),
+            ),
     );
   }
 }

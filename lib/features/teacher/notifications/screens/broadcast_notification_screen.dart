@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/services/api_service.dart';
+import '../../../../core/validation/validators.dart';
 
 /// Teacher → Broadcast a notification to a class
 /// (`POST /notifications/broadcast` with `audience: "class"`).
@@ -14,6 +15,7 @@ class BroadcastNotificationScreen extends StatefulWidget {
 
 class _BroadcastNotificationScreenState
     extends State<BroadcastNotificationScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _titleCtrl = TextEditingController();
   final _bodyCtrl = TextEditingController();
   bool _loading = true;
@@ -60,16 +62,20 @@ class _BroadcastNotificationScreenState
   }
 
   Future<void> _send() async {
-    final title = _titleCtrl.text.trim();
-    final body = _bodyCtrl.text.trim();
-    if (title.isEmpty || body.isEmpty || _classOfferingId == null) {
+    if (!(_formKey.currentState?.validate() ?? false)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Title, body and class are all required.'),
-        ),
+        const SnackBar(content: Text('Please fix the highlighted fields.')),
       );
       return;
     }
+    if (_classOfferingId == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Pick a class first.')));
+      return;
+    }
+    final title = _titleCtrl.text.trim();
+    final body = _bodyCtrl.text.trim();
     setState(() => _sending = true);
     try {
       await ApiService().broadcastNotification(
@@ -106,61 +112,77 @@ class _BroadcastNotificationScreenState
                 child: Text(_error!, textAlign: TextAlign.center),
               ),
             )
-          : Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  DropdownButtonFormField<String>(
-                    value: _classOfferingId,
-                    decoration: const InputDecoration(
-                      labelText: 'Class',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.class_outlined),
-                    ),
-                    items: _classes
-                        .map(
-                          (c) => DropdownMenuItem(
-                            value: c['id'] as String?,
-                            child: Text(_classLabel(c)),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (v) => setState(() => _classOfferingId = v),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _titleCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Title',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _bodyCtrl,
-                    maxLines: 6,
-                    decoration: const InputDecoration(
-                      labelText: 'Body',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  FilledButton.icon(
-                    onPressed: _sending ? null : _send,
-                    icon: _sending
-                        ? const SizedBox(
-                            height: 16,
-                            width: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
+          : Form(
+              key: _formKey,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: _classOfferingId,
+                      decoration: const InputDecoration(
+                        labelText: 'Class',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.class_outlined),
+                      ),
+                      items: _classes
+                          .map(
+                            (c) => DropdownMenuItem(
+                              value: c['id'] as String?,
+                              child: Text(_classLabel(c)),
                             ),
                           )
-                        : const Icon(Icons.send),
-                    label: Text(_sending ? 'Sending…' : 'Send broadcast'),
-                  ),
-                ],
+                          .toList(),
+                      onChanged: (v) => setState(() => _classOfferingId = v),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _titleCtrl,
+                      maxLength: 100,
+                      decoration: const InputDecoration(
+                        labelText: 'Title',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: Validators.text(
+                        label: 'Title',
+                        min: 3,
+                        max: 100,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _bodyCtrl,
+                      maxLines: 6,
+                      maxLength: 2000,
+                      decoration: const InputDecoration(
+                        labelText: 'Body',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: Validators.text(
+                        label: 'Body',
+                        min: 1,
+                        max: 2000,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    FilledButton.icon(
+                      onPressed: _sending ? null : _send,
+                      icon: _sending
+                          ? const SizedBox(
+                              height: 16,
+                              width: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.send),
+                      label: Text(_sending ? 'Sending…' : 'Send broadcast'),
+                    ),
+                  ],
+                ),
               ),
             ),
     );
